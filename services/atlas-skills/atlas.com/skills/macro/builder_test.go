@@ -7,15 +7,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := macro.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := macro.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	model, err := macro.NewModelBuilder().
+	model, err := macro.NewBuilder().
 		SetId(1).
 		SetName("Attack Combo").
 		SetShout(true).
@@ -47,7 +47,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_EmptyNameAllowed(t *testing.T) {
-	model, err := macro.NewModelBuilder().
+	model, err := macro.NewBuilder().
 		SetId(1).
 		SetSkillId1(skill.Id(2301004)).
 		Build()
@@ -63,7 +63,7 @@ func TestBuild_EmptyNameAllowed(t *testing.T) {
 }
 
 func TestBuild_Success(t *testing.T) {
-	model, err := macro.NewModelBuilder().
+	model, err := macro.NewBuilder().
 		SetId(0).
 		SetName("Test Macro").
 		Build()
@@ -76,7 +76,7 @@ func TestBuild_Success(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	original, err := macro.NewModelBuilder().
+	original, err := macro.NewBuilder().
 		SetId(1).
 		SetName("Original").
 		SetShout(true).
@@ -120,7 +120,7 @@ func TestCloneModel(t *testing.T) {
 }
 
 func TestBuilderFluentChaining(t *testing.T) {
-	model, err := macro.NewModelBuilder().
+	model, err := macro.NewBuilder().
 		SetId(2).
 		SetName("Buff Combo").
 		SetShout(false).
@@ -141,7 +141,7 @@ func TestBuilderFluentChaining(t *testing.T) {
 
 func TestSetSkillIds(t *testing.T) {
 	// Test setting individual skill IDs
-	model, err := macro.NewModelBuilder().
+	model, err := macro.NewBuilder().
 		SetId(3).
 		SetName("Test").
 		SetSkillId1(skill.Id(100)).

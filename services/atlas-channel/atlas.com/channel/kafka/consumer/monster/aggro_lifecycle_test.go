@@ -89,7 +89,7 @@ func TestAggroChangedReissuesControlWithAggroSet(t *testing.T) {
 			}
 			monster.GetLiveMirror().Put(tm, uniqueId, monster.LiveEntry{Field: f, MonsterId: 100100, ControllerHasAggro: !tt.controllerHas})
 
-			m := monster.NewModelBuilder(uniqueId, f, 100100).SetControlCharacterId(7).MustBuild()
+			m := monster.NewBuilder(uniqueId, f, 100100).SetControlCharacterId(7).MustBuild()
 			prevGet := monsterGetByIdFn
 			monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (monster.Model, error) {
 				return m, nil
@@ -198,7 +198,7 @@ func TestStartControlCarriesAggroThroughHandover(t *testing.T) {
 	// builds when the REST fetch fails (consumer.go's fallback branch), so the
 	// reference encoding is computed from the exact same monster.Model.
 	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-	fallback := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
+	fallback := monster.NewBuilder(e.UniqueId, f, e.MonsterId).
 		SetControlCharacterId(e.Body.ActorId).
 		SetX(e.Body.X).SetY(e.Body.Y).
 		SetStance(e.Body.Stance).

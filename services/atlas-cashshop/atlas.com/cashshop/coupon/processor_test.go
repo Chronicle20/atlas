@@ -233,7 +233,7 @@ func (s stubCharacterProcessor) ExtendEquipSlot(_ uint32, _ int16, _ uint16, _ u
 // compartment.TypeExplorer — the type seedCompartment writes.
 func testCharacter(t *testing.T) character.Model {
 	t.Helper()
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(testCharacterId).
 		SetAccountId(testAccountId).
 		SetJobId(job.Id(100)).

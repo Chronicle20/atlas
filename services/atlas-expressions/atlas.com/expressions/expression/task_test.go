@@ -152,7 +152,7 @@ func TestProcessExpiredAppliesEnvContextToRevert(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	ten := setupTestTenant(t)
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	m := NewModelBuilder(ten).SetCharacterId(1000).SetLocation(f).SetExpression(5).SetExpiration(time.Now()).MustBuild()
+	m := NewBuilder(ten).SetCharacterId(1000).SetLocation(f).SetExpression(5).SetExpiration(time.Now()).MustBuild()
 
 	envContext := func(ctx context.Context) context.Context {
 		return context.WithValue(ctx, envMarkerKey("marker"), "stamped")

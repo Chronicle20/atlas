@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type modelBuilder struct {
+type builder struct {
 	id                uint32
 	level             byte
 	masterLevel       byte
@@ -13,12 +13,12 @@ type modelBuilder struct {
 	cooldownExpiresAt time.Time
 }
 
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{}
+func NewBuilder() *builder {
+	return &builder{}
 }
 
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:                m.id,
 		level:             m.level,
 		masterLevel:       m.masterLevel,
@@ -27,32 +27,32 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetId(id uint32) *modelBuilder {
+func (b *builder) SetId(id uint32) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetLevel(level byte) *modelBuilder {
+func (b *builder) SetLevel(level byte) *builder {
 	b.level = level
 	return b
 }
 
-func (b *modelBuilder) SetMasterLevel(masterLevel byte) *modelBuilder {
+func (b *builder) SetMasterLevel(masterLevel byte) *builder {
 	b.masterLevel = masterLevel
 	return b
 }
 
-func (b *modelBuilder) SetExpiration(expiration time.Time) *modelBuilder {
+func (b *builder) SetExpiration(expiration time.Time) *builder {
 	b.expiration = expiration
 	return b
 }
 
-func (b *modelBuilder) SetCooldownExpiresAt(cooldownExpiresAt time.Time) *modelBuilder {
+func (b *builder) SetCooldownExpiresAt(cooldownExpiresAt time.Time) *builder {
 	b.cooldownExpiresAt = cooldownExpiresAt
 	return b
 }
 
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == 0 {
 		return Model{}, ErrMissingId
 	}

@@ -32,7 +32,7 @@ import (
 func TestCatch_ClaimError(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	GetMonsterRegistry().Clear(context.Background())
-	defer withCatchItem(t, consumable.NewModelBuilder().
+	defer withCatchItem(t, consumable.NewBuilder().
 		SetId(2270000).SetMonsterId(9300101).SetCreate(1902000).Build(), nil)()
 
 	uniqueId := spawnCatchable(t, ten, 9300101, 100, 100)
@@ -119,7 +119,7 @@ func eventTypes(events *[]emittedBody) []string {
 func TestCatch_Success(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	GetMonsterRegistry().Clear(context.Background())
-	defer withCatchItem(t, consumable.NewModelBuilder().
+	defer withCatchItem(t, consumable.NewBuilder().
 		SetId(2270000).SetMonsterId(9300101).SetCreate(1902000).Build(), nil)()
 
 	uniqueId := spawnCatchable(t, ten, 9300101, 100, 100)
@@ -150,7 +150,7 @@ func TestCatch_Success(t *testing.T) {
 func TestCatch_SpeciesMismatch(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	GetMonsterRegistry().Clear(context.Background())
-	defer withCatchItem(t, consumable.NewModelBuilder().
+	defer withCatchItem(t, consumable.NewBuilder().
 		SetId(2270000).SetMonsterId(9300101).SetCreate(1902000).Build(), nil)()
 
 	uniqueId := spawnCatchable(t, ten, 9500197, 100, 100)
@@ -193,7 +193,7 @@ func TestCatch_HpGate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 			GetMonsterRegistry().Clear(context.Background())
-			defer withCatchItem(t, consumable.NewModelBuilder().
+			defer withCatchItem(t, consumable.NewBuilder().
 				SetId(2270005).SetMonsterId(9300187).SetCreate(2109001).SetMonsterHp(tc.mobHP).Build(), nil)()
 
 			uniqueId := spawnCatchable(t, ten, 9300187, tc.hp, tc.maxHp)
@@ -217,7 +217,7 @@ func TestCatch_HpGate(t *testing.T) {
 func TestCatch_RollFailed(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	GetMonsterRegistry().Clear(context.Background())
-	defer withCatchItem(t, consumable.NewModelBuilder().
+	defer withCatchItem(t, consumable.NewBuilder().
 		SetId(2270002).SetMonsterId(9300157).SetCreate(4031868).SetBridleProp(50).SetBridlePropChg(1.2).Build(), nil)()
 
 	prevRoll := testCatchRoll
@@ -251,7 +251,7 @@ func TestCatch_RollFailed(t *testing.T) {
 func TestCatch_RollFailed_ComputedZeroChance(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	GetMonsterRegistry().Clear(context.Background())
-	defer withCatchItem(t, consumable.NewModelBuilder().
+	defer withCatchItem(t, consumable.NewBuilder().
 		SetId(2270003).SetMonsterId(9300158).SetCreate(4031869).SetBridleProp(1).SetBridlePropChg(0.2).Build(), nil)()
 
 	rolled := false
@@ -292,7 +292,7 @@ func TestCatch_RollFailed_ComputedZeroChance(t *testing.T) {
 func TestCatch_MonsterGone(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	GetMonsterRegistry().Clear(context.Background())
-	defer withCatchItem(t, consumable.NewModelBuilder().
+	defer withCatchItem(t, consumable.NewBuilder().
 		SetId(2270000).SetMonsterId(9300101).SetCreate(1902000).Build(), nil)()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
@@ -317,7 +317,7 @@ func TestCatch_MonsterGone(t *testing.T) {
 func TestCatch_ConcurrentAttempts_OneCaught(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	GetMonsterRegistry().Clear(context.Background())
-	defer withCatchItem(t, consumable.NewModelBuilder().
+	defer withCatchItem(t, consumable.NewBuilder().
 		SetId(2270000).SetMonsterId(9300101).SetCreate(1902000).Build(), nil)()
 
 	uniqueId := spawnCatchable(t, ten, 9300101, 100, 100)

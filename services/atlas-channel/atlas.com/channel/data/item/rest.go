@@ -38,6 +38,15 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
+// Transform is the inverse of Extract: the model's uint32 template id is
+// re-encoded as the JSON:API resource id decimal string.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:   strconv.FormatUint(uint64(m.itemId), 10),
+		Name: m.name,
+	}, nil
+}
+
 // Extract parses the JSON:API id (the item template id as a decimal string) into
 // the model's uint32 template id.
 func Extract(rm RestModel) (Model, error) {

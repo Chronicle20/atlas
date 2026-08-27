@@ -10,9 +10,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
-func TestNewModelBuilder(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	id := uuid.New()
-	builder := compartment.NewModelBuilder(id, 1, inventory.TypeValueEquip, 24)
+	builder := compartment.NewBuilder(id, 1, inventory.TypeValueEquip, 24)
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -29,7 +29,7 @@ func TestNewBuilder_Alias(t *testing.T) {
 func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
 
-	model, err := compartment.NewModelBuilder(id, 100, inventory.TypeValueEquip, 24).
+	model, err := compartment.NewBuilder(id, 100, inventory.TypeValueEquip, 24).
 		Build()
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
@@ -49,7 +49,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := compartment.NewModelBuilder(uuid.Nil, 100, inventory.TypeValueEquip, 24).
+	_, err := compartment.NewBuilder(uuid.Nil, 100, inventory.TypeValueEquip, 24).
 		Build()
 
 	if !errors.Is(err, compartment.ErrMissingId) {
@@ -60,7 +60,7 @@ func TestBuild_MissingId(t *testing.T) {
 func TestSetCapacity(t *testing.T) {
 	id := uuid.New()
 
-	model, err := compartment.NewModelBuilder(id, 100, inventory.TypeValueEquip, 24).
+	model, err := compartment.NewBuilder(id, 100, inventory.TypeValueEquip, 24).
 		SetCapacity(48).
 		Build()
 	if err != nil {
@@ -74,7 +74,7 @@ func TestSetCapacity(t *testing.T) {
 func TestCloneModel(t *testing.T) {
 	id := uuid.New()
 
-	original, err := compartment.NewModelBuilder(id, 100, inventory.TypeValueEquip, 24).
+	original, err := compartment.NewBuilder(id, 100, inventory.TypeValueEquip, 24).
 		Build()
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
@@ -109,7 +109,7 @@ func TestMustBuild_Success(t *testing.T) {
 	}()
 
 	id := uuid.New()
-	model := compartment.NewModelBuilder(id, 100, inventory.TypeValueEquip, 24).
+	model := compartment.NewBuilder(id, 100, inventory.TypeValueEquip, 24).
 		MustBuild()
 
 	if model.Id() != id {
@@ -124,6 +124,6 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	compartment.NewModelBuilder(uuid.Nil, 100, inventory.TypeValueEquip, 24).
+	compartment.NewBuilder(uuid.Nil, 100, inventory.TypeValueEquip, 24).
 		MustBuild() // Missing ID, should panic
 }

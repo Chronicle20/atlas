@@ -21,7 +21,7 @@ func TestNameChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("OriginalName").
@@ -91,7 +91,7 @@ func TestHairChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("HairTest").
@@ -149,7 +149,7 @@ func TestFaceChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("FaceTest").
@@ -207,7 +207,7 @@ func TestGenderChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("GenderTest").
@@ -265,7 +265,7 @@ func TestSkinColorChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("SkinTest").
@@ -323,7 +323,7 @@ func TestGmChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("GmTest").
@@ -381,7 +381,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("MultiTest").
@@ -459,7 +459,7 @@ func TestProducerFunctionsHandleEmptyStringValues(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("OriginalName").

@@ -16,7 +16,7 @@ func createTestCharacter(id uint32, name string, isGm bool) character.Model {
 	if isGm {
 		gm = 1
 	}
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).

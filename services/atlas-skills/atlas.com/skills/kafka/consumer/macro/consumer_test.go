@@ -17,7 +17,7 @@ import (
 // buildMacro is a test helper that builds a macro and fails the test on error
 func buildMacro(t *testing.T, id uint32, name string, shout bool, skillId1, skillId2, skillId3 skill.Id) macro.Model {
 	t.Helper()
-	m, err := macro.NewModelBuilder().
+	m, err := macro.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetShout(shout).

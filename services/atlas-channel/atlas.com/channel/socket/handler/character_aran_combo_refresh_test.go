@@ -42,7 +42,7 @@ func aranTestCharacter(t *testing.T, id uint32, jobId job.Id, skillId skill3.Id,
 		w := asset.NewBuilder(uuid.New(), weaponTemplateId).SetId(1).MustBuild()
 		eq.Set(slottype.Type("weapon"), equipslot.Model{Equipable: &w})
 	}
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(id).
 		SetJobId(jobId).
 		SetSkills([]skillmodel.Model{sm}).

@@ -117,6 +117,37 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 	}, nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	members := make([]MemberRestModel, 0)
+	for _, mm := range m.members {
+		mrm, err := TransformMember(mm)
+		if err != nil {
+			return RestModel{}, err
+		}
+		members = append(members, mrm)
+	}
+
+	return RestModel{
+		Id:       m.id,
+		LeaderId: m.leaderId,
+		Members:  members,
+	}, nil
+}
+
+func TransformMember(m MemberModel) (MemberRestModel, error) {
+	return MemberRestModel{
+		Id:        m.id,
+		Name:      m.name,
+		Level:     m.level,
+		JobId:     m.jobId,
+		WorldId:   m.field.WorldId(),
+		ChannelId: m.field.ChannelId(),
+		MapId:     m.field.MapId(),
+		Instance:  m.field.Instance(),
+		Online:    m.online,
+	}, nil
+}
+
 type MemberRestModel struct {
 	Id        uint32     `json:"-"`
 	Name      string     `json:"name"`

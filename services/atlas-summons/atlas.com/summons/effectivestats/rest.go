@@ -41,3 +41,14 @@ func Extract(rm RestModel) (Model, error) {
 		magicAttack:  rm.MagicAttack,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Strength:     m.strength,
+		Dexterity:    m.dexterity,
+		Luck:         m.luck,
+		Intelligence: m.intelligence,
+		WeaponAttack: m.weaponAttack,
+		MagicAttack:  m.magicAttack,
+	}, nil
+}

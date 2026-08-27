@@ -13,7 +13,7 @@ func TestProcessorMock_GetMarriageGifts_Success(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
 		GetMarriageGiftsFunc: func(characterId uint32) model.Provider[marriage.Model] {
 			return func() (marriage.Model, error) {
-				return marriage.NewModelBuilder().
+				return marriage.NewBuilder().
 					SetCharacterId(characterId).
 					SetHasUnclaimedGifts(true).
 					Build(), nil

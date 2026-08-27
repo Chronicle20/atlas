@@ -68,15 +68,15 @@ func TestBuildGiftForwardSaga(t *testing.T) {
 // handleNoteGiftForward tests.
 func giftAsset(t *testing.T, cashId int64, giftFrom string, giftNoteSent bool) compartment.Model {
 	t.Helper()
-	i, err := item.NewModelBuilder().SetId(1).SetCashId(cashId).SetTemplateId(5000).Build()
+	i, err := item.NewBuilder().SetId(1).SetCashId(cashId).SetTemplateId(5000).Build()
 	if err != nil {
 		t.Fatalf("item: %v", err)
 	}
-	a, err := asset.NewModelBuilder(1, uuid.New(), i).SetGiftFrom(giftFrom).SetGiftNoteSent(giftNoteSent).Build()
+	a, err := asset.NewBuilder(1, uuid.New(), i).SetGiftFrom(giftFrom).SetGiftNoteSent(giftNoteSent).Build()
 	if err != nil {
 		t.Fatalf("asset: %v", err)
 	}
-	cp, err := compartment.NewModelBuilder(uuid.New(), 900, compartment.TypeExplorer, 100).AddAsset(a).Build()
+	cp, err := compartment.NewBuilder(uuid.New(), 900, compartment.TypeExplorer, 100).AddAsset(a).Build()
 	if err != nil {
 		t.Fatalf("compartment: %v", err)
 	}

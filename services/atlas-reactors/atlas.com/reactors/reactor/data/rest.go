@@ -45,6 +45,53 @@ func (r *RestModel) SetID(strId string) error {
 func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
+// Transform converts a Model into a RestModel. It is the inverse of Extract.
+func Transform(m Model) (RestModel, error) {
+	tl, err := model.Map(point.Transform)(model.FixedProvider(m.tl))()
+	if err != nil {
+		return RestModel{}, err
+	}
+	br, err := model.Map(point.Transform)(model.FixedProvider(m.br))()
+	if err != nil {
+		return RestModel{}, err
+	}
+	si := make(map[int8][]state.RestModel)
+	for k, vs := range m.stateInfo {
+		si[k] = make([]state.RestModel, 0)
+		for _, v := range vs {
+			srm, err := state.Transform(v)
+			if err != nil {
+				return RestModel{}, err
+			}
+
+			si[k] = append(si[k], srm)
+		}
+	}
+
+	var tai map[int8]area.RestModel
+	if m.touchAreaInfo != nil {
+		tai = make(map[int8]area.RestModel)
+		for k, v := range m.touchAreaInfo {
+			arm, err := area.Transform(v)
+			if err != nil {
+				return RestModel{}, err
+			}
+			tai[k] = arm
+		}
+	}
+
+	return RestModel{
+		Name:                 m.name,
+		TL:                   tl,
+		BR:                   br,
+		ActivateByTouch:      m.activateByTouch,
+		TouchAreaInfo:        tai,
+		StateInfo:            si,
+		TimeoutInfo:          m.timeoutInfo,
+		TimeoutNextStateInfo: m.timeoutNextStateInfo,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	tl, err := model.Map(point.Extract)(model.FixedProvider(rm.TL))()
 	if err != nil {

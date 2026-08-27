@@ -41,3 +41,13 @@ func Extract(rm RestModel) (Model, error) {
 		cooldownExpiresAt: rm.CooldownExpiresAt,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                uint32(m.id),
+		Level:             m.level,
+		MasterLevel:       m.masterLevel,
+		Expiration:        m.expiration,
+		CooldownExpiresAt: m.cooldownExpiresAt,
+	}, nil
+}

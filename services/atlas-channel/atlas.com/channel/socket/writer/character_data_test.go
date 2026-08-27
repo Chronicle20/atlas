@@ -22,7 +22,7 @@ func TestBuildCharacterData_MonsterBook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Extract: %v", err)
 	}
-	c := character.NewModelBuilder().
+	c := character.NewBuilder().
 		SetId(99).
 		SetSp("0").
 		SetMonsterBook(monsterbook.NewModel(col, cards)).
@@ -41,7 +41,7 @@ func TestBuildCharacterData_MonsterBook(t *testing.T) {
 func TestBuildCharacterData_TeleportMaps(t *testing.T) {
 	// Bare character.Model{} panics in RemainingSp() (parses the Sp string);
 	// reuse the same builder as TestBuildCharacterData_MonsterBook.
-	c := character.NewModelBuilder().
+	c := character.NewBuilder().
 		SetId(99).
 		SetSp("0").
 		MustBuild()

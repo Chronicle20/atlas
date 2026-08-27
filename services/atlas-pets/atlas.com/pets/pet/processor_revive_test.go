@@ -21,7 +21,7 @@ const waterOfLifeSourceTemplateId = 5180000
 // slot -1 (unsummoned), and an expiration one hour in the past (dried up).
 func driedUpMochi(t *testing.T, p pet.Processor, ownerId uint32) pet.Model {
 	t.Helper()
-	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7100000, 5000008, "Mochi", ownerId).
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewBuilder(0, 7100000, 5000008, "Mochi", ownerId).
 		SetLevel(7).
 		SetCloseness(300).
 		SetFullness(42).
@@ -36,7 +36,7 @@ func driedUpMochi(t *testing.T, p pet.Processor, ownerId uint32) pet.Model {
 func cashMockWithLife(life uint32) *cashmock.ProcessorMock {
 	return &cashmock.ProcessorMock{
 		GetByIdFunc: func(itemId uint32) (cash.Model, error) {
-			return cash.NewModelBuilder(itemId).SetLife(life).Build(), nil
+			return cash.NewBuilder(itemId).SetLife(life).Build(), nil
 		},
 	}
 }

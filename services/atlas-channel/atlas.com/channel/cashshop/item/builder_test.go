@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := item.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := item.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -16,7 +16,7 @@ func TestNewModelBuilder(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	expiration := time.Now().Add(24 * time.Hour)
-	model, err := item.NewModelBuilder().
+	model, err := item.NewBuilder().
 		SetId(1).
 		SetCashId(12345).
 		SetTemplateId(5000000).
@@ -52,7 +52,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := item.NewModelBuilder().
+	_, err := item.NewBuilder().
 		SetCashId(12345).
 		SetTemplateId(5000000).
 		Build()
@@ -63,7 +63,7 @@ func TestBuild_MissingId(t *testing.T) {
 }
 
 func TestBuild_ZeroId(t *testing.T) {
-	_, err := item.NewModelBuilder().
+	_, err := item.NewBuilder().
 		SetId(0).
 		SetTemplateId(5000000).
 		Build()
@@ -74,7 +74,7 @@ func TestBuild_ZeroId(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	original, err := item.NewModelBuilder().
+	original, err := item.NewBuilder().
 		SetId(1).
 		SetCashId(12345).
 		SetTemplateId(5000000).
@@ -118,7 +118,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := item.NewModelBuilder().
+	model := item.NewBuilder().
 		SetId(1).
 		SetTemplateId(5000000).
 		MustBuild()
@@ -135,14 +135,14 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	item.NewModelBuilder().
+	item.NewBuilder().
 		SetTemplateId(5000000).
 		MustBuild() // Missing ID, should panic
 }
 
 func TestBuilderFluentChaining(t *testing.T) {
 	expiration := time.Now().Add(24 * time.Hour)
-	model, err := item.NewModelBuilder().
+	model, err := item.NewBuilder().
 		SetId(1).
 		SetCashId(12345).
 		SetTemplateId(5000000).

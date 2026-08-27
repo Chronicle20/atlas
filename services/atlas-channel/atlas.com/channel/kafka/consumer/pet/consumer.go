@@ -127,7 +127,7 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[pet2.Sta
 			return
 		}
 
-		p := pet.NewModelBuilder(e.PetId, e.Body.CashId, e.Body.TemplateId, e.Body.Name).
+		p := pet.NewBuilder(e.PetId, e.Body.CashId, e.Body.TemplateId, e.Body.Name).
 			SetOwnerID(e.OwnerId).
 			SetSlot(e.Body.Slot).
 			SetLevel(e.Body.Level).
@@ -232,7 +232,7 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 			}
 		})
 		routine.Go(l, ctx, func(_ context.Context) {
-			p := pet.NewModelBuilder(e.PetId, 0, 0, "").
+			p := pet.NewBuilder(e.PetId, 0, 0, "").
 				SetOwnerID(e.OwnerId).
 				SetSlot(e.Body.Slot).
 				SetCloseness(e.Body.Closeness).

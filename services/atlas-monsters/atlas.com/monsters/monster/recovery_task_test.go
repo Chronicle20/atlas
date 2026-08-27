@@ -36,7 +36,7 @@ func TestRecoveryTask_AppliesMpAndEmitsHp(t *testing.T) {
 		interval: MonsterRecoveryInterval,
 		nowFn:    func() int64 { return time.Now().UnixMilli() },
 		infoFn: func(_ tenant.Model, _ uint32) (information.Model, error) {
-			return information.NewModelBuilder().
+			return information.NewBuilder().
 				SetHpRecovery(50).SetMpRecovery(5).Build(), nil
 		},
 		applyFn: r.ApplyRecovery,
@@ -83,7 +83,7 @@ func TestRecoveryTask_SkipsBothZero(t *testing.T) {
 		interval: MonsterRecoveryInterval,
 		nowFn:    func() int64 { return time.Now().UnixMilli() },
 		infoFn: func(_ tenant.Model, _ uint32) (information.Model, error) {
-			return information.NewModelBuilder().Build(), nil // both recoveries 0
+			return information.NewBuilder().Build(), nil // both recoveries 0
 		},
 		applyFn: func(_ tenant.Model, _ uint32, _, _ uint32, _ int64) (Model, bool, bool, error) {
 			applyCalls++
@@ -116,7 +116,7 @@ func TestRecoveryTask_SkipsFullHpAndFullMp(t *testing.T) {
 		nowFn:    func() int64 { return time.Now().UnixMilli() },
 		infoFn: func(_ tenant.Model, _ uint32) (information.Model, error) {
 			infoCalls++
-			return information.NewModelBuilder().SetHpRecovery(10).SetMpRecovery(10).Build(), nil
+			return information.NewBuilder().SetHpRecovery(10).SetMpRecovery(10).Build(), nil
 		},
 		applyFn: r.ApplyRecovery,
 		emitFn:  func(_ tenant.Model, _ Model) error { return nil },
@@ -149,7 +149,7 @@ func TestRecoveryTask_SkipsDeadMob(t *testing.T) {
 		nowFn:    func() int64 { return time.Now().UnixMilli() },
 		infoFn: func(_ tenant.Model, _ uint32) (information.Model, error) {
 			infoCalls++
-			return information.NewModelBuilder().SetHpRecovery(50).SetMpRecovery(5).Build(), nil
+			return information.NewBuilder().SetHpRecovery(50).SetMpRecovery(5).Build(), nil
 		},
 		applyFn: r.ApplyRecovery,
 		emitFn:  func(_ tenant.Model, _ Model) error { return nil },
@@ -183,7 +183,7 @@ func TestRecovery_MpApplied_EmitsMpChanged(t *testing.T) {
 		interval: MonsterRecoveryInterval,
 		nowFn:    func() int64 { return time.Now().UnixMilli() },
 		infoFn: func(_ tenant.Model, _ uint32) (information.Model, error) {
-			return information.NewModelBuilder().SetMpRecovery(10).Build(), nil
+			return information.NewBuilder().SetMpRecovery(10).Build(), nil
 		},
 		applyFn: r.ApplyRecovery,
 		emitFn:  func(_ tenant.Model, _ Model) error { return nil },
@@ -228,7 +228,7 @@ func TestRecovery_MpNotApplied_NoMpChangedEmit(t *testing.T) {
 		infoFn: func(_ tenant.Model, _ uint32) (information.Model, error) {
 			// HP-only recovery: mpRecovery=0 => real ApplyRecovery returns
 			// mpApplied=false.
-			return information.NewModelBuilder().SetHpRecovery(10).Build(), nil
+			return information.NewBuilder().SetHpRecovery(10).Build(), nil
 		},
 		applyFn:  r.ApplyRecovery,
 		emitFn:   func(_ tenant.Model, _ Model) error { return nil },

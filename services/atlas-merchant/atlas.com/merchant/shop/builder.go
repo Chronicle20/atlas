@@ -10,11 +10,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-func NewBuilder() *ModelBuilder {
-	return &ModelBuilder{}
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
-type ModelBuilder struct {
+type Builder struct {
 	id           uuid.UUID
 	characterId  uint32
 	shopType     ShopType
@@ -34,92 +34,92 @@ type ModelBuilder struct {
 	mesoBalance  uint32
 }
 
-func (b *ModelBuilder) SetId(id uuid.UUID) *ModelBuilder {
+func (b *Builder) SetId(id uuid.UUID) *Builder {
 	b.id = id
 	return b
 }
 
-func (b *ModelBuilder) SetCharacterId(characterId uint32) *ModelBuilder {
+func (b *Builder) SetCharacterId(characterId uint32) *Builder {
 	b.characterId = characterId
 	return b
 }
 
-func (b *ModelBuilder) SetShopType(shopType ShopType) *ModelBuilder {
+func (b *Builder) SetShopType(shopType ShopType) *Builder {
 	b.shopType = shopType
 	return b
 }
 
-func (b *ModelBuilder) SetState(state State) *ModelBuilder {
+func (b *Builder) SetState(state State) *Builder {
 	b.state = state
 	return b
 }
 
-func (b *ModelBuilder) SetTitle(title string) *ModelBuilder {
+func (b *Builder) SetTitle(title string) *Builder {
 	b.title = title
 	return b
 }
 
-func (b *ModelBuilder) SetWorldId(worldId world.Id) *ModelBuilder {
+func (b *Builder) SetWorldId(worldId world.Id) *Builder {
 	b.worldId = worldId
 	return b
 }
 
-func (b *ModelBuilder) SetChannelId(channelId channel.Id) *ModelBuilder {
+func (b *Builder) SetChannelId(channelId channel.Id) *Builder {
 	b.channelId = channelId
 	return b
 }
 
-func (b *ModelBuilder) SetMapId(mapId uint32) *ModelBuilder {
+func (b *Builder) SetMapId(mapId uint32) *Builder {
 	b.mapId = mapId
 	return b
 }
 
-func (b *ModelBuilder) SetInstanceId(instanceId uuid.UUID) *ModelBuilder {
+func (b *Builder) SetInstanceId(instanceId uuid.UUID) *Builder {
 	b.instanceId = instanceId
 	return b
 }
 
-func (b *ModelBuilder) SetX(x int16) *ModelBuilder {
+func (b *Builder) SetX(x int16) *Builder {
 	b.x = x
 	return b
 }
 
-func (b *ModelBuilder) SetY(y int16) *ModelBuilder {
+func (b *Builder) SetY(y int16) *Builder {
 	b.y = y
 	return b
 }
 
-func (b *ModelBuilder) SetPermitItemId(permitItemId uint32) *ModelBuilder {
+func (b *Builder) SetPermitItemId(permitItemId uint32) *Builder {
 	b.permitItemId = permitItemId
 	return b
 }
 
-func (b *ModelBuilder) SetCreatedAt(createdAt time.Time) *ModelBuilder {
+func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
 	b.createdAt = createdAt
 	return b
 }
 
-func (b *ModelBuilder) SetExpiresAt(expiresAt *time.Time) *ModelBuilder {
+func (b *Builder) SetExpiresAt(expiresAt *time.Time) *Builder {
 	b.expiresAt = expiresAt
 	return b
 }
 
-func (b *ModelBuilder) SetClosedAt(closedAt *time.Time) *ModelBuilder {
+func (b *Builder) SetClosedAt(closedAt *time.Time) *Builder {
 	b.closedAt = closedAt
 	return b
 }
 
-func (b *ModelBuilder) SetCloseReason(closeReason CloseReason) *ModelBuilder {
+func (b *Builder) SetCloseReason(closeReason CloseReason) *Builder {
 	b.closeReason = closeReason
 	return b
 }
 
-func (b *ModelBuilder) SetMesoBalance(mesoBalance uint32) *ModelBuilder {
+func (b *Builder) SetMesoBalance(mesoBalance uint32) *Builder {
 	b.mesoBalance = mesoBalance
 	return b
 }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.id == uuid.Nil {
 		return Model{}, errors.New("id is required")
 	}
@@ -153,8 +153,8 @@ func (b *ModelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func Clone(m Model) *Builder {
+	return &Builder{
 		id:           m.id,
 		characterId:  m.characterId,
 		shopType:     m.shopType,

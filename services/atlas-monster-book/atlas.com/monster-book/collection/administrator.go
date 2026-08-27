@@ -27,7 +27,7 @@ type statsUpdate struct {
 // AssignmentColumns clause omits cover_card_id so any pre-existing cover is
 // preserved.
 func upsertStats(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, s statsUpdate) (bool, error) {
-	m, err := NewModelBuilder().
+	m, err := NewBuilder().
 		SetTenantId(tenantId).
 		SetCharacterId(characterId).
 		SetNormalCount(s.NormalCount).

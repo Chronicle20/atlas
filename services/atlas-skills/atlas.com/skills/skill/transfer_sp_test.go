@@ -155,7 +155,7 @@ func mustCreateMacro(t *testing.T, mp macro.Processor, characterId uint32, macro
 
 func buildMacro(t *testing.T, id uint32, name string, skillId1, skillId2, skillId3 uint32) macro.Model {
 	t.Helper()
-	m, err := macro.NewModelBuilder().
+	m, err := macro.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetShout(false).

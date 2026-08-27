@@ -6,7 +6,7 @@ import (
 )
 
 func TestValidationContext_MaxPetClosenessForTemplates(t *testing.T) {
-	char := character.NewModelBuilder().SetId(123).Build()
+	char := character.NewBuilder().SetId(123).Build()
 	ctx := NewValidationContextBuilder(char).
 		SetSpawnedPets([]SpawnedPet{
 			{TemplateId: 5000029, Closeness: 1700},

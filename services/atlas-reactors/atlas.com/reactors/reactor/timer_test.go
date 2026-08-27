@@ -42,7 +42,7 @@ func TestScheduleStateTimeout_FiresAndTransitions(t *testing.T) {
 	d := timerTestData(t, 50) // 50ms
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 9101000, "moon-bunny").
+	builder := NewBuilder(ten, f, 9101000, "moon-bunny").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, err := GetRegistry().Create(ten, builder)
 	if err != nil {
@@ -76,7 +76,7 @@ func TestCancelStateTimeout_StopsPendingFire(t *testing.T) {
 	d := timerTestData(t, 200) // long enough to cancel before fire
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 9101000, "moon-bunny").
+	builder := NewBuilder(ten, f, 9101000, "moon-bunny").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, _ := GetRegistry().Create(ten, builder)
 
@@ -126,7 +126,7 @@ func TestHit_CancelsPendingStateTimer(t *testing.T) {
 	}
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 9999, "test").
+	builder := NewBuilder(ten, f, 9999, "test").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(m)
 	created, _ := GetRegistry().Create(ten, builder)
 	scheduleStateTimeout(l, ctx, created) // Arm the timer manually since we created via the registry directly.
@@ -161,7 +161,7 @@ func TestDestroy_CancelsPendingStateTimer(t *testing.T) {
 	d := timerTestData(t, 100)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 9101000, "moon-bunny").
+	builder := NewBuilder(ten, f, 9101000, "moon-bunny").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, _ := GetRegistry().Create(ten, builder)
 	scheduleStateTimeout(l, ctx, created) // Arm the timer manually since we created via the registry directly.
@@ -204,7 +204,7 @@ func TestScheduleStateTimeout_ReArmsForNewState(t *testing.T) {
 	}
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 9101000, "chained").
+	builder := NewBuilder(ten, f, 9101000, "chained").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(m)
 	created, _ := GetRegistry().Create(ten, builder)
 

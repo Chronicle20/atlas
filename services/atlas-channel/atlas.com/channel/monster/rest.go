@@ -59,6 +59,39 @@ func (m RestModel) GetName() string {
 	return "monsters"
 }
 
+func Transform(m Model) (RestModel, error) {
+	ses := make([]StatusEffectRestModel, 0, len(m.statusEffects))
+	for _, se := range m.statusEffects {
+		ses = append(ses, StatusEffectRestModel{
+			SourceSkillId:    se.SourceSkillId(),
+			SourceSkillLevel: se.SourceSkillLevel(),
+			Statuses:         se.Statuses(),
+			ExpiresAt:        se.ExpiresAt().UnixMilli(),
+		})
+	}
+
+	return RestModel{
+		Id:                 strconv.Itoa(int(m.uniqueId)),
+		WorldId:            m.field.WorldId(),
+		ChannelId:          m.field.ChannelId(),
+		MapId:              m.field.MapId(),
+		Instance:           m.field.Instance(),
+		MonsterId:          m.monsterId,
+		ControlCharacterId: m.controlCharacterId,
+		ControllerHasAggro: m.controllerHasAggro,
+		X:                  m.x,
+		Y:                  m.y,
+		Fh:                 m.fh,
+		Stance:             m.stance,
+		Team:               m.team,
+		MaxHp:              m.maxHp,
+		Hp:                 m.hp,
+		MaxMp:              m.maxMp,
+		Mp:                 m.mp,
+		StatusEffects:      ses,
+	}, nil
+}
+
 func Extract(m RestModel) (Model, error) {
 	id, err := strconv.Atoi(m.Id)
 	if err != nil {

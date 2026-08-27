@@ -8,11 +8,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewBuilder() *ModelBuilder {
-	return &ModelBuilder{}
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
-type ModelBuilder struct {
+type Builder struct {
 	id               uuid.UUID
 	shopId           uuid.UUID
 	itemId           uint32
@@ -27,67 +27,67 @@ type ModelBuilder struct {
 	listedAt         time.Time
 }
 
-func (b *ModelBuilder) SetId(id uuid.UUID) *ModelBuilder {
+func (b *Builder) SetId(id uuid.UUID) *Builder {
 	b.id = id
 	return b
 }
 
-func (b *ModelBuilder) SetShopId(shopId uuid.UUID) *ModelBuilder {
+func (b *Builder) SetShopId(shopId uuid.UUID) *Builder {
 	b.shopId = shopId
 	return b
 }
 
-func (b *ModelBuilder) SetItemId(itemId uint32) *ModelBuilder {
+func (b *Builder) SetItemId(itemId uint32) *Builder {
 	b.itemId = itemId
 	return b
 }
 
-func (b *ModelBuilder) SetItemType(itemType byte) *ModelBuilder {
+func (b *Builder) SetItemType(itemType byte) *Builder {
 	b.itemType = itemType
 	return b
 }
 
-func (b *ModelBuilder) SetQuantity(quantity uint16) *ModelBuilder {
+func (b *Builder) SetQuantity(quantity uint16) *Builder {
 	b.quantity = quantity
 	return b
 }
 
-func (b *ModelBuilder) SetBundleSize(bundleSize uint16) *ModelBuilder {
+func (b *Builder) SetBundleSize(bundleSize uint16) *Builder {
 	b.bundleSize = bundleSize
 	return b
 }
 
-func (b *ModelBuilder) SetBundlesRemaining(bundlesRemaining uint16) *ModelBuilder {
+func (b *Builder) SetBundlesRemaining(bundlesRemaining uint16) *Builder {
 	b.bundlesRemaining = bundlesRemaining
 	return b
 }
 
-func (b *ModelBuilder) SetPricePerBundle(pricePerBundle uint32) *ModelBuilder {
+func (b *Builder) SetPricePerBundle(pricePerBundle uint32) *Builder {
 	b.pricePerBundle = pricePerBundle
 	return b
 }
 
-func (b *ModelBuilder) SetItemSnapshot(itemSnapshot asset.AssetData) *ModelBuilder {
+func (b *Builder) SetItemSnapshot(itemSnapshot asset.AssetData) *Builder {
 	b.itemSnapshot = itemSnapshot
 	return b
 }
 
-func (b *ModelBuilder) SetDisplayOrder(displayOrder uint16) *ModelBuilder {
+func (b *Builder) SetDisplayOrder(displayOrder uint16) *Builder {
 	b.displayOrder = displayOrder
 	return b
 }
 
-func (b *ModelBuilder) SetVersion(version uint32) *ModelBuilder {
+func (b *Builder) SetVersion(version uint32) *Builder {
 	b.version = version
 	return b
 }
 
-func (b *ModelBuilder) SetListedAt(listedAt time.Time) *ModelBuilder {
+func (b *Builder) SetListedAt(listedAt time.Time) *Builder {
 	b.listedAt = listedAt
 	return b
 }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.id == uuid.Nil {
 		return Model{}, errors.New("id is required")
 	}
@@ -116,8 +116,8 @@ func (b *ModelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func Clone(m Model) *Builder {
+	return &Builder{
 		id:               m.id,
 		shopId:           m.shopId,
 		itemId:           m.itemId,

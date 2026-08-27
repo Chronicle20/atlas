@@ -105,6 +105,24 @@ func (r *PicAttemptOutputRestModel) SetID(idStr string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:        strconv.FormatUint(uint64(m.id), 10),
+		Name:      m.name,
+		Password:  m.password,
+		Pin:       m.pin,
+		Pic:       m.pic,
+		BirthDate: m.birthDate,
+		LoggedIn:  byte(m.loggedIn),
+		LastLogin: m.lastLogin,
+		Gender:    m.gender,
+		Banned:    m.banned,
+		TOS:       m.tos,
+		Language:  m.language,
+		Country:   m.country,
+	}, nil
+}
+
 func Extract(body RestModel) (Model, error) {
 	id, err := strconv.ParseUint(body.Id, 10, 32)
 	if err != nil {

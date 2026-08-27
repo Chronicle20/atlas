@@ -39,7 +39,7 @@ func (r *Registry) add(ctx context.Context, characterId uint32, f field.Model, e
 	t := tenant.MustFromContext(ctx)
 	expiration := time.Now().Add(defaultTTL)
 
-	e := NewModelBuilder(t).
+	e := NewBuilder(t).
 		SetCharacterId(characterId).
 		SetLocation(f).
 		SetExpression(expression).

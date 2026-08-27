@@ -7,11 +7,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewBuilder() *ModelBuilder {
-	return &ModelBuilder{}
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
-type ModelBuilder struct {
+type Builder struct {
 	id          uuid.UUID
 	shopId      uuid.UUID
 	characterId uint32
@@ -19,32 +19,32 @@ type ModelBuilder struct {
 	sentAt      time.Time
 }
 
-func (b *ModelBuilder) SetId(id uuid.UUID) *ModelBuilder {
+func (b *Builder) SetId(id uuid.UUID) *Builder {
 	b.id = id
 	return b
 }
 
-func (b *ModelBuilder) SetShopId(shopId uuid.UUID) *ModelBuilder {
+func (b *Builder) SetShopId(shopId uuid.UUID) *Builder {
 	b.shopId = shopId
 	return b
 }
 
-func (b *ModelBuilder) SetCharacterId(characterId uint32) *ModelBuilder {
+func (b *Builder) SetCharacterId(characterId uint32) *Builder {
 	b.characterId = characterId
 	return b
 }
 
-func (b *ModelBuilder) SetContent(content string) *ModelBuilder {
+func (b *Builder) SetContent(content string) *Builder {
 	b.content = content
 	return b
 }
 
-func (b *ModelBuilder) SetSentAt(sentAt time.Time) *ModelBuilder {
+func (b *Builder) SetSentAt(sentAt time.Time) *Builder {
 	b.sentAt = sentAt
 	return b
 }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.id == uuid.Nil {
 		return Model{}, errors.New("id is required")
 	}

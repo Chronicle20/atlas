@@ -29,3 +29,12 @@ func Extract(rm RestModel) (Model, error) {
 		questExpRate: rm.QuestExpRate,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		ExpRate:      m.expRate,
+		MesoRate:     m.mesoRate,
+		ItemDropRate: m.itemDropRate,
+		QuestExpRate: m.questExpRate,
+	}, nil
+}

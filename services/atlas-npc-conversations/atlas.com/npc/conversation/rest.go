@@ -358,15 +358,24 @@ func TransformState(m StateModel) (RestStateModel, error) {
 	return restState, nil
 }
 
+// TransformChoice converts a ChoiceModel to a RestChoiceModel
+func TransformChoice(m ChoiceModel) (RestChoiceModel, error) {
+	return RestChoiceModel{
+		Text:      m.text,
+		NextState: m.nextState,
+		Context:   m.context,
+	}, nil
+}
+
 // TransformDialogue converts a DialogueModel to a RestDialogueModel
 func TransformDialogue(m DialogueModel) (RestDialogueModel, error) {
 	restChoices := make([]RestChoiceModel, 0, len(m.Choices()))
 	for _, choice := range m.Choices() {
-		restChoices = append(restChoices, RestChoiceModel{
-			Text:      choice.Text(),
-			NextState: choice.NextState(),
-			Context:   choice.Context(),
-		})
+		restChoice, err := TransformChoice(choice)
+		if err != nil {
+			return RestDialogueModel{}, err
+		}
+		restChoices = append(restChoices, restChoice)
 	}
 
 	endChat := m.EndChat()
@@ -384,41 +393,58 @@ func TransformDialogue(m DialogueModel) (RestDialogueModel, error) {
 func TransformGenericAction(m GenericActionModel) (RestGenericActionModel, error) {
 	restOperations := make([]RestOperationModel, 0, len(m.Operations()))
 	for _, operation := range m.Operations() {
-		restOperations = append(restOperations, RestOperationModel{
-			OperationType: operation.Type(),
-			Params:        operation.Params(),
-		})
+		restOperation, err := TransformOperation(operation)
+		if err != nil {
+			return RestGenericActionModel{}, err
+		}
+		restOperations = append(restOperations, restOperation)
 	}
 
 	restOutcomes := make([]RestOutcomeModel, 0, len(m.Outcomes()))
 	for _, outcome := range m.Outcomes() {
-		// Convert ConditionModel to RestConditionModel
-		restConditions := make([]RestConditionModel, 0, len(outcome.Conditions()))
-		for _, condition := range outcome.Conditions() {
-			var referenceIdStr string
-			if condition.ReferenceId() != 0 {
-				referenceIdStr = strconv.FormatUint(uint64(condition.ReferenceId()), 10)
-			}
-
-			restConditions = append(restConditions, RestConditionModel{
-				Type:            condition.Type(),
-				Operator:        condition.Operator(),
-				Value:           condition.Value(),
-				ReferenceId:     referenceIdStr,
-				Step:            condition.Step(),
-				IncludeEquipped: condition.IncludeEquipped(),
-			})
+		restOutcome, err := TransformOutcome(outcome)
+		if err != nil {
+			return RestGenericActionModel{}, err
 		}
-
-		restOutcomes = append(restOutcomes, RestOutcomeModel{
-			Conditions: restConditions,
-			NextState:  outcome.NextState(),
-		})
+		restOutcomes = append(restOutcomes, restOutcome)
 	}
 
 	return RestGenericActionModel{
 		Operations: restOperations,
 		Outcomes:   restOutcomes,
+	}, nil
+}
+
+// TransformOperation converts an OperationModel to a RestOperationModel
+func TransformOperation(m OperationModel) (RestOperationModel, error) {
+	return RestOperationModel{
+		OperationType: m.operationType,
+		Params:        m.params,
+	}, nil
+}
+
+// TransformOutcome converts an OutcomeModel to a RestOutcomeModel
+func TransformOutcome(m OutcomeModel) (RestOutcomeModel, error) {
+	restConditions := make([]RestConditionModel, 0, len(m.conditions))
+	for _, condition := range m.conditions {
+		var referenceIdStr string
+		if condition.ReferenceId() != 0 {
+			referenceIdStr = strconv.FormatUint(uint64(condition.ReferenceId()), 10)
+		}
+
+		restConditions = append(restConditions, RestConditionModel{
+			Type:            condition.Type(),
+			Operator:        condition.Operator(),
+			Value:           condition.Value(),
+			ReferenceId:     referenceIdStr,
+			Step:            condition.Step(),
+			IncludeEquipped: condition.IncludeEquipped(),
+		})
+	}
+
+	return RestOutcomeModel{
+		Conditions: restConditions,
+		NextState:  m.nextState,
 	}, nil
 }
 
@@ -512,18 +538,27 @@ func TransformAskSlideMenu(m AskSlideMenuModel) RestAskSlideMenuModel {
 func TransformOptionSet(m OptionSetModel) (RestOptionSetModel, error) {
 	restOptions := make([]RestOptionModel, 0, len(m.Options()))
 	for _, option := range m.Options() {
-		restOptions = append(restOptions, RestOptionModel{
-			Id:         option.Id(),
-			Name:       option.Name(),
-			Materials:  option.Materials(),
-			Quantities: option.Quantities(),
-			Meso:       option.Meso(),
-		})
+		restOption, err := TransformOption(option)
+		if err != nil {
+			return RestOptionSetModel{}, err
+		}
+		restOptions = append(restOptions, restOption)
 	}
 
 	return RestOptionSetModel{
 		Id:      m.Id(),
 		Options: restOptions,
+	}, nil
+}
+
+// TransformOption converts an OptionModel to a RestOptionModel
+func TransformOption(m OptionModel) (RestOptionModel, error) {
+	return RestOptionModel{
+		Id:         m.id,
+		Name:       m.name,
+		Materials:  m.materials,
+		Quantities: m.quantities,
+		Meso:       m.meso,
 	}, nil
 }
 

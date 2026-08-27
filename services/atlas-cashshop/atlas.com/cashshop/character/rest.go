@@ -87,6 +87,44 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 	return nil
 }
 
+// Transform converts a domain Model into its RestModel. Model.equipment and
+// Model.inventory have no RestModel counterpart (this resource does not
+// serialize them) and are intentionally omitted.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                 m.id,
+		AccountId:          m.accountId,
+		WorldId:            m.worldId,
+		Name:               m.name,
+		Level:              m.level,
+		Experience:         m.experience,
+		GachaponExperience: m.gachaponExperience,
+		Strength:           m.strength,
+		Dexterity:          m.dexterity,
+		Intelligence:       m.intelligence,
+		Luck:               m.luck,
+		Hp:                 m.hp,
+		MaxHp:              m.maxHp,
+		Mp:                 m.mp,
+		MaxMp:              m.maxMp,
+		Meso:               m.meso,
+		HpMpUsed:           m.hpMpUsed,
+		JobId:              m.jobId,
+		SkinColor:          m.skinColor,
+		Gender:             m.gender,
+		Fame:               m.fame,
+		Hair:               m.hair,
+		Face:               m.face,
+		Ap:                 m.ap,
+		Sp:                 m.sp,
+		SpawnPoint:         m.spawnPoint,
+		Gm:                 m.gm,
+		X:                  m.x,
+		Y:                  m.y,
+		Stance:             m.stance,
+	}, nil
+}
+
 func Extract(m RestModel) (Model, error) {
 	return Model{
 		id:                 m.Id,

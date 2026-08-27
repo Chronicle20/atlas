@@ -281,7 +281,7 @@ func TestByWorldFilter(t *testing.T) {
 	filter := channel.ByWorldFilter(5)
 
 	// Create a channel for world 5
-	ch1, _ := channel.NewModelBuilder().
+	ch1, _ := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetWorldId(5).
 		SetIpAddress("192.168.1.1").
@@ -290,7 +290,7 @@ func TestByWorldFilter(t *testing.T) {
 		Build()
 
 	// Create a channel for world 3
-	ch2, _ := channel.NewModelBuilder().
+	ch2, _ := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetWorldId(3).
 		SetIpAddress("192.168.1.2").

@@ -8,7 +8,7 @@ import (
 
 var ErrInvalidId = errors.New("pet id must be greater than 0")
 
-type modelBuilder struct {
+type builder struct {
 	id         uint32
 	cashId     uint64
 	templateId uint32
@@ -28,9 +28,9 @@ type modelBuilder struct {
 	purchaseBy uint32
 }
 
-// NewModelBuilder creates a new builder instance with required fields
-func NewModelBuilder(id uint32, cashId uint64, templateId uint32, name string) *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new builder instance with required fields
+func NewBuilder(id uint32, cashId uint64, templateId uint32, name string) *builder {
+	return &builder{
 		id:         id,
 		cashId:     cashId,
 		templateId: templateId,
@@ -40,8 +40,8 @@ func NewModelBuilder(id uint32, cashId uint64, templateId uint32, name string) *
 }
 
 // CloneModel creates a builder initialized with the Model's values
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:         m.id,
 		cashId:     m.cashId,
 		templateId: m.templateId,
@@ -62,73 +62,73 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetLevel(level byte) *modelBuilder {
+func (b *builder) SetLevel(level byte) *builder {
 	b.level = level
 	return b
 }
 
-func (b *modelBuilder) SetCloseness(closeness uint16) *modelBuilder {
+func (b *builder) SetCloseness(closeness uint16) *builder {
 	b.closeness = closeness
 	return b
 }
 
-func (b *modelBuilder) SetFullness(fullness byte) *modelBuilder {
+func (b *builder) SetFullness(fullness byte) *builder {
 	b.fullness = fullness
 	return b
 }
 
-func (b *modelBuilder) SetExpiration(expiration time.Time) *modelBuilder {
+func (b *builder) SetExpiration(expiration time.Time) *builder {
 	b.expiration = expiration
 	return b
 }
 
-func (b *modelBuilder) SetOwnerID(ownerId uint32) *modelBuilder {
+func (b *builder) SetOwnerID(ownerId uint32) *builder {
 	b.ownerId = ownerId
 	return b
 }
 
-func (b *modelBuilder) SetSlot(slot int8) *modelBuilder {
+func (b *builder) SetSlot(slot int8) *builder {
 	b.slot = slot
 	return b
 }
 
-func (b *modelBuilder) SetX(x int16) *modelBuilder {
+func (b *builder) SetX(x int16) *builder {
 	b.x = x
 	return b
 }
 
-func (b *modelBuilder) SetY(y int16) *modelBuilder {
+func (b *builder) SetY(y int16) *builder {
 	b.y = y
 	return b
 }
 
-func (b *modelBuilder) SetStance(stance byte) *modelBuilder {
+func (b *builder) SetStance(stance byte) *builder {
 	b.stance = stance
 	return b
 }
 
-func (b *modelBuilder) SetExcludes(excludes []exclude.Model) *modelBuilder {
+func (b *builder) SetExcludes(excludes []exclude.Model) *builder {
 	b.excludes = excludes
 	return b
 }
 
-func (b *modelBuilder) SetFoothold(fh int16) *modelBuilder {
+func (b *builder) SetFoothold(fh int16) *builder {
 	b.fh = fh
 	return b
 }
 
-func (b *modelBuilder) SetFlag(flag uint16) *modelBuilder {
+func (b *builder) SetFlag(flag uint16) *builder {
 	b.flag = flag
 	return b
 }
 
-func (b *modelBuilder) SetPurchaseBy(purchaseBy uint32) *modelBuilder {
+func (b *builder) SetPurchaseBy(purchaseBy uint32) *builder {
 	b.purchaseBy = purchaseBy
 	return b
 }
 
 // Build creates a new Model instance with validation
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == 0 {
 		return Model{}, ErrInvalidId
 	}
@@ -154,7 +154,7 @@ func (b *modelBuilder) Build() (Model, error) {
 }
 
 // MustBuild creates a new Model instance, panicking on validation error
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

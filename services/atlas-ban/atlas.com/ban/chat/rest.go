@@ -44,3 +44,13 @@ func Extract(rm RestModel) (Model, error) {
 		text:       rm.Text,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Timestamp:  m.timestamp,
+		SenderId:   m.senderId,
+		SenderName: m.senderName,
+		ChatType:   m.chatType,
+		Text:       m.text,
+	}, nil
+}

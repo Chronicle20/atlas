@@ -32,6 +32,23 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// Transform converts the immutable domain Model into the wire RestModel.
+func Transform(m Model) RestModel {
+	return RestModel{
+		ListingFee:        m.listingFee,
+		CommissionRate:    m.commissionRate,
+		CommissionBase:    m.commissionBase,
+		MaxActiveListings: m.maxActiveListings,
+		MinLevel:          m.minLevel,
+		AuctionMinHours:   m.auctionMinHours,
+		AuctionMaxHours:   m.auctionMaxHours,
+		FixedSaleHours:    m.fixedSaleHours,
+		PriceFloor:        m.priceFloor,
+		PageSize:          m.pageSize,
+		MinBidIncrement:   m.minBidIncrement,
+	}
+}
+
 // Extract converts the fetched RestModel into the immutable domain Model,
 // substituting the default for any knob left at its zero value.
 func Extract(r RestModel) Model {

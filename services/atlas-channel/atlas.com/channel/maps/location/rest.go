@@ -41,3 +41,15 @@ func (r *RestModel) SetID(s string) error {
 
 func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// Transform maps a Model to its RestModel wire representation.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:        m.characterId,
+		WorldId:   m.worldId,
+		ChannelId: m.channelId,
+		MapId:     m.mapId,
+		Instance:  m.instance,
+		State:     string(m.state),
+	}, nil
+}

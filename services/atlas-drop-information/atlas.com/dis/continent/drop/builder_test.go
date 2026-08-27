@@ -6,11 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewContinentDropBuilder(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	tenantId := uuid.New()
 	id := uint32(123)
 
-	builder := NewContinentDropBuilder(tenantId, id)
+	builder := NewBuilder(tenantId, id)
 
 	if builder == nil {
 		t.Fatal("Expected builder to be non-nil")
@@ -30,10 +30,10 @@ func TestNewContinentDropBuilder(t *testing.T) {
 	}
 }
 
-func TestContinentDropBuilderFluentAPI(t *testing.T) {
+func TestBuilderFluentAPI(t *testing.T) {
 	tenantId := uuid.New()
 
-	model, err := NewContinentDropBuilder(tenantId, 0).
+	model, err := NewBuilder(tenantId, 0).
 		SetContinentId(-1).
 		SetItemId(4001126).
 		SetMinimumQuantity(1).
@@ -70,10 +70,10 @@ func TestContinentDropBuilderFluentAPI(t *testing.T) {
 	}
 }
 
-func TestContinentDropBuilderDefaults(t *testing.T) {
+func TestBuilderDefaults(t *testing.T) {
 	tenantId := uuid.New()
 
-	model, err := NewContinentDropBuilder(tenantId, 0).Build()
+	model, err := NewBuilder(tenantId, 0).Build()
 	if err != nil {
 		t.Fatalf("Build() returned unexpected error: %v", err)
 	}
@@ -104,18 +104,18 @@ func TestContinentDropBuilderDefaults(t *testing.T) {
 	}
 }
 
-func TestContinentDropBuilderValidation_NilTenantId(t *testing.T) {
-	_, err := NewContinentDropBuilder(uuid.Nil, 0).Build()
+func TestBuilderValidation_NilTenantId(t *testing.T) {
+	_, err := NewBuilder(uuid.Nil, 0).Build()
 	if err == nil {
 		t.Error("Expected error for nil tenantId, got nil")
 	}
 }
 
-func TestContinentDropBuilderNegativeContinentId(t *testing.T) {
+func TestBuilderNegativeContinentId(t *testing.T) {
 	tenantId := uuid.New()
 
 	// Test that negative continent IDs work (they are valid, e.g., -1 for global)
-	model, err := NewContinentDropBuilder(tenantId, 0).
+	model, err := NewBuilder(tenantId, 0).
 		SetContinentId(-1).
 		Build()
 	if err != nil {
@@ -127,9 +127,9 @@ func TestContinentDropBuilderNegativeContinentId(t *testing.T) {
 	}
 }
 
-func TestContinentDropBuilderChaining(t *testing.T) {
+func TestBuilderChaining(t *testing.T) {
 	tenantId := uuid.New()
-	builder := NewContinentDropBuilder(tenantId, 0)
+	builder := NewBuilder(tenantId, 0)
 
 	// Test that each setter returns the builder for chaining
 	result := builder.SetContinentId(-1)

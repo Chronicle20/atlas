@@ -1,6 +1,9 @@
 package configuration
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestExtractFoldsZeroKnobsToDefaults(t *testing.T) {
 	m := Extract(RestModel{})
@@ -45,5 +48,21 @@ func TestIsMapBlockedMirrorsClientArithmetic(t *testing.T) {
 	}
 	if m.IsMapBlocked(104040000) {
 		t.Error("an ordinary field must not be blocked")
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		maxPerMap:          3,
+		maxMessageLength:   40,
+		blockedMapPrefixes: []uint32{91, 92},
+	}
+
+	rm := Transform(m)
+
+	got := Extract(rm)
+
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip mismatch. Expected %+v, got %+v", m, got)
 	}
 }

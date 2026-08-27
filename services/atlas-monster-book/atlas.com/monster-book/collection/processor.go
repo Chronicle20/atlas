@@ -104,7 +104,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId character.Id) (Model, error
 	m, err := entityModelMapper(byCharacterIdEntityProvider(p.t.Id(), characterId)(p.db.WithContext(p.ctx)))()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return NewModelBuilder().
+			return NewBuilder().
 				SetTenantId(p.t.Id()).
 				SetCharacterId(characterId).
 				SetBookLevel(1).

@@ -23,6 +23,17 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// Transform is the inverse of Extract.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:        strconv.Itoa(int(m.id)),
+		Name:      m.name,
+		TrunkPut:  m.trunkPut,
+		TrunkGet:  m.trunkGet,
+		Storebank: m.storebank,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	id, err := strconv.Atoi(rm.Id)
 	if err != nil {

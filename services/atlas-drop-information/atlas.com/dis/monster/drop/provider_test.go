@@ -52,7 +52,7 @@ func TestMonsterDropAdministrator_BulkCreate_RowsLandUnderContextTenant(t *testi
 	db := databasetest.NewInMemoryTenantDB(t, Migration)
 	tidA := uuid.New()
 
-	mdl, err := NewMonsterDropBuilder(tidA, 0).
+	mdl, err := NewBuilder(tidA, 0).
 		SetMonsterId(100).
 		SetItemId(2000000).
 		SetChance(1000).

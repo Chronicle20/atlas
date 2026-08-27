@@ -4,7 +4,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
-type modelBuilder struct {
+type builder struct {
 	id      uint32
 	members []MemberModel
 }
@@ -12,14 +12,14 @@ type modelBuilder struct {
 // NewBuilder returns a party model builder. The production path builds
 // through Extract over the REST response; this exists for tests and any
 // in-process construction.
-func NewBuilder() *modelBuilder {
-	return &modelBuilder{members: make([]MemberModel, 0)}
+func NewBuilder() *builder {
+	return &builder{members: make([]MemberModel, 0)}
 }
 
-func (b *modelBuilder) SetId(v uint32) *modelBuilder             { b.id = v; return b }
-func (b *modelBuilder) SetMembers(v []MemberModel) *modelBuilder { b.members = v; return b }
+func (b *builder) SetId(v uint32) *builder             { b.id = v; return b }
+func (b *builder) SetMembers(v []MemberModel) *builder { b.members = v; return b }
 
-func (b *modelBuilder) Build() Model {
+func (b *builder) Build() Model {
 	return Model{
 		id:      b.id,
 		members: b.members,

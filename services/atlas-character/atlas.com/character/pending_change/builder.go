@@ -8,7 +8,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-type modelBuilder struct {
+type builder struct {
 	id                 uuid.UUID
 	characterId        uint32
 	changeType         string
@@ -26,82 +26,82 @@ type modelBuilder struct {
 	notifiedAt         *time.Time
 }
 
-func NewBuilder() *modelBuilder {
-	return &modelBuilder{}
+func NewBuilder() *builder {
+	return &builder{}
 }
 
-func (b *modelBuilder) SetId(id uuid.UUID) *modelBuilder {
+func (b *builder) SetId(id uuid.UUID) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetCharacterId(characterId uint32) *modelBuilder {
+func (b *builder) SetCharacterId(characterId uint32) *builder {
 	b.characterId = characterId
 	return b
 }
 
-func (b *modelBuilder) SetType(changeType string) *modelBuilder {
+func (b *builder) SetType(changeType string) *builder {
 	b.changeType = changeType
 	return b
 }
 
-func (b *modelBuilder) SetStatus(status string) *modelBuilder {
+func (b *builder) SetStatus(status string) *builder {
 	b.status = status
 	return b
 }
 
-func (b *modelBuilder) SetRequestedName(requestedName string) *modelBuilder {
+func (b *builder) SetRequestedName(requestedName string) *builder {
 	b.requestedName = requestedName
 	return b
 }
 
-func (b *modelBuilder) SetDestinationWorldId(destinationWorldId world.Id) *modelBuilder {
+func (b *builder) SetDestinationWorldId(destinationWorldId world.Id) *builder {
 	b.destinationWorldId = destinationWorldId
 	return b
 }
 
-func (b *modelBuilder) SetSourceWorldId(sourceWorldId world.Id) *modelBuilder {
+func (b *builder) SetSourceWorldId(sourceWorldId world.Id) *builder {
 	b.sourceWorldId = sourceWorldId
 	return b
 }
 
-func (b *modelBuilder) SetAssetId(assetId uint32) *modelBuilder {
+func (b *builder) SetAssetId(assetId uint32) *builder {
 	b.assetId = assetId
 	b.hasAsset = true
 	return b
 }
 
-func (b *modelBuilder) SetReason(reason string) *modelBuilder {
+func (b *builder) SetReason(reason string) *builder {
 	b.reason = reason
 	return b
 }
 
-func (b *modelBuilder) SetTransactionId(transactionId uuid.UUID) *modelBuilder {
+func (b *builder) SetTransactionId(transactionId uuid.UUID) *builder {
 	b.transactionId = transactionId
 	return b
 }
 
-func (b *modelBuilder) SetCreatedAt(createdAt time.Time) *modelBuilder {
+func (b *builder) SetCreatedAt(createdAt time.Time) *builder {
 	b.createdAt = createdAt
 	return b
 }
 
-func (b *modelBuilder) SetExpiresAt(expiresAt time.Time) *modelBuilder {
+func (b *builder) SetExpiresAt(expiresAt time.Time) *builder {
 	b.expiresAt = expiresAt
 	return b
 }
 
-func (b *modelBuilder) SetResolvedAt(resolvedAt *time.Time) *modelBuilder {
+func (b *builder) SetResolvedAt(resolvedAt *time.Time) *builder {
 	b.resolvedAt = resolvedAt
 	return b
 }
 
-func (b *modelBuilder) SetNotifiedAt(notifiedAt *time.Time) *modelBuilder {
+func (b *builder) SetNotifiedAt(notifiedAt *time.Time) *builder {
 	b.notifiedAt = notifiedAt
 	return b
 }
 
-func (b *modelBuilder) Build() Model {
+func (b *builder) Build() Model {
 	return Model{
 		id:                 b.id,
 		characterId:        b.characterId,

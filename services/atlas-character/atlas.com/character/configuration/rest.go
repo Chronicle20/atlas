@@ -33,3 +33,11 @@ func (r *RestModel) SetID(id string) error {
 func Extract(r RestModel) Model {
 	return DefaultConfig().WithPendingExpiry(time.Duration(r.PendingExpiryHours) * time.Hour)
 }
+
+// Transform is the inverse of Extract: it converts the domain Model back into
+// the RestModel representation, expressing PendingExpiry in whole hours.
+func Transform(m Model) RestModel {
+	return RestModel{
+		PendingExpiryHours: int(m.pendingExpiry.Hours()),
+	}
+}

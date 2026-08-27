@@ -39,7 +39,7 @@ func setupTestProcessor(t *testing.T) (*testProcessor, func()) {
 func (p *testProcessor) create(name, region string, majorVersion, minorVersion uint16) (tenant.Model, error) {
 	mb := message.NewBuffer()
 
-	m, err := tenant.NewModelBuilder().
+	m, err := tenant.NewBuilder().
 		SetName(name).
 		SetRegion(region).
 		SetMajorVersion(majorVersion).
@@ -236,7 +236,7 @@ func TestUpdate_PreservesEnvironment(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	m, err := tenant.NewModelBuilder().
+	m, err := tenant.NewBuilder().
 		SetName("Original Name").
 		SetRegion("GMS").
 		SetMajorVersion(83).
@@ -382,7 +382,7 @@ func TestEntityBuilder(t *testing.T) {
 }
 
 func TestFromModel(t *testing.T) {
-	model, err := tenant.NewModelBuilder().
+	model, err := tenant.NewBuilder().
 		SetName("Test Tenant").
 		SetRegion("GMS").
 		SetMajorVersion(83).
@@ -409,7 +409,7 @@ func TestTenantEnvironmentRoundTrips(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	m, err := tenant.NewModelBuilder().
+	m, err := tenant.NewBuilder().
 		SetName("Test Tenant").
 		SetRegion("GMS").
 		SetMajorVersion(83).

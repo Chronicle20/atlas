@@ -21,11 +21,11 @@ func newTestAsset(t *testing.T, cashId int64, templateId uint32, giftFrom string
 
 func newTestGiftAsset(t *testing.T, cashId int64, templateId uint32, giftFrom string, giftMessage string, giftAcknowledged bool) asset.Model {
 	t.Helper()
-	i, err := item.NewModelBuilder().SetId(1).SetCashId(cashId).SetTemplateId(templateId).Build()
+	i, err := item.NewBuilder().SetId(1).SetCashId(cashId).SetTemplateId(templateId).Build()
 	if err != nil {
 		t.Fatalf("item build: %v", err)
 	}
-	b := asset.NewModelBuilder(1, uuid.New(), i)
+	b := asset.NewBuilder(1, uuid.New(), i)
 	if giftFrom != "" {
 		b = b.SetGiftFrom(giftFrom)
 	}

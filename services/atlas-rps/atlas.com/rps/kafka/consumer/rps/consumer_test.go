@@ -137,7 +137,7 @@ func withStubProcessor(t *testing.T, throwSource game.ThrowSource) {
 
 func openSession(t *testing.T, ctx context.Context, ten tenant.Model, characterId uint32) {
 	t.Helper()
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(characterId).
 		SetWorldId(0).
 		SetChannelId(1).
@@ -212,7 +212,7 @@ func TestHandleRetryCommand_InvokesProcessorAndEmits(t *testing.T) {
 	characterId := uint32(5020)
 
 	// Seed a post-loss StatusEnded session directly.
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(characterId).
 		SetWorldId(0).
 		SetChannelId(1).

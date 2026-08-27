@@ -33,7 +33,7 @@ func buildCharacter(t *testing.T, jobId job.Id, skillId skill.Id, level byte, we
 		w := asset.NewBuilder(uuid.New(), weaponTemplateId).SetId(1).MustBuild()
 		eq.Set(slottype.Type("weapon"), equipslot.Model{Equipable: &w})
 	}
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(1).
 		SetJobId(jobId).
 		SetSkills([]chskill.Model{testSkill(t, skillId, level)}).

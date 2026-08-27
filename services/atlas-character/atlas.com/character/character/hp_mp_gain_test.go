@@ -52,7 +52,7 @@ func newTestProcessorForVersion(t *testing.T, sdp skill3.Processor, region strin
 }
 
 func buildCharacter(jobId job.Id, skills []cskill.Model) Model {
-	return NewModelBuilder().SetJobId(jobId).SetSkills(skills).Build()
+	return NewEmptyBuilder().SetJobId(jobId).SetSkills(skills).Build()
 }
 
 func buildSkill(id uint32, level byte) cskill.Model {

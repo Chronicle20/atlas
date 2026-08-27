@@ -1,26 +1,26 @@
 package information
 
-// ModelBuilder builds Model instances for tests.
-type ModelBuilder struct {
+// Builder builds Model instances for tests.
+type Builder struct {
 	monsterId uint32
 	attacks   []AttackInfo
 }
 
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{}
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
-func (b *ModelBuilder) SetMonsterId(id uint32) *ModelBuilder {
+func (b *Builder) SetMonsterId(id uint32) *Builder {
 	b.monsterId = id
 	return b
 }
 
-func (b *ModelBuilder) SetAttacks(attacks []AttackInfo) *ModelBuilder {
+func (b *Builder) SetAttacks(attacks []AttackInfo) *Builder {
 	b.attacks = attacks
 	return b
 }
 
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	attacks := b.attacks
 	if attacks == nil {
 		attacks = []AttackInfo{}

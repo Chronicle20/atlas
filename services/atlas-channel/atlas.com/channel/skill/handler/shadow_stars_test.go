@@ -17,7 +17,7 @@ const (
 )
 
 func starAsset(slot int16, templateId uint32, qty uint32) asset.Model {
-	return asset.NewModelBuilder(1, uuid.New(), templateId).
+	return asset.NewBuilderWithId(1, uuid.New(), templateId).
 		SetSlot(slot).
 		SetQuantity(qty).
 		MustBuild()

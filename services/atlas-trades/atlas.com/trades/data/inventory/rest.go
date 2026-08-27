@@ -141,3 +141,32 @@ func Extract(rm RestModel) (Model, error) {
 	}
 	return NewModel(rm.Id, rm.InventoryType, rm.Capacity, assets), nil
 }
+
+// TransformAsset unfolds one domain asset back into its wire view.
+func TransformAsset(a Asset) (AssetRestModel, error) {
+	return AssetRestModel{
+		Id:         a.Id(),
+		Slot:       a.Slot(),
+		TemplateId: a.TemplateId(),
+		Quantity:   a.Quantity(),
+		Flag:       a.Flag(),
+	}, nil
+}
+
+// Transform unfolds the domain compartment back into its wire view.
+func Transform(m Model) (RestModel, error) {
+	rmAssets := make([]AssetRestModel, 0, len(m.assets))
+	for _, a := range m.assets {
+		ra, err := TransformAsset(a)
+		if err != nil {
+			return RestModel{}, err
+		}
+		rmAssets = append(rmAssets, ra)
+	}
+	return RestModel{
+		Id:            m.id,
+		InventoryType: m.inventoryType,
+		Capacity:      m.capacity,
+		Assets:        rmAssets,
+	}, nil
+}

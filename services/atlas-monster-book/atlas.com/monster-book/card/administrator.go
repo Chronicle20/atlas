@@ -30,7 +30,7 @@ func upsertCard(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, cardI
 		First(&existing).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		m, berr := NewModelBuilder().
+		m, berr := NewBuilder().
 			SetTenantId(tenantId).
 			SetCharacterId(characterId).
 			SetCardId(cardId).

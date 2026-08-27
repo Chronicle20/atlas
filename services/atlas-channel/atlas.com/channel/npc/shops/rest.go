@@ -129,7 +129,7 @@ func Extract(rm RestModel) (Model, error) {
 		commodityModels = append(commodityModels, cm)
 	}
 
-	return NewModelBuilder().
+	return NewBuilder().
 		SetNpcId(rm.NpcId).
 		SetCommodities(commodityModels).
 		Build()

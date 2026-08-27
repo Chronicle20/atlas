@@ -142,7 +142,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 
 			prevHook := testInformationLookup
 			testInformationLookup = func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetSelfDestruction(tt.sd).Build(), nil
+				return information.NewBuilder().SetSelfDestruction(tt.sd).Build(), nil
 			}
 			defer func() { testInformationLookup = prevHook }()
 
@@ -195,7 +195,7 @@ func TestSelfDestructRejects(t *testing.T) {
 				return 999999
 			},
 			hook: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
+				return information.NewBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
 			},
 			wantKilled: 0,
 		},
@@ -209,7 +209,7 @@ func TestSelfDestructRejects(t *testing.T) {
 				return m.UniqueId()
 			},
 			hook: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
+				return information.NewBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
 			},
 			wantKilled: 0,
 		},
@@ -220,7 +220,7 @@ func TestSelfDestructRejects(t *testing.T) {
 				return m.UniqueId()
 			},
 			hook: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetSelfDestruction(information.NewSelfDestruction(false, 0, -1, -1)).Build(), nil
+				return information.NewBuilder().SetSelfDestruction(information.NewSelfDestruction(false, 0, -1, -1)).Build(), nil
 			},
 			wantKilled: 0,
 		},
@@ -242,7 +242,7 @@ func TestSelfDestructRejects(t *testing.T) {
 				return m.UniqueId()
 			},
 			hook: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetSelfDestruction(information.NewSelfDestruction(true, 3, -1, 5000)).Build(), nil
+				return information.NewBuilder().SetSelfDestruction(information.NewSelfDestruction(true, 3, -1, 5000)).Build(), nil
 			},
 			wantKilled: 1,
 		},
@@ -316,7 +316,7 @@ func TestSelfDestructContactAlwaysBomb(t *testing.T) {
 
 			prevHook := testInformationLookup
 			testInformationLookup = func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetSelfDestruction(information.NewSelfDestruction(true, tt.action, -1, 5000)).Build(), nil
+				return information.NewBuilder().SetSelfDestruction(information.NewSelfDestruction(true, tt.action, -1, 5000)).Build(), nil
 			}
 			defer func() { testInformationLookup = prevHook }()
 
@@ -346,7 +346,7 @@ func TestSelfDestructAttributesToDamageLeader(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -378,7 +378,7 @@ func TestSelfDestructNoDamageEntriesReportsNoKiller(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -406,7 +406,7 @@ func TestSelfDestructIsIdempotent(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(boomerSelfDestruction()).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 

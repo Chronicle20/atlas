@@ -3,7 +3,7 @@ package collection
 import "testing"
 
 func TestTransformIncludesCoverMonsterId(t *testing.T) {
-	m := NewModelBuilder().
+	m := NewBuilder().
 		SetCharacterId(1).
 		SetCoverCardId(2380000).
 		SetCoverMobId(100100).

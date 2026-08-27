@@ -53,7 +53,7 @@ func TestGetTenantsPaginates(t *testing.T) {
 	// processor_test.go testProcessor.create() precedent.
 	created := make([]string, 0, 3)
 	for _, name := range []string{"Tenant-C", "Tenant-A", "Tenant-B"} {
-		m, err := tenant.NewModelBuilder().
+		m, err := tenant.NewBuilder().
 			SetName(name).
 			SetRegion("GMS").
 			SetMajorVersion(83).

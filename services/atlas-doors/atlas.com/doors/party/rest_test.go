@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -101,4 +102,31 @@ func TestExtractPreservesMemberOrder(t *testing.T) {
 	require.Len(t, members, 2)
 	assert.Equal(t, character.Id(100), members[0], "member[0] must be the first in join order (leader)")
 	assert.Equal(t, character.Id(200), members[1], "member[1] must be the second in join order")
+}
+
+// TestTransformRoundTrip verifies Transform is the faithful inverse of
+// Extract: Extract(Transform(m)) reproduces m.
+func TestTransformRoundTrip(t *testing.T) {
+	rm := RestModel{
+		Id:       7,
+		LeaderId: 100,
+		Members: []MemberRestModel{
+			{Id: 100},
+			{Id: 200},
+			{Id: 300},
+		},
+	}
+
+	m, err := Extract(rm)
+	require.NoError(t, err)
+
+	rm2, err := Transform(m)
+	require.NoError(t, err)
+
+	m2, err := Extract(rm2)
+	require.NoError(t, err)
+
+	if !reflect.DeepEqual(m2, m) {
+		t.Errorf("round trip mismatch. want %+v, got %+v", m, m2)
+	}
 }

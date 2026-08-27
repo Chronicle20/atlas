@@ -4,14 +4,105 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+func TestTransformRoundTrip(t *testing.T) {
+	t.Run("Transform", func(t *testing.T) {
+		id := uuid.New()
+		instanceId := uuid.New()
+		shopId := id.String()
+		m := Model{
+			id:           id,
+			characterId:  30001,
+			shopType:     1,
+			state:        StateOpen,
+			title:        "cheap stuff",
+			worldId:      world.Id(3),
+			channelId:    channel.Id(2),
+			mapId:        910000004,
+			instanceId:   instanceId,
+			x:            100,
+			y:            -200,
+			permitItemId: 5060000,
+			mesoBalance:  123456,
+			createdAt:    time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
+			listingCount: 3,
+			visitors:     []uint32{1, 2, 3},
+			messages: []MessageModel{
+				{
+					characterId: 40001,
+					content:     "hello",
+					sentAt:      time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			listings: []ListingModel{
+				{
+					id:               uuid.New().String(),
+					shopId:           shopId,
+					itemId:           2060000,
+					itemType:         2,
+					quantity:         5,
+					bundleSize:       1,
+					bundlesRemaining: 5,
+					pricePerBundle:   1000,
+					itemSnapshot: AssetData{
+						Quantity: 5,
+						Owner:    "owner-name",
+						Flag:     7,
+					},
+					displayOrder: 1,
+				},
+			},
+		}
+
+		rm, err := Transform(m)
+		require.NoError(t, err)
+
+		got, err := Extract(rm)
+		require.NoError(t, err)
+
+		if !reflect.DeepEqual(got, m) {
+			t.Fatalf("round trip mismatch:\n got  = %+v\n want = %+v", got, m)
+		}
+	})
+
+	t.Run("BlacklistName", func(t *testing.T) {
+		name := "nefarious-trader"
+		rm, err := TransformBlacklistName(name)
+		require.NoError(t, err)
+
+		got, err := ExtractBlacklistName(rm)
+		require.NoError(t, err)
+
+		if !reflect.DeepEqual(got, name) {
+			t.Fatalf("round trip mismatch: got = %+v, want = %+v", got, name)
+		}
+	})
+
+	t.Run("VisitEntry", func(t *testing.T) {
+		e := VisitEntry{Name: "frequent-visitor", Count: 42}
+		rm, err := TransformVisitEntry(e)
+		require.NoError(t, err)
+
+		got, err := ExtractVisitEntry(rm)
+		require.NoError(t, err)
+
+		if !reflect.DeepEqual(got, e) {
+			t.Fatalf("round trip mismatch: got = %+v, want = %+v", got, e)
+		}
+	})
+}
 
 func TestExtractSearchListing(t *testing.T) {
 	shopId := uuid.New()

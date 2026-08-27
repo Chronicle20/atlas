@@ -128,3 +128,37 @@ func Extract(rm RestModel) (Model, error) {
 		meso:               rm.Meso,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                 m.id,
+		AccountId:          m.accountId,
+		WorldId:            m.worldId,
+		Name:               m.name,
+		Gender:             m.gender,
+		SkinColor:          m.skinColor,
+		Face:               m.face,
+		Hair:               m.hair,
+		Level:              m.level,
+		JobId:              m.jobId,
+		Strength:           m.strength,
+		Dexterity:          m.dexterity,
+		Intelligence:       m.intelligence,
+		Luck:               m.luck,
+		Hp:                 m.hp,
+		MaxHp:              m.maxHp,
+		Mp:                 m.mp,
+		MaxMp:              m.maxMp,
+		HpMpUsed:           m.hpMpUsed,
+		Ap:                 m.ap,
+		Sp:                 m.sp,
+		Experience:         m.experience,
+		Fame:               m.fame,
+		GachaponExperience: m.gachaponExperience,
+		SpawnPoint:         m.spawnPoint,
+		Gm:                 m.gm,
+		X:                  m.x,
+		Y:                  m.y,
+		Meso:               m.meso,
+	}, nil
+}

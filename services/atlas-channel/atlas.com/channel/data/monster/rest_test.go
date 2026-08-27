@@ -1,6 +1,9 @@
 package monster
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestExtract(t *testing.T) {
 	rm := RestModel{Boss: true, FixedDamage: 5}
@@ -19,5 +22,24 @@ func TestExtract(t *testing.T) {
 	}
 	if m.FixedDamage() != 5 {
 		t.Errorf("FixedDamage=%d, want 5", m.FixedDamage())
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		id:          11,
+		boss:        true,
+		fixedDamage: 33,
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

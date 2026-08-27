@@ -91,7 +91,7 @@ func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) 
 		// Get current rates from registry (may have been updated at runtime)
 		rates := rate.GetRegistry().GetWorldRates(p.ctx, worldId)
 
-		m, err := NewModelBuilder().
+		m, err := NewBuilder().
 			SetId(worldId).
 			SetName(wc.Name).
 			SetState(getFlag(wc.Flag)).

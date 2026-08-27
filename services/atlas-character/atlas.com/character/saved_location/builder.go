@@ -6,7 +6,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
-type modelBuilder struct {
+type builder struct {
 	id           uuid.UUID
 	characterId  uint32
 	locationType string
@@ -14,36 +14,36 @@ type modelBuilder struct {
 	portalId     uint32
 }
 
-func NewBuilder() *modelBuilder {
-	return &modelBuilder{}
+func NewBuilder() *builder {
+	return &builder{}
 }
 
-func (b *modelBuilder) SetId(id uuid.UUID) *modelBuilder {
+func (b *builder) SetId(id uuid.UUID) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetCharacterId(characterId uint32) *modelBuilder {
+func (b *builder) SetCharacterId(characterId uint32) *builder {
 	b.characterId = characterId
 	return b
 }
 
-func (b *modelBuilder) SetLocationType(locationType string) *modelBuilder {
+func (b *builder) SetLocationType(locationType string) *builder {
 	b.locationType = locationType
 	return b
 }
 
-func (b *modelBuilder) SetMapId(mapId _map.Id) *modelBuilder {
+func (b *builder) SetMapId(mapId _map.Id) *builder {
 	b.mapId = mapId
 	return b
 }
 
-func (b *modelBuilder) SetPortalId(portalId uint32) *modelBuilder {
+func (b *builder) SetPortalId(portalId uint32) *builder {
 	b.portalId = portalId
 	return b
 }
 
-func (b *modelBuilder) Build() Model {
+func (b *builder) Build() Model {
 	return Model{
 		id:           b.id,
 		characterId:  b.characterId,

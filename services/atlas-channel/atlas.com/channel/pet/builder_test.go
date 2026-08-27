@@ -6,15 +6,15 @@ import (
 	"testing"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := pet.NewModelBuilder(1, 1234567890, 5000000, "Fluffy")
+func TestNewBuilder(t *testing.T) {
+	builder := pet.NewBuilder(1, 1234567890, 5000000, "Fluffy")
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	model, err := pet.NewModelBuilder(1, 1234567890, 5000000, "Fluffy").
+	model, err := pet.NewBuilder(1, 1234567890, 5000000, "Fluffy").
 		SetLevel(10).
 		SetCloseness(1000).
 		SetFullness(100).
@@ -38,7 +38,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := pet.NewModelBuilder(0, 1234567890, 5000000, "Fluffy").
+	_, err := pet.NewBuilder(0, 1234567890, 5000000, "Fluffy").
 		Build()
 
 	if !errors.Is(err, pet.ErrInvalidId) {
@@ -53,7 +53,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := pet.NewModelBuilder(1, 1234567890, 5000000, "Fluffy").MustBuild()
+	model := pet.NewBuilder(1, 1234567890, 5000000, "Fluffy").MustBuild()
 
 	if model.Id() != 1 {
 		t.Errorf("model.Id() = %d, want 1", model.Id())
@@ -67,11 +67,11 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	pet.NewModelBuilder(0, 1234567890, 5000000, "Fluffy").MustBuild() // Zero ID, should panic
+	pet.NewBuilder(0, 1234567890, 5000000, "Fluffy").MustBuild() // Zero ID, should panic
 }
 
 func TestCloneModel(t *testing.T) {
-	original, _ := pet.NewModelBuilder(1, 1234567890, 5000000, "Fluffy").
+	original, _ := pet.NewBuilder(1, 1234567890, 5000000, "Fluffy").
 		SetLevel(10).
 		SetCloseness(1000).
 		Build()

@@ -26,7 +26,7 @@ func getByReactorId(reactorId uint32) database.EntityProvider[[]entity] {
 }
 
 func modelFromEntity(m entity) (Model, error) {
-	return NewReactorDropBuilder(m.TenantId, m.ID).
+	return NewBuilder(m.TenantId, m.ID).
 		SetReactorId(m.ReactorId).
 		SetItemId(m.ItemId).
 		SetQuestId(m.QuestId).

@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type ModelBuilder struct {
+type Builder struct {
 	id                  uint32
 	cashId              uint64
 	templateId          uint32
@@ -25,8 +25,8 @@ type ModelBuilder struct {
 	reviveTransactionId *uuid.UUID
 }
 
-func NewModelBuilder(id uint32, cashId uint64, templateId uint32, name string, ownerId uint32) *ModelBuilder {
-	return &ModelBuilder{
+func NewBuilder(id uint32, cashId uint64, templateId uint32, name string, ownerId uint32) *Builder {
+	return &Builder{
 		id:         id,
 		cashId:     cashId,
 		templateId: templateId,
@@ -43,8 +43,8 @@ func NewModelBuilder(id uint32, cashId uint64, templateId uint32, name string, o
 	}
 }
 
-func Clone(m Model) *ModelBuilder {
-	return NewModelBuilder(m.Id(), m.CashId(), m.TemplateId(), m.Name(), m.OwnerId()).
+func Clone(m Model) *Builder {
+	return NewBuilder(m.Id(), m.CashId(), m.TemplateId(), m.Name(), m.OwnerId()).
 		SetLevel(m.Level()).
 		SetCloseness(m.Closeness()).
 		SetFullness(m.Fullness()).
@@ -56,62 +56,62 @@ func Clone(m Model) *ModelBuilder {
 		SetReviveTransactionId(m.ReviveTransactionId())
 }
 
-func (b *ModelBuilder) SetLevel(level byte) *ModelBuilder {
+func (b *Builder) SetLevel(level byte) *Builder {
 	b.level = level
 	return b
 }
 
-func (b *ModelBuilder) SetTemplateId(templateId uint32) *ModelBuilder {
+func (b *Builder) SetTemplateId(templateId uint32) *Builder {
 	b.templateId = templateId
 	return b
 }
 
-func (b *ModelBuilder) SetName(name string) *ModelBuilder {
+func (b *Builder) SetName(name string) *Builder {
 	b.name = name
 	return b
 }
 
-func (b *ModelBuilder) SetCloseness(closeness uint16) *ModelBuilder {
+func (b *Builder) SetCloseness(closeness uint16) *Builder {
 	b.closeness = closeness
 	return b
 }
 
-func (b *ModelBuilder) SetFullness(fullness byte) *ModelBuilder {
+func (b *Builder) SetFullness(fullness byte) *Builder {
 	b.fullness = fullness
 	return b
 }
 
-func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
+func (b *Builder) SetExpiration(expiration time.Time) *Builder {
 	b.expiration = expiration
 	return b
 }
 
-func (b *ModelBuilder) SetSlot(slot int8) *ModelBuilder {
+func (b *Builder) SetSlot(slot int8) *Builder {
 	b.slot = slot
 	return b
 }
 
-func (b *ModelBuilder) SetExcludes(excludes []exclude.Model) *ModelBuilder {
+func (b *Builder) SetExcludes(excludes []exclude.Model) *Builder {
 	b.excludes = excludes
 	return b
 }
 
-func (b *ModelBuilder) SetFlag(flag uint16) *ModelBuilder {
+func (b *Builder) SetFlag(flag uint16) *Builder {
 	b.flag = flag
 	return b
 }
 
-func (b *ModelBuilder) SetPurchaseBy(by uint32) *ModelBuilder {
+func (b *Builder) SetPurchaseBy(by uint32) *Builder {
 	b.purchaseBy = by
 	return b
 }
 
-func (b *ModelBuilder) SetReviveTransactionId(id *uuid.UUID) *ModelBuilder {
+func (b *Builder) SetReviveTransactionId(id *uuid.UUID) *Builder {
 	b.reviveTransactionId = id
 	return b
 }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.templateId == 0 {
 		return Model{}, errors.New("templateId is required")
 	}

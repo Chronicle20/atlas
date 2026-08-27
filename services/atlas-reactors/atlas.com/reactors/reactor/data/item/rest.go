@@ -11,3 +11,10 @@ func Extract(rm RestModel) (Model, error) {
 		quantity: rm.Quantity,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		ItemId:   m.itemId,
+		Quantity: m.quantity,
+	}, nil
+}

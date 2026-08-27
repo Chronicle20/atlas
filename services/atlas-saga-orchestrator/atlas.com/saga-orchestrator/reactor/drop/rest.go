@@ -137,6 +137,17 @@ func Extract(rm DropRestModel) Model {
 	}
 }
 
+// Transform is the exact inverse of Extract: it converts a Model back into
+// a DropRestModel.
+func Transform(m Model) DropRestModel {
+	return DropRestModel{
+		ReactorId: m.reactorId,
+		ItemId:    m.itemId,
+		QuestId:   m.questId,
+		Chance:    m.chance,
+	}
+}
+
 // DropPositionInputModel is the input for the drop position calculation request
 type DropPositionInputModel struct {
 	Id        uint32 `json:"-"`

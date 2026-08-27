@@ -46,6 +46,42 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// Transform converts the domain Model into the wire RestModel.
+//
+// Lead is deliberately left at its zero value: Model has no lead field
+// (Model.Lead() derives slot == 0) and Extract never reads RestModel.Lead,
+// so there is nothing on Model for Transform to read it back from.
+func Transform(m Model) (RestModel, error) {
+	es := make([]exclude.RestModel, 0, len(m.excludes))
+	for _, e := range m.excludes {
+		erm, err := exclude.Transform(e)
+		if err != nil {
+			return RestModel{}, err
+		}
+		es = append(es, erm)
+	}
+
+	return RestModel{
+		Id:         m.id,
+		CashId:     m.cashId,
+		TemplateId: m.templateId,
+		Name:       m.name,
+		Level:      m.level,
+		Closeness:  m.closeness,
+		Fullness:   m.fullness,
+		Expiration: m.expiration,
+		OwnerId:    m.ownerId,
+		Slot:       m.slot,
+		X:          m.x,
+		Y:          m.y,
+		Stance:     m.stance,
+		FH:         m.fh,
+		Excludes:   es,
+		Flag:       m.flag,
+		PurchaseBy: m.purchaseBy,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	es, err := model.SliceMap(exclude.Extract)(model.FixedProvider(rm.Excludes))(model.ParallelMap())()
 	if err != nil {

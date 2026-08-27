@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -118,5 +119,23 @@ func TestRequestById_RoundTrip(t *testing.T) {
 	}
 	if rm.Level != 2 {
 		t.Errorf("Level = %d, want 2", rm.Level)
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m, err := NewBuilder().SetHp(11).SetExperience(22).Build()
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

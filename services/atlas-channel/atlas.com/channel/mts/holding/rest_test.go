@@ -1,6 +1,9 @@
 package holding
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 // TestExtract asserts the holding RestModel -> Model extraction carries the
 // fields the ENTER_MTS holding announce renders into an ITCITEM (itcSn, owner,
@@ -43,5 +46,28 @@ func TestExtract(t *testing.T) {
 func TestResource(t *testing.T) {
 	if Resource != "characters/%d/mts/holding" {
 		t.Errorf("Resource = %q, want characters/%%d/mts/holding", Resource)
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		id:         "field1",
+		worldId:    22,
+		itcSn:      33,
+		ownerId:    44,
+		origin:     "field5",
+		templateId: 66,
+		quantity:   77,
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

@@ -57,3 +57,9 @@ func (r *PositionRestModel) SetID(idStr string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id: m.id,
+	}, nil
+}

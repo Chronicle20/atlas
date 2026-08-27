@@ -6,11 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewReactorDropBuilder(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	tenantId := uuid.New()
 	id := uint32(123)
 
-	builder := NewReactorDropBuilder(tenantId, id)
+	builder := NewBuilder(tenantId, id)
 
 	if builder == nil {
 		t.Fatal("Expected builder to be non-nil")
@@ -30,10 +30,10 @@ func TestNewReactorDropBuilder(t *testing.T) {
 	}
 }
 
-func TestReactorDropBuilderFluentAPI(t *testing.T) {
+func TestBuilderFluentAPI(t *testing.T) {
 	tenantId := uuid.New()
 
-	model, err := NewReactorDropBuilder(tenantId, 0).
+	model, err := NewBuilder(tenantId, 0).
 		SetReactorId(1001).
 		SetItemId(2000000).
 		SetQuestId(1001).
@@ -60,10 +60,10 @@ func TestReactorDropBuilderFluentAPI(t *testing.T) {
 	}
 }
 
-func TestReactorDropBuilderDefaults(t *testing.T) {
+func TestBuilderDefaults(t *testing.T) {
 	tenantId := uuid.New()
 
-	model, err := NewReactorDropBuilder(tenantId, 0).Build()
+	model, err := NewBuilder(tenantId, 0).Build()
 	if err != nil {
 		t.Fatalf("Build() returned unexpected error: %v", err)
 	}
@@ -86,16 +86,16 @@ func TestReactorDropBuilderDefaults(t *testing.T) {
 	}
 }
 
-func TestReactorDropBuilderValidation_NilTenantId(t *testing.T) {
-	_, err := NewReactorDropBuilder(uuid.Nil, 0).Build()
+func TestBuilderValidation_NilTenantId(t *testing.T) {
+	_, err := NewBuilder(uuid.Nil, 0).Build()
 	if err == nil {
 		t.Error("Expected error for nil tenantId, got nil")
 	}
 }
 
-func TestReactorDropBuilderChaining(t *testing.T) {
+func TestBuilderChaining(t *testing.T) {
 	tenantId := uuid.New()
-	builder := NewReactorDropBuilder(tenantId, 0)
+	builder := NewBuilder(tenantId, 0)
 
 	// Test that each setter returns the builder for chaining
 	result := builder.SetReactorId(1001)

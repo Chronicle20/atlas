@@ -6,11 +6,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 )
 
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{}
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
-type ModelBuilder struct {
+type Builder struct {
 	weaponAttack         int16
 	magicAttack          int16
 	weaponDefense        int16
@@ -101,97 +101,97 @@ type ModelBuilder struct {
 	mesoR             int32
 }
 
-func (b *ModelBuilder) SetDuration(duration int32) *ModelBuilder {
+func (b *Builder) SetDuration(duration int32) *Builder {
 	b.duration = duration
 	return b
 }
 
-func (b *ModelBuilder) SetHp(hp uint16) *ModelBuilder {
+func (b *Builder) SetHp(hp uint16) *Builder {
 	b.hp = hp
 	return b
 }
 
-func (b *ModelBuilder) SetHPRecovery(hpr float64) *ModelBuilder {
+func (b *Builder) SetHPRecovery(hpr float64) *Builder {
 	b.hpr = hpr
 	return b
 }
 
-func (b *ModelBuilder) SetMp(mp uint16) *ModelBuilder {
+func (b *Builder) SetMp(mp uint16) *Builder {
 	b.mp = mp
 	return b
 }
 
-func (b *ModelBuilder) SetMPRecovery(mpr float64) *ModelBuilder {
+func (b *Builder) SetMPRecovery(mpr float64) *Builder {
 	b.mpr = mpr
 	return b
 }
 
-func (b *ModelBuilder) SetHPCon(hpCon uint16) *ModelBuilder {
+func (b *Builder) SetHPCon(hpCon uint16) *Builder {
 	b.hpCon = hpCon
 	return b
 }
 
-func (b *ModelBuilder) SetMPCon(mpCon uint16) *ModelBuilder {
+func (b *Builder) SetMPCon(mpCon uint16) *Builder {
 	b.mpCon = mpCon
 	return b
 }
 
-func (b *ModelBuilder) SetProp(prop float64) *ModelBuilder {
+func (b *Builder) SetProp(prop float64) *Builder {
 	b.prop = prop
 	return b
 }
 
-func (b *ModelBuilder) SetCP(cp uint32) *ModelBuilder {
+func (b *Builder) SetCP(cp uint32) *Builder {
 	b.cp = cp
 	return b
 }
 
-func (b *ModelBuilder) SetCureAbnormalStatuses(statuses []string) *ModelBuilder {
+func (b *Builder) SetCureAbnormalStatuses(statuses []string) *Builder {
 	b.cureAbnormalStatuses = statuses
 	return b
 }
 
-func (b *ModelBuilder) SetNuffSkill(nuffSkill uint32) *ModelBuilder {
+func (b *Builder) SetNuffSkill(nuffSkill uint32) *Builder {
 	b.nuffSkill = nuffSkill
 	return b
 }
 
-func (b *ModelBuilder) SetMobCount(mobCount uint32) *ModelBuilder {
+func (b *Builder) SetMobCount(mobCount uint32) *Builder {
 	b.mobCount = mobCount
 	return b
 }
 
-func (b *ModelBuilder) SetCooldown(cooldown uint32) *ModelBuilder {
+func (b *Builder) SetCooldown(cooldown uint32) *Builder {
 	b.cooldown = cooldown
 	return b
 }
 
-func (b *ModelBuilder) SetMorphId(morphId uint32) *ModelBuilder {
+func (b *Builder) SetMorphId(morphId uint32) *Builder {
 	b.morphId = morphId
 	return b
 }
 
-func (b *ModelBuilder) SetGhost(ghost uint32) *ModelBuilder {
+func (b *Builder) SetGhost(ghost uint32) *Builder {
 	b.ghost = ghost
 	return b
 }
 
-func (b *ModelBuilder) SetFatigue(fatigue uint32) *ModelBuilder {
+func (b *Builder) SetFatigue(fatigue uint32) *Builder {
 	b.fatigue = fatigue
 	return b
 }
 
-func (b *ModelBuilder) SetRepeatEffect(repeatEffect bool) *ModelBuilder {
+func (b *Builder) SetRepeatEffect(repeatEffect bool) *Builder {
 	b.repeatEffect = repeatEffect
 	return b
 }
 
-func (b *ModelBuilder) SetMob(mob uint32) *ModelBuilder {
+func (b *Builder) SetMob(mob uint32) *Builder {
 	b.mob = mob
 	return b
 }
 
-func (b *ModelBuilder) SetSkill(skill bool) *ModelBuilder {
+func (b *Builder) SetSkill(skill bool) *Builder {
 	b.skill = skill
 	return b
 }
@@ -201,208 +201,208 @@ func (b *ModelBuilder) SetSkill(skill bool) *ModelBuilder {
 // Positive values are ms counts converted from raw wz seconds at
 // read time. Consumers should use time.Duration(d) * time.Millisecond.
 // See task-054.
-func (b *ModelBuilder) Duration() int32 {
+func (b *Builder) Duration() int32 {
 	return b.duration
 }
 
-func (b *ModelBuilder) SetOverTime(overTime bool) *ModelBuilder {
+func (b *Builder) SetOverTime(overTime bool) *Builder {
 	b.overTime = overTime
 	return b
 }
 
-func (b *ModelBuilder) SetWeaponAttack(weaponAttack int16) *ModelBuilder {
+func (b *Builder) SetWeaponAttack(weaponAttack int16) *Builder {
 	b.weaponAttack = weaponAttack
 	return b
 }
 
-func (b *ModelBuilder) SetWeaponDefense(weaponDefense int16) *ModelBuilder {
+func (b *Builder) SetWeaponDefense(weaponDefense int16) *Builder {
 	b.weaponDefense = weaponDefense
 	return b
 }
 
-func (b *ModelBuilder) SetMagicAttack(magicAttack int16) *ModelBuilder {
+func (b *Builder) SetMagicAttack(magicAttack int16) *Builder {
 	b.magicAttack = magicAttack
 	return b
 }
 
-func (b *ModelBuilder) SetMagicDefense(magicDefense int16) *ModelBuilder {
+func (b *Builder) SetMagicDefense(magicDefense int16) *Builder {
 	b.magicDefense = magicDefense
 	return b
 }
 
-func (b *ModelBuilder) SetAccuracy(accuracy int16) *ModelBuilder {
+func (b *Builder) SetAccuracy(accuracy int16) *Builder {
 	b.accuracy = accuracy
 	return b
 }
 
-func (b *ModelBuilder) SetAvoidability(avoidability int16) *ModelBuilder {
+func (b *Builder) SetAvoidability(avoidability int16) *Builder {
 	b.avoidability = avoidability
 	return b
 }
 
-func (b *ModelBuilder) SetSpeed(speed int16) *ModelBuilder {
+func (b *Builder) SetSpeed(speed int16) *Builder {
 	b.speed = speed
 	return b
 }
 
-func (b *ModelBuilder) SetJump(jump int16) *ModelBuilder {
+func (b *Builder) SetJump(jump int16) *Builder {
 	b.jump = jump
 	return b
 }
 
-func (b *ModelBuilder) SetBarrier(barrier int32) *ModelBuilder {
+func (b *Builder) SetBarrier(barrier int32) *Builder {
 	b.barrier = barrier
 	return b
 }
 
-func (b *ModelBuilder) Barrier() int32 {
+func (b *Builder) Barrier() int32 {
 	return b.barrier
 }
 
-func (b *ModelBuilder) MapProtection() byte {
+func (b *Builder) MapProtection() byte {
 	return b.mapProtection
 }
 
-func (b *ModelBuilder) SetMapProtection(protection byte) *ModelBuilder {
+func (b *Builder) SetMapProtection(protection byte) *Builder {
 	b.mapProtection = protection
 	return b
 }
 
-func (b *ModelBuilder) OverTime() bool {
+func (b *Builder) OverTime() bool {
 	return b.overTime
 }
 
-func (b *ModelBuilder) WeaponAttack() int16 {
+func (b *Builder) WeaponAttack() int16 {
 	return b.weaponAttack
 }
 
-func (b *ModelBuilder) WeaponDefense() int16 {
+func (b *Builder) WeaponDefense() int16 {
 	return b.weaponDefense
 }
 
-func (b *ModelBuilder) MagicAttack() int16 {
+func (b *Builder) MagicAttack() int16 {
 	return b.magicAttack
 }
 
-func (b *ModelBuilder) MagicDefense() int16 {
+func (b *Builder) MagicDefense() int16 {
 	return b.magicDefense
 }
 
-func (b *ModelBuilder) Accuracy() int16 {
+func (b *Builder) Accuracy() int16 {
 	return b.accuracy
 }
 
-func (b *ModelBuilder) Avoidability() int16 {
+func (b *Builder) Avoidability() int16 {
 	return b.avoidability
 }
 
-func (b *ModelBuilder) Speed() int16 {
+func (b *Builder) Speed() int16 {
 	return b.speed
 }
 
-func (b *ModelBuilder) Jump() int16 {
+func (b *Builder) Jump() int16 {
 	return b.jump
 }
 
-func (b *ModelBuilder) SetX(x int16) *ModelBuilder {
+func (b *Builder) SetX(x int16) *Builder {
 	b.x = x
 	return b
 }
 
-func (b *ModelBuilder) SetY(y int16) *ModelBuilder {
+func (b *Builder) SetY(y int16) *Builder {
 	b.y = y
 	return b
 }
 
-func (b *ModelBuilder) SetLT(p point.Model) *ModelBuilder {
+func (b *Builder) SetLT(p point.Model) *Builder {
 	b.lt = p
 	return b
 }
 
-func (b *ModelBuilder) SetRB(p point.Model) *ModelBuilder {
+func (b *Builder) SetRB(p point.Model) *Builder {
 	b.rb = p
 	return b
 }
 
-func (b *ModelBuilder) LT() point.Model {
+func (b *Builder) LT() point.Model {
 	return b.lt
 }
 
-func (b *ModelBuilder) RB() point.Model {
+func (b *Builder) RB() point.Model {
 	return b.rb
 }
 
-func (b *ModelBuilder) SetDamage(damage uint32) *ModelBuilder {
+func (b *Builder) SetDamage(damage uint32) *Builder {
 	b.damage = damage
 	return b
 }
 
-func (b *ModelBuilder) SetFixDamage(damage int32) *ModelBuilder {
+func (b *Builder) SetFixDamage(damage int32) *Builder {
 	b.fixDamage = damage
 	return b
 }
 
-func (b *ModelBuilder) SetAttackCount(count uint32) *ModelBuilder {
+func (b *Builder) SetAttackCount(count uint32) *Builder {
 	b.attackCount = count
 	return b
 }
 
-func (b *ModelBuilder) SetBulletCount(count uint16) *ModelBuilder {
+func (b *Builder) SetBulletCount(count uint16) *Builder {
 	b.bulletCount = count
 	return b
 }
 
-func (b *ModelBuilder) SetBulletConsume(consume uint16) *ModelBuilder {
+func (b *Builder) SetBulletConsume(consume uint16) *Builder {
 	b.bulletConsume = consume
 	return b
 }
 
-func (b *ModelBuilder) SetMoneyConsume(consume uint32) *ModelBuilder {
+func (b *Builder) SetMoneyConsume(consume uint32) *Builder {
 	b.moneyCon = consume
 	return b
 }
 
-func (b *ModelBuilder) SetItemConsume(consume uint32) *ModelBuilder {
+func (b *Builder) SetItemConsume(consume uint32) *Builder {
 	b.itemCon = consume
 	return b
 }
 
-func (b *ModelBuilder) SetItemConsumeNumber(number uint32) *ModelBuilder {
+func (b *Builder) SetItemConsumeNumber(number uint32) *Builder {
 	b.itemConNo = number
 	return b
 }
 
-func (b *ModelBuilder) SetMoveTo(moveTo int32) *ModelBuilder {
+func (b *Builder) SetMoveTo(moveTo int32) *Builder {
 	b.moveTo = moveTo
 	return b
 }
 
-func (b *ModelBuilder) X() int16 {
+func (b *Builder) X() int16 {
 	return b.x
 }
 
-func (b *ModelBuilder) Damage() uint32 {
+func (b *Builder) Damage() uint32 {
 	return b.damage
 }
 
-func (b *ModelBuilder) Y() int16 {
+func (b *Builder) Y() int16 {
 	return b.y
 }
 
-func (b *ModelBuilder) Prop() float64 {
+func (b *Builder) Prop() float64 {
 	return b.prop
 }
 
-func (b *ModelBuilder) MorphId() uint32 {
+func (b *Builder) MorphId() uint32 {
 	return b.morphId
 }
 
-func (b *ModelBuilder) SetMonsterStatus(ms map[string]uint32) *ModelBuilder {
+func (b *Builder) SetMonsterStatus(ms map[string]uint32) *Builder {
 	b.monsterStatus = ms
 	return b
 }
 
-func (b *ModelBuilder) SetStatups(statups []statup.RestModel) *ModelBuilder {
+func (b *Builder) SetStatups(statups []statup.RestModel) *Builder {
 	b.statups = statups
 	return b
 }
@@ -410,7 +410,7 @@ func (b *ModelBuilder) SetStatups(statups []statup.RestModel) *ModelBuilder {
 // Build materializes the immutable domain Model from the builder's
 // accumulated state. Wire-shape concerns (RestModel, the LT/RB
 // nil-when-zero pointer rule) live in Transform, not here.
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	return Model{
 		weaponAttack:         b.weaponAttack,
 		magicAttack:          b.magicAttack,
@@ -502,57 +502,57 @@ func (b *ModelBuilder) Build() Model {
 	}
 }
 
-func (b *ModelBuilder) SetMobSkill(mobSkill uint16) *ModelBuilder {
+func (b *Builder) SetMobSkill(mobSkill uint16) *Builder {
 	b.mobSkill = mobSkill
 	return b
 }
 
-func (b *ModelBuilder) SetMobSkillLevel(skillLevel uint16) *ModelBuilder {
+func (b *Builder) SetMobSkillLevel(skillLevel uint16) *Builder {
 	b.mobSkillLevel = skillLevel
 	return b
 }
 
-func (b *ModelBuilder) SetTarget(target uint32) *ModelBuilder {
+func (b *Builder) SetTarget(target uint32) *Builder {
 	b.target = target
 	return b
 }
 
-func (b *ModelBuilder) SetRange(v int32) *ModelBuilder             { b.rangeValue = v; return b }
-func (b *ModelBuilder) SetMastery(v int32) *ModelBuilder           { b.mastery = v; return b }
-func (b *ModelBuilder) SetZ(v int32) *ModelBuilder                 { b.z = v; return b }
-func (b *ModelBuilder) SetDot(v int32) *ModelBuilder               { b.dot = v; return b }
-func (b *ModelBuilder) SetCr(v int32) *ModelBuilder                { b.cr = v; return b }
-func (b *ModelBuilder) SetDotInterval(v int32) *ModelBuilder       { b.dotInterval = v; return b }
-func (b *ModelBuilder) SetDotTime(v int32) *ModelBuilder           { b.dotTime = v; return b }
-func (b *ModelBuilder) SetDamR(v int32) *ModelBuilder              { b.damR = v; return b }
-func (b *ModelBuilder) SetCriticaldamageMin(v int32) *ModelBuilder { b.criticaldamageMin = v; return b }
-func (b *ModelBuilder) SetMHPRRate(v uint16) *ModelBuilder         { b.mhprRate = v; return b }
-func (b *ModelBuilder) SetV(v int32) *ModelBuilder                 { b.v = v; return b }
-func (b *ModelBuilder) SetIgnoreMobpdpR(v int32) *ModelBuilder     { b.ignoreMobpdpR = v; return b }
-func (b *ModelBuilder) SetEpad(v int32) *ModelBuilder              { b.epad = v; return b }
-func (b *ModelBuilder) SetW(v int32) *ModelBuilder                 { b.w = v; return b }
-func (b *ModelBuilder) SetU(v int32) *ModelBuilder                 { b.u = v; return b }
-func (b *ModelBuilder) SetEpdd(v int32) *ModelBuilder              { b.epdd = v; return b }
-func (b *ModelBuilder) SetEmdd(v int32) *ModelBuilder              { b.emdd = v; return b }
-func (b *ModelBuilder) SetSelfDestruction(v int32) *ModelBuilder   { b.selfDestruction = v; return b }
-func (b *ModelBuilder) SetAsrR(v int32) *ModelBuilder              { b.asrR = v; return b }
-func (b *ModelBuilder) SetMMPRRate(v uint16) *ModelBuilder         { b.mmprRate = v; return b }
-func (b *ModelBuilder) SetT(v int32) *ModelBuilder                 { b.t = v; return b }
-func (b *ModelBuilder) SetEr(v int32) *ModelBuilder                { b.er = v; return b }
-func (b *ModelBuilder) SetPddR(v int32) *ModelBuilder              { b.pddR = v; return b }
-func (b *ModelBuilder) SetTerR(v int32) *ModelBuilder              { b.terR = v; return b }
-func (b *ModelBuilder) SetMadX(v int32) *ModelBuilder              { b.madX = v; return b }
-func (b *ModelBuilder) SetSubProp(v int32) *ModelBuilder           { b.subProp = v; return b }
-func (b *ModelBuilder) SetEmhp(v int32) *ModelBuilder              { b.emhp = v; return b }
-func (b *ModelBuilder) SetCriticaldamageMax(v int32) *ModelBuilder { b.criticaldamageMax = v; return b }
-func (b *ModelBuilder) SetExpR(v int32) *ModelBuilder              { b.expR = v; return b }
-func (b *ModelBuilder) SetEmmp(v int32) *ModelBuilder              { b.emmp = v; return b }
+func (b *Builder) SetRange(v int32) *Builder             { b.rangeValue = v; return b }
+func (b *Builder) SetMastery(v int32) *Builder           { b.mastery = v; return b }
+func (b *Builder) SetZ(v int32) *Builder                 { b.z = v; return b }
+func (b *Builder) SetDot(v int32) *Builder               { b.dot = v; return b }
+func (b *Builder) SetCr(v int32) *Builder                { b.cr = v; return b }
+func (b *Builder) SetDotInterval(v int32) *Builder       { b.dotInterval = v; return b }
+func (b *Builder) SetDotTime(v int32) *Builder           { b.dotTime = v; return b }
+func (b *Builder) SetDamR(v int32) *Builder              { b.damR = v; return b }
+func (b *Builder) SetCriticaldamageMin(v int32) *Builder { b.criticaldamageMin = v; return b }
+func (b *Builder) SetMHPRRate(v uint16) *Builder         { b.mhprRate = v; return b }
+func (b *Builder) SetV(v int32) *Builder                 { b.v = v; return b }
+func (b *Builder) SetIgnoreMobpdpR(v int32) *Builder     { b.ignoreMobpdpR = v; return b }
+func (b *Builder) SetEpad(v int32) *Builder              { b.epad = v; return b }
+func (b *Builder) SetW(v int32) *Builder                 { b.w = v; return b }
+func (b *Builder) SetU(v int32) *Builder                 { b.u = v; return b }
+func (b *Builder) SetEpdd(v int32) *Builder              { b.epdd = v; return b }
+func (b *Builder) SetEmdd(v int32) *Builder              { b.emdd = v; return b }
+func (b *Builder) SetSelfDestruction(v int32) *Builder   { b.selfDestruction = v; return b }
+func (b *Builder) SetAsrR(v int32) *Builder              { b.asrR = v; return b }
+func (b *Builder) SetMMPRRate(v uint16) *Builder         { b.mmprRate = v; return b }
+func (b *Builder) SetT(v int32) *Builder                 { b.t = v; return b }
+func (b *Builder) SetEr(v int32) *Builder                { b.er = v; return b }
+func (b *Builder) SetPddR(v int32) *Builder              { b.pddR = v; return b }
+func (b *Builder) SetTerR(v int32) *Builder              { b.terR = v; return b }
+func (b *Builder) SetMadX(v int32) *Builder              { b.madX = v; return b }
+func (b *Builder) SetSubProp(v int32) *Builder           { b.subProp = v; return b }
+func (b *Builder) SetEmhp(v int32) *Builder              { b.emhp = v; return b }
+func (b *Builder) SetCriticaldamageMax(v int32) *Builder { b.criticaldamageMax = v; return b }
+func (b *Builder) SetExpR(v int32) *Builder              { b.expR = v; return b }
+func (b *Builder) SetEmmp(v int32) *Builder              { b.emmp = v; return b }
 
 // SetConsumeItemId sets wz `common/itemConsume`. See RestModel.ConsumeItemId:
 // this is NOT the same key as `itemCon`, which SetItemConsume carries.
-func (b *ModelBuilder) SetConsumeItemId(v int32) *ModelBuilder { b.consumeItemId = v; return b }
+func (b *Builder) SetConsumeItemId(v int32) *Builder { b.consumeItemId = v; return b }
 
-func (b *ModelBuilder) SetMddR(v int32) *ModelBuilder    { b.mddR = v; return b }
-func (b *ModelBuilder) SetSubTime(v int32) *ModelBuilder { b.subTime = v; return b }
-func (b *ModelBuilder) SetPadX(v int32) *ModelBuilder    { b.padX = v; return b }
-func (b *ModelBuilder) SetMesoR(v int32) *ModelBuilder   { b.mesoR = v; return b }
+func (b *Builder) SetMddR(v int32) *Builder    { b.mddR = v; return b }
+func (b *Builder) SetSubTime(v int32) *Builder { b.subTime = v; return b }
+func (b *Builder) SetPadX(v int32) *Builder    { b.padX = v; return b }
+func (b *Builder) SetMesoR(v int32) *Builder   { b.mesoR = v; return b }

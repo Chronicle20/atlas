@@ -55,7 +55,7 @@ func skillsOnly(skills []information.Skill) monsterInfoFetcher {
 	// available, otherwise construct via a helper. For tests we synthesize a
 	// model by leaning on the Extract pipeline used in production.
 	return func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSkills(skills).Build(), nil
+		return information.NewBuilder().SetSkills(skills).Build(), nil
 	}
 }
 
@@ -71,7 +71,7 @@ func mobSkillTable(table map[uint32]mobskill.Model) mobSkillFetcher {
 
 func mskill(t *testing.T, id, lvl uint16, prop, mpCon, hp uint32, interval uint32) mobskill.Model {
 	t.Helper()
-	return mobskill.NewModelBuilder().
+	return mobskill.NewBuilder().
 		SetSkillId(id).SetLevel(lvl).
 		SetProp(prop).SetMpCon(mpCon).SetHp(hp).SetInterval(interval).
 		Build()

@@ -27,7 +27,7 @@ func TestModel_OwnType(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := NewModelBuilder().
+			m := NewBuilder().
 				SetId(1).
 				SetType(tc.dropType).
 				SetOwner(tc.ownerId, tc.ownerPartyId).

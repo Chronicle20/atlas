@@ -61,6 +61,17 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 	return nil
 }
 
+// Transform converts a Model to its RestModel wire shape. Model in this
+// package is an intentionally empty struct{} -- atlas-messages only ever
+// consumes the upstream atlas-data map resource to check existence
+// (map/processor.go's Exists discards the returned Model and keeps only the
+// error), so no map field is ever carried past Extract. There is nothing on
+// Model to source RestModel's fields (including Id) from, so this Transform
+// is legitimately a no-op, matching Extract's own no-op mapping.
+func Transform(_ Model) (RestModel, error) {
+	return RestModel{}, nil
+}
+
 func Extract(_ RestModel) (Model, error) {
 	return Model{}, nil
 }

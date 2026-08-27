@@ -4,32 +4,32 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
-type modelBuilder struct {
+type builder struct {
 	characterId uint32
 	regular     []_map.Id
 	vip         []_map.Id
 }
 
-func NewBuilder() *modelBuilder {
-	return &modelBuilder{}
+func NewBuilder() *builder {
+	return &builder{}
 }
 
-func (b *modelBuilder) SetCharacterId(characterId uint32) *modelBuilder {
+func (b *builder) SetCharacterId(characterId uint32) *builder {
 	b.characterId = characterId
 	return b
 }
 
-func (b *modelBuilder) SetRegular(maps []_map.Id) *modelBuilder {
+func (b *builder) SetRegular(maps []_map.Id) *builder {
 	b.regular = maps
 	return b
 }
 
-func (b *modelBuilder) SetVip(maps []_map.Id) *modelBuilder {
+func (b *builder) SetVip(maps []_map.Id) *builder {
 	b.vip = maps
 	return b
 }
 
-func (b *modelBuilder) Build() Model {
+func (b *builder) Build() Model {
 	return Model{
 		characterId: b.characterId,
 		regular:     b.regular,

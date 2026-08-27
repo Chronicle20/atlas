@@ -163,7 +163,7 @@ func testContext(t *testing.T) context.Context {
 // Named distinctly from resource_test.go's seedAsset (same package, a
 // simpler tenantId/compartmentId/slot/templateId signature used only by the
 // pagination tests) rather than overloading that name.
-func seedExtendableAsset(t *testing.T, db *gorm.DB, configure func(b *ModelBuilder)) Model {
+func seedExtendableAsset(t *testing.T, db *gorm.DB, configure func(b *Builder)) Model {
 	t.Helper()
 	b := NewBuilder(uuid.New(), 1072001).
 		SetSlot(1).
@@ -186,7 +186,7 @@ func TestExtendExpirationPreservesFlags(t *testing.T) {
 
 	base := time.Now().UTC().Add(120 * time.Hour).Truncate(time.Second)
 	// An unlocked, time-limited equip carrying an unrelated flag bit.
-	a := seedExtendableAsset(t, db, func(b *ModelBuilder) {
+	a := seedExtendableAsset(t, db, func(b *Builder) {
 		// AddFlag, not SetFlag: SetFlag takes a raw uint16 while the
 		// constants are typed af.Flag (builder.go:111 vs :174).
 		b.SetExpiration(base).AddFlag(af.FlagUntradeable)
@@ -224,14 +224,14 @@ func TestExtendExpirationRejectsLockedAndPermanent(t *testing.T) {
 	p := NewProcessor(l, ctx, db)
 	future := time.Now().UTC().Add(240 * time.Hour)
 
-	locked := seedExtendableAsset(t, db, func(b *ModelBuilder) {
+	locked := seedExtendableAsset(t, db, func(b *Builder) {
 		b.SetExpiration(time.Now().UTC().Add(48 * time.Hour)).AddFlag(af.FlagLock)
 	})
 	if err := p.ExtendExpiration(message.NewBuffer())(uuid.New(), 12345)(locked, future); err == nil {
 		t.Error("expected rejection for a locked asset")
 	}
 
-	permanent := seedExtendableAsset(t, db, func(b *ModelBuilder) {})
+	permanent := seedExtendableAsset(t, db, func(b *Builder) {})
 	if err := p.ExtendExpiration(message.NewBuffer())(uuid.New(), 12345)(permanent, future); err == nil {
 		t.Error("expected rejection for a permanent asset")
 	}
@@ -248,7 +248,7 @@ func TestExtendExpirationRedeliveryIsIdempotent(t *testing.T) {
 	p := NewProcessor(l, ctx, db)
 
 	base := time.Now().UTC().Add(120 * time.Hour).Truncate(time.Second)
-	a := seedExtendableAsset(t, db, func(b *ModelBuilder) { b.SetExpiration(base) })
+	a := seedExtendableAsset(t, db, func(b *Builder) { b.SetExpiration(base) })
 	want := base.Add(168 * time.Hour)
 
 	if err := p.ExtendExpiration(message.NewBuffer())(uuid.New(), 12345)(a, want); err != nil {

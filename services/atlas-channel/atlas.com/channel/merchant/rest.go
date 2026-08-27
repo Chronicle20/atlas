@@ -160,6 +160,61 @@ func extractMessages(rms []MessageRestModel) []MessageModel {
 	return out
 }
 
+func Transform(m Model) (RestModel, error) {
+	ls, err := model.SliceMap(transformListing)(model.FixedProvider(m.listings))(model.ParallelMap())()
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	return RestModel{
+		Id:           m.id.String(),
+		CharacterId:  m.characterId,
+		ShopType:     m.shopType,
+		State:        m.state,
+		Title:        m.title,
+		WorldId:      byte(m.worldId),
+		ChannelId:    byte(m.channelId),
+		MapId:        m.mapId,
+		InstanceId:   m.instanceId.String(),
+		X:            m.x,
+		Y:            m.y,
+		PermitItemId: m.permitItemId,
+		MesoBalance:  m.mesoBalance,
+		CreatedAt:    m.createdAt,
+		ListingCount: m.listingCount,
+		Visitors:     m.visitors,
+		Messages:     transformMessages(m.messages),
+		Listings:     ls,
+	}, nil
+}
+
+func transformMessages(ms []MessageModel) []MessageRestModel {
+	out := make([]MessageRestModel, 0, len(ms))
+	for _, m := range ms {
+		out = append(out, MessageRestModel{
+			CharacterId: m.characterId,
+			Content:     m.content,
+			SentAt:      m.sentAt,
+		})
+	}
+	return out
+}
+
+func transformListing(m ListingModel) (ListingRestModel, error) {
+	return ListingRestModel{
+		Id:               m.id,
+		ShopId:           m.shopId,
+		ItemId:           m.itemId,
+		ItemType:         m.itemType,
+		Quantity:         m.quantity,
+		BundleSize:       m.bundleSize,
+		BundlesRemaining: m.bundlesRemaining,
+		PricePerBundle:   m.pricePerBundle,
+		ItemSnapshot:     m.itemSnapshot,
+		DisplayOrder:     m.displayOrder,
+	}, nil
+}
+
 // FrederickStatusRestModel mirrors atlas-merchant's frederick.StatusRestModel:
 // whether the character has unclaimed items/mesos waiting at Fredrick. The
 // entrusted-shop permit check consults it before allowing a new hired merchant.
@@ -310,7 +365,19 @@ func ExtractBlacklistName(rm BlacklistRestModel) (string, error) {
 	return rm.Name, nil
 }
 
+// TransformBlacklistName is the inverse of ExtractBlacklistName. Id is not
+// mapped by Extract, so it is not emitted here.
+func TransformBlacklistName(name string) (BlacklistRestModel, error) {
+	return BlacklistRestModel{Name: name}, nil
+}
+
 // ExtractVisitEntry adapts VisitRestModel for the drain pipeline (task-117).
 func ExtractVisitEntry(rm VisitRestModel) (VisitEntry, error) {
 	return VisitEntry{Name: rm.Name, Count: rm.Count}, nil
+}
+
+// TransformVisitEntry is the inverse of ExtractVisitEntry. Id is not mapped
+// by Extract, so it is not emitted here.
+func TransformVisitEntry(e VisitEntry) (VisitRestModel, error) {
+	return VisitRestModel{Name: e.Name, Count: e.Count}, nil
 }

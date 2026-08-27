@@ -36,7 +36,7 @@ func energyTestSkill(t *testing.T, id skill3.Id, level byte) skill.Model {
 
 func energyTestCharacter(t *testing.T, skills ...skill.Model) character.Model {
 	t.Helper()
-	return character.NewModelBuilder().SetId(1000).SetSkills(skills).MustBuild()
+	return character.NewBuilder().SetId(1000).SetSkills(skills).MustBuild()
 }
 
 func energyTestAttack(at packetmodel.AttackType, skillId uint32, hits int) packetmodel.AttackInfo {

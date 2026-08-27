@@ -900,7 +900,7 @@ func TestProcessor_StartAndEmit_PropagatesBuildError(t *testing.T) {
 
 	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
 
-	// characterId 0 fails ModelBuilder.Build()'s required-field validation.
+	// characterId 0 fails Builder.Build()'s required-field validation.
 	_, err := p.StartAndEmit(0, testWorldId, testChannelId, testNpcId)
 	assert.Error(t, err)
 }

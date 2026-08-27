@@ -1,6 +1,7 @@
 package character
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -357,9 +358,73 @@ func TestExtract_Position(t *testing.T) {
 // TestModel_PositionRoundTripsThroughSetSkills guards the SetSkills path, which
 // rebuilds the model via Clone(m).SetSkills(...).Build(); position must survive.
 func TestModel_PositionRoundTripsThroughSetSkills(t *testing.T) {
-	m := NewModelBuilder().SetId(1).SetX(99).SetY(-7).Build()
+	m := NewBuilder().SetId(1).SetX(99).SetY(-7).Build()
 	m2 := m.SetSkills(nil)
 	if m2.X() != 99 || m2.Y() != -7 {
 		t.Errorf("position lost after SetSkills: got (%d, %d), want (99, -7)", m2.X(), m2.Y())
+	}
+}
+
+// TestTransformRoundTrip confirms Transform is the faithful inverse of
+// Extract: every field set by Extract survives an Extract -> Transform ->
+// Extract round trip. Field values are distinct and in-range for their
+// destination type so a silently dropped or aliased field cannot hide behind
+// a zero-valued fixture. Stance is excluded from the fixture because Model
+// has no backing field for it (Model.Stance() is a hardcoded stub).
+func TestTransformRoundTrip(t *testing.T) {
+	rm := RestModel{
+		Id:                 1,
+		AccountId:          2,
+		WorldId:            3,
+		Name:               "Bob",
+		Level:              30,
+		Experience:         1000,
+		GachaponExperience: 10,
+		Strength:           4,
+		Dexterity:          5,
+		Intelligence:       6,
+		Luck:               7,
+		Hp:                 50,
+		MaxHp:              60,
+		Mp:                 70,
+		MaxMp:              80,
+		Meso:               100,
+		HpMpUsed:           1,
+		JobId:              200,
+		SkinColor:          3,
+		Gender:             1,
+		Fame:               5,
+		Hair:               30000,
+		Face:               20000,
+		Ap:                 8,
+		Sp:                 "9",
+		SpawnPoint:         11,
+		Gm:                 2,
+		X:                  10,
+		Y:                  12,
+		Stance:             0,
+	}
+
+	m, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	rm2, err := Transform(m)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+
+	if rm2.Id != rm.Id {
+		t.Errorf("Id mismatch. Expected %d, got %d", rm.Id, rm2.Id)
+	}
+
+	m2, err := Extract(rm2)
+	if err != nil {
+		t.Fatalf("Extract (second pass) failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(m, m2) {
+		t.Errorf("round trip mismatch.\nExpected %+v\nGot      %+v", m, m2)
 	}
 }

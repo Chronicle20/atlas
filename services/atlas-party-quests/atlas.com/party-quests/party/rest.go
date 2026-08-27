@@ -90,6 +90,19 @@ func Extract(rm RestModel) (Model, error) {
 	}, nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	members := make([]MemberRestModel, 0, len(m.members))
+	for _, mm := range m.members {
+		rm := TransformMember(mm)
+		members = append(members, rm)
+	}
+	return RestModel{
+		Id:       m.id,
+		LeaderId: m.leaderId,
+		Members:  members,
+	}, nil
+}
+
 type MemberRestModel struct {
 	Id        uint32     `json:"-"`
 	Name      string     `json:"name"`
@@ -124,4 +137,12 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 		worldId:   rm.WorldId,
 		channelId: rm.ChannelId,
 	}, nil
+}
+
+func TransformMember(m MemberModel) MemberRestModel {
+	return MemberRestModel{
+		Id:        m.id,
+		WorldId:   m.worldId,
+		ChannelId: m.channelId,
+	}
 }

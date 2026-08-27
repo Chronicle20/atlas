@@ -103,6 +103,11 @@ func ExtractCard(rm CardRestModel) (Card, error) {
 	return Card{cardId: rm.CardId, level: rm.Level, isSpecial: rm.IsSpecial}, nil
 }
 
+// TransformCard converts the immutable domain Card into its wire model.
+func TransformCard(c Card) (CardRestModel, error) {
+	return CardRestModel{CardId: c.cardId, Level: c.level, IsSpecial: c.isSpecial}, nil
+}
+
 // Extract converts the wire model into the immutable domain Collection.
 func Extract(rm CollectionRestModel) (Collection, error) {
 	return Collection{
@@ -113,5 +118,18 @@ func Extract(rm CollectionRestModel) (Collection, error) {
 		coverCardId:      rm.CoverCardId,
 		coverMonsterId:   rm.CoverMonsterId,
 		expBonusPercent:  rm.ExpBonusPercent,
+	}, nil
+}
+
+// Transform converts the immutable domain Collection into its wire model.
+func Transform(c Collection) (CollectionRestModel, error) {
+	return CollectionRestModel{
+		BookLevel:        c.bookLevel,
+		NormalCount:      c.normalCount,
+		SpecialCount:     c.specialCount,
+		TotalUniqueCards: c.totalUniqueCards,
+		CoverCardId:      c.coverCardId,
+		CoverMonsterId:   c.coverMonsterId,
+		ExpBonusPercent:  c.expBonusPercent,
 	}, nil
 }

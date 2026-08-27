@@ -1,0 +1,113 @@
+{
+  "service": "task-263-backend-guideline-conformance (whole-branch diff)",
+  "path": "main..HEAD",
+  "date": "2026-08-27",
+  "build": "not-run (gate running separately per controller instruction)",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "services/atlas-cashshop/atlas.com/cashshop/asset",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-01",
+          "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()",
+          "status": "fail",
+          "evidence": "builder.go exists but holds only 7 *ReferenceDataBuilder types; the domain Model's Build() is at model.go:142, not builder.go"
+        },
+        {
+          "id": "FILE-05",
+          "name": "Builder in builder.go, domain Model in model.go, ...",
+          "status": "fail",
+          "evidence": "model.go:106 `type Builder[E any] struct`, model.go:116 `func NewBuilder[E any](...)` — generic type parameter defeats sweep.sh's `'^type [A-Za-z0-9_]*Builder struct'` regex; not in exemptions.md under FILE-05"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/account",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-01",
+          "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()",
+          "status": "fail",
+          "evidence": "no builder.go file in the package (confirmed absent)"
+        },
+        {
+          "id": "FILE-05",
+          "name": "Builder in builder.go, domain Model in model.go, ...",
+          "status": "fail",
+          "evidence": "model.go:52 `type builder struct`, model.go:69 `func NewBuilder() *builder` — lowercase type name defeats sweep.sh's case-sensitive `Builder struct` regex; not in exemptions.md under FILE-05"
+        }
+      ]
+    },
+    {
+      "name": "DOM-01 / FILE-05 — remaining ~193 changed packages with model.go",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-01",
+          "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()",
+          "status": "pass",
+          "evidence": "PASS where builder.go+NewBuilder verified at HEAD; N/A for exemptions.md's 5 'trigger not fired (no model.go)' entries and 2 'NewBuilder name already taken' entries (spot-checked); exempt for the 25-package 'sibling builders over distinct types' list, all re-derived at HEAD"
+        },
+        {
+          "id": "FILE-05",
+          "name": "Builder placement",
+          "status": "pass",
+          "evidence": "exhaustive scan of every non-builder.go, non-test file across all 339 changed packages found exactly 7 misplaced builder declarations; 5 are exemptions.md-covered (4 entityBuilder + 1 excluded-tree), 2 are the blocking findings above"
+        }
+      ]
+    },
+    {
+      "name": "DOM-01 — 144 changed packages with model.go and no builder pattern anywhere",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-01",
+          "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()",
+          "status": "fail",
+          "evidence": "trigger fires literally (model.go present) and no builder.go/builder pattern exists anywhere in the package; but confirmed identical to main for a 12-package random sample, and absent from classify-dom01-fr15.tsv/inventory-dom01-*.txt/classify-file05.tsv — pre-existing debt outside task-263's stated PRD scope (100 relocate + 59 rename baseline), reported non-blocking"
+        }
+      ]
+    },
+    {
+      "name": "DOM-04 — 13 packages with rest.go and no literal func Transform(",
+      "type": "mixed",
+      "checks": [
+        {
+          "id": "DOM-04",
+          "name": "func Transform(Model) (RestModel, error) defined in rest.go",
+          "status": "n-a",
+          "evidence": "all 13 (rewardpool, channel/data/tradeability, channel/storage, character-factory/factory, atlas-data/data/skill, inventory/data/tradeability, messengers/character, monster-death/map, npc/conversation, parties/character, storage/asset, summons/summon, tenants/configuration) confirmed disposed in exemptions.md — 'no domain Model' clusters, 'detector artifacts' (a) and (b), or named-Transform* residue"
+        }
+      ]
+    },
+    {
+      "name": "DOM-04 — 172 packages with newly-added func Transform( on this branch",
+      "type": "mixed",
+      "checks": [
+        {
+          "id": "DOM-04",
+          "name": "Transform/Extract round-trip is not lossy beyond documented policy",
+          "status": "pass",
+          "evidence": "15-package random sample field-compared Model vs RestModel; consistent with Task-16 resolution #3/#4 policy; services/atlas-messages/atlas.com/messages/pet/rest.go:46-55 found as an additional instance of the same accepted pattern, not individually cataloged in exemptions.md (non-blocking documentation gap, not a code defect)"
+        }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-04: full field-by-field lossy-Transform audit of the remaining 157 (of 172) newly-added Transform functions not independently re-derived beyond the 15-package sample; relies on handwork-notes.md/review-task-16..18b artifacts",
+    "DOM-01: 5 of 7 'trigger not fired (no model.go)' entries and 0 of 2 'NewBuilder name already taken' were spot-checked beyond exemptions.md's own re-derivation claim (2 of 7 total spot-checked directly in this pass)"
+  ],
+  "blocking": [
+    "DOM-01/FILE-05: services/atlas-cashshop/atlas.com/cashshop/asset/model.go:106,116 — type Builder[E any] struct / func NewBuilder[E any]( must relocate to builder.go; not in exemptions.md",
+    "DOM-01/FILE-05: services/atlas-channel/atlas.com/channel/account/model.go:52,69 — type builder struct / func NewBuilder() must relocate to builder.go (which does not exist); not in exemptions.md"
+  ],
+  "nonBlocking": [
+    "DOM-01: 144 changed packages with model.go and no builder pattern at all — pre-existing on main, outside task-263's stated PRD scope, not blocking this branch",
+    "DOM-04: services/atlas-messages/atlas.com/messages/pet/rest.go — add to exemptions.md's lossy-Extract catalog for completeness; matches an already-accepted pattern, no code change needed"
+  ]
+}

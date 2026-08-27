@@ -33,6 +33,22 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	es, err := model.SliceMap(effect.Transform)(model.FixedProvider(m.effects))()()
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	return RestModel{
+		Id:            m.id,
+		Name:          m.name,
+		Action:        m.action,
+		Element:       m.element,
+		AnimationTime: m.animationTime,
+		Effects:       es,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	es, err := model.SliceMap(effect.Extract)(model.FixedProvider(rm.Effects))()()
 	if err != nil {

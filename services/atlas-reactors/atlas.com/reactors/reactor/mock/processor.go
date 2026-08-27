@@ -12,7 +12,7 @@ import (
 type ProcessorMock struct {
 	GetByIdFunc           func(id uint32) (reactor.Model, error)
 	GetInFieldFunc        func(f field.Model) ([]reactor.Model, error)
-	CreateFunc            func(b *reactor.ModelBuilder) error
+	CreateFunc            func(b *reactor.Builder) error
 	DestroyInFieldFunc    func(f field.Model)
 	TeardownFunc          func(envContext func(context.Context) context.Context) func()
 	DestroyAllFunc        func(envContext func(context.Context) context.Context) error
@@ -40,7 +40,7 @@ func (m *ProcessorMock) GetInField(f field.Model) ([]reactor.Model, error) {
 	return nil, nil
 }
 
-func (m *ProcessorMock) Create(b *reactor.ModelBuilder) error {
+func (m *ProcessorMock) Create(b *reactor.Builder) error {
 	if m.CreateFunc != nil {
 		return m.CreateFunc(b)
 	}

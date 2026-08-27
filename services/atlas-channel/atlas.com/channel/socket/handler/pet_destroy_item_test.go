@@ -48,7 +48,7 @@ func TestBuildDestroyPetItemSaga(t *testing.T) {
 func TestFindPetBySerialNumber(t *testing.T) {
 	cid := uuid.New()
 	build := func(id uint32, slot int16, templateId uint32, petId uint32, sn uint64) asset.Model {
-		m, err := asset.NewModelBuilder(id, cid, templateId).
+		m, err := asset.NewBuilderWithId(id, cid, templateId).
 			SetSlot(slot).
 			SetPetId(petId).
 			SetPetSerialNumber(sn).

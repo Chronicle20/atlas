@@ -23,7 +23,7 @@ func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB) func(worldId worl
 			assets = []asset.Model{}
 		}
 
-		return NewModelBuilder().
+		return NewBuilder().
 			SetId(e.Id).
 			SetWorldId(world.Id(e.WorldId)).
 			SetAccountId(e.AccountId).
@@ -50,7 +50,7 @@ func GetByAccountId(l logrus.FieldLogger, db *gorm.DB) func(accountId uint32) ([
 				assets = []asset.Model{}
 			}
 
-			m := NewModelBuilder().
+			m := NewBuilder().
 				SetId(e.Id).
 				SetWorldId(world.Id(e.WorldId)).
 				SetAccountId(e.AccountId).

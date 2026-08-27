@@ -44,39 +44,6 @@ func (m Model) GetCustomDataInt(key string) int {
 	return n
 }
 
-// ModelBuilder provides a builder pattern for creating party quest models
-type ModelBuilder struct {
-	id         uuid.UUID
-	customData map[string]string
-}
-
-// NewModelBuilder creates a new party quest model builder
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{
-		customData: make(map[string]string),
-	}
-}
-
-// SetId sets the instance ID
-func (b *ModelBuilder) SetId(id uuid.UUID) *ModelBuilder {
-	b.id = id
-	return b
-}
-
-// SetCustomData sets the custom data map
-func (b *ModelBuilder) SetCustomData(data map[string]string) *ModelBuilder {
-	b.customData = data
-	return b
-}
-
-// Build creates a party quest model from the builder
-func (b *ModelBuilder) Build() Model {
-	return Model{
-		id:         b.id,
-		customData: b.customData,
-	}
-}
-
 // StageStateRestModel represents stage state from the atlas-party-quests REST API
 type StageStateRestModel struct {
 	CustomData map[string]any `json:"customData,omitempty"`
@@ -112,7 +79,7 @@ func Extract(r RestModel) (Model, error) {
 		customData[k] = fmt.Sprintf("%v", v)
 	}
 
-	return NewModelBuilder().
+	return NewBuilder().
 		SetId(r.Id).
 		SetCustomData(customData).
 		Build(), nil

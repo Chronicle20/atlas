@@ -60,7 +60,7 @@ func (Subdomain) Build(t tenant.Model, entityID string, attrs JSONModel) ([]Mode
 
 	models := make([]Model, 0, len(attrs.Drops))
 	for _, d := range attrs.Drops {
-		m, err := NewContinentDropBuilder(t.Id(), 0).
+		m, err := NewBuilder(t.Id(), 0).
 			SetContinentId(continentId).
 			SetItemId(d.ItemID).
 			SetMinimumQuantity(d.MinimumQuantity).

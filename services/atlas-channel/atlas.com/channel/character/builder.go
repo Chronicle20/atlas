@@ -16,7 +16,7 @@ import (
 
 var ErrInvalidId = errors.New("character id must be greater than 0")
 
-type modelBuilder struct {
+type builder struct {
 	id                 uint32
 	accountId          uint32
 	worldId            world.Id
@@ -57,14 +57,14 @@ type modelBuilder struct {
 	monsterBook        monsterbook.Model
 }
 
-// NewModelBuilder creates a new builder instance
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{}
+// NewBuilder creates a new builder instance
+func NewBuilder() *builder {
+	return &builder{}
 }
 
 // CloneModel creates a builder initialized with the Model's values
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:                 m.id,
 		accountId:          m.accountId,
 		worldId:            m.worldId,
@@ -106,51 +106,51 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetId(v uint32) *modelBuilder           { b.id = v; return b }
-func (b *modelBuilder) SetAccountId(v uint32) *modelBuilder    { b.accountId = v; return b }
-func (b *modelBuilder) SetWorldId(v world.Id) *modelBuilder    { b.worldId = v; return b }
-func (b *modelBuilder) SetName(v string) *modelBuilder         { b.name = v; return b }
-func (b *modelBuilder) SetGender(v byte) *modelBuilder         { b.gender = v; return b }
-func (b *modelBuilder) SetSkinColor(v byte) *modelBuilder      { b.skinColor = v; return b }
-func (b *modelBuilder) SetFace(v uint32) *modelBuilder         { b.face = v; return b }
-func (b *modelBuilder) SetHair(v uint32) *modelBuilder         { b.hair = v; return b }
-func (b *modelBuilder) SetLevel(v byte) *modelBuilder          { b.level = v; return b }
-func (b *modelBuilder) SetJobId(v job.Id) *modelBuilder        { b.jobId = v; return b }
-func (b *modelBuilder) SetStrength(v uint16) *modelBuilder     { b.strength = v; return b }
-func (b *modelBuilder) SetDexterity(v uint16) *modelBuilder    { b.dexterity = v; return b }
-func (b *modelBuilder) SetIntelligence(v uint16) *modelBuilder { b.intelligence = v; return b }
-func (b *modelBuilder) SetLuck(v uint16) *modelBuilder         { b.luck = v; return b }
-func (b *modelBuilder) SetHp(v uint16) *modelBuilder           { b.hp = v; return b }
-func (b *modelBuilder) SetMaxHp(v uint16) *modelBuilder        { b.maxHp = v; return b }
-func (b *modelBuilder) SetMp(v uint16) *modelBuilder           { b.mp = v; return b }
-func (b *modelBuilder) SetMaxMp(v uint16) *modelBuilder        { b.maxMp = v; return b }
-func (b *modelBuilder) SetHpMpUsed(v int) *modelBuilder        { b.hpMpUsed = v; return b }
-func (b *modelBuilder) SetAp(v uint16) *modelBuilder           { b.ap = v; return b }
-func (b *modelBuilder) SetSp(v string) *modelBuilder           { b.sp = v; return b }
-func (b *modelBuilder) SetExperience(v uint32) *modelBuilder   { b.experience = v; return b }
-func (b *modelBuilder) SetFame(v int16) *modelBuilder          { b.fame = v; return b }
-func (b *modelBuilder) SetGachaponExperience(v uint32) *modelBuilder {
+func (b *builder) SetId(v uint32) *builder           { b.id = v; return b }
+func (b *builder) SetAccountId(v uint32) *builder    { b.accountId = v; return b }
+func (b *builder) SetWorldId(v world.Id) *builder    { b.worldId = v; return b }
+func (b *builder) SetName(v string) *builder         { b.name = v; return b }
+func (b *builder) SetGender(v byte) *builder         { b.gender = v; return b }
+func (b *builder) SetSkinColor(v byte) *builder      { b.skinColor = v; return b }
+func (b *builder) SetFace(v uint32) *builder         { b.face = v; return b }
+func (b *builder) SetHair(v uint32) *builder         { b.hair = v; return b }
+func (b *builder) SetLevel(v byte) *builder          { b.level = v; return b }
+func (b *builder) SetJobId(v job.Id) *builder        { b.jobId = v; return b }
+func (b *builder) SetStrength(v uint16) *builder     { b.strength = v; return b }
+func (b *builder) SetDexterity(v uint16) *builder    { b.dexterity = v; return b }
+func (b *builder) SetIntelligence(v uint16) *builder { b.intelligence = v; return b }
+func (b *builder) SetLuck(v uint16) *builder         { b.luck = v; return b }
+func (b *builder) SetHp(v uint16) *builder           { b.hp = v; return b }
+func (b *builder) SetMaxHp(v uint16) *builder        { b.maxHp = v; return b }
+func (b *builder) SetMp(v uint16) *builder           { b.mp = v; return b }
+func (b *builder) SetMaxMp(v uint16) *builder        { b.maxMp = v; return b }
+func (b *builder) SetHpMpUsed(v int) *builder        { b.hpMpUsed = v; return b }
+func (b *builder) SetAp(v uint16) *builder           { b.ap = v; return b }
+func (b *builder) SetSp(v string) *builder           { b.sp = v; return b }
+func (b *builder) SetExperience(v uint32) *builder   { b.experience = v; return b }
+func (b *builder) SetFame(v int16) *builder          { b.fame = v; return b }
+func (b *builder) SetGachaponExperience(v uint32) *builder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *modelBuilder) SetSpawnPoint(v uint32) *modelBuilder         { b.spawnPoint = v; return b }
-func (b *modelBuilder) SetGm(v int) *modelBuilder                    { b.gm = v; return b }
-func (b *modelBuilder) SetX(v int16) *modelBuilder                   { b.x = v; return b }
-func (b *modelBuilder) SetY(v int16) *modelBuilder                   { b.y = v; return b }
-func (b *modelBuilder) SetMeso(v uint32) *modelBuilder               { b.meso = v; return b }
-func (b *modelBuilder) SetPets(v []pet.Model) *modelBuilder          { b.pets = v; return b }
-func (b *modelBuilder) SetEquipment(v equipment.Model) *modelBuilder { b.equipment = v; return b }
-func (b *modelBuilder) SetInventory(v inventory.Model) *modelBuilder { b.inventory = v; return b }
-func (b *modelBuilder) SetSkills(v []skill.Model) *modelBuilder      { b.skills = v; return b }
-func (b *modelBuilder) SetQuests(v []quest.Model) *modelBuilder      { b.quests = v; return b }
-func (b *modelBuilder) SetParty(v party.Model) *modelBuilder         { b.party = v; return b }
-func (b *modelBuilder) SetMonsterBook(v monsterbook.Model) *modelBuilder {
+func (b *builder) SetSpawnPoint(v uint32) *builder         { b.spawnPoint = v; return b }
+func (b *builder) SetGm(v int) *builder                    { b.gm = v; return b }
+func (b *builder) SetX(v int16) *builder                   { b.x = v; return b }
+func (b *builder) SetY(v int16) *builder                   { b.y = v; return b }
+func (b *builder) SetMeso(v uint32) *builder               { b.meso = v; return b }
+func (b *builder) SetPets(v []pet.Model) *builder          { b.pets = v; return b }
+func (b *builder) SetEquipment(v equipment.Model) *builder { b.equipment = v; return b }
+func (b *builder) SetInventory(v inventory.Model) *builder { b.inventory = v; return b }
+func (b *builder) SetSkills(v []skill.Model) *builder      { b.skills = v; return b }
+func (b *builder) SetQuests(v []quest.Model) *builder      { b.quests = v; return b }
+func (b *builder) SetParty(v party.Model) *builder         { b.party = v; return b }
+func (b *builder) SetMonsterBook(v monsterbook.Model) *builder {
 	b.monsterBook = v
 	return b
 }
 
 // Build creates a new Model instance with validation
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == 0 {
 		return Model{}, ErrInvalidId
 	}
@@ -197,7 +197,7 @@ func (b *modelBuilder) Build() (Model, error) {
 }
 
 // MustBuild creates a new Model instance, panicking on validation error
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

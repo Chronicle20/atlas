@@ -2,22 +2,22 @@ package key
 
 import "errors"
 
-// ModelBuilder provides a fluent API for constructing key.Model instances.
-type ModelBuilder struct {
+// Builder provides a fluent API for constructing key.Model instances.
+type Builder struct {
 	characterId uint32
 	key         int32
 	theType     int8
 	action      int32
 }
 
-// NewModelBuilder creates a new ModelBuilder.
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{}
+// NewBuilder creates a new Builder.
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
-// CloneModelBuilder creates a new ModelBuilder initialized from an existing Model.
-func CloneModelBuilder(m Model) *ModelBuilder {
-	return &ModelBuilder{
+// CloneBuilder creates a new Builder initialized from an existing Model.
+func CloneBuilder(m Model) *Builder {
+	return &Builder{
 		characterId: m.CharacterId(),
 		key:         m.Key(),
 		theType:     m.Type(),
@@ -26,31 +26,31 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 }
 
 // SetCharacterId sets the character ID.
-func (b *ModelBuilder) SetCharacterId(characterId uint32) *ModelBuilder {
+func (b *Builder) SetCharacterId(characterId uint32) *Builder {
 	b.characterId = characterId
 	return b
 }
 
 // SetKey sets the key binding.
-func (b *ModelBuilder) SetKey(key int32) *ModelBuilder {
+func (b *Builder) SetKey(key int32) *Builder {
 	b.key = key
 	return b
 }
 
 // SetType sets the key type.
-func (b *ModelBuilder) SetType(theType int8) *ModelBuilder {
+func (b *Builder) SetType(theType int8) *Builder {
 	b.theType = theType
 	return b
 }
 
 // SetAction sets the action.
-func (b *ModelBuilder) SetAction(action int32) *ModelBuilder {
+func (b *Builder) SetAction(action int32) *Builder {
 	b.action = action
 	return b
 }
 
 // Build validates and constructs the Model. Returns an error if validation fails.
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.characterId == 0 {
 		return Model{}, errors.New("characterId is required")
 	}
@@ -64,7 +64,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 
 // MustBuild builds the model and panics if validation fails.
 // Use this only when building from a known-valid source (e.g., cloning an existing model).
-func (b *ModelBuilder) MustBuild() Model {
+func (b *Builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic("MustBuild failed: " + err.Error())
@@ -73,21 +73,21 @@ func (b *ModelBuilder) MustBuild() Model {
 }
 
 // CharacterId returns the characterId from the builder.
-func (b *ModelBuilder) CharacterId() uint32 {
+func (b *Builder) CharacterId() uint32 {
 	return b.characterId
 }
 
 // Key returns the key from the builder.
-func (b *ModelBuilder) Key() int32 {
+func (b *Builder) Key() int32 {
 	return b.key
 }
 
 // Type returns the type from the builder.
-func (b *ModelBuilder) Type() int8 {
+func (b *Builder) Type() int8 {
 	return b.theType
 }
 
 // Action returns the action from the builder.
-func (b *ModelBuilder) Action() int32 {
+func (b *Builder) Action() int32 {
 	return b.action
 }

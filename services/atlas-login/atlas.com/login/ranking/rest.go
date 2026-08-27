@@ -69,3 +69,13 @@ func Extract(r RestModel) (Model, error) {
 		jobRankMove: r.JobRankMove,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:          m.characterId,
+		Rank:        m.rank,
+		RankMove:    m.rankMove,
+		JobRank:     m.jobRank,
+		JobRankMove: m.jobRankMove,
+	}, nil
+}

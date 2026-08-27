@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewModelBuilder_CreatesEmptyBuilder(t *testing.T) {
-	builder := quest.NewModelBuilder()
+	builder := quest.NewBuilder()
 	model := builder.Build()
 
 	if model.TenantId() != uuid.Nil {
@@ -38,7 +38,7 @@ func TestBuilder_SettersAreChainable(t *testing.T) {
 	tenantId := uuid.New()
 	now := time.Now()
 
-	model := quest.NewModelBuilder().
+	model := quest.NewBuilder().
 		SetTenantId(tenantId).
 		SetId(123).
 		SetCharacterId(456).
@@ -72,11 +72,11 @@ func TestCloneModel_PreservesAllFields(t *testing.T) {
 	completedAt := startedAt.Add(time.Hour)
 
 	progressModels := []progress.Model{
-		progress.NewModelBuilder().SetId(1).SetInfoNumber(100).SetProgress("005").Build(),
-		progress.NewModelBuilder().SetId(2).SetInfoNumber(200).SetProgress("1").Build(),
+		progress.NewBuilder().SetId(1).SetInfoNumber(100).SetProgress("005").Build(),
+		progress.NewBuilder().SetId(2).SetInfoNumber(200).SetProgress("1").Build(),
 	}
 
-	original := quest.NewModelBuilder().
+	original := quest.NewBuilder().
 		SetTenantId(tenantId).
 		SetId(123).
 		SetCharacterId(456).
@@ -119,7 +119,7 @@ func TestCloneModel_PreservesAllFields(t *testing.T) {
 
 func TestCloneModel_ModificationsDoNotAffectOriginal(t *testing.T) {
 	tenantId := uuid.New()
-	original := quest.NewModelBuilder().
+	original := quest.NewBuilder().
 		SetTenantId(tenantId).
 		SetId(123).
 		SetCharacterId(456).
@@ -176,7 +176,7 @@ func TestBuilder_StateConstants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := quest.NewModelBuilder().SetState(tt.state).Build()
+			model := quest.NewBuilder().SetState(tt.state).Build()
 			if model.State() != tt.want {
 				t.Errorf("State() = %d, want %d", model.State(), tt.want)
 			}
@@ -212,7 +212,7 @@ func TestModel_IsExpired(t *testing.T) {
 			// Note: Model doesn't have SetExpirationTime in builder
 			// We can only test this through entity creation
 			// For now, we'll just verify the constant behavior
-			model := quest.NewModelBuilder().Build()
+			model := quest.NewBuilder().Build()
 			// Zero expiration time = not expired
 			if model.IsExpired() {
 				t.Error("Zero expiration time should not be expired")
@@ -223,11 +223,11 @@ func TestModel_IsExpired(t *testing.T) {
 
 func TestModel_GetProgress(t *testing.T) {
 	progressModels := []progress.Model{
-		progress.NewModelBuilder().SetId(1).SetInfoNumber(100).SetProgress("005").Build(),
-		progress.NewModelBuilder().SetId(2).SetInfoNumber(200).SetProgress("1").Build(),
+		progress.NewBuilder().SetId(1).SetInfoNumber(100).SetProgress("005").Build(),
+		progress.NewBuilder().SetId(2).SetInfoNumber(200).SetProgress("1").Build(),
 	}
 
-	model := quest.NewModelBuilder().
+	model := quest.NewBuilder().
 		SetProgress(progressModels).
 		Build()
 
@@ -248,7 +248,7 @@ func TestModel_GetProgress(t *testing.T) {
 }
 
 func TestBuilder_SetProgress_EmptySlice(t *testing.T) {
-	model := quest.NewModelBuilder().
+	model := quest.NewBuilder().
 		SetProgress([]progress.Model{}).
 		Build()
 
@@ -258,7 +258,7 @@ func TestBuilder_SetProgress_EmptySlice(t *testing.T) {
 }
 
 func TestBuilder_SetProgress_NilSlice(t *testing.T) {
-	model := quest.NewModelBuilder().
+	model := quest.NewBuilder().
 		SetProgress(nil).
 		Build()
 
@@ -269,7 +269,7 @@ func TestBuilder_SetProgress_NilSlice(t *testing.T) {
 
 func TestBuildWithValidation_Success(t *testing.T) {
 	tenantId := uuid.New()
-	model, err := quest.NewModelBuilder().
+	model, err := quest.NewBuilder().
 		SetTenantId(tenantId).
 		SetCharacterId(123).
 		SetQuestId(456).
@@ -284,7 +284,7 @@ func TestBuildWithValidation_Success(t *testing.T) {
 }
 
 func TestBuildWithValidation_MissingTenantId(t *testing.T) {
-	_, err := quest.NewModelBuilder().
+	_, err := quest.NewBuilder().
 		SetCharacterId(123).
 		SetQuestId(456).
 		BuildWithValidation()
@@ -298,7 +298,7 @@ func TestBuildWithValidation_MissingTenantId(t *testing.T) {
 }
 
 func TestBuildWithValidation_MissingCharacterId(t *testing.T) {
-	_, err := quest.NewModelBuilder().
+	_, err := quest.NewBuilder().
 		SetTenantId(uuid.New()).
 		SetQuestId(456).
 		BuildWithValidation()
@@ -312,7 +312,7 @@ func TestBuildWithValidation_MissingCharacterId(t *testing.T) {
 }
 
 func TestBuildWithValidation_MissingQuestId(t *testing.T) {
-	_, err := quest.NewModelBuilder().
+	_, err := quest.NewBuilder().
 		SetTenantId(uuid.New()).
 		SetCharacterId(123).
 		BuildWithValidation()

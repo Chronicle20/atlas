@@ -9,21 +9,21 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := shops.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := shops.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	commodity := commodities.NewModelBuilder().
+	commodity := commodities.NewBuilder().
 		SetId(uuid.New()).
 		SetTemplateId(1000).
 		SetMesoPrice(500).
 		MustBuild()
 
-	model, err := shops.NewModelBuilder().
+	model, err := shops.NewBuilder().
 		SetNpcId(9000001).
 		SetCommodities([]commodities.Model{commodity}).
 		Build()
@@ -39,7 +39,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingNpcId(t *testing.T) {
-	_, err := shops.NewModelBuilder().
+	_, err := shops.NewBuilder().
 		SetCommodities([]commodities.Model{}).
 		Build()
 
@@ -49,7 +49,7 @@ func TestBuild_MissingNpcId(t *testing.T) {
 }
 
 func TestBuild_ZeroNpcId(t *testing.T) {
-	_, err := shops.NewModelBuilder().
+	_, err := shops.NewBuilder().
 		SetNpcId(0).
 		Build()
 
@@ -59,17 +59,17 @@ func TestBuild_ZeroNpcId(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	commodity1 := commodities.NewModelBuilder().
+	commodity1 := commodities.NewBuilder().
 		SetId(uuid.New()).
 		SetTemplateId(1000).
 		MustBuild()
 
-	commodity2 := commodities.NewModelBuilder().
+	commodity2 := commodities.NewBuilder().
 		SetId(uuid.New()).
 		SetTemplateId(2000).
 		MustBuild()
 
-	original, err := shops.NewModelBuilder().
+	original, err := shops.NewBuilder().
 		SetNpcId(9000001).
 		SetCommodities([]commodities.Model{commodity1}).
 		Build()
@@ -105,7 +105,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := shops.NewModelBuilder().
+	model := shops.NewBuilder().
 		SetNpcId(9000001).
 		MustBuild()
 
@@ -121,17 +121,17 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	shops.NewModelBuilder().
+	shops.NewBuilder().
 		MustBuild() // Missing NpcId, should panic
 }
 
 func TestBuilderFluentChaining(t *testing.T) {
-	commodity := commodities.NewModelBuilder().
+	commodity := commodities.NewBuilder().
 		SetId(uuid.New()).
 		SetTemplateId(1000).
 		MustBuild()
 
-	model, err := shops.NewModelBuilder().
+	model, err := shops.NewBuilder().
 		SetNpcId(9000001).
 		SetCommodities([]commodities.Model{commodity}).
 		Build()

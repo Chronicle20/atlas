@@ -62,6 +62,21 @@ func (m Model) TargetMapId() uint32 {
 	return m.targetMapId
 }
 
+// Transform converts the domain Model back into its RestModel
+// representation. RestModel.Target and RestModel.ScriptName have no Model
+// counterpart — Extract never reads them — so Transform does not populate
+// them (D1).
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:          strconv.Itoa(int(m.id)),
+		Name:        m.name,
+		Type:        m.portalType,
+		X:           m.x,
+		Y:           m.y,
+		TargetMapId: m.targetMapId,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	id, err := strconv.Atoi(rm.Id)
 	if err != nil {

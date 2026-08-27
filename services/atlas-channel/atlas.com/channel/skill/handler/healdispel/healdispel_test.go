@@ -21,7 +21,7 @@ func tl() logrus.FieldLogger {
 }
 
 func superGm(id uint32) character.Model {
-	return character.NewModelBuilder().SetId(id).SetLevel(200).SetJobId(job.SuperGmId).MustBuild()
+	return character.NewBuilder().SetId(id).SetLevel(200).SetJobId(job.SuperGmId).MustBuild()
 }
 
 func recip(id uint32, hp, maxHp, mp, maxMp uint16) channelhandler.PartyRecipient {
@@ -69,7 +69,7 @@ func newDeps(caster character.Model, casterErr error, hidden bool, recips []chan
 }
 
 func TestNonSuperGmRejected(t *testing.T) {
-	nonGm := character.NewModelBuilder().SetId(1).SetJobId(job.Id(100)).MustBuild() // Warrior
+	nonGm := character.NewBuilder().SetId(1).SetJobId(job.Id(100)).MustBuild() // Warrior
 	var cap capture
 	d := newDeps(nonGm, nil, false, []channelhandler.PartyRecipient{recip(1, 1, 100, 1, 100)}, &cap)
 	_ = applyHealDispel(tl(), field.NewBuilder(0, 0, 1).Build(), 1, d)

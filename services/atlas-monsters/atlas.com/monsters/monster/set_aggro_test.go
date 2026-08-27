@@ -35,7 +35,7 @@ func TestSetAggro_Gates(t *testing.T) {
 		{
 			name: "unknown monster",
 			infoHook: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetFirstAttack(true).Build(), nil
+				return information.NewBuilder().SetFirstAttack(true).Build(), nil
 			},
 			claimant:     9,
 			inField:      []uint32{9},
@@ -47,7 +47,7 @@ func TestSetAggro_Gates(t *testing.T) {
 			seedController: 7,
 			killMonster:    true,
 			infoHook: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetFirstAttack(true).Build(), nil
+				return information.NewBuilder().SetFirstAttack(true).Build(), nil
 			},
 			claimant:        7,
 			inField:         []uint32{7},
@@ -60,7 +60,7 @@ func TestSetAggro_Gates(t *testing.T) {
 			name:           "passive template",
 			seedController: 7,
 			infoHook: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetFirstAttack(false).Build(), nil
+				return information.NewBuilder().SetFirstAttack(false).Build(), nil
 			},
 			claimant:        7,
 			inField:         []uint32{7},
@@ -84,7 +84,7 @@ func TestSetAggro_Gates(t *testing.T) {
 			name:           "character not in field",
 			seedController: 7,
 			infoHook: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetFirstAttack(true).Build(), nil
+				return information.NewBuilder().SetFirstAttack(true).Build(), nil
 			},
 			claimant:        9,
 			inField:         []uint32{7},
@@ -148,7 +148,7 @@ func TestSetAggro_Arbitration(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetFirstAttack(true).Build(), nil
+		return information.NewBuilder().SetFirstAttack(true).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -370,7 +370,7 @@ func TestSetAggro_LeavesDamageEntriesUntouched(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetFirstAttack(true).Build(), nil
+		return information.NewBuilder().SetFirstAttack(true).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 

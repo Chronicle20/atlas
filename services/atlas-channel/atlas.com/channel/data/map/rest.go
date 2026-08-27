@@ -84,6 +84,38 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 	return nil
 }
 
+// Transform is the inverse of Extract, restricted to the fields Extract
+// reads: Clock, ReturnMapId, FieldLimit, Town, and the flattened foothold
+// map (emitted as a single-level FootholdTree, since Model no longer
+// carries the original quadtree structure). RestModel fields Extract never
+// reads (Name, StreetName, MonsterRate, etc.) are not populated.
+func Transform(m Model) (RestModel, error) {
+	footholds := make([]FootholdRestModel, 0, len(m.footholds))
+	for _, fh := range m.footholds {
+		footholds = append(footholds, FootholdRestModel{
+			Id: fh.Id,
+			First: &PointRestModel{
+				X: fh.FirstX,
+				Y: fh.FirstY,
+			},
+			Second: &PointRestModel{
+				X: fh.SecondX,
+				Y: fh.SecondY,
+			},
+		})
+	}
+
+	return RestModel{
+		Clock:       m.clock,
+		ReturnMapId: m.returnMapId,
+		FieldLimit:  m.fieldLimit,
+		Town:        m.town,
+		FootholdTree: FootholdTreeRestModel{
+			Footholds: footholds,
+		},
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	footholds := make(map[uint32]Foothold)
 	flattenFootholds(&rm.FootholdTree, footholds)

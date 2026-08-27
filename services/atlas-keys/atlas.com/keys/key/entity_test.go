@@ -36,7 +36,7 @@ func TestMake_TransformsEntityToModel(t *testing.T) {
 
 func TestModel_ToEntity_TransformsModelToEntity(t *testing.T) {
 	tenantId := uuid.New()
-	m, _ := NewModelBuilder().
+	m, _ := NewBuilder().
 		SetCharacterId(54321).
 		SetKey(65).
 		SetType(6).

@@ -19,7 +19,7 @@ func (m *ProcessorImpl) GetById(decorators ...model.Decorator[character.Model]) 
 		return m.GetByIdFunc(decorators...)
 	}
 	return func(characterId uint32) (character.Model, error) {
-		return character.NewModelBuilder().Build(), nil
+		return character.NewBuilder().Build(), nil
 	}
 }
 

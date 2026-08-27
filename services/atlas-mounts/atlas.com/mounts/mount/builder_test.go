@@ -8,7 +8,7 @@ import (
 )
 
 func TestBuilderDefaults(t *testing.T) {
-	m, err := NewModelBuilder(uuid.New(), 1, uuid.New()).Build()
+	m, err := NewBuilder(uuid.New(), 1, uuid.New()).Build()
 	if err != nil {
 		t.Fatalf("Build returned error: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestCloneIsImmutable(t *testing.T) {
 	id := uuid.New()
 	tick := time.Now().UTC().Truncate(time.Second)
 
-	m, err := NewModelBuilder(tenantId, 42, id).
+	m, err := NewBuilder(tenantId, 42, id).
 		SetLevel(3).
 		SetExp(120).
 		SetTiredness(33).

@@ -1,16 +1,16 @@
 package consumable
 
-// ModelBuilder constructs a Model in tests. Production callers use Extract.
-type ModelBuilder struct {
+// Builder constructs a Model in tests. Production callers use Extract.
+type Builder struct {
 	m Model
 }
 
-func NewModelBuilder() *ModelBuilder { return &ModelBuilder{} }
+func NewBuilder() *Builder { return &Builder{} }
 
-func (b *ModelBuilder) SetId(v uint32) *ModelBuilder             { b.m.id = v; return b }
-func (b *ModelBuilder) SetCreate(v uint32) *ModelBuilder         { b.m.create = v; return b }
-func (b *ModelBuilder) SetMonsterId(v uint32) *ModelBuilder      { b.m.monsterId = v; return b }
-func (b *ModelBuilder) SetMonsterHp(v uint32) *ModelBuilder      { b.m.monsterHp = v; return b }
-func (b *ModelBuilder) SetBridleProp(v uint32) *ModelBuilder     { b.m.bridleProp = v; return b }
-func (b *ModelBuilder) SetBridlePropChg(v float64) *ModelBuilder { b.m.bridlePropChg = v; return b }
-func (b *ModelBuilder) Build() Model                             { return b.m }
+func (b *Builder) SetId(v uint32) *Builder             { b.m.id = v; return b }
+func (b *Builder) SetCreate(v uint32) *Builder         { b.m.create = v; return b }
+func (b *Builder) SetMonsterId(v uint32) *Builder      { b.m.monsterId = v; return b }
+func (b *Builder) SetMonsterHp(v uint32) *Builder      { b.m.monsterHp = v; return b }
+func (b *Builder) SetBridleProp(v uint32) *Builder     { b.m.bridleProp = v; return b }
+func (b *Builder) SetBridlePropChg(v float64) *Builder { b.m.bridlePropChg = v; return b }
+func (b *Builder) Build() Model                        { return b.m }

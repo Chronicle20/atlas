@@ -66,7 +66,7 @@ func newMonsterBombEnv(t *testing.T, f field.Model) *monsterBombEnv {
 
 	env := &monsterBombEnv{t: t, ctx: ctx, s: updated, l: l, logs: logs}
 
-	env.character = character.NewModelBuilder().
+	env.character = character.NewBuilder().
 		SetId(monsterBombCharacterId).
 		SetHp(500).
 		MustBuild()
@@ -153,7 +153,7 @@ func TestMonsterBombRejects(t *testing.T) {
 		{
 			name: "dead character",
 			setup: func(t *testing.T, env *monsterBombEnv, f field.Model) {
-				env.character = character.NewModelBuilder().SetId(monsterBombCharacterId).SetHp(0).MustBuild()
+				env.character = character.NewBuilder().SetId(monsterBombCharacterId).SetHp(0).MustBuild()
 			},
 			wantSubstr: "while dead",
 		},

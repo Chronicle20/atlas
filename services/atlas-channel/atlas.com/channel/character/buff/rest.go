@@ -31,6 +31,23 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	changes, err := model.SliceMap(stat.Transform)(model.FixedProvider(m.changes))()()
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	return RestModel{
+		SourceId:  m.sourceId,
+		Level:     m.level,
+		Duration:  m.duration,
+		Changes:   changes,
+		CreatedAt: m.createdAt,
+		ExpiresAt: m.expiresAt,
+		NoExpiry:  m.noExpiry,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	cs, err := model.SliceMap(stat.Extract)(model.FixedProvider(rm.Changes))()()
 	if err != nil {

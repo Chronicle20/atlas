@@ -76,6 +76,22 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 	return nil
 }
 
+// Transform converts a Model to its RestModel wire shape. Evolutions is left
+// nil: Model.evolutions is a derived count (see model.go, used only by
+// IsEvolvable), not the original []EvolutionRestModel collection -- Extract
+// discards each entry's TemplateId/Probability and keeps only len(). There is
+// no data on Model to reconstruct those entries from, so leaving Evolutions
+// empty is the honest mapping; synthesizing placeholder entries would
+// fabricate TemplateId/Probability values that never existed.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:          m.id,
+		Name:        m.name,
+		ReqPetLevel: m.reqPetLevel,
+		ReqItemId:   m.reqItemId,
+	}, nil
+}
+
 // Extract converts a REST model to a domain model
 func Extract(rm RestModel) (Model, error) {
 	return Model{

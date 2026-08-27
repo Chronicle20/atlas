@@ -6,7 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-type modelBuilder struct {
+type builder struct {
 	id                 world.Id
 	name               string
 	state              State
@@ -17,17 +17,13 @@ type modelBuilder struct {
 	channels           []channel.Model
 }
 
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{}
+// NewBuilder creates a new builder instance
+func NewBuilder() *builder {
+	return &builder{}
 }
 
-// NewBuilder is an alias for NewModelBuilder for backward compatibility
-func NewBuilder() *modelBuilder {
-	return NewModelBuilder()
-}
-
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:                 m.id,
 		name:               m.name,
 		state:              m.state,
@@ -39,47 +35,47 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetId(id world.Id) *modelBuilder {
+func (b *builder) SetId(id world.Id) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetName(name string) *modelBuilder {
+func (b *builder) SetName(name string) *builder {
 	b.name = name
 	return b
 }
 
-func (b *modelBuilder) SetState(state State) *modelBuilder {
+func (b *builder) SetState(state State) *builder {
 	b.state = state
 	return b
 }
 
-func (b *modelBuilder) SetMessage(message string) *modelBuilder {
+func (b *builder) SetMessage(message string) *builder {
 	b.message = message
 	return b
 }
 
-func (b *modelBuilder) SetEventMessage(eventMessage string) *modelBuilder {
+func (b *builder) SetEventMessage(eventMessage string) *builder {
 	b.eventMessage = eventMessage
 	return b
 }
 
-func (b *modelBuilder) SetRecommendedMessage(recommendedMessage string) *modelBuilder {
+func (b *builder) SetRecommendedMessage(recommendedMessage string) *builder {
 	b.recommendedMessage = recommendedMessage
 	return b
 }
 
-func (b *modelBuilder) SetCapacityStatus(capacityStatus Status) *modelBuilder {
+func (b *builder) SetCapacityStatus(capacityStatus Status) *builder {
 	b.capacityStatus = capacityStatus
 	return b
 }
 
-func (b *modelBuilder) SetChannels(channels []channel.Model) *modelBuilder {
+func (b *builder) SetChannels(channels []channel.Model) *builder {
 	b.channels = channels
 	return b
 }
 
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	return Model{
 		id:                 b.id,
 		name:               b.name,
@@ -92,7 +88,7 @@ func (b *modelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

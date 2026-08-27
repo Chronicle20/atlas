@@ -6,15 +6,15 @@ import (
 	"testing"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := drop.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := drop.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	model, err := drop.NewModelBuilder().
+	model, err := drop.NewBuilder().
 		SetId(1).
 		SetItem(1000, 10).
 		SetMeso(100).
@@ -38,7 +38,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := drop.NewModelBuilder().
+	_, err := drop.NewBuilder().
 		SetItem(1000, 10).
 		Build()
 
@@ -54,7 +54,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := drop.NewModelBuilder().
+	model := drop.NewBuilder().
 		SetId(1).
 		MustBuild()
 
@@ -70,11 +70,11 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	drop.NewModelBuilder().MustBuild() // Missing ID, should panic
+	drop.NewBuilder().MustBuild() // Missing ID, should panic
 }
 
 func TestCloneModel(t *testing.T) {
-	original, _ := drop.NewModelBuilder().
+	original, _ := drop.NewBuilder().
 		SetId(1).
 		SetItem(1000, 10).
 		SetPosition(100, 200).

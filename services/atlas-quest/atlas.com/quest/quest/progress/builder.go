@@ -2,19 +2,19 @@ package progress
 
 import "github.com/google/uuid"
 
-type modelBuilder struct {
+type builder struct {
 	tenantId   uuid.UUID
 	id         uint32
 	infoNumber uint32
 	progress   string
 }
 
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{}
+func NewBuilder() *builder {
+	return &builder{}
 }
 
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		tenantId:   m.tenantId,
 		id:         m.id,
 		infoNumber: m.infoNumber,
@@ -22,27 +22,27 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetTenantId(tenantId uuid.UUID) *modelBuilder {
+func (b *builder) SetTenantId(tenantId uuid.UUID) *builder {
 	b.tenantId = tenantId
 	return b
 }
 
-func (b *modelBuilder) SetId(id uint32) *modelBuilder {
+func (b *builder) SetId(id uint32) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetInfoNumber(infoNumber uint32) *modelBuilder {
+func (b *builder) SetInfoNumber(infoNumber uint32) *builder {
 	b.infoNumber = infoNumber
 	return b
 }
 
-func (b *modelBuilder) SetProgress(progress string) *modelBuilder {
+func (b *builder) SetProgress(progress string) *builder {
 	b.progress = progress
 	return b
 }
 
-func (b *modelBuilder) Build() Model {
+func (b *builder) Build() Model {
 	return Model{
 		tenantId:   b.tenantId,
 		id:         b.id,
@@ -53,6 +53,6 @@ func (b *modelBuilder) Build() Model {
 
 // BuildWithValidation returns the built Model with validation.
 // Progress model has no strictly required fields for creation (InfoNumber can be 0).
-func (b *modelBuilder) BuildWithValidation() (Model, error) {
+func (b *builder) BuildWithValidation() (Model, error) {
 	return b.Build(), nil
 }

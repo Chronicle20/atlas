@@ -59,3 +59,23 @@ func Extract(rm RestModel) (Model, error) {
 		fh:              rm.FH,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:              m.id,
+		InventoryItemId: m.inventoryItemId,
+		TemplateId:      m.templateId,
+		Name:            m.name,
+		Level:           m.level,
+		Closeness:       m.closeness,
+		Fullness:        m.fullness,
+		Expiration:      m.expiration,
+		OwnerId:         m.ownerId,
+		Lead:            m.lead,
+		Slot:            m.slot,
+		X:               m.x,
+		Y:               m.y,
+		Stance:          m.stance,
+		FH:              m.fh,
+	}, nil
+}

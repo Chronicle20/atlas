@@ -134,7 +134,7 @@ func enrichPetAssetWith(l logrus.FieldLogger, fetch func(petId uint32) (pet.Mode
 }
 
 func buildAssetFromCreatedBody(e asset2.StatusEvent[asset2.CreatedStatusEventBody]) asset.Model {
-	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+	return asset.NewBuilderWithId(e.AssetId, e.CompartmentId, e.TemplateId).
 		SetSlot(e.Slot).
 		SetExpiration(e.Body.Expiration).
 		SetCreatedAt(e.Body.CreatedAt).
@@ -173,7 +173,7 @@ func buildAssetFromCreatedBody(e asset2.StatusEvent[asset2.CreatedStatusEventBod
 }
 
 func buildAssetFromUpdatedBody(e asset2.StatusEvent[asset2.UpdatedStatusEventBody]) asset.Model {
-	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+	return asset.NewBuilderWithId(e.AssetId, e.CompartmentId, e.TemplateId).
 		SetSlot(e.Slot).
 		SetExpiration(e.Body.Expiration).
 		SetCreatedAt(e.Body.CreatedAt).
@@ -212,7 +212,7 @@ func buildAssetFromUpdatedBody(e asset2.StatusEvent[asset2.UpdatedStatusEventBod
 }
 
 func buildAssetFromAcceptedBody(e asset2.StatusEvent[asset2.AcceptedStatusEventBody]) asset.Model {
-	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+	return asset.NewBuilderWithId(e.AssetId, e.CompartmentId, e.TemplateId).
 		SetSlot(e.Slot).
 		SetExpiration(e.Body.Expiration).
 		SetCreatedAt(e.Body.CreatedAt).

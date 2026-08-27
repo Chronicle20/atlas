@@ -88,7 +88,7 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	return NewModelBuilder(rm.Id, rm.CashId, rm.TemplateId, rm.Name, rm.OwnerId).
+	return NewBuilder(rm.Id, rm.CashId, rm.TemplateId, rm.Name, rm.OwnerId).
 		SetLevel(rm.Level).
 		SetCloseness(rm.Closeness).
 		SetFullness(rm.Fullness).

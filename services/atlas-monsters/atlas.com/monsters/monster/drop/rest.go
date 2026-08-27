@@ -37,3 +37,13 @@ func Extract(rm RestModel) (Model, error) {
 		chance:          rm.Chance,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		ItemId:          m.itemId,
+		MinimumQuantity: m.minimumQuantity,
+		MaximumQuantity: m.maximumQuantity,
+		QuestId:         m.questId,
+		Chance:          m.chance,
+	}, nil
+}

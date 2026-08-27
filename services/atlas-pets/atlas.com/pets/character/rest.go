@@ -102,3 +102,12 @@ func Extract(m RestModel) (Model, error) {
 		stance: m.Stance,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:     m.id,
+		X:      m.x,
+		Y:      m.y,
+		Stance: m.stance,
+	}, nil
+}

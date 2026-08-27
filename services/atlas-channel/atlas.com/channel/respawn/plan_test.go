@@ -32,7 +32,7 @@ const (
 var ordinaryField = mapFacts{ReturnMapId: returnMap, Town: false, NoExpLossOnDeath: false}
 
 func buildCharacter(experience uint32) character.Model {
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(characterId).
 		SetName("Tumi").
 		SetLevel(30).
@@ -47,7 +47,7 @@ func buildCharacter(experience uint32) character.Model {
 // buildAsset creates one stack of templateId with the given quantity and
 // expiration (pass the zero time for "no expiration").
 func buildAsset(compartmentId uuid.UUID, templateId uint32, quantity uint32, expiration time.Time) asset.Model {
-	return asset.NewModelBuilder(1, compartmentId, templateId).
+	return asset.NewBuilderWithId(1, compartmentId, templateId).
 		SetSlot(1).
 		SetQuantity(quantity).
 		SetExpiration(expiration).
@@ -59,8 +59,8 @@ func buildAsset(compartmentId uuid.UUID, templateId uint32, quantity uint32, exp
 // ETC. A quantity of 0 means "the asset is absent entirely".
 func buildInventory(items map[uint32]uint32) channelInventory.Model {
 	cashId, etcId := uuid.New(), uuid.New()
-	cash := compartment.NewModelBuilder(cashId, characterId, inventoryConst.TypeValueCash, 100)
-	etc := compartment.NewModelBuilder(etcId, characterId, inventoryConst.TypeValueETC, 100)
+	cash := compartment.NewBuilder(cashId, characterId, inventoryConst.TypeValueCash, 100)
+	etc := compartment.NewBuilder(etcId, characterId, inventoryConst.TypeValueETC, 100)
 	for templateId, quantity := range items {
 		if quantity == 0 {
 			continue
@@ -71,7 +71,7 @@ func buildInventory(items map[uint32]uint32) channelInventory.Model {
 		}
 		cash = cash.AddAsset(buildAsset(cashId, templateId, quantity, time.Time{}))
 	}
-	return channelInventory.NewModelBuilder(characterId).
+	return channelInventory.NewBuilder(characterId).
 		SetCash(cash.MustBuild()).
 		SetEtc(etc.MustBuild()).
 		MustBuild()
@@ -122,10 +122,10 @@ func TestPlanRespawn_PremiumOneWithoutWheelUsesReturnMap(t *testing.T) {
 func TestPlanRespawn_ZeroQuantityWheelIsNotUsable(t *testing.T) {
 	// A wheel present at quantity 0 must read exactly like an absent one.
 	cashId := uuid.New()
-	cash := compartment.NewModelBuilder(cashId, characterId, inventoryConst.TypeValueCash, 100).
+	cash := compartment.NewBuilder(cashId, characterId, inventoryConst.TypeValueCash, 100).
 		AddAsset(buildAsset(cashId, uint32(item.WheelOfFortuneId), 0, time.Time{})).
 		MustBuild()
-	inv := channelInventory.NewModelBuilder(characterId).SetCash(cash).MustBuild()
+	inv := channelInventory.NewBuilder(characterId).SetCash(cash).MustBuild()
 
 	got := planRespawn(buildCharacter(0), inv, ordinaryField, currentMap, true)
 	if got.Wheel != nil || got.TargetMapId != returnMap {

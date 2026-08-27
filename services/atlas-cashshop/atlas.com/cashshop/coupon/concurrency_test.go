@@ -129,7 +129,7 @@ func countUpdatesTo(t *testing.T, db *gorm.DB, table string) func() int {
 // compartment.TypeExplorer, which is what seedCompartment writes.
 func characterModel(t *testing.T, characterId uint32, accountId uint32) character.Model {
 	t.Helper()
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(characterId).
 		SetAccountId(accountId).
 		SetJobId(job.Id(100)).

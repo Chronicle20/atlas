@@ -70,3 +70,13 @@ func Extract(rm FootholdRestModel) (Model, error) {
 		y2: rm.Second.Y,
 	}, nil
 }
+
+// Transform is the exact inverse of Extract: it expands the internal Model
+// back into the nested First/Second REST payload.
+func Transform(m Model) (FootholdRestModel, error) {
+	return FootholdRestModel{
+		Id:     m.id,
+		First:  &pointRestModel{X: m.x1, Y: m.y1},
+		Second: &pointRestModel{X: m.x2, Y: m.y2},
+	}, nil
+}

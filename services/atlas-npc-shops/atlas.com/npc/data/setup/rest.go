@@ -18,6 +18,23 @@ type RestModel struct {
 	Direction  uint32 `json:"direction"`
 }
 
+// Transform converts the domain Model into its RestModel representation.
+func Transform(m Model) RestModel {
+	return RestModel{
+		Id:         m.id,
+		Price:      m.price,
+		SlotMax:    m.slotMax,
+		RecoveryHP: m.recoveryHP,
+		TradeBlock: m.tradeBlock,
+		NotSale:    m.notSale,
+		ReqLevel:   m.reqLevel,
+		DistanceX:  m.distanceX,
+		DistanceY:  m.distanceY,
+		MaxDiff:    m.maxDiff,
+		Direction:  m.direction,
+	}
+}
+
 func (r RestModel) GetName() string {
 	return "setups"
 }

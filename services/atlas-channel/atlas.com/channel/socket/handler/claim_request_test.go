@@ -108,7 +108,7 @@ func (d *recordingClaimDeps) deps() claimSubmitDeps {
 			if d.lookupErr != nil {
 				return character.Model{}, d.lookupErr
 			}
-			return character.NewModelBuilder().SetId(characterId).SetMeso(d.meso).Build()
+			return character.NewBuilder().SetId(characterId).SetMeso(d.meso).Build()
 		},
 		submitClaim: func(_ reportsb.ClaimRequest) error { d.submitted++; return nil },
 		notice:      func(code writer.ClaimResultCode) { d.notices = append(d.notices, code) },

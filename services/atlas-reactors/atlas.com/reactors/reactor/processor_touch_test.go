@@ -170,7 +170,7 @@ func TestTouch(t *testing.T) {
 			d := newTestData(t, tc.stateInfo, nil, nil, tc.touchAreaInfo, tc.activateByTouch)
 
 			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-			builder := NewModelBuilder(ten, f, 6109013, "touch-reactor").
+			builder := NewBuilder(ten, f, 6109013, "touch-reactor").
 				SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 			created, err := GetRegistry().Create(ten, builder)
 			if err != nil {
@@ -239,7 +239,7 @@ func TestTouch_SkillGatedStateAdvances(t *testing.T) {
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 6109013, "skill-gated-touch-reactor").
+	builder := NewBuilder(ten, f, 6109013, "skill-gated-touch-reactor").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, err := GetRegistry().Create(ten, builder)
 	if err != nil {
@@ -278,7 +278,7 @@ func TestTouch_EmptyStateIsNoOp(t *testing.T) {
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 6109013, "empty-state-touch-reactor").
+	builder := NewBuilder(ten, f, 6109013, "empty-state-touch-reactor").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, err := GetRegistry().Create(ten, builder)
 	if err != nil {
@@ -325,7 +325,7 @@ func TestTouch_Idempotence(t *testing.T) {
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 6109013, "idempotent-touch-reactor").
+	builder := NewBuilder(ten, f, 6109013, "idempotent-touch-reactor").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, err := GetRegistry().Create(ten, builder)
 	if err != nil {
@@ -386,7 +386,7 @@ func TestTouch_LeavingIsCheap(t *testing.T) {
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 6109013, "leave-touch-reactor").
+	builder := NewBuilder(ten, f, 6109013, "leave-touch-reactor").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, err := GetRegistry().Create(ten, builder)
 	if err != nil {

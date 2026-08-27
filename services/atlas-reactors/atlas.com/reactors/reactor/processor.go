@@ -19,7 +19,7 @@ import (
 type Processor interface {
 	GetById(id uint32) (Model, error)
 	GetInField(f field.Model) ([]Model, error)
-	Create(b *ModelBuilder) error
+	Create(b *Builder) error
 	DestroyInField(f field.Model)
 	// Teardown builds the shutdown-time destroy-everything sweep. envContext
 	// must originate this pod's own environment identity (env.Self()) onto
@@ -67,7 +67,7 @@ func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 	return GetRegistry().GetInField(t, f), nil
 }
 
-func (p *ProcessorImpl) Create(b *ModelBuilder) error {
+func (p *ProcessorImpl) Create(b *Builder) error {
 	t := tenant.MustFromContext(p.ctx)
 	f := field.NewBuilder(b.worldId, b.channelId, b.mapId).SetInstance(b.instance).Build()
 	mk := NewMapKey(f)
@@ -285,7 +285,7 @@ func (p *ProcessorImpl) advance(r Model, characterId uint32, nextState int8, mat
 	_, hasNextState := stateInfo[nextState]
 	if !hasNextState {
 		if persistsAtEndState(matchedEventType) {
-			updated, err := GetRegistry().Update(t, reactorId, func(b *ModelBuilder) {
+			updated, err := GetRegistry().Update(t, reactorId, func(b *Builder) {
 				b.SetState(nextState)
 			})
 			if err != nil {
@@ -302,7 +302,7 @@ func (p *ProcessorImpl) advance(r Model, characterId uint32, nextState int8, mat
 		return p.TriggerAndDestroy(r, characterId)
 	}
 
-	updated, err := GetRegistry().Update(t, reactorId, func(b *ModelBuilder) {
+	updated, err := GetRegistry().Update(t, reactorId, func(b *Builder) {
 		b.SetState(nextState)
 	})
 	if err != nil {

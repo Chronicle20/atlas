@@ -32,7 +32,7 @@ func (e Entity) TableName() string {
 }
 
 func Make(e Entity) (Model, error) {
-	return NewModelBuilder(e.ItemId).
+	return NewBuilder(e.ItemId).
 		SetId(e.Id).
 		Build()
 }

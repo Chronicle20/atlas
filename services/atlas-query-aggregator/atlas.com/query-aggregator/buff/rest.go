@@ -42,3 +42,12 @@ func Extract(r RestModel) (Model, error) {
 		expiresAt: r.ExpiresAt,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		SourceId:  m.sourceId,
+		Duration:  m.duration,
+		CreatedAt: m.createdAt,
+		ExpiresAt: m.expiresAt,
+	}, nil
+}

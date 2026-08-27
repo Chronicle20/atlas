@@ -14,7 +14,7 @@ var ErrInvalidId = errors.New("id must not be zero UUID")
 var ErrInvalidAccountId = errors.New("accountId must be greater than 0")
 
 // modelBuilder is a builder for the Model
-type modelBuilder struct {
+type builder struct {
 	id        uuid.UUID
 	accountId uint32
 	type_     CompartmentType
@@ -22,9 +22,9 @@ type modelBuilder struct {
 	assets    []asset.Model
 }
 
-// NewModelBuilder creates a new modelBuilder with required fields
-func NewModelBuilder(id uuid.UUID, accountId uint32, type_ CompartmentType, capacity uint32) *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new builder with required fields
+func NewBuilder(id uuid.UUID, accountId uint32, type_ CompartmentType, capacity uint32) *builder {
+	return &builder{
 		id:        id,
 		accountId: accountId,
 		type_:     type_,
@@ -34,8 +34,8 @@ func NewModelBuilder(id uuid.UUID, accountId uint32, type_ CompartmentType, capa
 }
 
 // CloneModel creates a builder from this model
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:        m.id,
 		accountId: m.accountId,
 		type_:     m.type_,
@@ -45,43 +45,43 @@ func CloneModel(m Model) *modelBuilder {
 }
 
 // SetId sets the id for the modelBuilder
-func (b *modelBuilder) SetId(id uuid.UUID) *modelBuilder {
+func (b *builder) SetId(id uuid.UUID) *builder {
 	b.id = id
 	return b
 }
 
 // SetAccountId sets the accountId for the modelBuilder
-func (b *modelBuilder) SetAccountId(accountId uint32) *modelBuilder {
+func (b *builder) SetAccountId(accountId uint32) *builder {
 	b.accountId = accountId
 	return b
 }
 
 // SetType sets the type for the modelBuilder
-func (b *modelBuilder) SetType(type_ CompartmentType) *modelBuilder {
+func (b *builder) SetType(type_ CompartmentType) *builder {
 	b.type_ = type_
 	return b
 }
 
 // SetCapacity sets the capacity of this compartment
-func (b *modelBuilder) SetCapacity(capacity uint32) *modelBuilder {
+func (b *builder) SetCapacity(capacity uint32) *builder {
 	b.capacity = capacity
 	return b
 }
 
 // AddAsset adds an asset to this compartment
-func (b *modelBuilder) AddAsset(a asset.Model) *modelBuilder {
+func (b *builder) AddAsset(a asset.Model) *builder {
 	b.assets = append(b.assets, a)
 	return b
 }
 
 // SetAssets sets all assets in this compartment
-func (b *modelBuilder) SetAssets(as []asset.Model) *modelBuilder {
+func (b *builder) SetAssets(as []asset.Model) *builder {
 	b.assets = as
 	return b
 }
 
 // Build creates a Model from this builder
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == uuid.Nil {
 		return Model{}, ErrInvalidId
 	}
@@ -98,7 +98,7 @@ func (b *modelBuilder) Build() (Model, error) {
 }
 
 // MustBuild creates a Model from this builder and panics if validation fails
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

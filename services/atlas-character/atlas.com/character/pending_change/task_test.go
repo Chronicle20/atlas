@@ -21,7 +21,7 @@ import (
 // package's single fixed testTenantModel.
 func seedCharacterInContext(t *testing.T, ctx context.Context, db *gorm.DB, name string, worldId world.Id) uint32 {
 	t.Helper()
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(worldId).
 		SetName(name).

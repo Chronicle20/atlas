@@ -58,7 +58,7 @@ func handleSpawn(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.C
 	}
 	t := tenant.MustFromContext(ctx)
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
-	mb := drop.NewModelBuilder(t, f).
+	mb := drop.NewBuilder(t, f).
 		SetItem(c.Body.ItemId, c.Body.Quantity).
 		SetMeso(c.Body.Mesos).
 		SetType(c.Body.DropType).
@@ -102,7 +102,7 @@ func handleSpawnFromCharacter(l logrus.FieldLogger, ctx context.Context, c messa
 	if ly, ok := foothold.NewProcessor(l, ctx).LandingBelow(c.MapId, c.Body.X, c.Body.Y); ok {
 		restY = ly
 	}
-	mb := drop.NewModelBuilder(t, f).
+	mb := drop.NewBuilder(t, f).
 		SetItem(c.Body.ItemId, c.Body.Quantity).
 		SetMeso(c.Body.Mesos).
 		SetType(c.Body.DropType).

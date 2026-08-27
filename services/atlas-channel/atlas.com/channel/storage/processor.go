@@ -129,7 +129,7 @@ func (p ProjectionData) GetAllAssetsFromProjection() []asset.Model {
 
 // transformAsset converts a flat AssetRestModel to asset.Model
 func transformAsset(a AssetRestModel) asset.Model {
-	return asset.NewModelBuilder(a.Id, uuid.Nil, a.TemplateId).
+	return asset.NewBuilderWithId(a.Id, uuid.Nil, a.TemplateId).
 		SetSlot(a.Slot).
 		SetExpiration(a.Expiration).
 		SetQuantity(a.Quantity).

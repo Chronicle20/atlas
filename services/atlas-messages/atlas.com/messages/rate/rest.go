@@ -32,6 +32,26 @@ type FactorRestModel struct {
 	Multiplier float64 `json:"multiplier"`
 }
 
+func Transform(m Model) (RestModel, error) {
+	factors := make([]FactorRestModel, 0, len(m.factors))
+	for _, f := range m.factors {
+		factors = append(factors, FactorRestModel{
+			Source:     f.source,
+			RateType:   f.rateType,
+			Multiplier: f.multiplier,
+		})
+	}
+
+	return RestModel{
+		Id:           strconv.FormatUint(uint64(m.characterId), 10),
+		ExpRate:      m.expRate,
+		MesoRate:     m.mesoRate,
+		ItemDropRate: m.itemDropRate,
+		QuestExpRate: m.questExpRate,
+		Factors:      factors,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	factors := make([]Factor, 0, len(rm.Factors))
 	for _, f := range rm.Factors {

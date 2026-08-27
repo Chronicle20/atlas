@@ -49,6 +49,31 @@ func (r *RestModel) SetToOneReferenceID(_ string, _ string) error { return nil }
 // SetToManyReferenceIDs satisfies the api2go UnmarshalToManyRelations interface.
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:               m.id,
+		AreaDoorId:       m.areaDoorId,
+		TownDoorId:       m.townDoorId,
+		PairId:           m.pairId,
+		OwnerCharacterId: m.ownerCharacterId,
+		PartyId:          m.partyId,
+		WorldId:          m.field.WorldId(),
+		ChannelId:        m.field.ChannelId(),
+		MapId:            m.field.MapId(),
+		Instance:         m.field.Instance(),
+		TownMapId:        m.townMapId,
+		Slot:             m.slot,
+		TownPortalId:     m.townPortalId,
+		AreaX:            m.areaX,
+		AreaY:            m.areaY,
+		TownX:            m.townX,
+		TownY:            m.townY,
+		SkillId:          m.skillId,
+		SkillLevel:       m.skillLevel,
+		ExpiresAt:        m.expiresAt,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:               rm.Id,

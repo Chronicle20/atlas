@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -265,5 +266,33 @@ func TestRequestByMemberId_RoundTrip(t *testing.T) {
 	}
 	if rm.Members[1].Name != "Member" || rm.Members[1].Level != 30 {
 		t.Errorf("member[1] = %+v, want Member/30", rm.Members[1])
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	leader, err := ExtractMember(MemberRestModel{Id: 11, Name: "Leader", Level: 120, JobId: 112, WorldId: 0, ChannelId: 1, MapId: 100000000, Instance: uuid.Nil, Online: true})
+	if err != nil {
+		t.Fatalf("extract member: %v", err)
+	}
+	member, err := ExtractMember(MemberRestModel{Id: 12, Name: "Member", Level: 30, JobId: 100, WorldId: 0, ChannelId: 1, MapId: 100000000, Instance: uuid.Nil, Online: false})
+	if err != nil {
+		t.Fatalf("extract member: %v", err)
+	}
+
+	m := Model{
+		id:       11,
+		leaderId: 11,
+		members:  []MemberModel{leader, member},
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

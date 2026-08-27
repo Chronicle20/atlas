@@ -45,7 +45,7 @@ func TestCreateArmsTimerForTimerMob(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 
@@ -102,7 +102,7 @@ func TestCreateDoesNotArmTimerForOtherMobs(t *testing.T) {
 
 			prevHook := testInformationLookup
 			testInformationLookup = func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetSelfDestruction(tt.sd).Build(), nil
+				return information.NewBuilder().SetSelfDestruction(tt.sd).Build(), nil
 			}
 			t.Cleanup(func() { testInformationLookup = prevHook })
 
@@ -138,7 +138,7 @@ func TestSelfDestructTimerTaskFiresOnElapsedEntry(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 
@@ -174,7 +174,7 @@ func TestSelfDestructTimerTaskSkipsUnelapsedEntry(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 
@@ -208,7 +208,7 @@ func TestSelfDestructTimerTaskUnregistersDeadMob(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 
@@ -261,7 +261,7 @@ func TestKillUnregistersTimer(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 
@@ -304,7 +304,7 @@ func TestDestroyAllLeavesNoTimers(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(timerSelfDestruction()).Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 

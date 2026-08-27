@@ -1,12 +1,16 @@
 package inventory
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // compartmentDocument is a compartment as atlas-inventory serialises it: the
@@ -133,4 +137,48 @@ func TestAssetsIsNotWritableThroughTheGetter(t *testing.T) {
 	if m.Assets()[0].Id() != 1 {
 		t.Error("writing through Assets() mutated the compartment")
 	}
+}
+
+// TestTransformRoundTrip pins that Transform and TransformAsset are exact
+// inverses of Extract and ExtractAsset over their mapped fields.
+func TestTransformRoundTrip(t *testing.T) {
+	t.Run("Asset", func(t *testing.T) {
+		a := NewAsset(asset.Id(101), slot.Position(3), item.Id(2000001), asset.Quantity(7), uint16(0x02))
+
+		rm, err := TransformAsset(a)
+		if err != nil {
+			t.Fatalf("TransformAsset returned error: %v", err)
+		}
+
+		got, err := ExtractAsset(rm)
+		if err != nil {
+			t.Fatalf("ExtractAsset returned error: %v", err)
+		}
+
+		if !reflect.DeepEqual(got, a) {
+			t.Fatalf("round trip mismatch: got %+v, want %+v", got, a)
+		}
+	})
+
+	t.Run("Model", func(t *testing.T) {
+		assets := []Asset{
+			NewAsset(asset.Id(101), slot.Position(3), item.Id(2000001), asset.Quantity(7), uint16(0x02)),
+			NewAsset(asset.Id(102), slot.Position(4), item.Id(2000002), asset.Quantity(9), uint16(0x04)),
+		}
+		m := NewModel(uuid.New(), inventory.Type(2), uint32(24), assets)
+
+		rm, err := Transform(m)
+		if err != nil {
+			t.Fatalf("Transform returned error: %v", err)
+		}
+
+		got, err := Extract(rm)
+		if err != nil {
+			t.Fatalf("Extract returned error: %v", err)
+		}
+
+		if !reflect.DeepEqual(got, m) {
+			t.Fatalf("round trip mismatch: got %+v, want %+v", got, m)
+		}
+	})
 }

@@ -51,7 +51,7 @@ func passingGateDeps() gateDeps {
 // database — evaluateTransferEligibility's local gates (1, 2) read only its
 // getters, so a builder-only fixture is enough for those two.
 func buildCharacter(id uint32, accountId uint32, worldId world.Id, name string, gm int) character.Model {
-	return character.NewModelBuilder().
+	return character.NewEmptyBuilder().
 		SetId(id).
 		SetAccountId(accountId).
 		SetWorldId(worldId).

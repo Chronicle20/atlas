@@ -65,7 +65,7 @@ func scheduleStateTimeout(l logrus.FieldLogger, ctx context.Context, r Model) {
 			return
 		}
 
-		updated, err := GetRegistry().Update(t, reactorId, func(b *ModelBuilder) {
+		updated, err := GetRegistry().Update(t, reactorId, func(b *Builder) {
 			b.SetState(nextState)
 		})
 		if err != nil {

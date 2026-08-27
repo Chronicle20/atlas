@@ -46,6 +46,18 @@ func installFetchSeams(t *testing.T, characterId uint32) *fetchCounts {
 	return counts
 }
 
+// restoreFetchSeams registers a cleanup that restores today's package-level
+// fetch seams to their pre-test values. Use in tests that assign the seams
+// directly (rather than via installFetchSeams) so a fetch-failure fake
+// never leaks into a later test.
+func restoreFetchSeams(t *testing.T) {
+	t.Helper()
+	prevCore, prevInv, prevSkills, prevBuffs := coreFetchFn, inventoryFetchFn, skillsFetchFn, buffsFetchFn
+	t.Cleanup(func() {
+		coreFetchFn, inventoryFetchFn, skillsFetchFn, buffsFetchFn = prevCore, prevInv, prevSkills, prevBuffs
+	})
+}
+
 func newTestProcessor(t *testing.T) (*Processor, tenant.Model) {
 	t.Helper()
 	tm := newTestTenant(t)
@@ -133,8 +145,10 @@ func TestProcessor_PerComponentFallbackOnlyRefetchesInvalidComponent(t *testing.
 }
 
 func TestProcessor_FallbackFailureSurfacesError(t *testing.T) {
-	// FR-3.4: a REST fallback failure surfaces exactly as today's error path;
-	// the snapshot never converts a hard failure into stale-success.
+	// FR-3.4 (core only): a core REST fallback failure surfaces exactly as
+	// today's error path (character.ProcessorImpl.GetById propagates the
+	// requests.Provider error) — the snapshot never converts it into
+	// stale-success.
 	resetRegistryForTest(t)
 	p, tm := newTestProcessor(t)
 	counts := installFetchSeams(t, 7)
@@ -142,16 +156,83 @@ func TestProcessor_FallbackFailureSurfacesError(t *testing.T) {
 	if _, err := p.Get(7); err != nil {
 		t.Fatalf("populate: %v", err)
 	}
-	GetRegistry().InvalidateInventory(tm, 7)
+	GetRegistry().InvalidateCore(tm, 7)
+
+	wantErr := errors.New("core service down")
+	coreFetchFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (character.Model, error) {
+		return character.Model{}, wantErr
+	}
+	if _, err := p.Get(7); !errors.Is(err, wantErr) {
+		t.Fatalf("core fallback failure must propagate, got %v", err)
+	}
+	_ = counts
+}
+
+func TestProcessor_InventoryFallbackFailureServesDegradedModel(t *testing.T) {
+	// Controller ruling R14: matches today's character.ProcessorImpl.
+	// InventoryDecorator, which swallows a fetch error and returns the model
+	// unchanged rather than failing the whole read. Failing on the very
+	// first read (nothing ever populated) isolates the degraded shape from
+	// any stale-but-valid prior value.
+	resetRegistryForTest(t)
+	p, _ := newTestProcessor(t)
+	restoreFetchSeams(t)
 
 	wantErr := errors.New("inventory service down")
+	coreFetchFn = func(_ logrus.FieldLogger, _ context.Context, id uint32) (character.Model, error) {
+		return testCore(t, id), nil
+	}
 	inventoryFetchFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (inventory.Model, error) {
 		return inventory.Model{}, wantErr
 	}
-	if _, err := p.Get(7); !errors.Is(err, wantErr) {
-		t.Fatalf("fallback failure must propagate, got %v", err)
+	skillsFetchFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) ([]skill.Model, error) {
+		return []skill.Model{skill.NewModelBuilder(skillconst.Id(3121004)).SetLevel(10).MustBuild()}, nil
 	}
-	_ = counts
+
+	m, err := p.Get(7)
+	if err != nil {
+		t.Fatalf("inventory fallback failure must not error, got %v", err)
+	}
+	if len(m.Inventory().Consumable().Assets()) != 0 {
+		t.Fatalf("degraded model must not carry the failed inventory: %+v", m.Inventory())
+	}
+	if m.Id() != 7 || len(m.Skills()) != 1 {
+		t.Fatalf("degraded model must still carry the composed core and skills: %+v", m)
+	}
+}
+
+func TestProcessor_SkillsFallbackFailureServesDegradedModel(t *testing.T) {
+	// Controller ruling R14: matches today's character.ProcessorImpl.
+	// SkillModelDecorator, which swallows a fetch error and returns the
+	// model unchanged rather than failing the whole read. Failing on the
+	// very first read (nothing ever populated) isolates the degraded shape
+	// from any stale-but-valid prior value.
+	resetRegistryForTest(t)
+	p, _ := newTestProcessor(t)
+	restoreFetchSeams(t)
+
+	wantErr := errors.New("skills service down")
+	coreFetchFn = func(_ logrus.FieldLogger, _ context.Context, id uint32) (character.Model, error) {
+		return testCore(t, id), nil
+	}
+	inventoryFetchFn = func(_ logrus.FieldLogger, _ context.Context, id uint32) (inventory.Model, error) {
+		inv, _, _ := testInventory(t, id)
+		return inv, nil
+	}
+	skillsFetchFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) ([]skill.Model, error) {
+		return nil, wantErr
+	}
+
+	m, err := p.Get(7)
+	if err != nil {
+		t.Fatalf("skills fallback failure must not error, got %v", err)
+	}
+	if len(m.Skills()) != 0 {
+		t.Fatalf("degraded model must not carry the failed skills: %+v", m.Skills())
+	}
+	if m.Id() != 7 || len(m.Inventory().Consumable().Assets()) != 1 {
+		t.Fatalf("degraded model must still carry the composed core and inventory: %+v", m)
+	}
 }
 
 func TestProcessor_StaleBackfillStillServesThisCaller(t *testing.T) {

@@ -81,45 +81,65 @@ func (p *Processor) Get(characterId uint32) (character.Model, error) {
 	}
 
 	inv := v.Inv
+	invOk := v.InvValid
 	if v.InvValid {
 		recordRead(p.t, componentInventory, outcomeHit)
 	} else {
 		recordRead(p.t, componentInventory, outcomeMiss)
 		fetched, err := inventoryFetchFn(p.l, p.ctx, characterId)
 		if err != nil {
+			// Matches today's character.ProcessorImpl.InventoryDecorator: a
+			// fallback failure degrades the model (inventory left as-is)
+			// rather than failing the whole read.
 			recordRead(p.t, componentInventory, outcomeFallbackFailure)
-			p.l.WithError(err).Debugf("Snapshot inventory fallback failed for character [%d].", characterId)
-			return character.Model{}, err
+			p.l.WithError(err).Debugf("Snapshot inventory fallback failed for character [%d]; serving degraded model.", characterId)
+		} else {
+			recordRead(p.t, componentInventory, outcomeFallbackSuccess)
+			p.l.Debugf("Snapshot fallback: inventory refetched for character [%d].", characterId)
+			r.BackfillInventory(p.t, characterId, fetched, v.InvGen)
+			inv = fetched
+			invOk = true
 		}
-		recordRead(p.t, componentInventory, outcomeFallbackSuccess)
-		p.l.Debugf("Snapshot fallback: inventory refetched for character [%d].", characterId)
-		r.BackfillInventory(p.t, characterId, fetched, v.InvGen)
-		inv = fetched
 	}
 
 	skills := v.Skills
+	skillsOk := v.SkillsValid
 	if v.SkillsValid {
 		recordRead(p.t, componentSkills, outcomeHit)
 	} else {
 		recordRead(p.t, componentSkills, outcomeMiss)
 		fetched, err := skillsFetchFn(p.l, p.ctx, characterId)
 		if err != nil {
+			// Matches today's character.ProcessorImpl.SkillModelDecorator: a
+			// fallback failure degrades the model (skills left as-is) rather
+			// than failing the whole read.
 			recordRead(p.t, componentSkills, outcomeFallbackFailure)
-			p.l.WithError(err).Debugf("Snapshot skills fallback failed for character [%d].", characterId)
-			return character.Model{}, err
+			p.l.WithError(err).Debugf("Snapshot skills fallback failed for character [%d]; serving degraded model.", characterId)
+		} else {
+			recordRead(p.t, componentSkills, outcomeFallbackSuccess)
+			p.l.Debugf("Snapshot fallback: skills refetched for character [%d].", characterId)
+			r.BackfillSkills(p.t, characterId, fetched, v.SkillsGen)
+			skills = fetched
+			skillsOk = true
 		}
-		recordRead(p.t, componentSkills, outcomeFallbackSuccess)
-		p.l.Debugf("Snapshot fallback: skills refetched for character [%d].", characterId)
-		r.BackfillSkills(p.t, characterId, fetched, v.SkillsGen)
-		skills = fetched
 	}
 
 	m := core
 	if v.PosValid {
 		m = character.CloneModel(m).SetX(v.PosX).SetY(v.PosY).MustBuild()
 	}
-	m = m.SetInventory(inv)
-	m = m.SetSkills(skills)
+	// Only decorate with a component that has ever been successfully
+	// populated. On a first-ever fallback failure there is no prior value
+	// to fall back to, and SetInventory/SetSkills require a real component
+	// value (a zero-value inventory.Model is not buildable) — exactly the
+	// situation today's decorator chain avoids by leaving the undecorated
+	// core model untouched.
+	if invOk {
+		m = m.SetInventory(inv)
+	}
+	if skillsOk {
+		m = m.SetSkills(skills)
+	}
 	return m, nil
 }
 

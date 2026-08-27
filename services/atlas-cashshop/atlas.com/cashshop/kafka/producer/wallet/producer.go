@@ -43,6 +43,28 @@ func UpdateStatusEventWithTransactionProvider(accountId uint32, credit uint32, p
 	return producer.SingleMessageProvider(key, value)
 }
 
+// UpdateStatusEventWithTransactionSceneRefreshOwnedProvider is
+// UpdateStatusEventWithTransactionProvider with SceneRefreshOwned set. Reserved
+// for producers -- currently only the cash-shop gift flow -- whose own status
+// handler announces the scene refresh (CashQueryResult) itself, in the specific
+// order the client requires, so the wallet consumer must not race it with a
+// second, independently-ordered refresh of its own.
+func UpdateStatusEventWithTransactionSceneRefreshOwnedProvider(accountId uint32, credit uint32, points uint32, prepaid uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(accountId))
+	value := &wallet.StatusEvent[wallet.StatusEventUpdatedBody]{
+		AccountId: accountId,
+		Type:      wallet.StatusEventTypeUpdated,
+		Body: wallet.StatusEventUpdatedBody{
+			Credit:            credit,
+			Points:            points,
+			Prepaid:           prepaid,
+			TransactionId:     transactionId,
+			SceneRefreshOwned: true,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // ErrorStatusEventProvider reports a failed transactional wallet adjust, keyed by
 // accountId (mirrors the update/create providers) and echoing the transaction id
 // so the orchestrator can fail the waiting saga step fast.

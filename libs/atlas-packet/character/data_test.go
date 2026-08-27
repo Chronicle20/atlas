@@ -66,7 +66,7 @@ func TestCharacterDataLegacyFieldGate_V72(t *testing.T) {
 		Inventory: InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp: 94354848000000000,
+			EquipSlotExtExpire: 94354848000000000,
 		},
 	}
 
@@ -106,8 +106,8 @@ func legacySampleCD() CharacterData {
 		Inventory: InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp:    94354848000000000,
-			RegularEquip: []model.Asset{equip},
+			EquipSlotExtExpire: 94354848000000000,
+			RegularEquip:       []model.Asset{equip},
 		},
 		MonsterBook: MonsterBookData{CoverCardId: 2388000},
 	}
@@ -215,7 +215,7 @@ func TestCharacterDataMinimalRoundTrip(t *testing.T) {
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 			}
 			output := CharacterData{}
@@ -252,7 +252,7 @@ func TestCharacterDataWithSkillsRoundTrip(t *testing.T) {
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 				Skills: []SkillEntry{
 					// 2101001 -> job 210 (2nd job): no master level.
@@ -292,7 +292,7 @@ func TestCharacterDataWithQuestsRoundTrip(t *testing.T) {
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 				StartedQuests: []QuestProgress{
 					{QuestId: 1000, Progress: "001"},
@@ -368,7 +368,7 @@ func TestCharacterDataMonsterBookRoundTrip(t *testing.T) {
 				Stats: CharacterStats{Id: 3000, Name: "Booker", Level: 30, JobId: 100, MapId: 100000000},
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
-					EtcCapacity: 24, CashCapacity: 24, Timestamp: 94354848000000000,
+					EtcCapacity: 24, CashCapacity: 24, EquipSlotExtExpire: 94354848000000000,
 				},
 				MonsterBook: MonsterBookData{
 					CoverCardId: 2380001,
@@ -434,7 +434,7 @@ func TestCharacterDataTeleportRoundTrip(t *testing.T) {
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 				TeleportMaps:    []_map.Id{100000000, 220000000},
 				VipTeleportMaps: []_map.Id{104040000},

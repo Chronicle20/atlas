@@ -24,11 +24,25 @@ type Processor interface {
 	RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error
 	RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
 	RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
-	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID) error
+	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID, operation string) error
 	RequestCouponRedemption(characterId uint32, code string) error
 	MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
 	OpenSurprise(accountId uint32, characterId uint32, cashId int64) error
+	RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error
+	// AcknowledgeGifts drains the "gift list presented" flag on cashIds
+	// (task-240 Defect H) -- fired after a successful LOAD_GIFT_SUCCESS
+	// announce, never before, so a gift is presented exactly once.
+	AcknowledgeGifts(accountId uint32, characterId uint32, cashIds []int64) error
+	// MarkGiftNoteSent marks cashId's gift-forward note as sent (task-240
+	// Defect I) -- an independent flag from AcknowledgeGifts, fired after
+	// the note-send saga is created, gating a replayed NOTE_ACTION SEND
+	// from minting a second free note.
+	MarkGiftNoteSent(accountId uint32, characterId uint32, cashId int64) error
+	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
+	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
+	RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
+	RequestEquipSlotIncrease(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -95,10 +109,10 @@ func (p *ProcessorImpl) RequestCharacterSlotIncreasePurchaseByItem(characterId u
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestCharacterSlotIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID) error {
+func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID, operation string) error {
 	currency = resolvePurchaseCurrency(isPoints, currency)
-	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d], transaction [%s]", characterId, serialNumber, currency, zero, transactionId)
-	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency, transactionId))
+	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d], transaction [%s], operation [%s]", characterId, serialNumber, currency, zero, transactionId, operation)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency, transactionId, operation))
 }
 
 // RequestCouponRedemption forwards an already-normalized coupon code to
@@ -221,4 +235,90 @@ func (p *ProcessorImpl) OpenSurprise(accountId uint32, characterId uint32, cashI
 	transactionId := uuid.New()
 	p.l.Debugf("Character [%d] opening surprise box [%d]. Transaction [%s].", characterId, cashId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(OpenSurpriseCommandProvider(characterId, transactionId, accountId, cashId))
+}
+
+// RequestLockerRebate forwards a locker item REBATE request. TransactionId is
+// minted by the caller (once per click, mirroring OpenSurprise's idempotency
+// pattern) so a Kafka redelivery replays this id and is rejected by
+// atlas-cashshop's rebate ledger while a genuine second click gets a fresh
+// one.
+func (p *ProcessorImpl) RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error {
+	p.l.Debugf("Character [%d] requesting locker rebate for cash item [%d]. Transaction [%s].", characterId, cashId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestLockerRebateCommandProvider(characterId, transactionId, accountId, cashId))
+}
+
+// AcknowledgeGifts forwards ACKNOWLEDGE_GIFTS (task-240 Defect H). A nil/empty
+// cashIds would be a no-op on the receiving end anyway, but callers (see
+// cash_shop_entry.go) already skip the call in that case.
+func (p *ProcessorImpl) AcknowledgeGifts(accountId uint32, characterId uint32, cashIds []int64) error {
+	p.l.Debugf("Character [%d] acknowledging [%d] gift(s).", characterId, len(cashIds))
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(AcknowledgeGiftsCommandProvider(characterId, accountId, cashIds))
+}
+
+// MarkGiftNoteSent forwards MARK_GIFT_NOTE_SENT (task-240 Defect I).
+func (p *ProcessorImpl) MarkGiftNoteSent(accountId uint32, characterId uint32, cashId int64) error {
+	p.l.Debugf("Character [%d] marking gift note sent for cash item [%d].", characterId, cashId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(MarkGiftNoteSentCommandProvider(characterId, accountId, cashId))
+}
+
+// RequestGiftPurchase forwards a GIFT purchase request. TransactionId is
+// minted by the caller (once per click, mirroring OpenSurprise/RequestLockerRebate's
+// idempotency pattern) so a Kafka redelivery replays this id and is rejected
+// by atlas-cashshop's gift ledger while a genuine second click gets a fresh
+// one.
+func (p *ProcessorImpl) RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error {
+	p.l.Debugf("Character [%d] gifting serial [%d] to character [%d]. Transaction [%s].", characterId, serialNumber, recipientCharacterId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestGiftPurchaseCommandProvider(characterId, transactionId, serialNumber, recipientCharacterId, senderName, message))
+}
+
+// RequestPackagePurchase forwards a CASH PACKAGE purchase request (task-240
+// task 17, atlas-channel half of task 16's REQUEST_PACKAGE_PURCHASE
+// command). TransactionId is minted by the caller (once per click, mirroring
+// OpenSurprise/RequestGiftPurchase's idempotency pattern) so a Kafka
+// redelivery replays this id and is rejected by atlas-cashshop's package
+// ledger while a genuine second click gets a fresh one.
+// RecipientCharacterId == 0 means buy-for-self (BUY_PACKAGE, mode 30/32);
+// non-zero means gift (BUY_OTHER_PACKAGE, mode 31/33) -- the same single
+// command shape task 16 built on the atlas-cashshop side.
+//
+// isPoints/currency go through resolvePurchaseCurrency exactly like
+// RequestPurchase above -- the same helper, the same call shape. For
+// BUY_PACKAGE (handleBuyPackage), that resolution is load-bearing: it maps
+// the wire's pointType bool onto a currency code. For BUY_OTHER_PACKAGE
+// (handleBuyOtherPackage), the caller always passes isPoints=false with an
+// already-final currency (walletCurrencyPrepaid, 3), so
+// resolvePurchaseCurrency's only branch (isPoints && currency==0) can never
+// fire and the call is an inert passthrough -- see handleBuyOtherPackage's
+// own doc comment for why that caller does not depend on this resolution.
+func (p *ProcessorImpl) RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error {
+	currency = resolvePurchaseCurrency(isPoints, currency)
+	p.l.Debugf("Character [%d] purchasing package serial [%d] with currency [%d] for recipient [%d]. Transaction [%s].", characterId, serialNumber, currency, recipientCharacterId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPackagePurchaseCommandProvider(characterId, transactionId, currency, serialNumber, recipientCharacterId, senderName))
+}
+
+// RequestRingPurchase forwards a RING pair purchase request (BUY_COUPLE /
+// BUY_FRIENDSHIP, task-240 task 20, atlas-channel half of task 19's
+// REQUEST_RING_PURCHASE command). TransactionId is minted by the caller
+// (once per click, mirroring RequestGiftPurchase/RequestPackagePurchase's
+// idempotency pattern) so a Kafka redelivery replays this id and is
+// rejected by atlas-cashshop's ring ledger while a genuine second click
+// gets a fresh one. isPoints/currency go through resolvePurchaseCurrency
+// exactly like RequestPurchase/RequestPackagePurchase above.
+func (p *ProcessorImpl) RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error {
+	currency = resolvePurchaseCurrency(isPoints, currency)
+	p.l.Debugf("Character [%d] purchasing ring serial [%d] with currency [%d] for partner [%d]. Transaction [%s].", characterId, serialNumber, currency, partnerCharacterId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestRingPurchaseCommandProvider(characterId, transactionId, currency, serialNumber, partnerCharacterId, senderName, message, ringType))
+}
+
+// RequestEquipSlotIncrease forwards an ENABLE_EQUIP_SLOT purchase request
+// (task-240 task 23, mode 9/10). TransactionId is minted by the caller
+// (once per click, mirroring RequestPackagePurchase/RequestRingPurchase's
+// idempotency pattern) so a Kafka redelivery replays this id and is
+// rejected by atlas-cashshop's ledger while a genuine second click gets a
+// fresh one. isPoints/currency go through resolvePurchaseCurrency exactly
+// like every other purchase arm above.
+func (p *ProcessorImpl) RequestEquipSlotIncrease(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32) error {
+	currency = resolvePurchaseCurrency(isPoints, currency)
+	p.l.Debugf("Character [%d] requesting equip slot increase serial [%d] with currency [%d]. Transaction [%s].", characterId, serialNumber, currency, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestEquipSlotIncreaseCommandProvider(characterId, transactionId, currency, serialNumber))
 }

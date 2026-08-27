@@ -1,0 +1,11 @@
+packet: cash/serverbound/CashShopOperationBuyOtherPackage
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnGiftPackage
+    address: "0x4907b0"
+    decompile_sha256: b8a7f6112a604b03c5aa625f8f86b9fd748fb68a6ff1e724a203cc23c8d8dab3
+verifies:
+    - libs/atlas-packet/cash/serverbound/shop_operation_buy_other_package_test.go#TestShopOperationBuyOtherPackageRoundTrip
+    - libs/atlas-packet/cash/serverbound/shop_operation_buy_other_package_test.go#TestShopOperationBuyOtherPackageV95Bytes

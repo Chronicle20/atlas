@@ -17,6 +17,22 @@ const (
 	CommandTypeExpire                             = "EXPIRE"
 	CommandTypeOpenSurprise                       = "OPEN_SURPRISE"
 	CommandTypeRequestCouponRedemption            = "REQUEST_COUPON_REDEMPTION"
+	CommandTypeRequestLockerRebate                = "REQUEST_LOCKER_REBATE"
+	CommandTypeRequestGiftPurchase                = "REQUEST_GIFT_PURCHASE"
+	CommandTypeRequestPackagePurchase             = "REQUEST_PACKAGE_PURCHASE"
+	CommandTypeRequestRingPurchase                = "REQUEST_RING_PURCHASE"
+	CommandTypeRequestEquipSlotIncrease           = "REQUEST_EQUIP_SLOT_INCREASE"
+	CommandTypeAcknowledgeGifts                   = "ACKNOWLEDGE_GIFTS"
+	CommandTypeMarkGiftNoteSent                   = "MARK_GIFT_NOTE_SENT"
+
+	// CommandTypeExtendEquipSlot is an INTERNAL follow-up command, never sent
+	// by atlas-channel: PurchaseEquipSlotAndEmit (cashshop/equipslot.go)
+	// mints it via the outbox from inside the purchase transaction, so the
+	// atlas-character write (a cross-service HTTP call with nothing local to
+	// roll back it on failure) only happens once the wallet debit and
+	// purchase record have durably committed -- task-240 task 24c. See
+	// CompleteEquipSlotExtension for the consumer side.
+	CommandTypeExtendEquipSlot = "EXTEND_EQUIP_SLOT"
 )
 
 type Command[E any] struct {
@@ -31,10 +47,17 @@ type Command[E any] struct {
 // OpenSurpriseCommandBody for the same pattern. It is echoed back on both
 // PurchaseEventBody and ErrorEventBody so a caller juggling multiple
 // concurrent purchases for the same character can tell them apart.
+// Operation names the cash shop arm requesting this purchase, so this
+// service can echo it back onto PurchaseEventBody / ErrorEventBody and the
+// channel can answer on that arm's own SUCCESS/FAILED mode byte instead of
+// the generic purchase-success fallback. Empty means "the generic BUY arm"
+// -- every producer that predates this field leaves it empty and keeps its
+// existing behavior byte for byte.
 type RequestPurchaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	Currency      uint32    `json:"currency"`
 	SerialNumber  uint32    `json:"serialNumber"`
+	Operation     string    `json:"operation,omitempty"`
 }
 
 type RequestInventoryIncreaseByTypeCommandBody struct {
@@ -85,6 +108,130 @@ type RequestCouponRedemptionCommandBody struct {
 	Code string `json:"code"`
 }
 
+// RequestLockerRebateCommandBody refunds one locker asset. CashId is the
+// client's GW_ItemSlotBase::liCashItemSN (cash_assets.CashId), NOT the row id
+// -- see shop_operation_rebate_locker_item.go:18-21. TransactionId is the
+// idempotency key, mirroring OpenSurpriseCommandBody: a Kafka redelivery
+// replays the same id and is rejected as success-without-effect by the
+// ledger, while a genuine second click gets a new one.
+type RequestLockerRebateCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	AccountId     uint32    `json:"accountId"`
+	CashId        int64     `json:"cashId"`
+}
+
+// RequestGiftPurchaseCommandBody requests one GIFT purchase (task-240 task
+// 13): the sender's wallet is charged and the commodity is delivered into
+// the RECIPIENT's locker. The channel resolves the recipient NAME to a
+// character id before sending, because atlas-cashshop's character client has
+// only GetById (character/processor.go:15) -- there is no name lookup here.
+// TransactionId is the idempotency key, mirroring
+// RequestLockerRebateCommandBody: a Kafka redelivery replays the same id and
+// is rejected as success-without-effect by the ledger, while a genuine
+// second click gets a new one.
+type RequestGiftPurchaseCommandBody struct {
+	TransactionId        uuid.UUID `json:"transactionId"`
+	SerialNumber         uint32    `json:"serialNumber"`
+	RecipientCharacterId uint32    `json:"recipientCharacterId"`
+	SenderName           string    `json:"senderName"`
+	Message              string    `json:"message"`
+}
+
+// RequestPackagePurchaseCommandBody requests one CASH PACKAGE purchase
+// (task-240 task 16): client modes 30 (buy-for-self) and 31 (gift) share
+// this single body, discriminated by RecipientCharacterId -- ZERO means
+// buy-for-self, non-zero means the package's members land in the named
+// recipient's compartment instead of the buyer's own. Every other rule
+// (resolution, capacity, atomicity, pricing) is identical between the two
+// modes, so there is deliberately no separate gift-package command. Currency
+// mirrors RequestPurchaseCommandBody's raw wire value (0..3) -- see
+// walletCurrencyCredit/Points/Prepaid in cashshop/processor.go.
+type RequestPackagePurchaseCommandBody struct {
+	TransactionId        uuid.UUID `json:"transactionId"`
+	Currency             uint32    `json:"currency"`
+	SerialNumber         uint32    `json:"serialNumber"`
+	RecipientCharacterId uint32    `json:"recipientCharacterId"`
+	SenderName           string    `json:"senderName"`
+}
+
+// RequestRingPurchaseCommandBody requests one RING pair purchase (task-240
+// task 19): a single commodity SERIAL NUMBER buys one item, but a ring pair
+// needs two -- one for the buyer, one for PartnerCharacterId. Both halves
+// are minted from the resolved commodity's ItemId (see OQ-R1, design.md
+// §4.3); RingType selects whether the pair is recorded as ring.TypeCouple or
+// ring.TypeFriendship. SenderName/Message mirror
+// RequestGiftPurchaseCommandBody's fields: the partner's half carries them
+// as GiftFrom/GiftMessage (FR-RING-3), because from the partner's locker
+// this looks exactly like a gift from the buyer.
+type RequestRingPurchaseCommandBody struct {
+	TransactionId      uuid.UUID `json:"transactionId"`
+	Currency           uint32    `json:"currency"`
+	SerialNumber       uint32    `json:"serialNumber"`
+	PartnerCharacterId uint32    `json:"partnerCharacterId"`
+	SenderName         string    `json:"senderName"`
+	Message            string    `json:"message"`
+	RingType           string    `json:"ringType"`
+}
+
+// RequestEquipSlotIncreaseCommandBody requests one ENABLE_EQUIP_SLOT
+// purchase (task-240 task 23, mode 9/10). Unlike every other purchase
+// command here, this carries no item-locker effect: the commodity buys an
+// EXTENSION on a fixed equipped-inventory slot (the pendant2 constant,
+// libs/atlas-constants/inventory/slot -- see derivation-equip-slot.md E1 /
+// R1), recorded by atlas-character's equipslot domain, not by an asset
+// row. TransactionId is the idempotency key, mirroring every other
+// per-click command here: a Kafka redelivery replays the same id and is
+// rejected as success-without-effect by the ledger, while a genuine second
+// click gets a new one.
+type RequestEquipSlotIncreaseCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Currency      uint32    `json:"currency"`
+	SerialNumber  uint32    `json:"serialNumber"`
+}
+
+// AcknowledgeGiftsCommandBody marks a set of locker assets as "gift list
+// presented" (task-240 Defect H) so buildGiftListEntries stops re-announcing
+// them on every cash shop entry. AccountId scopes the update to the
+// requesting account's own compartments (mirrors
+// RequestLockerRebateCommandBody). CashIds is the CashId list (cash_assets'
+// wire serial, NOT the row id) the channel just announced in a
+// LOAD_GIFT_SUCCESS burst. A Kafka redelivery replays the same ids and is
+// naturally a no-op: setting an already-true flag to true again has no
+// observable effect, so there is no separate idempotency ledger entry for
+// this command.
+type AcknowledgeGiftsCommandBody struct {
+	AccountId uint32  `json:"accountId"`
+	CashIds   []int64 `json:"cashIds"`
+}
+
+// MarkGiftNoteSentCommandBody marks a single locker asset as having had its
+// gift-forward note sent (task-240 Defect I) -- an independent flag from
+// AcknowledgeGiftsCommandBody, set at note-send time rather than announce
+// time. AccountId scopes the update to the requesting account's own
+// compartments (mirrors AcknowledgeGiftsCommandBody). CashId is the CashId
+// (cash_assets' wire serial, NOT the row id) of the asset whose note was just
+// sent. A Kafka redelivery replays the same id and is naturally a no-op:
+// setting an already-true flag to true again has no observable effect, so
+// there is no separate idempotency ledger entry for this command.
+// Byte-identical JSON tags with atlas-channel's kafka/message/cashshop/kafka.go
+// copy of this shape.
+type MarkGiftNoteSentCommandBody struct {
+	AccountId uint32 `json:"accountId"`
+	CashId    int64  `json:"cashId"`
+}
+
+// ExtendEquipSlotCommandBody carries the already-resolved extension the
+// purchase transaction charged for: SlotIndex is the Atlas canonical
+// position (R1), Days the commodity's Period, and TransactionId the SAME
+// idempotency key the purchase claimed -- atlas-character's write route
+// keys its own dedupe on it, so a redelivery of this command (the outbox is
+// at-least-once) does not double-extend.
+type ExtendEquipSlotCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	SlotIndex     int16     `json:"slotIndex"`
+	Days          uint16    `json:"days"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
@@ -94,6 +241,11 @@ const (
 	StatusEventTypeSurpriseFailed             = "SURPRISE_FAILED"
 	StatusEventTypeCouponRedeemed             = "COUPON_REDEEMED"
 	StatusEventTypeCouponFailed               = "COUPON_FAILED"
+	StatusEventTypeLockerRebated              = "LOCKER_REBATED"
+	StatusEventTypeGiftPurchased              = "GIFT_PURCHASED"
+	StatusEventTypePackagePurchased           = "PACKAGE_PURCHASED"
+	StatusEventTypeRingPurchased              = "RING_PURCHASED"
+	StatusEventTypeEquipSlotIncreased         = "EQUIP_SLOT_INCREASED"
 )
 
 type StatusEvent[E any] struct {
@@ -112,7 +264,23 @@ type ErrorEventBody struct {
 	Error         string    `json:"error"`
 	CashItemId    uint32    `json:"cashItemId,omitempty"`
 	TransactionId uuid.UUID `json:"transactionId"`
+	// Operation names the cash shop arm this failure belongs to, so the channel
+	// can answer on that arm's own *_FAILED mode byte. Empty means "the legacy
+	// capacity-increase arm" -- every producer that predates this field leaves it
+	// empty and keeps its existing behavior byte for byte.
+	Operation string `json:"operation,omitempty"`
 }
+
+const (
+	ErrorOperationGift            = "GIFT"
+	ErrorOperationBuyNormal       = "BUY_NORMAL"
+	ErrorOperationRebate          = "REBATE"
+	ErrorOperationCouple          = "COUPLE"
+	ErrorOperationFriendship      = "FRIENDSHIP"
+	ErrorOperationBuyPackage      = "BUY_PACKAGE"
+	ErrorOperationGiftPackage     = "GIFT_PACKAGE"
+	ErrorOperationEnableEquipSlot = "ENABLE_EQUIP_SLOT"
+)
 
 type PurchaseEventBody struct {
 	TemplateId    uint32    `json:"templateId"`
@@ -120,6 +288,10 @@ type PurchaseEventBody struct {
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	AssetId       uint32    `json:"assetId"`
 	TransactionId uuid.UUID `json:"transactionId"`
+	// Operation is the RequestPurchaseCommandBody.Operation this purchase was
+	// requested with, echoed back so the channel can answer on that arm's own
+	// SUCCESS mode byte. Empty means the generic BUY arm (today's behavior).
+	Operation string `json:"operation,omitempty"`
 }
 
 // CouponRedeemedBody describes one successful redemption.
@@ -194,4 +366,84 @@ type SurpriseOpenedEventBody struct {
 // there is no distinct NOT_OWNED reason.)
 type SurpriseFailedEventBody struct {
 	Reason string `json:"reason"`
+}
+
+// LockerRebatedBody describes one successful REBATE. Currency is the wallet
+// bucket credited (wallet.Model.Balance's convention: 1 = credit/NX, 2 =
+// Maple Points, anything else = prepaid) -- see asset.Entity.Currency's doc
+// comment for how 0 on the refunded asset resolves to the ordinary credit/NX
+// bucket rather than being echoed here as a literal 0.
+type LockerRebatedBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	CashId        int64     `json:"cashId"`
+	Amount        int32     `json:"amount"`
+	Currency      uint32    `json:"currency"`
+}
+
+// GiftPurchasedBody describes one successful GIFT. RecipientName is
+// resolved server-side (the command only carries RecipientCharacterId) so
+// the channel can render the recipient's name without a second round trip.
+// There is deliberately no Currency field: a gift is always charged to the
+// sender's credit/NX bucket (see GiftAndEmit's doc comment), so there is
+// nothing to echo back that the caller does not already know.
+type GiftPurchasedBody struct {
+	TransactionId        uuid.UUID `json:"transactionId"`
+	RecipientName        string    `json:"recipientName"`
+	TemplateId           uint32    `json:"templateId"`
+	Quantity             uint16    `json:"quantity"`
+	Price                uint32    `json:"price"`
+	RecipientCharacterId uint32    `json:"recipientCharacterId"`
+}
+
+// PackagePurchasedBody describes one successful PACKAGE purchase (task-240
+// task 16), covering both buy-for-self and gift modes. AssetIds carries one
+// entry per member asset created, in the same order the package's members
+// resolved -- mirroring CouponRedeemedBody's AssetIds (its doc comment
+// explains why the channel projects these rather than atlas-cashshop
+// building CashInventoryItem records itself. Price is the PACKAGE
+// commodity's own price (never the sum of the member commodities' prices --
+// FR-PKG-5). RecipientCharacterId/RecipientName echo the buyer's own
+// identity on a buy-for-self purchase (RecipientCharacterId == 0 on the
+// command) so the channel does not need a separate branch to find out who
+// received the members.
+type PackagePurchasedBody struct {
+	TransactionId        uuid.UUID `json:"transactionId"`
+	CompartmentId        uuid.UUID `json:"compartmentId"`
+	AssetIds             []uint32  `json:"assetIds"`
+	PackageTemplateId    uint32    `json:"packageTemplateId"`
+	Price                uint32    `json:"price"`
+	RecipientCharacterId uint32    `json:"recipientCharacterId"`
+	RecipientName        string    `json:"recipientName"`
+}
+
+// RingPurchasedBody describes one successful RING purchase (task-240 task
+// 19). It reports the BUYER's own half -- CompartmentId/AssetId name the
+// asset created in the buyer's own locker, mirroring PurchaseEventBody, so
+// the channel can build the buyer's CashInventoryItem without a second
+// lookup. PartnerName is resolved server-side (the command only carries
+// PartnerCharacterId) so the channel can render it without a round trip.
+// PairId is ring.Entity's shared pairing id, letting a caller correlate this
+// purchase with the partner's own RING_PURCHASED-shaped view later (FR-RING-7).
+type RingPurchasedBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	AssetId       uint32    `json:"assetId"`
+	PartnerName   string    `json:"partnerName"`
+	TemplateId    uint32    `json:"templateId"`
+	Quantity      uint16    `json:"quantity"`
+	RingType      string    `json:"ringType"`
+	PairId        uuid.UUID `json:"pairId"`
+}
+
+// EquipSlotIncreasedBody describes one successful ENABLE_EQUIP_SLOT
+// purchase (task-240 task 23). SlotIndex is the Atlas CANONICAL
+// equipped-inventory position (R1 -- the pendant2 constant,
+// libs/atlas-constants/inventory/slot), NOT the wire value: the
+// EnableEquipSlotExtSuccess packet body's slotIndex is always 0 (it indexes
+// a one-element client-side array), and the channel must encode that 0
+// itself rather than passing this field straight into the packet body.
+type EquipSlotIncreasedBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	SlotIndex     int16     `json:"slotIndex"`
+	Days          uint16    `json:"days"`
 }

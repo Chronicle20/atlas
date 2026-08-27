@@ -23,7 +23,7 @@ func CashShopOpenBody(a account.Model, c character.Model, bl buddylist.Model) pa
 				l.WithError(err).Warnf("Unable to fetch teleport-rock maps for character [%d]; sending empty lists.", c.Id())
 				trm = teleportrock.Model{}
 			}
-			cd := BuildCharacterData(c, bl, location.ResolveMapId(l, ctx, c.Id()), trm)
+			cd := BuildCharacterData(l, ctx, c, bl, location.ResolveMapId(l, ctx, c.Id()), trm)
 			return cashpkt.NewCashShopOpen(cd, a.Name()).Encode(l, ctx)(options)
 		}
 	}

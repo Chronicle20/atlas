@@ -42,8 +42,11 @@ func CharacterExitCashShopStatusEventProvider(actorId uint32, f field.Model) mod
 // RequestPurchaseCommandProvider builds the REQUEST_PURCHASE command.
 // transactionId is an opaque correlation id (uuid.Nil for callers with no
 // record to correlate back to, e.g. the ordinary BUY arm) — see
-// RequestPurchaseCommandBody's doc comment.
-func RequestPurchaseCommandProvider(characterId uint32, serialNumber uint32, currency uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+// RequestPurchaseCommandBody's doc comment. operation names the requesting
+// arm (empty for the ordinary BUY arm and the name-change/world-transfer
+// paid legs, which correlate via transactionId instead) — see
+// RequestPurchaseCommandBody.Operation's doc comment.
+func RequestPurchaseCommandProvider(characterId uint32, serialNumber uint32, currency uint32, transactionId uuid.UUID, operation string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.Command[cashshop.RequestPurchaseCommandBody]{
 		CharacterId: characterId,
@@ -52,6 +55,7 @@ func RequestPurchaseCommandProvider(characterId uint32, serialNumber uint32, cur
 			TransactionId: transactionId,
 			Currency:      currency,
 			SerialNumber:  serialNumber,
+			Operation:     operation,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -146,6 +150,126 @@ func OpenSurpriseCommandProvider(characterId uint32, transactionId uuid.UUID, ac
 			TransactionId: transactionId,
 			AccountId:     accountId,
 			CashId:        cashId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestLockerRebateCommandProvider(characterId uint32, transactionId uuid.UUID, accountId uint32, cashId int64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestLockerRebateCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestLockerRebate,
+		Body: cashshop.RequestLockerRebateCommandBody{
+			TransactionId: transactionId,
+			AccountId:     accountId,
+			CashId:        cashId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// AcknowledgeGiftsCommandProvider drains the "gift list presented" flag on
+// the named cashIds (task-240 Defect H). Uses characterId only as the
+// producer partitioning key, mirroring every other command here -- the
+// server-side effect is entirely scoped by accountId + cashIds.
+func AcknowledgeGiftsCommandProvider(characterId uint32, accountId uint32, cashIds []int64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.AcknowledgeGiftsCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeAcknowledgeGifts,
+		Body: cashshop.AcknowledgeGiftsCommandBody{
+			AccountId: accountId,
+			CashIds:   cashIds,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// MarkGiftNoteSentCommandProvider marks cashId's gift-forward note as sent
+// (task-240 Defect I). Uses characterId only as the producer partitioning
+// key, mirroring every other command here -- the server-side effect is
+// entirely scoped by accountId + cashId.
+func MarkGiftNoteSentCommandProvider(characterId uint32, accountId uint32, cashId int64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.MarkGiftNoteSentCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeMarkGiftNoteSent,
+		Body: cashshop.MarkGiftNoteSentCommandBody{
+			AccountId: accountId,
+			CashId:    cashId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestGiftPurchaseCommandProvider(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestGiftPurchaseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestGiftPurchase,
+		Body: cashshop.RequestGiftPurchaseCommandBody{
+			TransactionId:        transactionId,
+			SerialNumber:         serialNumber,
+			RecipientCharacterId: recipientCharacterId,
+			SenderName:           senderName,
+			Message:              message,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestPackagePurchaseCommandProvider(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestPackagePurchaseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestPackagePurchase,
+		Body: cashshop.RequestPackagePurchaseCommandBody{
+			TransactionId:        transactionId,
+			Currency:             currency,
+			SerialNumber:         serialNumber,
+			RecipientCharacterId: recipientCharacterId,
+			SenderName:           senderName,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// RequestRingPurchaseCommandProvider builds the REQUEST_RING_PURCHASE
+// command. transactionId is minted by the caller (once per click, mirroring
+// RequestGiftPurchaseCommandProvider/RequestPackagePurchaseCommandProvider's
+// idempotency pattern) so a Kafka redelivery replays this id and is
+// rejected by atlas-cashshop's ring ledger while a genuine second click
+// gets a fresh one. ringType selects "COUPLE" vs "FRIENDSHIP".
+func RequestRingPurchaseCommandProvider(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestRingPurchaseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestRingPurchase,
+		Body: cashshop.RequestRingPurchaseCommandBody{
+			TransactionId:      transactionId,
+			Currency:           currency,
+			SerialNumber:       serialNumber,
+			PartnerCharacterId: partnerCharacterId,
+			SenderName:         senderName,
+			Message:            message,
+			RingType:           ringType,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// RequestEquipSlotIncreaseCommandProvider builds the
+// REQUEST_EQUIP_SLOT_INCREASE command (task-240 task 23, mode 9/10).
+func RequestEquipSlotIncreaseCommandProvider(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestEquipSlotIncreaseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestEquipSlotIncrease,
+		Body: cashshop.RequestEquipSlotIncreaseCommandBody{
+			TransactionId: transactionId,
+			Currency:      currency,
+			SerialNumber:  serialNumber,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

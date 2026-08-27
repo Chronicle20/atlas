@@ -1486,6 +1486,12 @@ func TestHandleCreateNote(t *testing.T) {
 			mockError:   errors.New("kafka down"),
 			expectError: true,
 		},
+		{
+			name:        "Gift note case",
+			payload:     CreateNotePayload{SenderId: 200, ReceiverId: 100, Message: "thanks!", Flag: 0, GiftNote: true},
+			mockError:   nil,
+			expectError: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1498,12 +1504,13 @@ func TestHandleCreateNote(t *testing.T) {
 			_, ctx := setupContext()
 
 			transactionId := uuid.New()
-			noteP.CreateNoteFunc = func(txn uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte) error {
+			noteP.CreateNoteFunc = func(txn uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte, giftNote bool) error {
 				assert.Equal(t, transactionId, txn)
 				assert.Equal(t, tt.payload.ReceiverId, receiverId)
 				assert.Equal(t, tt.payload.SenderId, senderId)
 				assert.Equal(t, tt.payload.Message, message)
 				assert.Equal(t, tt.payload.Flag, flag)
+				assert.Equal(t, tt.payload.GiftNote, giftNote)
 				return tt.mockError
 			}
 

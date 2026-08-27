@@ -24,6 +24,7 @@ import (
 	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -97,6 +98,31 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCouponFailed(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLockerRebated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventGiftPurchased(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPackagePurchased(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventRingPurchased(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventEquipSlotIncreased(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -193,6 +219,33 @@ func handleStatusEventPurchase(sc server.Model, wp writer.Producer) message.Hand
 				}
 			}
 
+			// BUY_NORMAL answers on its own SUCCESS mode byte
+			// (BUY_NORMAL_SUCCESS), not the generic purchase-success body --
+			// see cash_shop_operation.go's BUY_NORMAL arm for why the client
+			// gets no isPoints/currency to read on this op. Per
+			// docs/tasks/task-183-cashshop-result-family/arm-catalog.md's
+			// BUY_NORMAL_SUCCESS row, the client reads this field as
+			// nPos/slotPos and passes it to
+			// CCSWnd_Inventory::SetSelectedNo to select which cash-shop
+			// inventory window entry becomes highlighted after the
+			// purchase -- it is not unconstrained filler. SlotPos is 0
+			// (selects the first entry): neither this service's nor
+			// atlas-cashshop's cash-locker asset model persists a
+			// slot/ordinal position, so 0 is an interim value pending real
+			// slot tracking, not a derived one.
+			if e.Body.Operation == cashshop2.ErrorOperationBuyNormal {
+				refs := []cashpkt.PackedCashItemRef{{
+					Quantity: uint16(a.Item().Quantity()),
+					SlotPos:  0,
+					ItemId:   int32(a.Item().TemplateId()),
+				}}
+				if err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopBuyNormalDoneBody(refs))(s); err != nil {
+					l.WithError(err).Errorf("Unable to announce buy normal success to character [%d].", e.CharacterId)
+					return err
+				}
+				return nil
+			}
+
 			// Announce the purchase success to the character session
 			err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopCashInventoryPurchaseSuccessBody(item))(s)
 			if err != nil {
@@ -287,6 +340,270 @@ func handleStatusEventCouponFailed(sc server.Model, wp writer.Producer) message.
 	}
 }
 
+// handleStatusEventLockerRebated announces the REBATE_SUCCESS arm. Currency
+// is mirrored on LockerRebatedBody for wire compatibility with
+// atlas-cashshop but is deliberately not read here: CashShopRebateDoneBody
+// takes only sn/amount (shop_operation_body.go:600-604), so there is nothing
+// for this arm to do with it.
+func handleStatusEventLockerRebated(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.LockerRebatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.LockerRebatedBody]) {
+		if e.Type != cashshop2.StatusEventTypeLockerRebated {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopRebateDoneBody(e.Body.CashId, e.Body.Amount))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
+	}
+}
+
+// handleStatusEventGiftPurchased announces the GIFT_SUCCESS arm to the
+// SENDER's session (e.CharacterId, per GiftPurchasedStatusEventProvider's
+// convention of keying the status event on the sender). Recipient-side live
+// refresh is deliberately out of scope: REFRESH_LOCKER (mode 162) is not
+// bound in the "operations" table of any GMS seed template, so announcing it
+// would resolve to the ResolveCode sentinel. The gifted asset is durable in
+// the recipient's locker either way; they see it on their next locker load.
+//
+// GIFT_SUCCESS must be followed by a CashQueryResult announce, in that
+// order: the v83 client's gift batch state machine
+// (CCashShop::SendGiftsPacket) only advances to its final notice
+// (SP_561/SP_562/SP_563) on CASH_QUERY_RESULT, and only resolves correctly
+// if the GIFT_SUCCESS that records the confirmation has already landed.
+// Mirrors handleStatusEventInventoryCapacityIncreased above.
+func handleStatusEventGiftPurchased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.GiftPurchasedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.GiftPurchasedBody]) {
+		if e.Type != cashshop2.StatusEventTypeGiftPurchased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopGiftDoneBody(e.Body.RecipientName, int32(e.Body.TemplateId), e.Body.Quantity, int32(e.Body.Price)))(s)
+			if err != nil {
+				return err
+			}
+			w, err := wallet.NewProcessor(l, ctx).GetByAccountId(s.AccountId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
+				w = wallet.Model{}
+			}
+			err = session.Announce(l)(ctx)(wp)(cashpkt.CashQueryResultWriter)(cashpkt.NewCashQueryResult(w.Credit(), w.Points(), w.Prepaid()).Encode)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce cash shop wallet to character [%d].", s.CharacterId())
+				return err
+			}
+			return nil
+		})
+	}
+}
+
+// handleStatusEventPackagePurchased answers task 16's REQUEST_PACKAGE_PURCHASE
+// command, covering both BUY_PACKAGE and BUY_OTHER_PACKAGE (task 17). Unlike
+// the COMMAND body (where RecipientCharacterId == 0 means buy-for-self), the
+// STATUS body's RecipientCharacterId/RecipientName always echo a concrete
+// identity -- on a buy-for-self purchase they echo the buyer's own identity
+// (kafka/message/cashshop/kafka.go:372-375, PackagePurchasedBody's doc
+// comment), so RecipientCharacterId is never zero on this event. The correct
+// discriminator is therefore RecipientCharacterId != e.CharacterId: equal
+// means buy-for-self (BUY_PACKAGE_SUCCESS, mode 154), different means gift
+// (GIFT_PACKAGE_SUCCESS, mode 156, derivation.md D3b/§5). Both arms
+// announce to e.CharacterId (the buyer/sender, per
+// PackagePurchasedStatusEventProvider's convention -- mirroring
+// handleStatusEventGiftPurchased above).
+//
+// The buy-for-self arm projects Body.AssetIds into cashpkt.CashInventoryItem
+// records the same way handleStatusEventPurchase does
+// (kafka/consumer/cashshop/consumer.go:160-169) and
+// handleStatusEventCouponRedeemed does above -- atlas-cashshop deliberately
+// does not build these itself (PackagePurchasedBody's own doc comment). The
+// gift arm carries no item blob at all (GiftPackageDone's TRUE SHAPE, see
+// shop_operation_result_gift.go) so Body.AssetIds is not read on that path.
+//
+// unused1/unused2 on CashShopGiftPackageDoneBody are named "unused" in the
+// clientbound constructor itself (NewGiftPackageDone) -- kept zero here;
+// derivation.md did not contradict that.
+func handleStatusEventPackagePurchased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.PackagePurchasedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.PackagePurchasedBody]) {
+		if e.Type != cashshop2.StatusEventTypePackagePurchased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			if e.Body.RecipientCharacterId != e.CharacterId {
+				err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopGiftPackageDoneBody(e.Body.RecipientName, int32(e.Body.PackageTemplateId), 0, 0, int32(e.Body.Price)))(s)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce package gift success to character [%d].", e.CharacterId)
+					return err
+				}
+				return nil
+			}
+
+			ap := asset.NewProcessor(l, ctx)
+			items := make([]cashpkt.CashInventoryItem, 0, len(e.Body.AssetIds))
+			for _, id := range e.Body.AssetIds {
+				a, err := ap.GetById(s.AccountId(), e.Body.CompartmentId, id)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to retrieve package asset [%d] for character [%d].", id, e.CharacterId)
+					return err
+				}
+				items = append(items, cashpkt.CashInventoryItem{
+					CashId:      a.Item().CashId(),
+					AccountId:   s.AccountId(),
+					CharacterId: e.CharacterId,
+					TemplateId:  a.Item().TemplateId(),
+					CommodityId: a.CommodityId(),
+					Quantity:    int16(a.Item().Quantity()),
+					GiftFrom:    "",
+					Expiration:  packetmodel.MsTime(a.Expiration()),
+				})
+			}
+
+			err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopBuyPackageDoneBody(items, 0))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce package purchase success to character [%d].", e.CharacterId)
+				return err
+			}
+			return nil
+		})
+	}
+}
+
+// handleStatusEventRingPurchased announces the COUPLE_SUCCESS / FRIENDSHIP_SUCCESS
+// arm to the BUYER's session (e.CharacterId, per RingPurchasedBody's
+// convention of keying the status event on the buyer -- mirroring
+// handleStatusEventGiftPurchased/handleStatusEventPackagePurchased above).
+// It projects Body.AssetId into a cashpkt.CashInventoryItem the same way
+// handleStatusEventPurchase does (atlas-cashshop deliberately does not
+// build this itself -- RingPurchasedBody's own doc comment), then picks
+// CashShopCoupleDoneBody or CashShopFriendshipDoneBody by Body.RingType.
+// The partner's own half is not announced here -- there is no live session
+// correlation for it on this event (see OQ-R1: the distinct-halves
+// rejection branch is unimplemented for the same reason).
+func handleStatusEventRingPurchased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.RingPurchasedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.RingPurchasedBody]) {
+		if e.Type != cashshop2.StatusEventTypeRingPurchased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			a, err := asset.NewProcessor(l, ctx).GetById(s.AccountId(), e.Body.CompartmentId, e.Body.AssetId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve ring asset [%d] for character [%d].", e.Body.AssetId, e.CharacterId)
+				return err
+			}
+
+			item := cashpkt.CashInventoryItem{
+				CashId:      a.Item().CashId(),
+				AccountId:   s.AccountId(),
+				CharacterId: e.CharacterId,
+				TemplateId:  a.Item().TemplateId(),
+				CommodityId: a.CommodityId(),
+				Quantity:    int16(a.Item().Quantity()),
+				GiftFrom:    "",
+				Expiration:  packetmodel.MsTime(a.Expiration()),
+			}
+
+			var body func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte
+			switch e.Body.RingType {
+			case cashshop2.RingTypeCouple:
+				body = cashpkt.CashShopCoupleDoneBody(item, e.Body.PartnerName, int32(e.Body.TemplateId), e.Body.Quantity)
+			case cashshop2.RingTypeFriendship:
+				body = cashpkt.CashShopFriendshipDoneBody(item, e.Body.PartnerName, int32(e.Body.TemplateId), e.Body.Quantity)
+			default:
+				l.Errorf("Unrecognized ring type [%s] for character [%d]; unable to announce ring purchase.", e.Body.RingType, e.CharacterId)
+				return nil
+			}
+
+			if err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(body)(s); err != nil {
+				l.WithError(err).Errorf("Unable to announce ring purchase success to character [%d].", e.CharacterId)
+				return err
+			}
+			return nil
+		})
+	}
+}
+
+// handleStatusEventEquipSlotIncreased announces the ENABLE_EQUIP_SLOT_EXT_SUCCESS
+// arm for a purchased equip slot extension (task-240 task 23). There is no
+// locker asset to look up here -- the purchase creates no cash inventory
+// item, closer to handleStatusEventInventoryCapacityIncreased's shape than
+// to handleStatusEventRingPurchased's.
+//
+// e.Body.SlotIndex is the Atlas CANONICAL equipped-inventory position
+// (-59, pendant2) -- see EquipSlotIncreasedBody's doc comment. The
+// EnableEquipSlotExtSuccess packet body's slotIndex is a distinct WIRE
+// value that this derivation pins at 0 (it indexes a one-element slot
+// array), so the literal 0 below -- never e.Body.SlotIndex -- is
+// deliberate: passing the event field through would silently encode
+// -59 as the unsigned wire value 65477.
+func handleStatusEventEquipSlotIncreased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.EquipSlotIncreasedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.EquipSlotIncreasedBody]) {
+		if e.Type != cashshop2.StatusEventTypeEquipSlotIncreased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			if err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopEnableEquipSlotExtSuccessBody(0, e.Body.Days))(s); err != nil {
+				l.WithError(err).Errorf("Unable to announce equip slot extension success to character [%d].", e.CharacterId)
+				return err
+			}
+			return nil
+		})
+	}
+}
+
+// failureBodyForOperation routes a cash shop failure to its own arm's
+// *_FAILED body builder, keyed on ErrorEventBody.Operation. default
+// reproduces today's behavior byte for byte -- CashShopInventoryCapacityIncreaseFailedBody
+// -- so an existing producer that never sets Operation (empty string) is
+// unaffected, as is any operation value this switch does not yet recognize.
+func failureBodyForOperation(operation string, reason string) packet.Encode {
+	switch operation {
+	case cashshop2.ErrorOperationGift:
+		return cashpkt.CashShopGiftFailedBody(reason)
+	case cashshop2.ErrorOperationBuyNormal:
+		return cashpkt.CashShopBuyNormalFailedBody(reason)
+	case cashshop2.ErrorOperationRebate:
+		return cashpkt.CashShopRebateFailedBody(reason)
+	case cashshop2.ErrorOperationCouple:
+		return cashpkt.CashShopCoupleFailedBody(reason)
+	case cashshop2.ErrorOperationFriendship:
+		return cashpkt.CashShopFriendshipFailedBody(reason)
+	case cashshop2.ErrorOperationBuyPackage:
+		return cashpkt.CashShopBuyPackageFailedBody(reason)
+	case cashshop2.ErrorOperationGiftPackage:
+		return cashpkt.CashShopGiftPackageFailedBody(reason)
+	case cashshop2.ErrorOperationEnableEquipSlot:
+		return cashpkt.CashShopEnableEquipSlotExtFailedBody(reason)
+	default:
+		return cashpkt.CashShopInventoryCapacityIncreaseFailedBody(reason)
+	}
+}
+
 func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.ErrorEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.ErrorEventBody]) {
 		if e.Type != cashshop2.StatusEventTypeError {
@@ -329,8 +646,9 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 			}
 		}
 
-		// Use the generic error handler
-		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopInventoryCapacityIncreaseFailedBody(e.Body.Error))
+		// Route to the failing arm's own *_FAILED mode byte (falls back to
+		// today's capacity-increase arm for an empty/unrecognized operation).
+		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(failureBodyForOperation(e.Body.Operation, e.Body.Error))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
 		return
 	}

@@ -12,6 +12,10 @@ type Model struct {
 	message     string
 	timestamp   time.Time
 	flag        byte
+	// giftNote is server-only: it records that this note originated from a
+	// cash-shop gift acknowledgement, whose fame was already settled at
+	// acceptance time. It is never rendered to the client.
+	giftNote bool
 }
 
 // Id returns the note's ID
@@ -42,4 +46,10 @@ func (n Model) Timestamp() time.Time {
 // Flag returns the note's flag
 func (n Model) Flag() byte {
 	return n.flag
+}
+
+// GiftNote returns whether this note originated from a cash-shop gift
+// acknowledgement; its fame was settled at acceptance time.
+func (n Model) GiftNote() bool {
+	return n.giftNote
 }

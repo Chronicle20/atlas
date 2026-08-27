@@ -43,7 +43,7 @@ func SetItcBody(a account.Model, c character.Model, bl buddylist.Model) packet.E
 				l.WithError(err).Warnf("Unable to fetch teleport-rock maps for character [%d]; sending empty lists.", c.Id())
 				trm = teleportrock.Model{}
 			}
-			cd := BuildCharacterData(c, bl, location.ResolveMapId(l, ctx, c.Id()), trm)
+			cd := BuildCharacterData(l, ctx, c, bl, location.ResolveMapId(l, ctx, c.Id()), trm)
 			t := tenant.MustFromContext(ctx)
 			cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
 			return fieldcb.NewSetItcWithConfig(cd, a.Name(),

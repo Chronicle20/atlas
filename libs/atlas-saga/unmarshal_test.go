@@ -1278,6 +1278,7 @@ func TestCreateNoteStepUnmarshal(t *testing.T) {
 			ReceiverId: 200,
 			Message:    "hello",
 			Flag:       1,
+			GiftNote:   true,
 		},
 	}
 	b, err := json.Marshal(in)
@@ -1294,7 +1295,7 @@ func TestCreateNoteStepUnmarshal(t *testing.T) {
 	if !ok {
 		t.Fatalf("payload type: got %T, want CreateNotePayload", out.Payload)
 	}
-	if p.SenderId != 100 || p.ReceiverId != 200 || p.Message != "hello" || p.Flag != 1 {
+	if p.SenderId != 100 || p.ReceiverId != 200 || p.Message != "hello" || p.Flag != 1 || !p.GiftNote {
 		t.Errorf("payload round-trip mismatch: %+v", p)
 	}
 }

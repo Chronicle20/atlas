@@ -1,0 +1,48 @@
+{
+  "WriterName": "CashShopOperationBuyOtherPackage",
+  "IDAName": "CCashShop::OnGiftPackage",
+  "Address": "0x4907b0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/shop_operation_buy_other_package.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sSPW (second password, from ask_SPW); COutPacket::EncodeStr @0x490b93",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nCommSN (commodity serial number); inlined 4-byte write into COutPacket::m_aSendBuff (v45 is oPacket's own m_aSendBuff field, offset 0x4 per COutPacket's type layout — Hex-Rays split it into a separate local because it lost type info at this call site) @0x490be2, not a named EncodeStr/Encode4 call",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sGiveTo (recipient character name, from CUISendGift::GetResult); COutPacket::EncodeStr @0x490c01",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sText (gift message, from CUISendGift::GetResult); COutPacket::EncodeStr @0x490c1d",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

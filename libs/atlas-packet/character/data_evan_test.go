@@ -48,7 +48,7 @@ func TestEvanExtendedSPv84(t *testing.T) {
 			BuddyCapacity: 20,
 			Inventory: InventoryData{
 				EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
-				EtcCapacity: 24, CashCapacity: 24, Timestamp: 94354848000000000,
+				EtcCapacity: 24, CashCapacity: 24, EquipSlotExtExpire: 94354848000000000,
 			},
 		}
 	}

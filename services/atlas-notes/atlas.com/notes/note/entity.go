@@ -16,6 +16,7 @@ type Entity struct {
 	Message     string
 	Timestamp   time.Time
 	Flag        byte
+	GiftNote    bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
@@ -35,6 +36,7 @@ func Make(e Entity) (Model, error) {
 		SetMessage(e.Message).
 		SetTimestamp(e.Timestamp).
 		SetFlag(e.Flag).
+		SetGiftNote(e.GiftNote).
 		Build()
 }
 
@@ -48,6 +50,7 @@ func MakeEntity(tenantId uuid.UUID, n Model) Entity {
 		Message:     n.Message(),
 		Timestamp:   n.Timestamp(),
 		Flag:        n.Flag(),
+		GiftNote:    n.GiftNote(),
 	}
 }
 

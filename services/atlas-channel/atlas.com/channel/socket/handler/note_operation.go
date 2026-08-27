@@ -37,13 +37,19 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			sp := &notesb.OperationSend{}
 			sp.Decode(l, ctx)(r, readerOptions)
 
-			// This arm's only legitimate client-side writer is the cash-shop
-			// gift flow (CCashShop::OnCashItemResLoadGiftDone), which is not
-			// implemented server-side; the player send path is USE_CASH_ITEM.
-			// Gate on Note-item ownership so a tampered client cannot mint free
-			// notes (FR-4). When gifting lands, gift sends must NOT route
-			// through this consume-gated path (the note is paid for by the gift
-			// purchase) — see design §2.2.
+			// Gift-forward branch (giftFlag == 1): the only arm a legitimate
+			// v83+ client ever writes (CCashShop::OnCashItemResLoadGiftDone).
+			// It is paid for by the gift purchase, not a Note item, and must
+			// not route through the consume-gated path below — see design
+			// §2.2 and note_gift_forward.go.
+			if sp.GiftFlag() == 1 {
+				handleNoteGiftForward(l, ctx)(s, sp)
+				return
+			}
+
+			// The tamper path (giftFlag == 0): no client writes it today.
+			// Gate on Note-item ownership so a tampered client cannot mint
+			// free notes (FR-4).
 			cp, err := compartment.NewProcessor(l, ctx).GetByType(s.CharacterId(), inventory.TypeValueCash)
 			if err != nil {
 				l.WithError(err).Warnf("Character [%d] NOTE_ACTION SEND rejected: unable to load cash compartment.", s.CharacterId())

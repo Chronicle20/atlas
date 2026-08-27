@@ -1,0 +1,157 @@
+{
+  "service": "atlas-cashshop, atlas-channel",
+  "path": "services/atlas-cashshop, services/atlas-channel",
+  "date": "2026-08-19",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "cashshop/cashshop",
+      "type": "domain",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor interface/constructor/ProcessorImpl methods live in processor.go or processor_<group>.go", "status": "fail", "evidence": "ProcessorImpl methods in bare topic-named files: cashshop/gift.go:51 GiftAndEmit, cashshop/package.go:59 PurchasePackageAndEmit, cashshop/rebate.go:57 RebateAndEmit, cashshop/ring.go:74 PurchaseRingAndEmit, cashshop/equipslot.go:46,163 PurchaseEquipSlotAndEmit/CompleteEquipSlotExtension" },
+        { "id": "DOM-30", "name": "Writes emit via AndEmit+message.Buffer, not a direct producer call on success path", "status": "pass", "evidence": "cashshop/gift.go:67 message.Emit(outbox.EmitProvider(...)); direct producer.ProviderImpl only on rejection branch (gift.go:70)" },
+        { "id": "DOM-21", "name": "No redeclaration of an existing libs/atlas-constants type/const", "status": "pass", "evidence": "cashshop/processor.go walletCurrency* consts documented as checked against libs/atlas-constants; equipslot.go:39 reuses slot.GetSlotByType(\"pendant2\")" },
+        { "id": "DOM-25", "name": "Client wire values resolved from a table, not hardcoded", "status": "pass", "evidence": "literal slotIndex=0 in consumer.go is IDB-derived per docs/tasks/task-240-cash-shop-stub-operations/derivation-equip-slot.md:61-168,508" }
+      ]
+    },
+    {
+      "name": "cashshop/character",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-02", "name": "RestModel/Transform/GetName/GetID/SetID live in rest.go", "status": "fail", "evidence": "character/equipslot.go:25-71 defines EquipSlotExtensionRestModel and ExtendEquipSlotInputRestModel with their JSON:API methods, not in rest.go" },
+        { "id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "fail", "evidence": "character/equipslot.go:17,73-80 defines requestExtendEquipSlot and EquipSlotExtensions const, not in requests.go" },
+        { "id": "FILE-06", "name": "No single file carrying >=2 of the file responsibilities", "status": "fail", "evidence": "character/equipslot.go carries both FILE-02 and FILE-03 responsibilities" },
+        { "id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "character/equipslot.go:25-31 EquipSlotExtensionRestModel has neither method" },
+        { "id": "EXT-02", "name": "httptest-backed integration test with representative fixture", "status": "fail", "evidence": "no _test.go exists in services/atlas-cashshop/atlas.com/cashshop/character/" },
+        { "id": "EXT-03", "name": "Only genuine 404s map to not-found; other failures bubble", "status": "pass", "evidence": "character/processor.go:59-61 ExtendEquipSlot returns raw error, no domain not-found mapping to misapply" },
+        { "id": "EXT-04", "name": "URL composed via requests.RootUrl/RootUrlFor", "status": "pass", "evidence": "character/requests.go:16 requests.RootUrlFor(ctx, \"CHARACTERS\")" }
+      ]
+    },
+    {
+      "name": "ring",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-01", "name": "builder.go exists with NewBuilder()/Build()", "status": "fail", "evidence": "no builder.go in services/atlas-cashshop/atlas.com/cashshop/ring/; no NewBuilder anywhere in package; administrator.go:27-49 builds Entity{} literals directly" },
+        { "id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "fail", "evidence": "grep for ToEntity in ring/ returns no match" },
+        { "id": "DOM-03", "name": "Make(Entity) (Model, error) defined in entity.go", "status": "pass", "evidence": "ring/entity.go:38-49" },
+        { "id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "pass", "evidence": "ring/rest.go:52-62" },
+        { "id": "DOM-05", "name": "TransformSlice defined in rest.go and used by list handlers", "status": "fail", "evidence": "no func TransformSlice anywhere in service; ring/resource.go:76 uses model.SliceMap(Transform) instead" },
+        { "id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery", "status": "pass", "evidence": "ring/provider.go:11-30 curried functions returning database.EntityProvider[T]" },
+        { "id": "DOM-16", "name": "administrator.go holds write functions", "status": "pass", "evidence": "ring/administrator.go CreatePair, called from ring/processor.go:41" },
+        { "id": "FILE-05", "name": "Readers in provider.go, writes in administrator.go", "status": "fail", "evidence": "byCharacterIdPagedProvider defined in ring/resource.go:27-31 instead of provider.go" },
+        { "id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "pass", "evidence": "ring/resource.go:75-79, 112-116" },
+        { "id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "ring/resource.go:104-107 maps gorm.ErrRecordNotFound to 404" },
+        { "id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "ring/rest.go:29-49" },
+        { "id": "DOM-27", "name": "DB-backed handler error branches use WriteErrorResponse", "status": "pass", "evidence": "ring/resource.go:69,83,107,111" },
+        { "id": "DOM-31", "name": "Tenant/trace never in REST model or query/path param", "status": "pass", "evidence": "ring/rest.go:20-28 RestModel has no TenantId; tenant read only from context at resource.go:66,101" },
+        { "id": "DOM-10", "name": "Test DB setup calls RegisterTenantCallbacks", "status": "pass", "evidence": "ring/administrator_test.go:17, ring/resource_test.go:44 via databasetest.NewInMemoryTenantDB which calls database.RegisterTenantCallbacks (libs/atlas-database/databasetest/testdb.go:39)" }
+      ]
+    },
+    {
+      "name": "purchaserecord",
+      "type": "sub-domain",
+      "checks": [
+        { "id": "SUB-01", "name": "Business logic in processor, not handler", "status": "pass", "evidence": "purchaserecord/resource.go:35 calls NewProcessor(...).Get(...)" },
+        { "id": "SUB-02", "name": "No db.Create/db.Save in resource.go", "status": "pass", "evidence": "grep confirms no match in purchaserecord/resource.go" },
+        { "id": "SUB-03", "name": "POST routes via RegisterInputHandler[T]", "status": "n-a", "evidence": "package registers only GET, no POST route" },
+        { "id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "grep confirms no json.NewDecoder/Unmarshal/io.ReadAll" },
+        { "id": "FILE-05", "name": "Readers in provider.go, writes in administrator.go", "status": "fail", "evidence": "Get() reader defined in purchaserecord/administrator.go:44-53 alongside Record() writer; no provider.go exists" },
+        { "id": "DOM-31", "name": "Tenant never in REST model or query/path param", "status": "pass", "evidence": "purchaserecord/rest.go:8-13 RestModel has no TenantId" },
+        { "id": "DOM-10", "name": "Test DB setup calls RegisterTenantCallbacks", "status": "pass", "evidence": "purchaserecord/administrator_test.go:16 via databasetest.NewInMemoryTenantDB" }
+      ]
+    },
+    {
+      "name": "data/cashpackage",
+      "type": "support",
+      "checks": [
+        { "id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs on RestModel", "status": "fail", "evidence": "data/cashpackage/rest.go:5-11 has no such methods" },
+        { "id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no _test.go in package" },
+        { "id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "data/cashpackage/processor.go:29 returns raw error unmodified" },
+        { "id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "data/cashpackage/requests.go:16 requests.RootUrlFor(ctx, \"DATA\")" },
+        { "id": "FILE-01..05", "name": "Each responsibility in its own file", "status": "pass", "evidence": "model.go/processor.go/requests.go/rest.go each hold only their documented responsibility" }
+      ]
+    },
+    {
+      "name": "channel/character/equipslot",
+      "type": "support",
+      "checks": [
+        { "id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs on RestModel", "status": "fail", "evidence": "channel/character/equipslot/rest.go:10-16 has no such methods" },
+        { "id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no _test.go in package" },
+        { "id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "equipslot/processor.go:32 returns raw error unmodified" },
+        { "id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "equipslot/requests.go:14 requests.RootUrlFor(ctx, \"CHARACTERS\")" },
+        { "id": "FILE-01..03", "name": "Each responsibility in its own file", "status": "pass", "evidence": "processor.go/requests.go/rest.go each hold only their documented responsibility" }
+      ]
+    },
+    {
+      "name": "channel/cashshop/purchaserecord",
+      "type": "support",
+      "checks": [
+        { "id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs on RestModel", "status": "fail", "evidence": "channel/cashshop/purchaserecord/rest.go:8-14 has no such methods" },
+        { "id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no _test.go in package" },
+        { "id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "channel/cashshop/purchaserecord/processor.go returns raw error unmodified" },
+        { "id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "channel/cashshop/purchaserecord/requests.go:15 requests.RootUrlFor(ctx, \"CASHSHOP\")" },
+        { "id": "FILE-01..05", "name": "Each responsibility in its own file", "status": "pass", "evidence": "model.go/processor.go/requests.go/rest.go each hold only their documented responsibility" }
+      ]
+    },
+    {
+      "name": "channel/socket/writer (character_data.go)",
+      "type": "support",
+      "checks": [
+        { "id": "DOM-28", "name": "Fallible remote-fetch enrichment degrades loudly via ErrDecorator+degrade.Observe", "status": "fail", "evidence": "character_data.go:120-126 buildInventoryData logs Warn on GetActive() error and falls back to exts=nil; never calls degrade.Observe or model.ErrDecorator" },
+        { "id": "DOM-25", "name": "Client wire values resolved from a table", "status": "pass", "evidence": "new EquipSlotExtExpire is a computed FILETIME timestamp, not a dispatcher/mode/reason code" }
+      ]
+    },
+    {
+      "name": "channel/kafka/consumer/cashshop",
+      "type": "support",
+      "checks": [
+        { "id": "DOM-25", "name": "Client wire values resolved from a table / IDB-verified", "status": "pass", "evidence": "failureBodyForOperation (consumer.go:298-318) routes purely on ErrorEventBody.Operation string, matching design.md section 7; slotIndex=0 is IDB-derived (see cashshop/cashshop row)" },
+        { "id": "DOM-30", "name": "Result bodies picked via existing bound writer-options tables", "status": "pass", "evidence": "every session.Announce call uses an existing libs/atlas-packet body constructor; no new codec introduced" }
+      ]
+    },
+    {
+      "name": "channel/socket/handler (cash_shop_credential.go)",
+      "type": "support",
+      "checks": [
+        { "id": "SEC-01", "name": "JWT parsing verified", "status": "n-a", "evidence": "gate compares stored PIC/birthday, not a JWT" },
+        { "id": "SEC-02", "name": "Revocation reads validated claims", "status": "n-a", "evidence": "no revocation/logout path touched" },
+        { "id": "SEC-03", "name": "Redirect target validation", "status": "n-a", "evidence": "no redirect/callback handler touched" },
+        { "id": "SEC-04", "name": "No hardcoded secrets", "status": "pass", "evidence": "cash_shop_credential.go contains no literal secret; PIC/birthday read from account service per request" }
+      ]
+    },
+    {
+      "name": "testing (cross-cutting)",
+      "type": "support",
+      "checks": [
+        { "id": "DOM-24", "name": "Test packages reaching an emit path install the shared producertest stub", "status": "fail", "evidence": "cash_shop_buy_normal_test.go:66,111 (new) reaches emit path via pre-existing installCapturingProducer() helper (cash_item_gachapon_test.go:50-58), which hand-rolls a capturingWriter via kafkaproducer.ConfigWriterFactory instead of producertest.InstallCapturing(); testing-guide.md explicitly disallows a service-local helper here. cashshop/cashshop package PASSES via processor_test.go:52 TestMain producertest.InstallCapturing() covering all sibling _test.go files in the same package." },
+        { "id": "DOM-20", "name": "Table-driven tests (tests := []struct{...} + t.Run)", "status": "warn", "evidence": "gift_test.go, ring_test.go, rebate_test.go, package_test.go, ring/administrator_test.go use named t.Run subtests without a tests:=[]struct{...} table; TestBuyNormalPurchaseCurrency (cash_shop_buy_normal_test.go:52-91) does use the table form" },
+        { "id": "DOM-33", "name": "Interface changes update every mock in the same diff", "status": "n-a", "evidence": "no mock of cashshop.Processor exists anywhere in atlas-channel; ring.Processor/purchaserecord.Processor are new interfaces, not changed ones" }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "SCAFFOLD-07: gms_95 CashShopOpen opcode registration and errors/operations table keys live in services/atlas-configurations, out of this review's scope",
+    "atlas-character equipslot write route (ExtendEquipSlot's server side): out of this review's scope, covered by a separate reviewer",
+    "DOM-21: full independent libs/atlas-constants sweep for a ring-pairing type equivalent was not performed; relied on the in-code rationale comment",
+    "DOM-25/derivation correctness: the slotIndex=0 IDB derivation itself was not independently re-derived, taken from the committed derivation document"
+  ],
+  "blocking": [
+    "FILE-01: services/atlas-cashshop/atlas.com/cashshop/cashshop/{gift,package,rebate,ring,equipslot}.go: ProcessorImpl methods sit in bare topic-named files instead of processor.go/processor_<group>.go",
+    "FILE-02/FILE-03/FILE-06: services/atlas-cashshop/atlas.com/cashshop/character/equipslot.go: collapses RestModel and request-function responsibilities into one file",
+    "FILE-05: services/atlas-cashshop/atlas.com/cashshop/ring/resource.go:27-31: DB reader defined outside provider.go",
+    "FILE-05: services/atlas-cashshop/atlas.com/cashshop/purchaserecord/administrator.go:44-53: reader mixed into the write file, no provider.go",
+    "DOM-01: services/atlas-cashshop/atlas.com/cashshop/ring/: no builder.go/NewBuilder()",
+    "DOM-02: services/atlas-cashshop/atlas.com/cashshop/ring/entity.go: no Model.ToEntity()",
+    "EXT-01: data/cashpackage/rest.go, cashshop/character/equipslot.go, services/atlas-channel/.../character/equipslot/rest.go, services/atlas-channel/.../cashshop/purchaserecord/rest.go: missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: same 4 packages: zero tests, no httptest fixture coverage",
+    "DOM-28: services/atlas-channel/atlas.com/channel/socket/writer/character_data.go:120-126: remote-fetch enrichment fallback logs but never calls degrade.Observe/model.ErrDecorator",
+    "DOM-24: services/atlas-channel/atlas.com/channel/socket/handler/cash_shop_buy_normal_test.go: reaches Kafka emit path via a service-local capturing writer instead of the shared producertest package"
+  ],
+  "nonBlocking": [
+    "DOM-05: services/atlas-cashshop/atlas.com/cashshop/ring/resource.go:76: list handler uses model.SliceMap(Transform) instead of a defined TransformSlice in rest.go",
+    "DOM-20: several new _test.go files use named t.Run subtests rather than the tests := []struct{...} table shape"
+  ]
+}

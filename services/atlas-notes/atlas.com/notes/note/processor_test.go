@@ -87,7 +87,7 @@ func TestProcessorImpl_CRUD(t *testing.T) {
 	flag := byte(0)
 
 	mb := message.NewBuffer()
-	nm, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)(msg)(flag)
+	nm, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)(msg)(flag)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestProcessorImpl_Update(t *testing.T) {
 	senderId := uint32(2)
 	mb := message.NewBuffer()
 
-	nm, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Original")(0)
+	nm, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Original")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestProcessorImpl_Delete(t *testing.T) {
 	senderId := uint32(2)
 	mb := message.NewBuffer()
 
-	nm, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("To be deleted")(0)
+	nm, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("To be deleted")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note: %v", err)
 	}
@@ -184,19 +184,19 @@ func TestProcessorImpl_DeleteAll(t *testing.T) {
 	senderId := uint32(2)
 	mb := message.NewBuffer()
 
-	_, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)
+	_, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 1: %v", err)
 	}
 
-	_, err = np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)
+	_, err = np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 2: %v", err)
 	}
 
 	// Create note for different character
 	otherCharacterId := uint32(99)
-	_, err = np.Create(mb)(uuid.Nil)(otherCharacterId)(senderId)("Other note")(0)
+	_, err = np.Create(mb)(uuid.Nil)(otherCharacterId)(senderId)("Other note")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create other note: %v", err)
 	}
@@ -234,17 +234,17 @@ func TestProcessorImpl_Discard(t *testing.T) {
 	senderId := uint32(2)
 	mb := message.NewBuffer()
 
-	n1, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)
+	n1, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 1: %v", err)
 	}
 
-	n2, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)
+	n2, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 2: %v", err)
 	}
 
-	n3, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 3")(0)
+	n3, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 3")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 3: %v", err)
 	}
@@ -284,12 +284,12 @@ func TestProcessorImpl_Discard_SkipsOtherCharacterNotes(t *testing.T) {
 	senderId := uint32(2)
 	mb := message.NewBuffer()
 
-	n1, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("My note")(0)
+	n1, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("My note")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note: %v", err)
 	}
 
-	n2, err := np.Create(mb)(uuid.Nil)(otherCharacterId)(senderId)("Other's note")(0)
+	n2, err := np.Create(mb)(uuid.Nil)(otherCharacterId)(senderId)("Other's note")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create other note: %v", err)
 	}
@@ -332,7 +332,7 @@ func TestProcessorImpl_ByIdProvider(t *testing.T) {
 	msg := "Test note"
 	mb := message.NewBuffer()
 
-	created, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)(msg)(0)
+	created, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)(msg)(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note: %v", err)
 	}
@@ -364,19 +364,19 @@ func TestProcessorImpl_ByCharacterProvider(t *testing.T) {
 	senderId := uint32(2)
 	mb := message.NewBuffer()
 
-	_, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)
+	_, err := np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 1: %v", err)
 	}
 
-	_, err = np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)
+	_, err = np.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 2: %v", err)
 	}
 
 	// Create note for different character
 	otherCharacterId := uint32(99)
-	_, err = np.Create(mb)(uuid.Nil)(otherCharacterId)(senderId)("Other note")(0)
+	_, err = np.Create(mb)(uuid.Nil)(otherCharacterId)(senderId)("Other note")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create other note: %v", err)
 	}
@@ -400,17 +400,17 @@ func TestProcessorImpl_AllProvider(t *testing.T) {
 	// Create notes for different characters
 	mb := message.NewBuffer()
 
-	_, err := np.Create(mb)(uuid.Nil)(1)(2)("Note 1")(0)
+	_, err := np.Create(mb)(uuid.Nil)(1)(2)("Note 1")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 1: %v", err)
 	}
 
-	_, err = np.Create(mb)(uuid.Nil)(3)(4)("Note 2")(0)
+	_, err = np.Create(mb)(uuid.Nil)(3)(4)("Note 2")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 2: %v", err)
 	}
 
-	_, err = np.Create(mb)(uuid.Nil)(5)(6)("Note 3")(0)
+	_, err = np.Create(mb)(uuid.Nil)(5)(6)("Note 3")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 3: %v", err)
 	}

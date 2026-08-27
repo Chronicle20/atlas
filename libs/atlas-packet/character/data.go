@@ -47,14 +47,18 @@ type InventoryData struct {
 	SetupCapacity byte
 	EtcCapacity   byte
 	CashCapacity  byte
-	Timestamp     int64
-	RegularEquip  []model.Asset
-	CashEquip     []model.Asset
-	EquipInv      []model.Asset
-	UseInv        []model.Asset
-	SetupInv      []model.Asset
-	EtcInv        []model.Asset
-	CashInv       []model.Asset
+	// EquipSlotExtExpire is CharacterData::aEquipExtExpire[0] (a Windows
+	// FILETIME): the expiry of the character's purchased extended equip slot
+	// (see docs/tasks/task-240-cash-shop-stub-operations/derivation-equip-slot.md
+	// E2). It is not an inventory-update timestamp despite the field's old name.
+	EquipSlotExtExpire int64
+	RegularEquip       []model.Asset
+	CashEquip          []model.Asset
+	EquipInv           []model.Asset
+	UseInv             []model.Asset
+	SetupInv           []model.Asset
+	EtcInv             []model.Asset
+	CashInv            []model.Asset
 }
 
 type SkillEntry struct {
@@ -443,11 +447,12 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 		w.WriteByte(m.Inventory.CashCapacity)
 	}
 
-	// Inventory-update FILETIME: added in the v79 protocol revision (flag 0x100000,
-	// read before the equip section). Absent v48/v61/v72 — v72 has no 0x100000 block
-	// before equipment (its only 0x100000 use is the trailing wishlist map). IDA-verified.
+	// Equip-slot-extension expiry FILETIME: added in the v79 protocol revision
+	// (flag 0x100000, read before the equip section). Absent v48/v61/v72 — v72
+	// has no 0x100000 block before equipment (its only 0x100000 use is the
+	// trailing wishlist map). IDA-verified.
 	if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
-		w.WriteInt64(m.Inventory.Timestamp)
+		w.WriteInt64(m.Inventory.EquipSlotExtExpire)
 	}
 
 	// Regular equipment
@@ -536,9 +541,9 @@ func (m *CharacterData) decodeInventory(l logrus.FieldLogger, ctx context.Contex
 		m.Inventory.CashCapacity = r.ReadByte()
 	}
 
-	// Inventory-update FILETIME: v79+ only (mirror of Encode).
+	// Equip-slot-extension expiry FILETIME: v79+ only (mirror of Encode).
 	if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
-		m.Inventory.Timestamp = r.ReadInt64()
+		m.Inventory.EquipSlotExtExpire = r.ReadInt64()
 	}
 
 	// Regular equipment: slot is negative (equipped items)

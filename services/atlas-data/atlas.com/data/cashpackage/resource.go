@@ -1,0 +1,71 @@
+package cashpackage
+
+import (
+	"atlas-data/rest"
+	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+)
+
+func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
+	return func(si jsonapi.ServerInformation) server.RouteInitializer {
+		return func(router *mux.Router, l logrus.FieldLogger) {
+			registerGet := rest.RegisterHandler(l)(si)
+
+			r := router.PathPrefix("/data/cashPackages").Subrouter()
+			r.HandleFunc("", registerGet("get_cash_packages", handleGetCashPackagesRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{packageId}", registerGet("get_cash_package", handleGetCashPackageRequest(db))).Methods(http.MethodGet)
+		}
+	}
+}
+
+func handleGetCashPackagesRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			query := r.URL.Query()
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
+				return
+			}
+
+			p := NewProcessor(d.Logger(), d.Context(), db)
+			paged, err := p.AllPaged(page)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve cash packages.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
+		}
+	}
+}
+
+func handleGetCashPackageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParsePackageId(d.Logger(), func(packageId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				res, err := p.GetById(strconv.Itoa(int(packageId)))
+				if err != nil {
+					d.Logger().WithError(err).Debugf("Unable to locate cash package %d.", packageId)
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
+}

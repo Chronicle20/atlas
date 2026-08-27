@@ -158,3 +158,40 @@ filled in once the desync is located.
 - Exact last-known-good build. User reports "days ago"; the deployed image at
   crash time was `main-051617c`.
 - Whether the same crash is reachable on other client versions.
+
+## Controller note after the CharacterData verification (task-273, round 2)
+
+CharacterData, DecodeOpt and OnSetLogoutGiftConfig are all clean on JMS 185
+(see `characterdata-jms185-verification.md`), so the SetField payload is fully
+exonerated. That forces a re-reading of the timeline, and it points somewhere
+different from the "pools not built yet" hypothesis:
+
+**The field was alive before it died.** The client transmitted ops `0xEA` and
+`0xDA` at 23:13:12.719/.729 — over a second *after* the enter-field burst at
+23:13:11.597. A client that never finished building its field does not send
+field-stage packets. So `dword_CD7590` was non-null at 23:13:12.7 and null a
+moment later: the CNpcPool was **destructed** (`sub_71FF65` @0x71FFB8), not
+never-constructed. Something tore the field down, and a later SpawnNPC arrived
+against the corpse.
+
+That reorders the candidates. The next unit should ask, in this order:
+
+1. **What tears the field down here?** In `CStage::OnSetField` @0x7eea69 the
+   client first swaps to a `CInterStage` (`set_stage` @0x7eecf3, guarded by the
+   `off_CD7770` check @0x7eecc4) and only then installs the real field
+   (`set_stage` @0x7eed4e). A *second* SetField — or any stage transition —
+   destroys the current CField and with it the pool. Check whether atlas-channel
+   emits a second SetField, a field transition, or any stage-changing writer to
+   this session after 23:13:11.6.
+2. **Is a SpawnNPC arriving late?** The `CHARACTER_ENTER` consumer at
+   23:13:11.790 ("Processing character [40] entering map [10000]") runs a second
+   fan-out after the `SpawnForSelf` one at .597. If either path emits SpawnNPC
+   after a teardown, that is the crash.
+3. **Identify client→server ops `0xEA` and `0xDA` on JMS 185** — they are the
+   last thing the client did before dying and are currently unhandled by
+   atlas-channel. If `0xEA` is a transfer-field / portal-script request, the
+   client may be initiating the very transition that tears the field down while
+   the server, having no handler, never completes it.
+
+The pod logs for the reproduction are gone with the pod; a re-test will be
+needed to confirm what the server sends in the second window.

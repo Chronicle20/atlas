@@ -21,7 +21,7 @@ func testCharacter(isGm bool) character.Model {
 	if isGm {
 		gm = 1
 	}
-	return character.NewModelBuilder().SetId(1).SetGm(gm).SetX(100).SetY(200).Build()
+	return character.NewBuilder().SetId(1).SetGm(gm).SetX(100).SetY(200).Build()
 }
 
 // TestPlayerNpcCommands is the plan.md Task 21 test table.
@@ -46,7 +46,7 @@ func TestPlayerNpcCommands(t *testing.T) {
 
 	t.Run("deploy emits", func(t *testing.T) {
 		c := testCharacter(true)
-		target := character.NewModelBuilder().SetId(42).SetName("Hero").Build()
+		target := character.NewBuilder().SetId(42).SetName("Hero").Build()
 
 		var published msg.Command[msg.CommandDeployBody]
 		var publishCalled bool
@@ -108,7 +108,7 @@ func TestPlayerNpcCommands(t *testing.T) {
 
 	t.Run("remove all", func(t *testing.T) {
 		c := testCharacter(true)
-		target := character.NewModelBuilder().SetId(42).SetName("Hero").Build()
+		target := character.NewBuilder().SetId(42).SetName("Hero").Build()
 
 		var published msg.Command[msg.CommandRemoveBody]
 		lookup := func(name string) (character.Model, error) { return target, nil }
@@ -137,7 +137,7 @@ func TestPlayerNpcCommands(t *testing.T) {
 
 	t.Run("remove map-scoped", func(t *testing.T) {
 		c := testCharacter(true)
-		target := character.NewModelBuilder().SetId(42).SetName("Hero").Build()
+		target := character.NewBuilder().SetId(42).SetName("Hero").Build()
 		mapId := f.MapId()
 
 		var published msg.Command[msg.CommandRemoveBody]
@@ -193,7 +193,7 @@ func TestPlayerNpcCommands(t *testing.T) {
 	})
 
 	t.Run("failure reported back", func(t *testing.T) {
-		target := character.NewModelBuilder().SetId(42).SetName("Hero").Build()
+		target := character.NewBuilder().SetId(42).SetName("Hero").Build()
 		var pinkTexts []string
 
 		lookup := func(name string) (character.Model, error) { return target, nil }

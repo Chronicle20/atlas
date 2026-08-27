@@ -2268,7 +2268,7 @@ func TestEvaluate_PetTameness(t *testing.T) {
 // atlas-player-npcs exposes (design §9.1), so it can never disagree with
 // FR-1.1's automatic deploy check.
 func TestCanSpawnPlayerNpcCondition(t *testing.T) {
-	char := character.NewModelBuilder().SetId(123).Build()
+	char := character.NewBuilder().SetId(123).Build()
 
 	t.Run("eligible", func(t *testing.T) {
 		ctx := NewValidationContextBuilder(char).

@@ -637,3 +637,122 @@ Prettier: All files formatted correctly
   resource_test.go" (Unit 1, alone).
 - Unit 2 commit follows immediately after this report is written (see final
   status line for its SHA).
+
+## Round 5 — world icon placement + world filtering
+
+Agent: task-implementer (sonnet). Reported **DONE**.
+
+### Change 1 — world icon moved to the group heading
+
+- `FilledSlotTile.tsx` — removed `worldName`/`worldIconUrl` computation,
+  `iconLoadFailed` state, the `getWorldIconUrl` import, and the trailing
+  `<span>`. Removed the now-unused `worlds` prop from
+  `FilledSlotTileProps`. Confirmed by grep (`grep -rn "FilledSlotTile" src
+  --include="*.tsx" | grep -v __tests__`) that `WorldCharactersSection.tsx`
+  is the only call site.
+- `WorldCharactersSection.tsx` — added `iconLoadFailed` state and a
+  `worldIconUrl` computation (same shape/guard as the removed
+  `FilledSlotTile` code: requires `tenant.attributes.region`,
+  `majorVersion`, `minorVersion` to be present), and rendered the `<img>`
+  with the same `onError` fallback inside the `<h3>` next to the world
+  name. The `{characters.length}/{slots} slots` count is unchanged. The
+  section's own `worlds` prop (which existed only to be forwarded to
+  `FilledSlotTile`) was removed as dead after the tile stopped needing it.
+- Test coverage: `FilledSlotTile.test.tsx` had its world-icon/world-name
+  assertions removed (character-name-only tests remain). A new
+  `WorldCharactersSection.test.tsx` was added covering the heading's icon
+  rendering (URL shape `/{tenantId}/{region}/{major}.{minor}/world-icon/
+  {worldId}/icon.png`) and the `onError` fallback (icon disappears, world
+  name stays).
+
+### Change 2 — only render worlds that exist in the channel-service configuration
+
+- `CharactersPanel.tsx` — added `useServices()` and derived
+  `configuredWorldIds: Set<number>` by scanning `useServices().data` for
+  `channel-service` entries (`isChannelService`), matching
+  `ChannelTenant.id === tenant.id`, and collecting every `ChannelWorld.id`
+  across matching tenants. `visibleWorlds` is the tenant-config `worlds`
+  array mapped to `{ world, worldId }` pairs (preserving the original
+  array-index `worldId` semantics, per the brief) and filtered to
+  `configuredWorldIds.has(worldId)`. Only `visibleWorlds` is rendered.
+
+  State handling, as requested:
+  - **services query loading** — while `worlds.length > 0` (tenant config
+    already loaded) and `servicesQuery.isLoading`, render the same
+    4-skeleton-tile loading grid used elsewhere in this panel, rather than
+    flashing an empty/zero-world state.
+  - **services query errored** — render `ErrorDisplay` with the query's
+    error message. Explicitly does **not** fall through to "zero worlds";
+    a test (`shows an error when the channel-service configuration query
+    fails...`) asserts the error message renders and no world section
+    does.
+  - **tenant has no channel-service worlds at all** (`visibleWorlds.length
+    === 0` after tenant config loaded and services loaded without error) —
+    a distinct message: "No worlds are configured in the channel services
+    for this tenant." This is deliberately different text from the
+    existing "No worlds are configured for this tenant." (which still
+    covers the case of an empty tenant-config `worlds` array), so the two
+    empty states are distinguishable in the UI and in tests.
+
+- `__tests__/CharactersPanel.test.tsx` — added a `useServices` mock
+  (`channelServicesWithWorlds(worldIds)` helper), defaulted in
+  `beforeEach` to cover worlds 0 and 1 for tenant `t1` so all pre-existing
+  tests keep seeing their worlds without further changes. Added four new
+  tests: (1) a tenant-config world with no channel-service entry
+  (`Bera`, world 1) is not rendered while `Scania` (world 0, present in
+  the channel service) still is; (2) a services-query error renders
+  `ErrorDisplay` and no world section; (3) a services-query loading state
+  renders the skeleton grid and no world section; (4) a tenant with zero
+  channel-service worlds gets the distinct "No worlds are configured in
+  the channel services..." message, not the tenant-config-empty message.
+
+### Verification (all run in the foreground, from
+`services/atlas-ui`, output read before concluding)
+
+```
+$ npm run test -- --run src/components/features/accounts/__tests__
+ Test Files  6 passed (6)
+      Tests  32 passed (32)
+```
+
+```
+$ npm run build
+✓ built in 2.70s
+```
+(`tsc -b && vite build`; only the expected large-chunk-size warning for
+`ConversationEditorPanel`, pre-existing and unrelated to this change — no
+type errors.)
+
+```
+$ npx eslint src/components/features/accounts/FilledSlotTile.tsx \
+    src/components/features/accounts/WorldCharactersSection.tsx \
+    src/components/features/accounts/CharactersPanel.tsx \
+    src/components/features/accounts/__tests__/FilledSlotTile.test.tsx \
+    src/components/features/accounts/__tests__/WorldCharactersSection.test.tsx \
+    src/components/features/accounts/__tests__/CharactersPanel.test.tsx
+(no output — clean)
+```
+
+```
+$ npx prettier --check <same 6 files>
+Prettier: All files formatted correctly
+```
+
+### Self-review
+
+- Confirmed via grep there is no other `FilledSlotTile` call site before
+  removing its `worlds` prop.
+- `TenantConfigAttributes` import in `WorldCharactersSection.tsx` is still
+  used (for `CharacterTemplate`), so it was kept even though the `worlds`
+  field usage was dropped.
+- Did not touch `docs/tasks/task-246-maple-life-character-creation/
+  agent-ledger.tsv`, `bug-b-type-must-add-a-slot.md`, or the untracked
+  `reviews/` directory — those were already dirty/untracked in the
+  worktree before this unit started and are outside this brief's scope;
+  left alone and not staged.
+
+### Commits
+
+- `219f8cfa0` — "fix(atlas-ui): move world icon to section heading, hide
+  unconfigured worlds" (both changes, one commit, on
+  `task-246-maple-life-character-creation`).

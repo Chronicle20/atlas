@@ -29726,6 +29726,16 @@
           "guard": "a6 && v11 && sub_A912F3(v68, v13, 0, 0x7FFFFFFF, 1) && Src"
         }
       ]
+    },
+    "CUICharacterSaleDlg::SendCheckDuplicateIDPacket": {
+      "address": "0x7fd86a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sCharName; MAPLELIFE_CHECK_NAME opcode 263 (0x107)"
+        }
+      ]
     }
   }
 }

@@ -2,22 +2,25 @@ package account
 
 import "strconv"
 
+// RestModel no longer carries a flat CharacterSlots attribute: slots are
+// per-(account, world), not per-account (task-246
+// bug-b-type-must-add-a-slot.md). Processor.GetCharacterSlots reads
+// CharacterSlotRestModel from the world-scoped sub-resource below instead.
 type RestModel struct {
-	Id             string `json:"id"`
-	Name           string `json:"name"`
-	Password       string `json:"password"`
-	Pin            string `json:"pin"`
-	Pic            string `json:"pic"`
-	PinAttempts    int    `json:"pinAttempts"`
-	PicAttempts    int    `json:"picAttempts"`
-	LoggedIn       byte   `json:"loggedIn"`
-	LastLogin      uint64 `json:"lastLogin"`
-	Gender         byte   `json:"gender"`
-	Banned         bool   `json:"banned"`
-	TOS            bool   `json:"tos"`
-	Language       string `json:"language"`
-	Country        string `json:"country"`
-	CharacterSlots int16  `json:"characterSlots"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Password    string `json:"password"`
+	Pin         string `json:"pin"`
+	Pic         string `json:"pic"`
+	PinAttempts int    `json:"pinAttempts"`
+	PicAttempts int    `json:"picAttempts"`
+	LoggedIn    byte   `json:"loggedIn"`
+	LastLogin   uint64 `json:"lastLogin"`
+	Gender      byte   `json:"gender"`
+	Banned      bool   `json:"banned"`
+	TOS         bool   `json:"tos"`
+	Language    string `json:"language"`
+	Country     string `json:"country"`
 }
 
 func (r RestModel) GetName() string {
@@ -35,21 +38,42 @@ func (r *RestModel) SetID(id string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:             strconv.Itoa(int(m.id)),
-		Name:           m.name,
-		Pin:            m.pin,
-		Pic:            m.pic,
-		PinAttempts:    m.pinAttempts,
-		PicAttempts:    m.picAttempts,
-		LoggedIn:       byte(m.loggedIn),
-		LastLogin:      m.lastLogin,
-		Gender:         m.gender,
-		Banned:         m.banned,
-		TOS:            m.tos,
-		Language:       m.language,
-		Country:        m.country,
-		CharacterSlots: m.characterSlots,
+		Id:          strconv.Itoa(int(m.id)),
+		Name:        m.name,
+		Pin:         m.pin,
+		Pic:         m.pic,
+		PinAttempts: m.pinAttempts,
+		PicAttempts: m.picAttempts,
+		LoggedIn:    byte(m.loggedIn),
+		LastLogin:   m.lastLogin,
+		Gender:      m.gender,
+		Banned:      m.banned,
+		TOS:         m.tos,
+		Language:    m.language,
+		Country:     m.country,
 	}, nil
+}
+
+// CharacterSlotRestModel mirrors atlas-account's own CharacterSlotRestModel
+// (services/atlas-account/atlas.com/account/account/rest.go), the response
+// body of accounts/{accountId}/worlds/{worldId}/character-slots.
+type CharacterSlotRestModel struct {
+	Id      string `json:"-"`
+	WorldId byte   `json:"worldId"`
+	Slots   int16  `json:"slots"`
+}
+
+func (r CharacterSlotRestModel) GetName() string {
+	return "character-slots"
+}
+
+func (r CharacterSlotRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CharacterSlotRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
 }
 
 type PinAttemptInputRestModel struct {
@@ -150,7 +174,6 @@ func Extract(body RestModel) (Model, error) {
 		SetTos(body.TOS).
 		SetLanguage(body.Language).
 		SetCountry(body.Country).
-		SetCharacterSlots(body.CharacterSlots).
 		Build()
 	return m, nil
 }

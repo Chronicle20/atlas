@@ -5,6 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -28,6 +29,7 @@ type Processor interface {
 	UpdateGender(id uint32, gender byte) error
 	RecordPinAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 	RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	GetCharacterSlots(accountId uint32, worldId world.Id) (int16, error)
 }
 
 type ProcessorImpl struct {
@@ -160,4 +162,15 @@ func (p *ProcessorImpl) RecordPicAttempt(id uint32, success bool, ipAddress stri
 		return 0, false, err
 	}
 	return result.Attempts, result.LimitReached, nil
+}
+
+// GetCharacterSlots returns the character-slot count for one (account,
+// world) pair (task-246 bug-b-type-must-add-a-slot.md), replacing the flat
+// Model.CharacterSlots() this package used to expose.
+func (p *ProcessorImpl) GetCharacterSlots(accountId uint32, worldId world.Id) (int16, error) {
+	result, err := requestCharacterSlots(p.ctx, accountId, byte(worldId))(p.l, p.ctx)
+	if err != nil {
+		return 0, err
+	}
+	return result.Slots, nil
 }

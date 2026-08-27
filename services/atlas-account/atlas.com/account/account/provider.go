@@ -35,3 +35,14 @@ func getAll(page model.Page) database.EntityProvider[model.Paged[Entity]] {
 		return database.PagedQuery[Entity](db, page)
 	}
 }
+
+func characterSlotEntityByAccountAndWorld(accountId uint32, worldId byte) database.EntityProvider[CharacterSlotEntity] {
+	return func(db *gorm.DB) model.Provider[CharacterSlotEntity] {
+		var result CharacterSlotEntity
+		err := db.Where("account_id = ? AND world_id = ?", accountId, worldId).First(&result).Error
+		if err != nil {
+			return model.ErrorProvider[CharacterSlotEntity](err)
+		}
+		return model.FixedProvider[CharacterSlotEntity](result)
+	}
+}

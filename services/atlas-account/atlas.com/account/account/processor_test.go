@@ -539,3 +539,115 @@ func TestDeleteMultipleAccounts(t *testing.T) {
 		t.Errorf("Account 3 should still exist")
 	}
 }
+
+// TestGetCharacterSlotsDefaultsWithoutARow covers task-246
+// bug-b-type-must-add-a-slot.md F1: before any increment has ever happened
+// for an (account, world) pair, the read must default to
+// DefaultCharacterSlotsPerWorld (4) rather than erroring or reading zero.
+func TestGetCharacterSlotsDefaultsWithoutARow(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	p := NewProcessor(l, tctx, db)
+	cs, err := p.GetCharacterSlots(1, 0)
+	if err != nil {
+		t.Fatalf("GetCharacterSlots failed: %v", err)
+	}
+	if cs.Slots() != 4 {
+		t.Errorf("Slots = %d, want 4", cs.Slots())
+	}
+	if cs.AccountId() != 1 || cs.WorldId() != 0 {
+		t.Errorf("AccountId/WorldId = %d/%d, want 1/0", cs.AccountId(), cs.WorldId())
+	}
+}
+
+// TestIncrementCharacterSlotsCreatesAndPersists covers the first increment
+// for an (account, world) pair with no existing row: it must persist
+// DefaultCharacterSlotsPerWorld+1, and a subsequent read must observe it.
+func TestIncrementCharacterSlotsCreatesAndPersists(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	p := NewProcessor(l, tctx, db)
+	cs, err := p.IncrementCharacterSlots(1, 0)
+	if err != nil {
+		t.Fatalf("IncrementCharacterSlots failed: %v", err)
+	}
+	if cs.Slots() != 5 {
+		t.Errorf("Slots after first increment = %d, want 5", cs.Slots())
+	}
+
+	read, err := p.GetCharacterSlots(1, 0)
+	if err != nil {
+		t.Fatalf("GetCharacterSlots failed: %v", err)
+	}
+	if read.Slots() != 5 {
+		t.Errorf("Persisted slots = %d, want 5", read.Slots())
+	}
+}
+
+// TestIncrementCharacterSlotsIsPerWorld covers the ruling that the cap and
+// count are per-(account, world): incrementing world 0 must leave world 1's
+// count at the default.
+func TestIncrementCharacterSlotsIsPerWorld(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	p := NewProcessor(l, tctx, db)
+	if _, err := p.IncrementCharacterSlots(1, 0); err != nil {
+		t.Fatalf("IncrementCharacterSlots(world 0) failed: %v", err)
+	}
+
+	other, err := p.GetCharacterSlots(1, 1)
+	if err != nil {
+		t.Fatalf("GetCharacterSlots(world 1) failed: %v", err)
+	}
+	if other.Slots() != 4 {
+		t.Errorf("world 1 slots = %d, want unaffected default 4", other.Slots())
+	}
+}
+
+// TestIncrementCharacterSlotsRejectsAtCap covers the 12-cap enforcement:
+// the processor must reject an increment past MaxCharacterSlotsPerWorld
+// rather than clamp, per the ruling (task-246
+// bug-b-type-must-add-a-slot.md F1).
+func TestIncrementCharacterSlotsRejectsAtCap(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	p := NewProcessor(l, tctx, db)
+	for i := 4; i < 12; i++ {
+		if _, err := p.IncrementCharacterSlots(1, 0); err != nil {
+			t.Fatalf("increment %d failed: %v", i, err)
+		}
+	}
+
+	cs, err := p.GetCharacterSlots(1, 0)
+	if err != nil {
+		t.Fatalf("GetCharacterSlots failed: %v", err)
+	}
+	if cs.Slots() != 12 {
+		t.Fatalf("Slots before cap attempt = %d, want 12", cs.Slots())
+	}
+
+	_, err = p.IncrementCharacterSlots(1, 0)
+	if !errors.Is(err, ErrCharacterSlotCapReached) {
+		t.Fatalf("IncrementCharacterSlots at cap error = %v, want ErrCharacterSlotCapReached", err)
+	}
+
+	after, err := p.GetCharacterSlots(1, 0)
+	if err != nil {
+		t.Fatalf("GetCharacterSlots after cap attempt failed: %v", err)
+	}
+	if after.Slots() != 12 {
+		t.Errorf("Slots after a rejected increment = %d, want unchanged 12", after.Slots())
+	}
+}

@@ -38,6 +38,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/{accountId}/pin-attempts", registerPinAttemptInput("record_pin_attempt", handleRecordPinAttempt)).Methods(http.MethodPost)
 			r.HandleFunc("/{accountId}/pic-attempts", registerPicAttemptInput("record_pic_attempt", handleRecordPicAttempt)).Methods(http.MethodPost)
 			r.HandleFunc("/{accountId}/session", register("delete_account_session", handleDeleteAccountSession)).Methods(http.MethodDelete)
+			r.HandleFunc("/{accountId}/worlds/{worldId}/character-slots", register("get_account_character_slots", handleGetCharacterSlots)).Methods(http.MethodGet)
+			r.HandleFunc("/{accountId}/worlds/{worldId}/character-slots", register("increment_account_character_slots", handleIncrementCharacterSlots)).Methods(http.MethodPost)
 		}
 	}
 }
@@ -227,6 +229,58 @@ func handleDeleteAccountSession(d *rest.HandlerDependency, _ *rest.HandlerContex
 		return func(w http.ResponseWriter, r *http.Request) {
 			_ = producer.ProviderImpl(d.Logger())(d.Context())(account2.EnvCommandSessionTopic)(logoutCommandProvider(accountId))
 			w.WriteHeader(http.StatusAccepted)
+		}
+	})
+}
+
+func handleGetCharacterSlots(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseAccountIdAndWorldId(d.Logger(), func(accountId uint32, worldId byte) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetCharacterSlots(accountId, worldId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to retrieve character slots for account [%d] in world [%d].", accountId, worldId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res, err := model.Map(TransformCharacterSlot)(model.FixedProvider(cs))()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[CharacterSlotRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+func handleIncrementCharacterSlots(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseAccountIdAndWorldId(d.Logger(), func(accountId uint32, worldId byte) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).IncrementCharacterSlots(accountId, worldId)
+			if err != nil {
+				if errors.Is(err, ErrCharacterSlotCapReached) {
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Unable to increment character slots for account [%d] in world [%d].", accountId, worldId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res, err := model.Map(TransformCharacterSlot)(model.FixedProvider(cs))()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[CharacterSlotRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

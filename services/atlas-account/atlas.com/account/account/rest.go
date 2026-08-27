@@ -20,22 +20,26 @@ func (r CreateRestModel) GetName() string {
 	return "accounts"
 }
 
+// RestModel no longer carries a flat CharacterSlots attribute: slots are
+// per-(account, world), not per-account, so a single account-scoped number
+// cannot represent them (task-246 bug-b-type-must-add-a-slot.md). Callers
+// that need a slot count now fetch CharacterSlotRestModel from the
+// world-scoped sub-resource below.
 type RestModel struct {
-	Id             uint32 `json:"-"`
-	Name           string `json:"name"`
-	Password       string `json:"-"`
-	Pin            string `json:"pin"`
-	Pic            string `json:"pic"`
-	BirthDate      uint32 `json:"birthDate"`
-	PinAttempts    int    `json:"pinAttempts"`
-	PicAttempts    int    `json:"picAttempts"`
-	LoggedIn       byte   `json:"loggedIn"`
-	LastLogin      uint64 `json:"lastLogin"`
-	Gender         byte   `json:"gender"`
-	TOS            bool   `json:"tos"`
-	Language       string `json:"language"`
-	Country        string `json:"country"`
-	CharacterSlots int16  `json:"characterSlots"`
+	Id          uint32 `json:"-"`
+	Name        string `json:"name"`
+	Password    string `json:"-"`
+	Pin         string `json:"pin"`
+	Pic         string `json:"pic"`
+	BirthDate   uint32 `json:"birthDate"`
+	PinAttempts int    `json:"pinAttempts"`
+	PicAttempts int    `json:"picAttempts"`
+	LoggedIn    byte   `json:"loggedIn"`
+	LastLogin   uint64 `json:"lastLogin"`
+	Gender      byte   `json:"gender"`
+	TOS         bool   `json:"tos"`
+	Language    string `json:"language"`
+	Country     string `json:"country"`
 }
 
 func (r RestModel) GetName() string {
@@ -57,23 +61,55 @@ func (r *RestModel) SetID(idStr string) error {
 
 func Transform(m Model) (RestModel, error) {
 	rm := RestModel{
-		Id:             m.Id(),
-		Name:           m.Name(),
-		Password:       m.Password(),
-		Pin:            m.Pin(),
-		Pic:            m.Pic(),
-		BirthDate:      m.BirthDate(),
-		PinAttempts:    m.PinAttempts(),
-		PicAttempts:    m.PicAttempts(),
-		LoggedIn:       byte(m.State()),
-		LastLogin:      0,
-		Gender:         m.Gender(),
-		TOS:            m.TOS(),
-		Language:       "en",
-		Country:        "us",
-		CharacterSlots: 4,
+		Id:          m.Id(),
+		Name:        m.Name(),
+		Password:    m.Password(),
+		Pin:         m.Pin(),
+		Pic:         m.Pic(),
+		BirthDate:   m.BirthDate(),
+		PinAttempts: m.PinAttempts(),
+		PicAttempts: m.PicAttempts(),
+		LoggedIn:    byte(m.State()),
+		LastLogin:   0,
+		Gender:      m.Gender(),
+		TOS:         m.TOS(),
+		Language:    "en",
+		Country:     "us",
 	}
 	return rm, nil
+}
+
+// CharacterSlotRestModel is the world-scoped character-slot sub-resource,
+// accounts/{accountId}/worlds/{worldId}/character-slots. It replaces the
+// flat, always-4 RestModel.CharacterSlots field (task-246
+// bug-b-type-must-add-a-slot.md): every consumer that needs a slot count now
+// asks for one (account, world) pair's, rather than reading a
+// single account-scoped number that could never be world-accurate.
+type CharacterSlotRestModel struct {
+	Id      string `json:"-"`
+	WorldId byte   `json:"worldId"`
+	Slots   int16  `json:"slots"`
+}
+
+func (r CharacterSlotRestModel) GetName() string {
+	return "character-slots"
+}
+
+func (r CharacterSlotRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CharacterSlotRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
+func TransformCharacterSlot(m CharacterSlotModel) (CharacterSlotRestModel, error) {
+	return CharacterSlotRestModel{
+		Id:      strconv.Itoa(int(m.WorldId())),
+		WorldId: m.WorldId(),
+		Slots:   m.Slots(),
+	}, nil
 }
 
 type PinAttemptInputRestModel struct {

@@ -147,3 +147,88 @@ func TestGetAccountsPaginates(t *testing.T) {
 		assert.NotContains(t, doc.Links, "next")
 	})
 }
+
+// TestCharacterSlotsResource drives GET/POST
+// accounts/{accountId}/worlds/{worldId}/character-slots through the real
+// resource router (task-246 bug-b-type-must-add-a-slot.md F1).
+func TestCharacterSlotsResource(t *testing.T) {
+	setupAccountRegistry(t)
+
+	db := databasetest.NewInMemoryTenantDB(t, account.Migration)
+	tenantId := uuid.New()
+	seedAccount(t, db, tenantId, 1, "hero1")
+
+	srv := httptest.NewServer(setupAccountRouter(db))
+	defer srv.Close()
+
+	getSlots := func(t *testing.T) (int, int16) {
+		t.Helper()
+		url := fmt.Sprintf("%s/accounts/1/worlds/0/character-slots", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, tenantId)
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return resp.StatusCode, 0
+		}
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+		var attrs struct {
+			Slots int16 `json:"slots"`
+		}
+		require.NoError(t, json.Unmarshal(doc.Data.DataObject.Attributes, &attrs))
+		return resp.StatusCode, attrs.Slots
+	}
+
+	postIncrement := func(t *testing.T) (int, int16) {
+		t.Helper()
+		url := fmt.Sprintf("%s/accounts/1/worlds/0/character-slots", srv.URL)
+		req := requestWithTenant(http.MethodPost, url, tenantId)
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return resp.StatusCode, 0
+		}
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+		var attrs struct {
+			Slots int16 `json:"slots"`
+		}
+		require.NoError(t, json.Unmarshal(doc.Data.DataObject.Attributes, &attrs))
+		return resp.StatusCode, attrs.Slots
+	}
+
+	t.Run("DefaultsToFourWithoutARow", func(t *testing.T) {
+		status, slots := getSlots(t)
+		require.Equal(t, http.StatusOK, status)
+		assert.EqualValues(t, 4, slots)
+	})
+
+	t.Run("IncrementPersists", func(t *testing.T) {
+		status, slots := postIncrement(t)
+		require.Equal(t, http.StatusOK, status)
+		assert.EqualValues(t, 5, slots)
+
+		status, slots = getSlots(t)
+		require.Equal(t, http.StatusOK, status)
+		assert.EqualValues(t, 5, slots)
+	})
+
+	t.Run("RejectsIncrementAtCap", func(t *testing.T) {
+		for i := 0; i < 7; i++ {
+			status, _ := postIncrement(t)
+			require.Equal(t, http.StatusOK, status)
+		}
+		status, slots := getSlots(t)
+		require.Equal(t, http.StatusOK, status)
+		require.EqualValues(t, 12, slots)
+
+		status, _ = postIncrement(t)
+		assert.Equal(t, http.StatusConflict, status)
+
+		status, slots = getSlots(t)
+		require.Equal(t, http.StatusOK, status)
+		assert.EqualValues(t, 12, slots)
+	})
+}

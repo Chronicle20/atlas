@@ -35,3 +35,9 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-27T21:50:17Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	DONE	e36cbc0bf	-	-	-	-
 2026-08-27T21:50:18Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	dispatched	e36cbc0bf	-	-	-	-
 2026-08-27T21:51:07Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	DONE	e36cbc0bf	APPROVED	no	-	-
+2026-08-27T21:52:37Z	agent	pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	b9c859bc9	-	-	-	-
+2026-08-27T21:52:37Z	agent	pre-PR review	frontend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	b9c859bc9	-	-	-	-
+2026-08-27T21:53:54Z	agent	pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	b9c859bc9	APPROVED	no	-	-
+2026-08-27T21:54:02Z	agent	pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	b9c859bc9	APPROVED	no	-	-
+2026-08-27T21:57:32Z	agent	pre-PR review	frontend-guidelines-reviewer	sonnet	-	-	-	-	DONE	b9c859bc9	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-27T21:57:32Z	agent	fix: seed dialog states	task-implementer	sonnet	-	-	-	-	dispatched	b9c859bc9	-	-	-	-

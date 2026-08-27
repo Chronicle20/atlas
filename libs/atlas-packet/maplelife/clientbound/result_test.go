@@ -17,21 +17,22 @@ import (
 // FIVE in-scope cells: gms_v83, gms_v84, gms_v87, gms_v92, gms_v95 —
 // CUICharacterSaleDlg exists on gms_v84 too; an earlier pass's
 // VERSION-ABSENT finding was wrong and has been retracted
-// (derivation.md §2.0-CORRECTION, supersedes §4.3's four-cell framing). The
-// byte-fixture list below (mlrFixtureVersions) still enumerates the original
-// four cells pending its own gms_v84 evidence/fixture pass (packet-verifier
-// work, not this pass); gms_v84's wire framing is nonetheless exercised
-// generically by TestMapleLifeResultRoundTrip via pt.Variants, which already
-// includes GMS v84.
+// (derivation.md §2.0-CORRECTION, supersedes §4.3's four-cell framing).
+// gms_v84's own byte fixture (mlrFixtureVersions) and marker were added by
+// the gms_v84 verification pass (task-246 packet-verifier); gms_v84's wire
+// framing was already exercised generically by TestMapleLifeResultRoundTrip
+// via pt.Variants beforehand.
 //
 // The `ida=` address on each marker is that version's RECEIVER, decompiled
-// this pass: gms_v83 @0x7d768a, gms_v87 @0x82e12c, gms_v92 @0x756370,
-// gms_v95 @0x777e40 — all four byte-for-byte identical in structure:
-// DecodeStr(sName) then a SIGNED Decode1(nResult), three-way branch
-// (derivation.md §4.7).
+// this pass: gms_v83 @0x7d768a, gms_v84 @0x7fd949, gms_v87 @0x82e12c,
+// gms_v92 @0x756370, gms_v95 @0x777e40 — all five byte-for-byte identical in
+// structure: DecodeStr(sName) then a SIGNED Decode1(nResult), three-way
+// branch (derivation.md §4.7; gms_v84 confirmed in
+// bug-maple-life-v84-registration.md "Positive derivation").
 // ---------------------------------------------------------------------------
 
 // packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v83 ida=0x7d768a
+// packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v84 ida=0x7fd949
 // packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v87 ida=0x82e12c
 // packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v92 ida=0x756370
 // packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v95 ida=0x777e40
@@ -73,7 +74,7 @@ func TestMapleLifeResultOperation(t *testing.T) {
 //
 // Field order: derivation.md §4 (DecodeStr sName; Decode1 nResult SIGNED).
 // The body is IDENTICAL on every in-scope version, so the fixtures are
-// deliberately the same bytes for all four — that sameness IS the derived
+// deliberately the same bytes for all five — that sameness IS the derived
 // claim.
 //
 //	sName  "Chronicle" (9 chars) -> 09 00 43 68 72 6F 6E 69 63 6C 65
@@ -90,9 +91,10 @@ type mlrFixtureVersion struct {
 	minor uint16
 }
 
-// The four in-scope cells this row claims.
+// The five in-scope cells this row claims.
 var mlrFixtureVersions = []mlrFixtureVersion{
 	{"gms_v83", 83, 1},
+	{"gms_v84", 84, 1},
 	{"gms_v87", 87, 1},
 	{"gms_v92", 92, 1},
 	{"gms_v95", 95, 1},

@@ -363,7 +363,7 @@ func TestHandleSnapshotAssetCreatedAndDeleted(t *testing.T) {
 	}
 }
 
-func TestHandleSnapshotAssetReleasedAndExpired_Invalidate(t *testing.T) {
+func TestHandleSnapshotAssetReleased_Invalidate(t *testing.T) {
 	tm := newSnapshotTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newSnapshotTestServer(t, tm)
@@ -375,5 +375,64 @@ func TestHandleSnapshotAssetReleasedAndExpired_Invalidate(t *testing.T) {
 	handleSnapshotAssetReleased(sc, nil)(logrus.New(), ctx, re)
 	if v := snapshot.GetRegistry().View(tm, 64); v.InvValid {
 		t.Fatalf("RELEASED (thin) must invalidate the inventory component")
+	}
+}
+
+func TestHandleSnapshotAssetExpired_Invalidate(t *testing.T) {
+	tm := newSnapshotTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newSnapshotTestServer(t, tm)
+	seedInventory(t, tm, 65)
+
+	if v := snapshot.GetRegistry().View(tm, 65); !v.InvValid {
+		t.Fatalf("precondition: inventory component must be valid before EXPIRED fires")
+	}
+
+	ee := asset2.StatusEvent[asset2.ExpiredStatusEventBody]{
+		CharacterId: 65, AssetId: 9001, Type: asset2.StatusEventTypeExpired,
+	}
+	handleSnapshotAssetExpired(sc, nil)(logrus.New(), ctx, ee)
+	if v := snapshot.GetRegistry().View(tm, 65); v.InvValid {
+		t.Fatalf("EXPIRED (thin) must invalidate the inventory component")
+	}
+}
+
+func TestHandleSnapshotAssetUpdated_ReplacesAssetFields(t *testing.T) {
+	tm := newSnapshotTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newSnapshotTestServer(t, tm)
+	compId := seedInventory(t, tm, 66)
+
+	e := asset2.StatusEvent[asset2.UpdatedStatusEventBody]{
+		CharacterId: 66, CompartmentId: compId, AssetId: 9001, TemplateId: 2060000, Slot: 9,
+		Type: asset2.StatusEventTypeUpdated,
+		Body: asset2.UpdatedStatusEventBody{Quantity: 111, Strength: 77},
+	}
+	handleSnapshotAssetUpdated(sc, nil)(logrus.New(), ctx, e)
+
+	v := snapshot.GetRegistry().View(tm, 66)
+	a, ok := v.Inv.Consumable().FindById(9001)
+	if !ok || a.Slot() != 9 || a.Quantity() != 111 || a.Strength() != 77 {
+		t.Fatalf("UPDATED replace mismatch: %+v ok=%v", a, ok)
+	}
+}
+
+func TestHandleSnapshotAssetAccepted_UpsertsAsset(t *testing.T) {
+	tm := newSnapshotTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newSnapshotTestServer(t, tm)
+	compId := seedInventory(t, tm, 67)
+
+	e := asset2.StatusEvent[asset2.AcceptedStatusEventBody]{
+		CharacterId: 67, CompartmentId: compId, AssetId: 9003, TemplateId: 2080000, Slot: 4,
+		Type: asset2.StatusEventTypeAccepted,
+		Body: asset2.AcceptedStatusEventBody{Quantity: 250},
+	}
+	handleSnapshotAssetAccepted(sc, nil)(logrus.New(), ctx, e)
+
+	v := snapshot.GetRegistry().View(tm, 67)
+	a, ok := v.Inv.Consumable().FindById(9003)
+	if !ok || a.Quantity() != 250 || a.Slot() != 4 || a.TemplateId() != 2080000 {
+		t.Fatalf("ACCEPTED upsert mismatch: %+v ok=%v", a, ok)
 	}
 }

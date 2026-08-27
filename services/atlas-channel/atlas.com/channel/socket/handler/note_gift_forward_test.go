@@ -9,6 +9,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -185,6 +186,53 @@ func TestHandleNoteGiftForward_AlreadySent(t *testing.T) {
 	}
 	if *markSentCalled {
 		t.Fatal("expected no mark-sent call when GiftNoteSent is already true")
+	}
+}
+
+// TestHandleNoteGiftForward_UnknownSN pins that a GiftSN the character does
+// not hold (findGiftAsset's found == false) must not mint a note or fame
+// saga.
+func TestHandleNoteGiftForward_UnknownSN(t *testing.T) {
+	const characterId = uint32(778899)
+	cp := giftAsset(t, 10002321, "Gifter", false)
+	sagasCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
+
+	s, _, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "Gifter", "hi", 99999999))
+
+	if len(*sagasCreated) != 0 {
+		t.Fatalf("expected no saga to be created for an unowned GiftSN, got %d", len(*sagasCreated))
+	}
+	if *markSentCalled {
+		t.Fatal("expected no mark-sent call for an unowned GiftSN")
+	}
+}
+
+// TestHandleNoteGiftForward_CompartmentLookupError pins that a failure to
+// load the sender's cash-shop compartment must not mint a note or fame saga.
+func TestHandleNoteGiftForward_CompartmentLookupError(t *testing.T) {
+	const characterId = uint32(778899)
+	cp := giftAsset(t, 10002321, "Gifter", false)
+	sagasCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
+
+	origCompartment := noteGiftForwardCompartmentFunc
+	noteGiftForwardCompartmentFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (compartment.Model, error) {
+		return compartment.Model{}, errors.New("compartment lookup failed")
+	}
+	t.Cleanup(func() { noteGiftForwardCompartmentFunc = origCompartment })
+
+	s, _, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "Gifter", "hi", 10002321))
+
+	if len(*sagasCreated) != 0 {
+		t.Fatalf("expected no saga to be created when the compartment lookup fails, got %d", len(*sagasCreated))
+	}
+	if *markSentCalled {
+		t.Fatal("expected no mark-sent call when the compartment lookup fails")
 	}
 }
 

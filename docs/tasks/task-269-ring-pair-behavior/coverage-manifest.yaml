@@ -6,6 +6,35 @@
 # matrix delta at review time. Declares every op x version this BRANCH
 # adds/changes coverage for in libs/atlas-packet, plus the residual and
 # out-of-scope items a reader would otherwise expect to see addressed.
+#
+# Schema deviation, disclosed: `versions:` below is a list of single-key
+# per-op mappings, not PROCESS.md's flat scalar list applied uniformly across
+# all `ops:` entries. This is intentional, not an authoring mistake — a flat
+# list would falsely claim uniform coverage: CharacterSpawn/CharacterInfo
+# cover all 10 target versions, but CharacterAppearanceUpdate/CharacterData
+# cover only 9 (gms_v48 is n-a, gms_v92 is deliberately excluded, see
+# versions: below for the per-op detail).
+
+# Ruling 1 — WITHDRAWN as never-applicable (not "resolved", not
+# "discharged"; those words imply a real staleness risk that was fixed by an
+# action, and none existed to fix). The ruling asked whether a Go encoder
+# change on this branch could leave an evidence record's `decompile_sha256`
+# stale without anyone noticing. It cannot, structurally:
+#   - tools/packet-audit/internal/evidence/hash.go:14-38 (`FunctionHash`)
+#     computes `decompile_sha256` over the canonical JSON of the cited IDA
+#     EXPORT's function entry (`file.Functions[fname]`) — the decompiled
+#     source recorded by IDA, not Atlas's Go encoder output.
+#   - tools/packet-audit/internal/matrix/evidence_input.go:29-30 calls
+#     `evidence.FunctionHash(exp, r.IDA.Function)` against the on-disk export
+#     and compares it to the pinned `decompile_sha256` — again, export vs.
+#     export, never touching libs/atlas-packet's encoder code.
+#   - `grep -c "packet-audit" tools/verify.sh` → 0: the flagless verify.sh
+#     never invokes packet-audit at all; that check lives only in
+#     .github/workflows/packet-matrix.yml, a separate CI gate.
+# A Go encoder change on this branch therefore cannot stale a
+# `decompile_sha256` by construction — there was never a real risk here to
+# resolve, so "WITHDRAWN as never-applicable" is the accurate record, not
+# "discharged".
 
 ops:
   # character/clientbound/CharacterSpawn (Task 1 derivation, Tasks 2/5/6

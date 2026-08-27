@@ -187,14 +187,14 @@ marriage   = MarriageRing{First: 0x000000AA, PartnerCharacterId: 0x000000BB, Ite
 | case | variant | RingSet | expected bytes (hex, little-endian per `response.Writer`) | total len |
 |---|---|---|---|---|
 | GMS empty | `GMS v83` | `RingSet{}` | `00 00 00` | 3 |
-| GMS couple only | `GMS v83` | `Couple` set | `01` `8877665544332211` `00FFEEDDCCBBAA99` `34120000` `00` `00` | 24 |
-| GMS friendship only | `GMS v83` | `Friendship` set | `00` `01` `0807060504030201` `1817161514131211` `78560000` `00` | 24 |
+| GMS couple only | `GMS v83` | `Couple` set | `01` `8877665544332211` `00FFEEDDCCBBAA99` `34120000` `00` `00` | 23 |
+| GMS friendship only | `GMS v83` | `Friendship` set | `00` `01` `0807060504030201` `1817161514131211` `78560000` `00` | 23 |
 | GMS marriage only | `GMS v83` | `Marriage` set | `00` `00` `01` `AA000000` `BB000000` `DDCC0000` | 15 |
-| GMS all three | `GMS v83` | all set | concatenation of the three populated blocks, no separators | 45 |
+| GMS all three | `GMS v83` | all set | concatenation of the three populated blocks, no separators | 55 |
 | GMS v48 empty | `GMS v48` | `RingSet{}` | `00 00 00` | 3 |
-| GMS v95 all three | `GMS v95` | all set | byte-identical to the `GMS v83` all-three case | 45 |
+| GMS v95 all three | `GMS v95` | all set | byte-identical to the `GMS v83` all-three case | 55 |
 | JMS empty | `JMS v185` | `RingSet{}` | `00 00 00` | 3 |
-| JMS couple only | `JMS v185` | `Couple` set | `01` `01000000` `8877665544332211` `00FFEEDDCCBBAA99` `34120000` `00` `00` | 28 |
+| JMS couple only | `JMS v185` | `Couple` set | `01` `01000000` `8877665544332211` `00FFEEDDCCBBAA99` `34120000` `00` `00` | 27 |
 
 The `GMS v48` and `GMS v95` cases exist to assert design.md §2's conclusion that
 the GMS block is version-stable from v48 to v95 — they must produce the same
@@ -424,7 +424,7 @@ In `spawn_test.go`, `TestCharacterSpawnRingBlocks`:
 | empty is unchanged | `GMS v83` | `model.RingSet{}` | full encoded output byte-identical to pre-task hex literal (capture before editing) |
 | empty is unchanged | `GMS v95` | `model.RingSet{}` | same |
 | empty is unchanged | `JMS v185` | `model.RingSet{}` | same |
-| couple populated | `GMS v83` | `Couple` set to the Task 2 fixture | the 3-byte ring span at the known tail offset is replaced by the 21-byte populated couple block; total length grows by exactly 18 |
+| couple populated | `GMS v83` | `Couple` set to the Task 2 fixture | the 3-byte empty ring span (all three arm flags zero) at the known tail offset is replaced by the couple arm's flag(1)+OwnSN(8)+PartnerSN(8)+ItemId(4)=21-byte populated block plus the two still-empty friendship/marriage flag bytes; total length grows by exactly 20 |
 
 The empty cases are the FR-9 guard for site B. Extend the existing
 `TestCharacterSpawnJMSGolden` (`spawn_test.go:38-83`) rather than duplicating
@@ -730,7 +730,7 @@ Patterns to copy: `services/atlas-channel/atlas.com/channel/door/rest.go:14-52` 
 - Produces, for Task 10:
   - `type Model struct` with getters `Id() uuid.UUID`, `PairId() uuid.UUID`, `CharacterId() uint32`, `PartnerCharacterId() uint32`, `CashId() int64`, `PartnerCashId() int64`, `PartnerName() string`, `ItemTemplateId() uint32`, `Type() Type`, `State() State`
   - `const TypeCouple = Type("COUPLE")`, `TypeFriendship = Type("FRIENDSHIP")`, `StateActive = State("ACTIVE")`, `StateBroken = State("BROKEN")`, `StateExpired = State("EXPIRED")` — re-declared channel-side, matching `services/atlas-cashshop/atlas.com/cashshop/ring/model.go:14-27`. Do **not** promote these to `libs/atlas-constants`: `libs/atlas-constants/item/constants.go:24` already has `ClassificationRing = Classification(111)`, which is an item classification, not a pairing type; the cashshop package documents that distinction at `ring/model.go:9-11` and this package inherits it.
-  - `func requestByCharacterId(ctx context.Context, characterId uint32) requests.Request[[]RestModel]`
+  - `func requestByCharacterId(ctx context.Context, characterId uint32) (string, error)` — a bare URL, not a `requests.Request[[]RestModel]`, because the list is paginated server-side and must be consumed via `requests.DrainProvider` rather than a single-page `Request`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -847,12 +847,13 @@ coupleBroken     = Model{cashId: 5555, partnerCashId: 6666, ringType: COUPLE,   
 | BROKEN discarded (FR-3) | `coupleBroken` | `ring1` `CashEquipable` with `CashId() == 5555` | `RingSet{}` |
 | equipped in a non-cash slot | `coupleActive` | `ring1` `Equipable` (not `CashEquipable`) with `CashId() == 1111` | `RingSet{}` — a cash ring never occupies the non-cash sub-slot |
 | pet ring slot ignored | `coupleActive` | `petRing1` (-21) `CashEquipable` with `CashId() == 1111` | `RingSet{}` |
-| two couple halves, lowest slot wins (FR-15) | two ACTIVE couple halves, cashIds 1111 and 7777 | 7777 in `ring1` (-12), 1111 in `ring2` (-13) | `Couple.OwnSN == 7777` — most negative position first |
+| two couple halves, highest slot wins (FR-15) | two ACTIVE couple halves, cashIds 1111 and 7777 | 7777 in `ring1` (-12), 1111 in `ring2` (-13) | `Couple.OwnSN == 7777` — numerically highest (least negative) slot position first |
 | slot tie broken by cashId | two ACTIVE couple halves in the same slot type (defensive) | — | lower `cashId` wins |
 | upstream error (FR-5) | fetch returns an error | `ring1` populated | `RingSet{}` returned, no panic, one warn-level log containing the character id |
 
-The selection rule is: lowest equipped slot position (most negative first), ties
-broken by lowest `cashId`. State it in `GetRingSet`'s doc comment so it is not
+The selection rule is: numerically highest (least negative — ring1 before
+ring2 before ring3 before ring4) equipped slot position wins, ties broken by
+lowest `cashId`. State it in `GetRingSet`'s doc comment so it is not
 re-litigated.
 
 `Marriage` is always nil in practice — PRD §2 lists marriage-ring acquisition as
@@ -1006,8 +1007,11 @@ Expected: FAIL.
 
 Invalidation in `handleStatusEventRingPurchased`; population on the character-load
 path (`BuildCharacterData` in `socket/writer/character_data.go` runs on
-login/channel-enter; `CharacterSpawnBody` on map-enter). Map/channel transfer
-drops the entry.
+login/channel-enter; `CharacterSpawnBody` on map-enter). The cache is cleared
+only on session `Destroy` (logout, disconnect, timeout, and channel change all
+funnel through it) — an intra-channel map transfer must NOT drop the entry,
+since that would defeat Task 12's once-per-presence `Populate` call site and
+reintroduce a per-map-change refetch.
 
 - [ ] **Step 4: Run tests**
 
@@ -1105,6 +1109,19 @@ different and riskier operation than adding a column.
 - `docs/packets/evidence/gms_v61/character.clientbound.CharacterAppearanceUpdate.yaml` — modify (and the v72/v79/v83/v84/v87/v95/jms_v185 siblings — eight records)
 - `libs/atlas-packet/field/clientbound/set_field_test.go` — modify: the `CharacterData` opaque span
 - `docs/packets/audits/STATUS.md`, `docs/packets/audits/status.json` — regenerated
+
+**Note on the Task 13/14 `### Files` lists above (Ruling 35).** Both lists are
+incomplete: `packet-audit:verify` markers for these same four ops also exist
+in `libs/atlas-packet/character/clientbound/v61_test.go` and `v72_test.go`
+(the per-version test files carry their own CharacterSpawn/CharacterInfo/
+CharacterAppearanceUpdate markers alongside the dedicated `spawn_test.go`/
+`info_test.go`/`appearance_update_test.go` files), and the
+`character_spawn_test.go` that exercises the FR-9 empty-ring-path invariant on
+the channel side lives in `services/atlas-channel/atlas.com/channel/socket/writer/`
+— a different module from `libs/atlas-packet`, which the Files lists above did
+not call out. The forward-looking lesson: derive a marker inventory from a
+repo-wide grep for `packet-audit:verify` against the op name, never from one
+file's header block or a brief's `### Files` list alone.
 
 Module root: repo root for `packet-audit`; `libs/atlas-packet` for tests.
 

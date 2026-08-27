@@ -17307,6 +17307,11 @@
       "direction": "serverbound",
       "calls": []
     },
+    "CWvsContext::SendMigrateToShopRequest": {
+      "address": "0x9dc280",
+      "direction": "",
+      "calls": null
+    },
     "CWvsContext::SendMobSummonItemUseRequest": {
       "address": "0x9de580",
       "direction": "serverbound",

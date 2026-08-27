@@ -8,12 +8,15 @@ import (
 )
 
 func TestTransformRoundTrip(t *testing.T) {
-	m := NewBuilder(1).
+	m, err := NewBuilder(1).
 		SetJobId(job.Id(100)).
 		SetX(200).
 		SetY(300).
 		SetStance(4).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	rm, err := Transform(m)
 	if err != nil {

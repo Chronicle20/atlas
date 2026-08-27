@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-pets/inventory"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -115,7 +116,10 @@ func (b *Builder) SetY(y int16) *Builder                   { b.y = y; return b }
 func (b *Builder) SetMeso(v uint32) *Builder               { b.meso = v; return b }
 func (b *Builder) SetInventory(v inventory.Model) *Builder { b.inventory = v; return b }
 
-func (b *Builder) Build() Model {
+func (b *Builder) Build() (Model, error) {
+	if b.id == 0 {
+		return Model{}, errors.New("id is required")
+	}
 	return Model{
 		id:                 b.id,
 		accountId:          b.accountId,
@@ -148,5 +152,5 @@ func (b *Builder) Build() Model {
 		stance:             b.stance,
 		meso:               b.meso,
 		inventory:          b.inventory,
-	}
+	}, nil
 }

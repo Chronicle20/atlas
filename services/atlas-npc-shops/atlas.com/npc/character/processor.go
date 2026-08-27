@@ -72,7 +72,12 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	if err != nil {
 		return m
 	}
-	return m.SetInventory(i)
+	nm, err := m.SetInventory(i)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to set inventory for character [%d].", m.Id())
+		return m
+	}
+	return nm
 }
 
 func (p *ProcessorImpl) RequestChangeMeso(mb *message.Buffer) func(worldId world.Id, characterId uint32, actorId uint32, actorType string, amount int32) error {

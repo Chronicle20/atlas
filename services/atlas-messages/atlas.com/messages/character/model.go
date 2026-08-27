@@ -202,8 +202,8 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) SpawnPoint() byte {
-	return 0
+func (m Model) SpawnPoint() uint32 {
+	return m.spawnPoint
 }
 
 func (m Model) AccountId() uint32 {
@@ -235,5 +235,11 @@ func (m Model) Skills() []skill.Model {
 }
 
 func (m Model) SetSkills(ms []skill.Model) Model {
-	return Clone(m).SetSkills(ms).Build()
+	nm, err := Clone(m).SetSkills(ms).Build()
+	if err != nil {
+		// Unreachable in practice: Clone(m) carries forward m.id, which the
+		// Builder already validated as non-zero when m was constructed.
+		return m
+	}
+	return nm
 }

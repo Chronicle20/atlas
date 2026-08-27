@@ -60,6 +60,37 @@ func TestBuildCharacterData_TeleportMaps(t *testing.T) {
 	}
 }
 
+// TestBuildCharacterData_SpawnPoint pins both halves of the task-272 fix: the
+// model value reaches the wire struct, and the uint32 -> byte narrowing at the
+// wire boundary truncates rather than erroring. Truncation above 255 is a
+// pre-existing property of the wire format (one byte), asserted here so it is
+// documented rather than latent.
+func TestBuildCharacterData_SpawnPoint(t *testing.T) {
+	tests := []struct {
+		name string
+		set  uint32
+		want byte
+	}{
+		{name: "in range", set: 7, want: 7},
+		{name: "truncates above 255", set: 256, want: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := character.NewBuilder().
+				SetId(99).
+				SetSp("0").
+				SetSpawnPoint(tt.set).
+				MustBuild()
+
+			cd := BuildCharacterData(logrus.New(), pt.CreateContext("GMS", 83, 1), c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
+
+			if cd.Stats.SpawnPoint != tt.want {
+				t.Errorf("Stats.SpawnPoint = %d, want %d", cd.Stats.SpawnPoint, tt.want)
+			}
+		})
+	}
+}
+
 // TestBuildCharacterData_Rings covers the RECORD block call site
 // (cd.Rings = ring.NewProcessor(l, ctx).GetRingRecords(c.Id())) at the
 // writer level -- carried from Task 11's review (non-blocking). Only

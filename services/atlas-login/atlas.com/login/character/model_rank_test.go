@@ -3,13 +3,16 @@ package character
 import "testing"
 
 func TestRankBuilderRoundTrip(t *testing.T) {
-	m := NewBuilder().
+	m, err := NewBuilder().
 		SetId(1).
 		SetRank(17).
 		SetRankMove(2).
 		SetJobRank(4).
 		SetJobRankMove(-1).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	if m.Rank() != 17 || m.JobRank() != 4 {
 		t.Fatalf("ranks lost: rank=%d jobRank=%d", m.Rank(), m.JobRank())
@@ -24,14 +27,20 @@ func TestRankBuilderRoundTrip(t *testing.T) {
 		t.Fatalf("jobRankMove = %#x, want 0xFFFFFFFF", m.JobRankMove())
 	}
 
-	rt := m.ToBuilder().Build()
+	rt, err := m.ToBuilder().Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 	if rt.Rank() != 17 || rt.RankMove() != 2 || rt.JobRank() != 4 || rt.JobRankMove() != 0xFFFFFFFF {
 		t.Fatalf("ToBuilder dropped rank fields: %+v", rt)
 	}
 }
 
 func TestRankDefaultsToZero(t *testing.T) {
-	m := NewBuilder().SetId(1).Build()
+	m, err := NewBuilder().SetId(1).Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 	if m.Rank() != 0 || m.RankMove() != 0 || m.JobRank() != 0 || m.JobRankMove() != 0 {
 		t.Fatal("unranked character must render all-zero rank fields")
 	}

@@ -59,7 +59,7 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 			return
 		}
 
-		model := character.NewEmptyBuilder().
+		model, err := character.NewEmptyBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
 			SetName(c.Body.Name).
@@ -76,6 +76,9 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
 			Build()
+		if err != nil {
+			t.Fatalf("build character: %v", err)
+		}
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model, c.Body.MapId)
 	}
@@ -196,7 +199,7 @@ func TestKafkaCreateCharacterIntegrationWithInvalidName(t *testing.T) {
 			return
 		}
 
-		model := character.NewEmptyBuilder().
+		model, err := character.NewEmptyBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
 			SetName(c.Body.Name).
@@ -213,6 +216,9 @@ func TestKafkaCreateCharacterIntegrationWithInvalidName(t *testing.T) {
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
 			Build()
+		if err != nil {
+			t.Fatalf("build character: %v", err)
+		}
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model, c.Body.MapId)
 	}
@@ -241,16 +247,19 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 	logger := testLogger()
 
 	// Create first character using regular processor
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("DupeTest").
 		SetLevel(1).
 		SetExperience(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
-	_, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
+	_, err = processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create first character: %v", err)
 	}
@@ -288,7 +297,7 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 			return
 		}
 
-		model := character.NewEmptyBuilder().
+		model, err := character.NewEmptyBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
 			SetName(c.Body.Name).
@@ -305,6 +314,9 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
 			Build()
+		if err != nil {
+			t.Fatalf("build character: %v", err)
+		}
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model, c.Body.MapId)
 	}
@@ -415,7 +427,7 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 					return
 				}
 
-				model := character.NewEmptyBuilder().
+				model, err := character.NewEmptyBuilder().
 					SetAccountId(c.Body.AccountId).
 					SetWorldId(c.Body.WorldId).
 					SetName(c.Body.Name).
@@ -432,10 +444,13 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 					SetFace(c.Body.Face).
 					SetSkinColor(c.Body.SkinColor).
 					Build()
+				if err != nil {
+					t.Fatalf("build character: %v", err)
+				}
 
 				// Use the Create function with buffer to populate error events manually
 				processor := character.NewProcessor(l, ctx, db)
-				_, err := processor.Create(buf)(c.TransactionId, model, c.Body.MapId)
+				_, err = processor.Create(buf)(c.TransactionId, model, c.Body.MapId)
 				// Manually emit creation failed event on error (simulating CreateAndEmit behavior)
 				if err != nil {
 					// This is expected for our test cases

@@ -26,13 +26,21 @@ func rankingModel(t *testing.T, characterId uint32, rank uint32, rankMove int32,
 // Fixture values for rank/rankMove/jobRank/jobRankMove are all distinct so a
 // field swap in MergeRankings or ranking.Extract would be caught.
 func TestMergeRankings(t *testing.T) {
-	cs := []Model{
-		NewBuilder().SetId(1).SetName("A").Build(),
-		NewBuilder().SetId(2).SetName("B").Build(),
+	c1, err := NewBuilder().SetId(1).SetName("A").Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
 	}
+	c2, err := NewBuilder().SetId(2).SetName("B").Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	cs := []Model{c1, c2}
 	rs := []ranking.Model{rankingModel(t, 1, 17, -2, 41, -9)}
 
-	got := MergeRankings(cs, rs)
+	got, err := MergeRankings(cs, rs)
+	if err != nil {
+		t.Fatalf("MergeRankings failed: %v", err)
+	}
 	if len(got) != 2 {
 		t.Fatalf("merge changed slice length: %d", len(got))
 	}
@@ -80,12 +88,20 @@ func TestDecorateRankingsFailsOpen(t *testing.T) {
 			return nil, errors.New("rankings unavailable")
 		},
 	}
-	cs := []Model{
-		NewBuilder().SetId(1).SetName("A").Build(),
-		NewBuilder().SetId(2).SetName("B").Build(),
+	c1, err := NewBuilder().SetId(1).SetName("A").Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
 	}
+	c2, err := NewBuilder().SetId(2).SetName("B").Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	cs := []Model{c1, c2}
 
-	got := p.decorateRankings(cs)
+	got, err := p.decorateRankings(cs)
+	if err != nil {
+		t.Fatalf("decorateRankings failed: %v", err)
+	}
 	if len(got) != 2 {
 		t.Fatalf("fail-open must return the full original list: got %d characters", len(got))
 	}

@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-cashshop/character/equipment"
 	"atlas-cashshop/character/inventory"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -117,7 +118,10 @@ func (b *Builder) SetMeso(v uint32) *Builder               { b.meso = v; return 
 func (b *Builder) SetEquipment(v equipment.Model) *Builder { b.equipment = v; return b }
 func (b *Builder) SetInventory(v inventory.Model) *Builder { b.inventory = v; return b }
 
-func (b *Builder) Build() Model {
+func (b *Builder) Build() (Model, error) {
+	if b.id == 0 {
+		return Model{}, errors.New("id is required")
+	}
 	return Model{
 		id:                 b.id,
 		accountId:          b.accountId,
@@ -151,5 +155,5 @@ func (b *Builder) Build() Model {
 		meso:               b.meso,
 		equipment:          b.equipment,
 		inventory:          b.inventory,
-	}
+	}, nil
 }

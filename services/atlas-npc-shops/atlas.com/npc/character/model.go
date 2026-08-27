@@ -205,8 +205,8 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) SpawnPoint() byte {
-	return 0
+func (m Model) SpawnPoint() uint32 {
+	return m.spawnPoint
 }
 
 func (m Model) AccountId() uint32 {
@@ -241,7 +241,7 @@ func (m Model) Skills() []skill.Model {
 	return m.skills
 }
 
-func (m Model) SetInventory(i inventory.Model) Model {
+func (m Model) SetInventory(i inventory.Model) (Model, error) {
 	ib := inventory.NewBuilder(m.Id()).
 		SetConsumable(i.Consumable()).
 		SetSetup(i.Setup()).
@@ -251,6 +251,6 @@ func (m Model) SetInventory(i inventory.Model) Model {
 	return Clone(m).SetInventory(ib.Build()).Build()
 }
 
-func (m Model) SetSkills(ms []skill.Model) Model {
+func (m Model) SetSkills(ms []skill.Model) (Model, error) {
 	return Clone(m).SetSkills(ms).Build()
 }

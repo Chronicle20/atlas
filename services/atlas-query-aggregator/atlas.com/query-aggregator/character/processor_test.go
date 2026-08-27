@@ -31,13 +31,16 @@ func TestProcessorImpl_GetById_Success(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
 		GetByIdFunc: func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 			return func(characterId uint32) (character.Model, error) {
-				m := character.NewBuilder().
+				m, err := character.NewBuilder().
 					SetId(characterId).
 					SetName("TestCharacter").
 					SetLevel(50).
 					SetJobId(100).
 					SetMeso(10000).
 					Build()
+				if err != nil {
+					return character.Model{}, err
+				}
 				for _, d := range decorators {
 					m = d(m)
 				}
@@ -87,10 +90,13 @@ func TestProcessorImpl_GetById_WithDecorators(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
 		GetByIdFunc: func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 			return func(characterId uint32) (character.Model, error) {
-				m := character.NewBuilder().
+				m, err := character.NewBuilder().
 					SetId(characterId).
 					SetLevel(50).
 					Build()
+				if err != nil {
+					return character.Model{}, err
+				}
 				for _, d := range decorators {
 					m = d(m)
 				}
@@ -100,7 +106,11 @@ func TestProcessorImpl_GetById_WithDecorators(t *testing.T) {
 	}
 
 	levelDecorator := func(m character.Model) character.Model {
-		return character.Clone(m).SetLevel(100).Build()
+		decorated, err := character.Clone(m).SetLevel(100).Build()
+		if err != nil {
+			t.Fatalf("failed to build character: %v", err)
+		}
+		return decorated
 	}
 
 	result, err := mockProcessor.GetById(levelDecorator)(123)
@@ -118,11 +128,18 @@ func TestProcessorImpl_InventoryDecorator(t *testing.T) {
 
 	mockProcessor := &mock.ProcessorImpl{
 		InventoryDecoratorFunc: func(m character.Model) character.Model {
-			return character.Clone(m).SetInventory(testInventory).Build()
+			decorated, err := character.Clone(m).SetInventory(testInventory).Build()
+			if err != nil {
+				t.Fatalf("failed to build character: %v", err)
+			}
+			return decorated
 		},
 	}
 
-	inputModel := character.NewBuilder().SetId(123).Build()
+	inputModel, err := character.NewBuilder().SetId(123).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 	result := mockProcessor.InventoryDecorator(inputModel)
 
 	if result.Id() != 123 {
@@ -135,11 +152,18 @@ func TestProcessorImpl_GuildDecorator(t *testing.T) {
 
 	mockProcessor := &mock.ProcessorImpl{
 		GuildDecoratorFunc: func(m character.Model) character.Model {
-			return character.Clone(m).SetGuild(testGuild).Build()
+			decorated, err := character.Clone(m).SetGuild(testGuild).Build()
+			if err != nil {
+				t.Fatalf("failed to build character: %v", err)
+			}
+			return decorated
 		},
 	}
 
-	inputModel := character.NewBuilder().SetId(123).Build()
+	inputModel, err := character.NewBuilder().SetId(123).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 	result := mockProcessor.GuildDecorator(inputModel)
 
 	if result.Guild().Id() != 1 {
@@ -154,18 +178,21 @@ func TestProcessorImpl_GuildDecorator(t *testing.T) {
 func TestProcessorImpl_DefaultBehavior(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{}
 
-	// Test default GetById returns empty model
+	// Test default GetById returns a model with the requested id
 	result, err := mockProcessor.GetById()(123)
 	if err != nil {
 		t.Errorf("Expected no error from default GetById, got %v", err)
 	}
 
-	if result.Id() != 0 {
-		t.Errorf("Expected default Id=0, got %d", result.Id())
+	if result.Id() != 123 {
+		t.Errorf("Expected default Id=123, got %d", result.Id())
 	}
 
 	// Test default InventoryDecorator returns input unchanged
-	inputModel := character.NewBuilder().SetId(456).Build()
+	inputModel, err := character.NewBuilder().SetId(456).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 	decorated := mockProcessor.InventoryDecorator(inputModel)
 	if decorated.Id() != 456 {
 		t.Errorf("Expected InventoryDecorator to return input unchanged, got Id=%d", decorated.Id())

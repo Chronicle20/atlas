@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-messages/skill"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -113,7 +114,11 @@ func (b *Builder) SetX(v int16) *Builder              { b.x = v; return b }
 func (b *Builder) SetY(v int16) *Builder              { b.y = v; return b }
 func (b *Builder) SetSkills(v []skill.Model) *Builder { b.skills = v; return b }
 
-func (b *Builder) Build() Model {
+func (b *Builder) Build() (Model, error) {
+	if b.id == 0 {
+		return Model{}, errors.New("id is required")
+	}
+
 	return Model{
 		id:                 b.id,
 		accountId:          b.accountId,
@@ -145,5 +150,5 @@ func (b *Builder) Build() Model {
 		x:                  b.x,
 		y:                  b.y,
 		skills:             b.skills,
-	}
+	}, nil
 }

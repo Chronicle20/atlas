@@ -358,7 +358,10 @@ func TestExtract_Position(t *testing.T) {
 // TestModel_PositionRoundTripsThroughSetSkills guards the SetSkills path, which
 // rebuilds the model via Clone(m).SetSkills(...).Build(); position must survive.
 func TestModel_PositionRoundTripsThroughSetSkills(t *testing.T) {
-	m := NewBuilder().SetId(1).SetX(99).SetY(-7).Build()
+	m, err := NewBuilder().SetId(1).SetX(99).SetY(-7).Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
 	m2 := m.SetSkills(nil)
 	if m2.X() != 99 || m2.Y() != -7 {
 		t.Errorf("position lost after SetSkills: got (%d, %d), want (99, -7)", m2.X(), m2.Y())
@@ -408,6 +411,13 @@ func TestTransformRoundTrip(t *testing.T) {
 	m, err := Extract(rm)
 	if err != nil {
 		t.Fatalf("Extract failed: %v", err)
+	}
+
+	// The DeepEqual round-trip below cannot see a masked accessor: Extract
+	// decodes spawnPoint correctly here, and it is the accessor that lies.
+	// Assert the decoded value against the RestModel literal directly.
+	if got := m.SpawnPoint(); got != 11 {
+		t.Errorf("SpawnPoint() = %d, want 11", got)
 	}
 
 	rm2, err := Transform(m)

@@ -49,6 +49,22 @@ func TestTransformRoundTrip(t *testing.T) {
 		t.Fatalf("Extract failed: %v", err)
 	}
 
+	// The DeepEqual round-trip below is blind to a field Extract drops -- it
+	// is zero on both sides. Assert each fixed field against the RestModel
+	// literal directly. Values are distinct so an aliased assignment fails.
+	if got := m.SpawnPoint(); got != 11 {
+		t.Errorf("SpawnPoint() = %d, want 11", got)
+	}
+	if got := m.X(); got != 10 {
+		t.Errorf("X() = %d, want 10", got)
+	}
+	if got := m.Y(); got != 12 {
+		t.Errorf("Y() = %d, want 12", got)
+	}
+	if got := m.Stance(); got != 14 {
+		t.Errorf("Stance() = %d, want 14", got)
+	}
+
 	rm2, err := Transform(m)
 	if err != nil {
 		t.Fatalf("Transform failed: %v", err)
@@ -65,5 +81,42 @@ func TestTransformRoundTrip(t *testing.T) {
 
 	if !reflect.DeepEqual(m, m2) {
 		t.Errorf("round trip mismatch.\nExpected %+v\nGot      %+v", m, m2)
+	}
+}
+
+// TestTransform_PositionalFieldsFromBuilder covers the SetX/SetY/SetStance
+// setters added by task-272 (design 5.2, overriding PRD FR-8). They have no
+// production caller by design: the Builder struct and Build already carried
+// x/y/stance, and only the setters were missing, so a Model with non-zero
+// positional values could not be originated through the sanctioned path.
+func TestTransform_PositionalFieldsFromBuilder(t *testing.T) {
+	m, err := NewBuilder().
+		SetId(1).
+		SetSp("0").
+		SetSpawnPoint(11).
+		SetX(10).
+		SetY(12).
+		SetStance(14).
+		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+
+	if rm.SpawnPoint != 11 {
+		t.Errorf("SpawnPoint = %d, want 11", rm.SpawnPoint)
+	}
+	if rm.X != 10 {
+		t.Errorf("X = %d, want 10", rm.X)
+	}
+	if rm.Y != 12 {
+		t.Errorf("Y = %d, want 12", rm.Y)
+	}
+	if rm.Stance != 14 {
+		t.Errorf("Stance = %d, want 14", rm.Stance)
 	}
 }

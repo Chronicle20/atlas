@@ -233,11 +233,13 @@ func (s stubCharacterProcessor) ExtendEquipSlot(_ uint32, _ int16, _ uint16, _ u
 // compartment.TypeExplorer — the type seedCompartment writes.
 func testCharacter(t *testing.T) character.Model {
 	t.Helper()
-	return character.NewBuilder().
+	m, err := character.NewBuilder().
 		SetId(testCharacterId).
 		SetAccountId(testAccountId).
 		SetJobId(job.Id(100)).
 		Build()
+	require.NoError(t, err)
+	return m
 }
 
 // newTestProcessor builds the real processor and replaces its two REMOTE

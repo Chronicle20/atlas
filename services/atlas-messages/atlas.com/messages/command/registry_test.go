@@ -12,16 +12,20 @@ import (
 )
 
 // createTestCharacter creates a character model for testing using the builder
-func createTestCharacter(id uint32, name string, isGm bool) character.Model {
+func createTestCharacter(t *testing.T, id uint32, name string, isGm bool) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	return character.NewBuilder().
+	m, err := character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
+	return m
 }
 
 // mockCommandProducer creates a simple command producer for testing
@@ -71,8 +75,8 @@ func TestRegistry_Get(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a test character
-	gmCharacter := createTestCharacter(12345, "TestGM", true)
-	_ = createTestCharacter(12346, "TestPlayer", false) // Available for future permission tests
+	gmCharacter := createTestCharacter(t, 12345, "TestGM", true)
+	_ = createTestCharacter(t, 12346, "TestPlayer", false) // Available for future permission tests
 
 	f := field.NewBuilder(1, 1, 100000000).Build()
 
@@ -132,7 +136,7 @@ func TestRegistry_Get_MultipleCommands(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 
-	gmCharacter := createTestCharacter(12345, "TestGM", true)
+	gmCharacter := createTestCharacter(t, 12345, "TestGM", true)
 
 	// Add multiple test commands
 	Registry().Add(mockCommandProducer("@multi_test_1"))
@@ -183,7 +187,7 @@ func TestRegistry_Get_ExecutorExecution(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 
-	gmCharacter := createTestCharacter(12345, "TestGM", true)
+	gmCharacter := createTestCharacter(t, 12345, "TestGM", true)
 
 	f := field.NewBuilder(1, 1, 100000000).Build()
 

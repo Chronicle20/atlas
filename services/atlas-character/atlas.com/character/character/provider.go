@@ -57,7 +57,7 @@ func getForNamePaged(name string, page model.Page) database.EntityProvider[model
 }
 
 func modelFromEntity(e entity) (Model, error) {
-	r := NewEmptyBuilder().
+	return NewEmptyBuilder().
 		SetId(e.ID).
 		SetAccountId(e.AccountId).
 		SetWorldId(e.World).
@@ -86,5 +86,4 @@ func modelFromEntity(e entity) (Model, error) {
 		SetSpawnPoint(e.SpawnPoint).
 		SetGm(e.GM).
 		Build()
-	return r, nil
 }

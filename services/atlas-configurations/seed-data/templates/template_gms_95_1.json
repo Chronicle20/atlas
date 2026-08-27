@@ -619,6 +619,24 @@
         ]
       },
       {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "StorageOperationHandle",
+        "fname": "CTrunkDlg::SetRet",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSET": 4,
+            "STORE_ASSET": 5,
+            "ARRANGE_ASSET": 6,
+            "MESO": 7,
+            "CLOSE": 8
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x44",
         "validator": "LoggedInValidator",
         "handler": "HiredMerchantOperationHandle",
@@ -1067,7 +1085,16 @@
         "fname": "CFadeWnd::SendCloseMessage",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "ANSWER_INVITE": 0,
+            "CLOSE": 2,
+            "INVITE": 3,
+            "DECLINE_INVITE": 5,
+            "CHAT": 6
+          }
+        }
       },
       {
         "opCode": "0x90",
@@ -1317,7 +1344,17 @@
         "fname": "CUIGuildBBS::SendLoadListRequest",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "CREATE_OR_EDIT_THREAD": 0,
+            "DELETE_THREAD": 1,
+            "LIST_THREADS": 2,
+            "DISPLAY_THREAD": 3,
+            "REPLY_THREAD": 4,
+            "DELETE_REPLY": 5
+          }
+        }
       },
       {
         "opCode": "0xB4",

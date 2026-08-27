@@ -1,0 +1,44 @@
+# GuildBBSHandle — serverbound BBS_OPERATION mode table (gms_v95 only).
+#
+# SOURCE OF TRUTH for this handler's options.operations map.
+#
+# gms_v95 ONLY. Declaring another version here would make `packet-audit
+# operations` rewrite that version's hand-authored table with an un-derived
+# carry-over — exactly the v83->v95 drift this task exists to catch, and a
+# violation of "no non-v95 template is modified". Backfilling IDA-derived
+# columns for v83/v84/v87/v92/jms_v185 is filed as a follow-up.
+#
+# ALL-OR-NOTHING: expectedTable reports every template key absent from this
+# file as EXTRA once a version has at least one declared key, so gms_v95 must
+# be enumerated COMPLETELY. Per-arm addresses: v95-option-tables.md.
+#
+# The client has no single BBS_OPERATION builder: each CUIGuildBBS:: method
+# builds its own COutPacket(&pkt, 0xB3) and writes its own leading
+# Encode1(mode). Enumerated by an exhaustive find_bytes search for the
+# COutPacket opcode-179 push (68 B3 00 00 00) across the whole image — 12
+# hits, 6 real send sites (all CUIGuildBBS:: methods, matching the registry's
+# `BBS_OPERATION` serverbound row fname/fname_alts), the rest unrelated UI
+# OnCreate/ActivateControls constants — so the table is complete BY
+# CONSTRUCTION.
+#
+# OnDelete (mode 1, DELETE_THREAD) is a real send site not listed in the
+# registry's fname_alts but distinct from OnCommentDelete (mode 5,
+# DELETE_REPLY) — thread deletion vs. single-reply deletion.
+#
+# All 6 keys match v83 (template_gms_83_1.json) exactly:
+# CREATE_OR_EDIT_THREAD=0, DELETE_THREAD=1, LIST_THREADS=2, DISPLAY_THREAD=3,
+# REPLY_THREAD=4, DELETE_REPLY=5. No mode-value drift.
+
+handler: GuildBBSHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CUIGuildBBS::SendLoadListRequest
+op: BBS_OPERATION
+direction: serverbound
+operations:
+  - { key: CREATE_OR_EDIT_THREAD, modes: { gms_v95: 0 } }
+  - { key: DELETE_THREAD,         modes: { gms_v95: 1 } }
+  - { key: LIST_THREADS,          modes: { gms_v95: 2 } }
+  - { key: DISPLAY_THREAD,        modes: { gms_v95: 3 } }
+  - { key: REPLY_THREAD,          modes: { gms_v95: 4 } }
+  - { key: DELETE_REPLY,          modes: { gms_v95: 5 } }

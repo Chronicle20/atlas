@@ -107,9 +107,126 @@ functions where 0x99 is an unrelated constant.
 All 4 v83 BUDDY_OPERATION keys (RELOAD, ADD, ACCEPT, DELETE) are accounted
 for on v95 with identical mode values to v83; the table is complete.
 
-## Unresolved
+## Unresolved (Task 7)
 
 None. Every candidate byte match was either attributed to a named,
 IDA-decompiled send site or excluded with a stated reason (unrelated UI
 constant, clientbound receiver, or non-code byte sequence). No arm was
 guessed.
+
+---
+
+# Task 8 — MessengerOperationHandle / GuildBBSHandle / StorageOperationHandle
+
+Same IDB (`ecc757f4`, `GMS_v95.0_U_DEVM.exe`, confirmed via `server_health`),
+same "enumerated by construction" `find_bytes` + `lookup_funcs` +
+`decompile` discipline as Task 7.
+
+## MESSENGER — opCode 0x8F (143), handler `MessengerOperationHandle`
+
+`find_bytes "68 8F 00 00 00"` → 17 hits (opcode 0x8F >= 0x80, always the
+5-byte `68`-immediate push form). `lookup_funcs` resolved all 17. 7 unique
+functions are real send sites (`CFadeWnd::SendCloseMessage`,
+`CUIMessenger::OnDestroy`, `CUIMessenger::OnInvite`, `CUIMessenger::Update`
+— 2 of the 17 hits, both inside this one function —, `CUIMessenger::SendInviteMsg`,
+`CUIMessenger::OnCreate`, `CUIMessenger::ProcessChat`); the remaining 9
+resolve to unrelated UI `Draw`/`OnCreate`/`OnMouseButton` functions
+(`CMemoListDlg::DrawMemo`, `CUIAdminShopWishListCategory::OnMouseButton`,
+`CUIClaim::OnCreate`, `CUIDragonBox::SetOrb`, `TabPartyAdver::Draw_Regist`,
+`CUIShopScannerCategory::OnMouseButton`, `CUISkillChangeConfirm::Draw`,
+`CUIUserInfo::Draw`) where 0x8F is an unrelated color/coordinate constant,
+and **one** (`CField::SendChatMsgSlash` @0x5444c1) which disassembles to
+`push 8Fh ; nIdx` immediately followed by `call StringPool::GetInstance` /
+`StringPool::GetString` — a StringPool string-id argument (id 0x8F), NOT a
+`COutPacket` construction; confirmed by `get_bytes` at 0x5444c1
+(`68 8f 00 00 00 51 e8 d4`, i.e. the immediate is pushed then `StringPool::GetInstance`
+is called, not `COutPacket::COutPacket`) and `disasm` (comment `; nIdx`).
+
+| mode | Atlas key | send-site fn | build-site addr (push) | fn addr |
+|---|---|---|---|---|
+| 0 | ANSWER_INVITE | `CUIMessenger::OnCreate` | 0x7f5c14 | 0x7f59d0 |
+| 2 | CLOSE | `CUIMessenger::OnDestroy` | 0x7f042a | 0x7f03f0 |
+| 3 | INVITE | `CUIMessenger::SendInviteMsg` | 0x7f5911 | 0x7f5820 |
+| 5 | DECLINE_INVITE | `CFadeWnd::SendCloseMessage` case 0, and `CUIMessenger::OnInvite` (self-invite/blacklist auto-decline) | 0x5241cd / 0x7f2d54 | 0x524180 / 0x7f2cb0 |
+| 6 | CHAT | `CUIMessenger::Update` (2 sites: send-then-clear, clear-then-focus) and `CUIMessenger::ProcessChat` | 0x7f30be / 0x7f31d9 / 0x7f62ab | 0x7f2ff0 / 0x7f2ff0 / 0x7f6140 |
+
+All 5 v83 MESSENGER keys (`template_gms_83_1.json`: ANSWER_INVITE=0, CLOSE=2,
+INVITE=3, DECLINE_INVITE=5, CHAT=6 — v83 has no CREATE key; `CREATE` is a
+handler-side sub-branch of `ANSWER_INVITE` mode 0 with `MessengerId()==0`,
+not a distinct wire mode) match v95 exactly — no drift. The table is
+complete.
+
+## BBS_OPERATION — opCode 0xB3 (179), handler `GuildBBSHandle`
+
+`find_bytes "68 B3 00 00 00"` → 12 hits. 6 resolve to real send sites, all
+`CUIGuildBBS::` methods (matching the registry's `BBS_OPERATION` serverbound
+row `fname`/`fname_alts`); the remaining 6 (`CUIItemUpgrade::OnCreate` x2,
+`TabPartySearch::OnCreate` x3, `TabPartySearch::ActivateControls`) resolve to
+unrelated UI functions where 0xB3 is an unrelated constant.
+
+| mode | Atlas key | send-site fn | build-site addr (push) | fn addr |
+|---|---|---|---|---|
+| 0 | CREATE_OR_EDIT_THREAD | `CUIGuildBBS::OnRegister` | 0x7c442b | 0x7c4250 |
+| 1 | DELETE_THREAD | `CUIGuildBBS::OnDelete` | 0x7c6581 | 0x7c6520 |
+| 2 | LIST_THREADS | `CUIGuildBBS::SendLoadListRequest` | 0x7c36af | 0x7c3680 |
+| 3 | DISPLAY_THREAD | `CUIGuildBBS::SendViewEntryRequest` | 0x7c373f | 0x7c3710 |
+| 4 | REPLY_THREAD | `CUIGuildBBS::OnComment` | 0x7c461c | 0x7c4530 |
+| 5 | DELETE_REPLY | `CUIGuildBBS::OnCommentDelete` | 0x7c3bd1 | 0x7c3b70 |
+
+`OnDelete` (mode 1) is not in the registry's `fname_alts` list but is a real
+send site (Yes/No-confirmed thread deletion, distinct from `OnCommentDelete`
+which deletes a single reply/comment) — its Atlas key (`DELETE_THREAD`) is
+unambiguous from v83's identical mode-1 key and the handler's dispatch on
+`sp.ThreadId()` alone (no reply id).
+
+All 6 v83 GuildBBS keys (`template_gms_83_1.json`: CREATE_OR_EDIT_THREAD=0,
+DELETE_THREAD=1, LIST_THREADS=2, DISPLAY_THREAD=3, REPLY_THREAD=4,
+DELETE_REPLY=5) match v95 exactly — no drift. The table is complete.
+
+## STORAGE — opCode 0x43 (67), handler `StorageOperationHandle`
+
+Opcode 0x43 = 67 < 0x80, so the compiler always uses the 2-byte sign-extend
+push form (`6A 43`), not the 5-byte `68`-immediate form (`find_bytes "68 43
+00 00 00"` → 0 hits, confirming this). `find_bytes "6A 43"` → 54 hits (a much
+noisier search since `6A 43` also matches unrelated single-byte immediate
+pushes across the whole image). Filtered to real `COutPacket(&oPacket, 67)`
+build sites by requiring the 3rd byte after the match to be the `lea
+this,[esp+...]; this` opcode `0x8D` that this codegen idiom always emits
+between `push 43h` and `call COutPacket::COutPacket` (verified directly
+against the three named send sites' disassembly first, e.g. `CTrunkDlg::SendGetItemRequest`
+@0x769f90: `push 43h` / `lea ecx,[esp+...]` / `call COutPacket::COutPacket`).
+This reduced 54 candidates to exactly 6 (`get_bytes` + byte-3 filter), all 6
+resolving via `lookup_funcs` to real `CTrunkDlg::` send/close methods; the
+other 48 were spot-checked via `lookup_funcs` and are either unrelated UI
+`Draw`/`OnCreate` functions (single-byte immediate operands that happen to
+equal 0x43) or non-code data (`.rdata`, `"Not a function"`).
+
+| mode | Atlas key | send-site fn | build-site addr (push) | fn addr |
+|---|---|---|---|---|
+| 4 | RETRIEVE_ASSET | `CTrunkDlg::SendGetItemRequest` | 0x769f90 | 0x769e00 |
+| 5 | STORE_ASSET | `CTrunkDlg::SendPutItemRequest` | 0x768831 | 0x768570 |
+| 6 | ARRANGE_ASSET | `CTrunkDlg::SendSortItemRequest` | 0x767345 | 0x767310 |
+| 7 | MESO | `CTrunkDlg::SendGetMoneyRequest` (withdraw) and `CTrunkDlg::SendPutMoneyRequest` (deposit, encodes `-v8`) | 0x768974 / 0x768aeb | 0x7688e0 / 0x7689e0 |
+| 8 | CLOSE | `CTrunkDlg::SetRet` | 0x76727c | 0x767250 |
+
+The three brief-named send sites (`SendGetMoneyRequest`, `SendGetItemRequest`,
+`SendPutItemRequest`) decompile exactly as expected (modes 7/4/5). The
+byte-search turned up the two further arms Atlas already models
+(`ARRANGE_ASSET`=6 via `SendSortItemRequest`, `CLOSE`=8 via `SetRet` — the
+same function the registry/template already names as the op's `fname`) plus
+`SendPutMoneyRequest`, a second MESO(7) send site (deposit path) sharing the
+same wire mode as the withdraw path — both write `Encode1(&oPacket, 7u)`,
+differing only in the sign of the `Encode4` amount that follows, consistent
+with the Go `StorageOperationHandleFunc`'s single `MESO` key covering both
+directions via signed amount.
+
+All 5 v83/v84 StorageOperationHandle keys (`template_gms_83_1.json`:
+RETRIEVE_ASSET=4, STORE_ASSET=5, ARRANGE_ASSET=6, MESO=7, CLOSE=8) match v95
+exactly — no drift. The table is complete.
+
+## Unresolved (Task 8)
+
+None. Every candidate byte match was either attributed to a named,
+IDA-decompiled send site or excluded with a stated reason (unrelated UI
+constant, StringPool string-id constant, or non-code byte sequence). No arm
+was guessed.

@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -69,13 +70,13 @@ func (p *Processor) maybeShadow(characterId uint32, served character.Model, serv
 	}
 	shadowInFlight.Add(1)
 	l, ctx, t := p.l, p.ctx, p.t
-	go func() {
+	routine.Go(l, ctx, func(ctx context.Context) {
 		defer func() {
 			<-shadowSem
 			shadowInFlight.Add(-1)
 		}()
 		shadowCompare(l, ctx, t, characterId, served, servedBuffs)
-	}()
+	})
 }
 
 func shadowCompare(l logrus.FieldLogger, ctx context.Context, t tenant.Model, characterId uint32, served character.Model, servedBuffs []buff.Model) {

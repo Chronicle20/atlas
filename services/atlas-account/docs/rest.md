@@ -55,6 +55,7 @@ Array of Account resources.
 | Name | string | name |
 | Pin | string | pin |
 | Pic | string | pic |
+| BirthDate | uint32 | birthDate |
 | PinAttempts | int | pinAttempts |
 | PicAttempts | int | picAttempts |
 | LoggedIn | byte | loggedIn |
@@ -63,7 +64,6 @@ Array of Account resources.
 | TOS | bool | tos |
 | Language | string | language |
 | Country | string | country |
-| CharacterSlots | int16 | characterSlots |
 
 Resource type: `accounts`
 
@@ -150,6 +150,7 @@ Partial Account resource. Updatable fields:
 |-------|------|----------|
 | Pin | string | pin |
 | Pic | string | pic |
+| BirthDate | uint32 | birthDate |
 | PinAttempts | int | pinAttempts |
 | PicAttempts | int | picAttempts |
 | TOS | bool | tos |
@@ -304,3 +305,68 @@ None.
 |--------|-----------|
 | 202 Accepted | Logout command published |
 | 400 Bad Request | Invalid account ID |
+
+---
+
+### GET /accounts/{accountId}/worlds/{worldId}/character-slots
+
+Retrieves the character slot count for an account in a world. Defaults to 4 if no row exists for the (account, world) pair.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| accountId | path | uint32 | yes |
+| worldId | path | byte | yes |
+
+#### Request Model
+
+None.
+
+#### Response Model
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| Id | string | (resource id, world ID) |
+| WorldId | byte | worldId |
+| Slots | int16 | slots |
+
+Resource type: `character-slots`
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 200 OK | Character slots retrieved |
+| 400 Bad Request | Invalid account ID or world ID |
+| 500 Internal Server Error | Database or processing error |
+
+---
+
+### POST /accounts/{accountId}/worlds/{worldId}/character-slots
+
+Increments the character slot count for an account in a world by 1. Creates the row on first use, defaulting the starting count to 4.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| accountId | path | uint32 | yes |
+| worldId | path | byte | yes |
+
+#### Request Model
+
+None.
+
+#### Response Model
+
+Character slot resource (see GET /accounts/{accountId}/worlds/{worldId}/character-slots).
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 200 OK | Character slots incremented |
+| 400 Bad Request | Invalid account ID or world ID |
+| 409 Conflict | Character slot count already at maximum (12) |
+| 500 Internal Server Error | Database or processing error |

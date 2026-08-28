@@ -148,6 +148,17 @@ Persisted last-known field for a character. Immutable, constructed via Builder.
 | channelId | channel.Id | Channel identifier |
 | mapId | map.Id | Map identifier |
 | instance | UUID | Instance identifier |
+| state | characterconst.PresenceState | Liveness discriminator: OFFLINE, IN_FIELD, or IN_CASH_SHOP |
+
+### JukeboxEntry
+
+Active jukebox playback in a map instance.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| ItemId | uint32 | Jukebox item identifier |
+| PlayerName | string | Name of the character who started playback |
+| ExpiresAt | time.Time | Expiry time |
 
 ### Mist
 
@@ -173,6 +184,12 @@ Area-of-effect field placed on a map that applies a disease to characters whose 
 | diseaseDuration | time.Duration | Duration of the applied disease on a target |
 | duration | time.Duration | Total lifetime of the mist |
 | tickInterval | time.Duration | Interval between disease application ticks |
+| targetKind | string | Who the mist's per-tick effect applies to: CHARACTER or MONSTER; normalized to CHARACTER if not supplied |
+| effectKind | string | What the mist's per-tick effect does: DISEASE, DAMAGE_OVER_TIME, PROTECTION, or RECOVERY; normalized to DISEASE if not supplied |
+| recoveryMp | int32 | Per-tick MP a RECOVERY mist restores; 0 for every other effect kind |
+| partyMemberIds | []uint32 | Cast-time party snapshot a RECOVERY mist heals |
+| elemAttr | int32 | Client render wire value; always 0 |
+| skillDelay | int16 | Client render wire value (draw delay in units of 100ms); always 0 |
 | createdAt | time.Time | Construction time |
 | expiresAt | time.Time | Absolute expiry time |
 | lastTick | time.Time | Time of the most recent disease application tick |
@@ -198,10 +215,15 @@ Area-of-effect field placed on a map that applies a disease to characters whose 
 - ForceReturnIfTracked removes the entry unconditionally (token is not checked)
 - A Location Model exists at most once per (tenant, characterId); Set replaces any existing row, Delete is idempotent
 - Location.Resolve returns ReasonStayPut when map info for the current map is unavailable or the current map's forcedReturnMapId is the sentinel value; otherwise it returns ReasonForcedReturn with a field pointing at the current map's forcedReturnMapId and a cleared instance
+- Set never writes the state discriminator; a newly inserted row takes the column default (OFFLINE) and an existing row keeps whatever SetState last wrote
+- SetState writes the state discriminator unconditionally
+- SetStateIfOnline writes the state discriminator only when the row's current state is not OFFLINE
+- A newly created Location Model (seeded on CREATED) has no state written explicitly and takes the column default (OFFLINE)
 - A Mist's bounding box spans (originX+ltX, originY+ltY) to (originX+rbX, originY+rbY), inclusive of edges
 - A Mist is expired once the current time is past its expiresAt
 - A Mist ticks (ShouldTick) only when tickInterval is greater than zero and at least tickInterval has elapsed since lastTick
 - Mists are keyed by mist id within a tenant-scoped bucket; adding a mist whose id already exists in the bucket fails
+- A mist creation request with an unrecognized targetKind (not CHARACTER or MONSTER) or effectKind (not DISEASE, DAMAGE_OVER_TIME, PROTECTION, or RECOVERY) is rejected
 
 ## State Transitions
 
@@ -214,19 +236,31 @@ Area-of-effect field placed on a map that applies a disease to characters whose 
 
 ### Character Location Lifecycle
 
-- On CREATED, a Location Model is seeded for the character with channelId 0, since the character is not yet bound to a channel.
-- On LOGIN, the Location Model is set to the login field.
-- On LOGOUT, the current field is resolved via Location.Resolve; the resolved field (unchanged, or forced-return) is persisted as the Location Model.
-- On CHANNEL_CHANGED, the Location Model is set to the new field.
+- On CREATED, a Location Model is seeded for the character with channelId 0, since the character is not yet bound to a channel. No explicit state is written; the row takes the column default (OFFLINE).
+- On LOGIN, the Location Model is set to the login field and the state is set to IN_FIELD.
+- On LOGOUT, the current field is resolved via Location.Resolve; the resolved field (unchanged, or forced-return) is persisted as the Location Model and the state is set to OFFLINE.
+- On CHANNEL_CHANGED, the Location Model is set to the new field and the state is set to IN_FIELD.
 - On CHANNEL_CHANGE_REQUEST, the target field is resolved via Location.Resolve; the resolved field is persisted as the Location Model.
 - On DELETED, the Location Model for the character is removed.
-- ChangeMap persists the destination field as the Location Model, using the character's prior Location Model as the old field (defaulting to the destination when no prior Location Model exists).
+- ChangeMap persists the destination field as the Location Model, using the character's prior Location Model as the old field (defaulting to the destination when no prior Location Model exists). ChangeMap does not modify the state.
+- On the cash shop CHARACTER_ENTER event, the state is set to IN_CASH_SHOP only if the current state is not OFFLINE.
+- On the cash shop CHARACTER_EXIT event, the state is set to IN_FIELD only if the current state is not OFFLINE.
 
 ### Mist Lifecycle
 
 - On MIST_CREATE, a Mist is constructed from the request and registered under the resolved tenant; MIST_CREATED is emitted. If emission fails, the registration is rolled back.
 - On MIST_CANCEL, the referenced Mist is removed from the registry and MIST_DESTROYED is emitted with a cancelled reason.
-- On periodic tick, a Mist past its expiresAt is removed and MIST_DESTROYED is emitted with an expired reason. A Mist that ShouldTick has its disease reapplied to every character within its bounding box, and its lastTick is advanced.
+- On periodic tick, a Mist past its expiresAt is removed and MIST_DESTROYED is emitted with an expired reason.
+- On periodic tick, a Mist that ShouldTick dispatches by targetKind and effectKind, and its lastTick is advanced:
+  - targetKind MONSTER: the disease/status is reapplied to every monster the atlas-monsters rectangle query reports within the mist's bounding box.
+  - targetKind CHARACTER, effectKind DISEASE: the disease is reapplied to every character in the field whose position falls within the mist's bounding box.
+  - targetKind CHARACTER, effectKind RECOVERY: MP is restored to every character in the mist's cast-time party snapshot who is alive, in the field, and whose position falls within the mist's bounding box.
+  - targetKind CHARACTER, effectKind PROTECTION: no per-tick effect is applied by this service.
+
+### Jukebox Lifecycle
+
+- On PLAY_JUKEBOX, a JukeboxEntry is registered in the jukebox registry for the map instance and JUKEBOX_START is emitted.
+- On periodic tick, a JukeboxEntry past its ExpiresAt is removed and JUKEBOX_END is emitted.
 
 ## Processors
 
@@ -290,6 +324,13 @@ Manages in-memory weather effects per map instance.
 - Start: Registers a weather entry in the registry with an expiry time
 - GetActive: Returns the active weather entry for a map instance, if any
 
+### Jukebox Processor
+
+Manages in-memory jukebox playback per map instance.
+
+- Start: Registers a jukebox entry in the registry with an expiry time
+- GetActive: Returns the active jukebox entry for a map instance, if any
+
 ### Visit Processor
 
 Manages character map visit records in PostgreSQL.
@@ -343,6 +384,8 @@ Manages a character's persisted last-known field.
 
 - GetById: Returns the Location Model for a character
 - Set: Upserts the Location Model for a character to the given field
+- SetState: Writes the state discriminator for a character unconditionally
+- SetStateIfOnline: Writes the state discriminator for a character only when the current state is not OFFLINE
 - Delete: Removes the Location Model for a character
 - Resolve: Given a current field, returns either the unchanged field (ReasonStayPut) or a field pointing at the current map's forcedReturnMapId with a cleared instance (ReasonForcedReturn)
 
@@ -356,5 +399,5 @@ Coordinates a character's authoritative map change. Both the CHANGE_MAP command 
 
 Manages tenant-scoped Mist lifecycle.
 
-- Create: Constructs a Mist from a creation request, registers it under the resolved tenant, and emits MIST_CREATED. Rolls back the registration if emission fails.
+- Create: Constructs a Mist from a creation request, registers it under the resolved tenant, and emits MIST_CREATED. Rolls back the registration if emission fails. Rejects the request if targetKind or effectKind is unrecognized.
 - Destroy: Removes a Mist by id from the resolved tenant's bucket and emits MIST_DESTROYED with the supplied reason. Registry removal is authoritative even if emission fails.

@@ -12,6 +12,7 @@ Character status events from external character service.
 | LOGIN | LoginStatusEventBody | Character logged in - updates channel across buddy lists |
 | LOGOUT | LogoutStatusEventBody | Character logged out - sets channel to -1 across buddy lists |
 | CHANNEL_CHANGED | ChannelChangedStatusEventBody | Character changed channel - updates channel across buddy lists |
+| NAME_CHANGED | NameChangedStatusEventBody | Character name changed - propagates new name to buddy list entries referencing the character |
 
 ### EVENT_TOPIC_INVITE_STATUS
 Invite status events from external invite service.
@@ -39,6 +40,7 @@ Buddy list commands.
 | CREATE | CreateCommandBody | Creates a new buddy list with specified capacity |
 | REQUEST_ADD | RequestAddBuddyCommandBody | Requests to add a buddy |
 | REQUEST_DELETE | RequestDeleteBuddyCommandBody | Requests to remove a buddy |
+| RESTORE | RestoreBuddyCommandBody | Re-adds a buddy to a character's list in one direction, without the invite handshake |
 | INCREASE_CAPACITY | IncreaseCapacityCommandBody | Increases buddy list capacity |
 
 ---
@@ -101,6 +103,13 @@ All invite commands use `inviteType: "BUDDY"`.
 ```
 
 #### RequestDeleteBuddyCommandBody
+```json
+{
+  "characterId": 67890
+}
+```
+
+#### RestoreBuddyCommandBody
 ```json
 {
   "characterId": 67890
@@ -193,4 +202,4 @@ Error codes:
 - Every `Command[E]` envelope includes an optional `transactionId` field. Only the `INCREASE_CAPACITY` handler reads it, propagating it into the `CAPACITY_CHANGE` status event body's `transactionId` field (a nil UUID when the caller supplied none). Other command handlers accept but do not use it.
 - All database operations within a single command handler are wrapped in a transaction (`database.ExecuteTransaction`).
 - On success, status events are written to a transactional outbox (`outbox.EmitProvider`) inside the same database transaction as the state change, then published to Kafka asynchronously by a background drainer. The drainer runs leader-elected via a Postgres advisory lock (`main.go`).
-- `RequestAddBuddy`, `RequestDeleteBuddy`, and `AcceptInvite` accumulate their events in a scratch buffer during the transaction attempt. If the transaction fails and rolls back, any resulting `ERROR` status event is published directly through the Kafka producer instead of the outbox, since the rolled-back transaction cannot carry an outbox write.
+- `RequestAddBuddy`, `RequestDeleteBuddy`, `AcceptInvite`, and `RestoreBuddy` accumulate their events in a scratch buffer during the transaction attempt. If the transaction fails and rolls back, any resulting `ERROR` status event is published directly through the Kafka producer instead of the outbox, since the rolled-back transaction cannot carry an outbox write.

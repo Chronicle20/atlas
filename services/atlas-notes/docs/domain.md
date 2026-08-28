@@ -18,6 +18,7 @@ Immutable domain model representing a note.
 | message | string | Note content |
 | timestamp | time.Time | When the note was created |
 | flag | byte | Note flag |
+| giftNote | bool | Whether the note originated from a cash-shop gift acknowledgement; its fame was already settled at acceptance time and it is never rendered to the client |
 
 ### Builder
 
@@ -51,7 +52,7 @@ Coordinates note operations with database persistence and Kafka event emission.
 | ByCharacterProvider | Retrieves one page of notes for a character |
 | AllProvider | Retrieves one page of notes in a tenant |
 
-Discard skips fame awards for system notes (senderId is 0) and self-notes (senderId equals characterId).
+Discard skips fame awards for system notes (senderId is 0), self-notes (senderId equals characterId), and gift notes (giftNote is true).
 
 ### saga.Processor
 

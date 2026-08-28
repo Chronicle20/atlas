@@ -66,9 +66,31 @@ Resource type: `characters`
 | worldId | byte | World identifier |
 | name | string | Character name |
 | level | byte | Character level |
+| experience | uint32 | Experience points |
+| gachaponExperience | uint32 | Gachapon experience |
+| strength | uint16 | Strength stat |
+| dexterity | uint16 | Dexterity stat |
+| intelligence | uint16 | Intelligence stat |
+| luck | uint16 | Luck stat |
+| hp | uint16 | Current HP |
+| maxHp | uint16 | Maximum HP |
+| mp | uint16 | Current MP |
+| maxMp | uint16 | Maximum MP |
+| meso | uint32 | Meso amount |
+| hpMpUsed | int | HP/MP AP allocation used |
 | jobId | uint16 | Job identifier |
-| mapId | uint32 | Current map ID |
+| skinColor | byte | Skin color |
+| gender | byte | Gender |
+| fame | int16 | Fame value |
+| hair | uint32 | Hair ID |
+| face | uint32 | Face ID |
+| ap | uint16 | Unassigned AP |
+| sp | string | Comma-separated SP table |
+| spawnPoint | uint32 | Spawn point |
 | gm | int | GM status |
+| x | int16 | X position |
+| y | int16 | Y position |
+| stance | byte | Stance |
 
 #### GET /characters?name={name}
 

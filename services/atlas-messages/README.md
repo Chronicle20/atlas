@@ -41,6 +41,7 @@ authentication, exposing captured chat including whispers — see
 | `COMMAND_TOPIC_PARTY_QUEST` | Kafka topic for emitting party quest commands |
 | `COMMAND_TOPIC_MAP` | Kafka topic for emitting map commands |
 | `COMMAND_TOPIC_PET` | Kafka topic for emitting pet commands |
+| `COMMAND_TOPIC_REACTOR` | Kafka topic for emitting reactor commands |
 | `CHAT_CAPTURE_RETENTION_SECONDS` | Max age of a retained chat line, in seconds (default 900) |
 | `CHAT_CAPTURE_MAX_LINES` | Max chat lines retained per character (default 200) |
 

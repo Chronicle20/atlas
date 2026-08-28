@@ -93,6 +93,7 @@ body: E
 expiration: time.Time
 quantity: uint32
 ownerId: uint32
+owner: string
 flag: uint16
 rechargeable: uint64
 strength: uint16

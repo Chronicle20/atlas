@@ -18,6 +18,7 @@ Immutable domain representation of an account.
 | password | string | Hashed password |
 | pin | string | Account PIN |
 | pic | string | Account PIC |
+| birthDate | uint32 | Account birth date |
 | pinAttempts | int | Failed PIN attempt counter |
 | picAttempts | int | Failed PIC attempt counter |
 | state | State | Current session state |
@@ -62,6 +63,17 @@ Service type enumeration.
 | LOGIN | Login service |
 | CHANNEL | Channel service |
 
+### CharacterSlotModel
+
+Immutable domain representation of a per-(account, world) character slot count.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| tenantId | uuid.UUID | Tenant identifier |
+| accountId | uint32 | Account identifier |
+| worldId | byte | World identifier |
+| slots | int16 | Character slot count for the account in the world |
+
 ## Invariants
 
 - Password is stored as bcrypt hash
@@ -72,6 +84,8 @@ Service type enumeration.
 - Logout is blocked for sessions in transition state (State 2)
 - PIN and PIC attempt counters reset to 0 on successful entry
 - PIN and PIC attempt counters reset to 0 after ban is issued
+- Character slot count for an (account, world) pair with no existing row defaults to 4 (DefaultCharacterSlotsPerWorld)
+- Character slot count for an (account, world) pair cannot be incremented beyond 12 (MaxCharacterSlotsPerWorld)
 
 ## State Transitions
 
@@ -100,7 +114,7 @@ Primary domain processor providing account operations.
 | GetOrCreate | Retrieve or create account if automatic registration enabled |
 | Create | Create new account with hashed password |
 | CreateAndEmit | Create account and emit status event |
-| Update | Update account attributes (pin, pic, tos, pinAttempts, picAttempts, gender) |
+| Update | Update account attributes (pin, pic, birthDate, tos, pinAttempts, picAttempts, gender) |
 | Delete | Delete account and emit status event |
 | DeleteAndEmit | Delete account and emit status event |
 | Login | Record login for account and session |
@@ -114,6 +128,8 @@ Primary domain processor providing account operations.
 | RecordPinAttemptAndEmit | Record PIN attempt and emit ban command if limit reached |
 | RecordPicAttempt | Record PIC attempt result and enforce limit |
 | RecordPicAttemptAndEmit | Record PIC attempt and emit ban command if limit reached |
+| GetCharacterSlots | Retrieve character slot count for an (account, world) pair, defaulting to 4 if no row exists |
+| IncrementCharacterSlots | Increment character slot count for an (account, world) pair, creating the row on first use; errors if the count is already at the cap of 12 |
 
 ### Registry
 
@@ -138,6 +154,7 @@ In-memory session state registry (singleton).
 |-------|-------------|
 | ErrAccountNotFound | Account does not exist |
 | ErrAccountLoggedIn | Account is currently logged in and cannot be deleted |
+| ErrCharacterSlotCapReached | Character slot count for an (account, world) pair is already at the maximum (12) |
 
 ## Error Codes
 

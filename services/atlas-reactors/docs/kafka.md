@@ -81,6 +81,25 @@ Emits commands to consume drops during item-reactor activation.
 | stance      | uint16 | Character stance         |
 | skillId     | uint32 | Skill used (0 if none)   |
 
+#### TOUCH Command
+
+| Field     | Type      | Description          |
+|-----------|-----------|----------------------|
+| worldId   | byte      | World identifier     |
+| channelId | byte      | Channel identifier   |
+| mapId     | uint32    | Map identifier       |
+| instance  | uuid.UUID | Instance identifier  |
+| type      | string    | "TOUCH"              |
+| body      | object    | TouchCommandBody      |
+
+**TouchCommandBody:**
+
+| Field       | Type   | Description                          |
+|-------------|--------|---------------------------------------|
+| reactorId   | uint32 | Reactor instance ID                  |
+| characterId | uint32 | Character entering/leaving touch area |
+| touching    | bool   | true on enter, false on leave         |
+
 #### DESTROY_IN_FIELD Command
 
 | Field     | Type      | Description          |
@@ -244,6 +263,29 @@ Only player drops (playerDrop = true) are processed.
 | Field       | Type   | Description                    |
 |-------------|--------|--------------------------------|
 | characterId | uint32 | Character that triggered       |
+
+#### TOUCH Command
+
+| Field          | Type      | Description                      |
+|----------------|-----------|-----------------------------------|
+| worldId        | byte      | World identifier                 |
+| channelId      | byte      | Channel identifier               |
+| mapId          | uint32    | Map identifier                   |
+| instance       | uuid.UUID | Instance identifier              |
+| reactorId      | uint32    | Reactor instance ID              |
+| classification | string    | Reactor classification as string |
+| reactorName    | string    | Reactor name                     |
+| reactorState   | int8      | Current reactor state            |
+| x              | int16     | X coordinate position            |
+| y              | int16     | Y coordinate position            |
+| type           | string    | "TOUCH"                          |
+| body           | object    | touchActionsBody                 |
+
+**touchActionsBody:**
+
+| Field       | Type   | Description                |
+|-------------|--------|-----------------------------|
+| characterId | uint32 | Character that touched      |
 
 ### Commands (Produced to drop service)
 

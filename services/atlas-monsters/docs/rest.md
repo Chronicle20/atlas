@@ -67,13 +67,15 @@ Retrieves a monster by its unique ID.
           "expiresAt": 0
         }
       ],
-      "nextEligibleRepickAtMs": 0
+      "nextEligibleRepickAtMs": 0,
+      "spawnSourceType": "CYCLIC",
+      "spawnSourceId": ""
     }
   }
 }
 ```
 
-`expiresAt` is in Unix milliseconds. `nextEligibleRepickAtMs` is omitted when zero.
+`expiresAt` is in Unix milliseconds. `nextEligibleRepickAtMs`, `spawnSourceType`, and `spawnSourceId` are omitted when zero/empty.
 
 **Error Conditions:**
 
@@ -136,7 +138,9 @@ Retrieves all monsters in a map instance, sorted by ascending uniqueId, paginate
         "damageEntries": [],
         "experienceEntries": [],
         "statusEffects": [],
-        "nextEligibleRepickAtMs": 0
+        "nextEligibleRepickAtMs": 0,
+        "spawnSourceType": "CYCLIC",
+        "spawnSourceId": ""
       }
     }
   ],
@@ -178,7 +182,7 @@ Retrieves monsters in a map instance whose position falls within an inclusive re
 | y1 | query | int16 | yes | Rectangle corner Y |
 | x2 | query | int16 | yes | Opposite rectangle corner X |
 | y2 | query | int16 | yes | Opposite rectangle corner Y |
-| limit | query | uint32 | no | Maximum results to return (default 0 = no cap) |
+| max | query | uint32 | no | Maximum results to return (default 0 = no cap) |
 | page[number] | query | int | no | Page number (default 1) |
 | page[size] | query | int | no | Page size (default and max 250) |
 
@@ -239,7 +243,9 @@ Creates a monster in a map instance.
       "x": 100,
       "y": -50,
       "fh": 1,
-      "team": -1
+      "team": -1,
+      "spawnSourceType": "CYCLIC",
+      "spawnSourceId": ""
     }
   }
 }
@@ -252,6 +258,8 @@ Creates a monster in a map instance.
 | y | int16 | yes | Y coordinate |
 | fh | int16 | yes | Foothold |
 | team | int8 | yes | Team assignment |
+| spawnSourceType | string | no | Spawn provenance type ("CYCLIC", "EVENT", "SCRIPT", "GM", or another producer-defined value); stored as-is, empty if omitted |
+| spawnSourceId | string | no | Spawn provenance identifier, opaque to this service |
 
 **Response Model:**
 

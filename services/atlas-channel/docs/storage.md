@@ -38,6 +38,38 @@ The service maintains the following in-memory registries:
 - Keyed by tenant UUID
 - A fetch miss or error caches and returns the default configuration so the service never hard-fails on an unconfigured tenant
 
+### Maple Life Registry
+- Tracks the in-flight Maple Life character-creation dialog for an account with no character yet
+- Singleton via `sync.Once`, thread-safe via `sync.RWMutex`
+- Keyed by `Key{Tenant, AccountId}`
+- Holds one `Entry` (CharacterId, WorldId, ItemId, Slot, UpdateTime, Phase, TransactionId, CandidateName, At)
+- Entries older than `SubmittedTTL` (30s) are removed by a per-tenant `Sweep`
+- Provides Put/Get/Take/TakeByTransactionId/ClearAccount/Sweep
+
+### Remote Merchant Registry
+- Tracks characters who opened an NPC shop via a classification-545 cash item, pending the unlock of their client's exclusive-request lock
+- Singleton via `sync.Once`, thread-safe via `sync.RWMutex`
+- Keyed by `Key{Tenant, CharacterId}`
+- Holds one `Entry` (ItemId, Slot, At)
+- Entries older than `TTL` (30s) are removed by a per-tenant `Sweep`
+- Provides Put/Take/ClearCharacter/Sweep
+
+### Position Registry
+- Tracks the process-local, last-known (x, y) the channel last folded out of a character's movement path
+- Singleton via `sync.Once`, thread-safe via `sync.RWMutex`
+- Keyed by `Key{Tenant, CharacterId}`
+- No TTL and no sweeper; entries are removed on session destroy
+- Provides Put/Lookup/Clear
+
+### Ring Cache
+- Per-character cache of couple/friendship ring pair halves fetched from atlas-cashshop
+- Populated once per character load; a cache miss returns an empty ring set/records rather than issuing a REST call
+- Keyed by tenant and character id
+
+### Battleship Ship-HP Store
+- Redis-backed counter (`redis.TenantCounter`, namespace `battleship-hp`) tracking the Corsair Battleship's remaining HP pool per character, paired with an in-process `RideMirror` (per-channel-process, tenant-scoped map of characterId to ride state)
+- The Redis entry's TTL is effect-derived per ride, with a 35-minute fallback
+
 ### Monster Information Cache
 - In-process, tenant-scoped TTL cache fronting monster template attack-pattern lookups
 - Singleton via `sync.Once`, thread-safe via `sync.RWMutex`
@@ -82,6 +114,14 @@ All persistent data is managed by external services accessed via REST APIs:
 - Weather state: WEATHER service
 - World data: WORLDS service
 - Static game data: DATA service
+- Evan dragon state: DRAGONS service
+- Incubator reward rolls: GACHAPONS service
+- Mini-game room state: MINI_GAMES service
+- Duey parcel custody: PARCEL service
+- Player trade room state: TRADES service
+- Ring pair state: CASHSHOP service
+- Player report submissions: BAN service
+- RPS session state: RPS service
 
 ## Migration Rules
 

@@ -695,3 +695,398 @@ None
 | 400 | Invalid characterId, unknown `list`, or invalid mapId |
 | 404 | Map not present on the list |
 | 500 | Database error |
+
+---
+
+### GET /characters/{characterId}/equip-slot-extensions
+
+Retrieves a character's currently-active equip-slot extensions.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": [
+    {
+      "type": "equip-slot-extensions",
+      "id": "string",
+      "attributes": {
+        "characterId": 0,
+        "slotIndex": 0,
+        "expiresAt": "2006-01-02T15:04:05Z"
+      }
+    }
+  ]
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId |
+| 500 | Database error |
+
+---
+
+### POST /characters/{characterId}/equip-slot-extensions
+
+Extends (or creates) a character's slot extension by a period.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+
+#### Request Model
+```json
+{
+  "data": {
+    "type": "equip-slot-extensions",
+    "attributes": {
+      "slotIndex": 0,
+      "days": 0,
+      "transactionId": "string"
+    }
+  }
+}
+```
+
+`transactionId` is an idempotency key: a repeat call carrying the same non-zero `transactionId` as the row's last-applied call returns the current expiry unchanged. The zero UUID means no dedupe key is supplied and always applies.
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "equip-slot-extensions",
+    "id": "string",
+    "attributes": {
+      "characterId": 0,
+      "slotIndex": 0,
+      "expiresAt": "2006-01-02T15:04:05Z"
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId |
+| 500 | Database error |
+
+---
+
+### GET /characters/{characterId}/pending-changes
+
+Retrieves pending-change requests for a character.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": [
+    {
+      "type": "pending-changes",
+      "id": "string",
+      "attributes": {
+        "characterId": 0,
+        "type": "string",
+        "status": "string",
+        "requestedName": "string",
+        "destinationWorldId": 0,
+        "sourceWorldId": 0,
+        "reason": "string",
+        "createdAt": "2006-01-02T15:04:05Z",
+        "expiresAt": "2006-01-02T15:04:05Z",
+        "resolvedAt": "2006-01-02T15:04:05Z"
+      }
+    }
+  ]
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId |
+| 500 | Database error |
+
+---
+
+### POST /characters/{characterId}/pending-changes
+
+Creates a pending-change request (NAME_CHANGE or WORLD_TRANSFER) after validating eligibility.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+
+#### Request Model
+```json
+{
+  "data": {
+    "type": "pending-changes",
+    "attributes": {
+      "type": "string",
+      "requestedName": "string",
+      "destinationWorldId": 0,
+      "assetId": 0
+    }
+  }
+}
+```
+
+`type` is `NAME_CHANGE` or `WORLD_TRANSFER`. `assetId` is the coupon item template ID to consume at acceptance; omitted on the cash-shop purchase path.
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "pending-changes",
+    "id": "string",
+    "attributes": {
+      "characterId": 0,
+      "type": "string",
+      "status": "string",
+      "requestedName": "string",
+      "destinationWorldId": 0,
+      "sourceWorldId": 0,
+      "reason": "string",
+      "createdAt": "2006-01-02T15:04:05Z",
+      "expiresAt": "2006-01-02T15:04:05Z",
+      "resolvedAt": "2006-01-02T15:04:05Z"
+    }
+  }
+}
+```
+
+Error responses use a JSON:API error document whose `detail` carries the reason string below.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId |
+| 404 | Character not found |
+| 409 | `already_pending` (a request of this type is already pending) or `name_reserved` (name held by another pending request) |
+| 422 | Ineligible; `detail` is one of `unknown_change_type`, `name_invalid_length`, `name_invalid_charset`, `name_taken`, `name_reserved`, `name_invalid`, `world_same`, `is_gm`, `world_unknown`, `world_full`, `no_character_slot`, `banned`, `is_guild_master`, `in_family`, `trade_open`, `merchant_open`, `mts_listings_open`, `parcel_pending`, `check_unavailable` |
+| 500 | Database error |
+
+---
+
+### DELETE /characters/{characterId}/pending-changes/{id}
+
+Cancels a pending-change request by ID (operator-facing). The record must belong to `characterId`.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+| id | path | uuid | yes | Pending-change ID |
+
+#### Request Model
+None
+
+#### Response Model
+None (204 No Content)
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId or id |
+| 404 | Record not found, or found but not owned by characterId |
+| 409 | Record is already terminal |
+| 500 | Database error |
+
+---
+
+### POST /characters/{characterId}/pending-changes/cancel
+
+Cancels the calling character's own pending request of a given type (player-initiated).
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+
+#### Request Model
+```json
+{
+  "data": {
+    "type": "pending-changes",
+    "attributes": {
+      "type": "string"
+    }
+  }
+}
+```
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "pending-changes",
+    "id": "string",
+    "attributes": {
+      "characterId": 0,
+      "type": "string",
+      "status": "string",
+      "requestedName": "string",
+      "destinationWorldId": 0,
+      "sourceWorldId": 0,
+      "reason": "string",
+      "createdAt": "2006-01-02T15:04:05Z",
+      "expiresAt": "2006-01-02T15:04:05Z",
+      "resolvedAt": "2006-01-02T15:04:05Z"
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId |
+| 404 | No pending request of the requested type |
+| 409 | Record raced to a terminal status before this call moved it |
+| 500 | Database error |
+
+---
+
+### POST /characters/{characterId}/pending-changes/{id}/resolve
+
+Transitions a pending-change request to a terminal status. Used as the world-transfer saga's terminal-outcome callback.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID (not otherwise used to scope the lookup) |
+| id | path | uuid | yes | Pending-change ID |
+
+#### Request Model
+```json
+{
+  "data": {
+    "type": "pending-changes",
+    "attributes": {
+      "status": "string",
+      "reason": "string"
+    }
+  }
+}
+```
+
+`status` must be `APPLIED` or `REJECTED`.
+
+#### Response Model
+None (204 No Content)
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid id, or status not APPLIED/REJECTED |
+| 404 | Record not found |
+| 409 | Record is already terminal |
+| 500 | Database error |
+
+---
+
+### GET /characters/{characterId}/transfer-eligibility
+
+Evaluates the full world-transfer eligibility gate table for a destination world, with no side effect.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+| destinationWorldId | query | uint8 | yes | Destination world ID |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "transfer-eligibilities",
+    "id": "string",
+    "attributes": {
+      "eligible": true,
+      "reason": "string"
+    }
+  }
+}
+```
+
+`reason` is one of the reason values listed under `POST /characters/{characterId}/pending-changes`'s 422 condition; omitted when `eligible` is true.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid or missing destinationWorldId |
+| 500 | Database or dependency error |
+
+---
+
+### GET /characters/{characterId}/transfer-eligibility-independent
+
+Evaluates only the destination-independent world-transfer eligibility gates (no destination world required), with no side effect.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "transfer-eligibilities",
+    "id": "string",
+    "attributes": {
+      "eligible": true,
+      "reason": "string"
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 500 | Database or dependency error |

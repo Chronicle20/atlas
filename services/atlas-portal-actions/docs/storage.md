@@ -39,8 +39,8 @@ None.
 |------------|---------|------|-------------|
 | PRIMARY KEY | id | unique | Primary key index (portal_scripts) |
 | idx_portal_scripts_tenant_portal | tenant_id, portal_id | composite | Lookup by tenant and portal |
-| idx_map_id | map_id | single | Lookup by map |
-| idx_deleted_at | deleted_at | single | Soft delete filtering |
+| idx_portal_scripts_map_id | map_id | single | Lookup by map |
+| idx_portal_scripts_deleted_at | deleted_at | single | Soft delete filtering |
 | PRIMARY KEY | tenant_id, group_name | composite | Primary key index (seed_state) |
 
 ## Migration Rules

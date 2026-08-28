@@ -1,6 +1,6 @@
 # atlas-character-factory
 
-Character creation service using saga-based orchestration. Supports two creation paths: validating a request against tenant-configured character-creation templates, and creating a character from a tenant-configured preset. Both paths emit a unified saga to the Atlas Saga Orchestrator containing character creation, item awards, equipment, and skill creation steps.
+Character creation service using saga-based orchestration. Supports three creation paths: validating a request against tenant-configured character-creation templates, creating a character from a tenant-configured preset, and creating a character from a tenant-configured Maple Life class table. All three paths emit a unified saga to the Atlas Saga Orchestrator containing character creation, item awards, equipment, and skill creation steps.
 
 ## External Dependencies
 

@@ -23,6 +23,7 @@ Manages cash shop currency balances for accounts.
 
 ### State Transitions
 - `Purchase(currency, amount)`: Returns a new Model with the specified currency reduced by amount. Does not validate balance; caller is responsible for checking before calling.
+- `Award(currency, amount)`: Returns a new Model with the specified currency increased by amount, saturating at `math.MaxUint32` instead of wrapping
 
 ### Processors
 
@@ -32,6 +33,7 @@ Manages cash shop currency balances for accounts.
 - `Create`/`CreateAndEmit`: Creates a new wallet with initial balances
 - `Update`/`UpdateAndEmit`: Updates wallet balances
 - `UpdateWithTransaction`/`UpdateAndEmitWithTransaction`: Updates wallet with transaction ID for saga coordination
+- `UpdateWithTransactionSceneRefreshOwned`: Same as `UpdateWithTransaction`, but the emitted wallet UPDATED event carries a `SceneRefreshOwned` flag for callers (currently only the gift purchase flow) whose own status handler announces the scene refresh itself
 - `AdjustCurrency`: Adjusts a specific currency type by amount, validates sufficient balance (delegates to `AdjustCurrencyWithTransaction` with a nil transaction ID)
 - `AdjustCurrencyWithTransaction`: Adjusts currency with transaction ID, validates sufficient balance
 - `Delete`/`DeleteAndEmit`: Deletes a wallet
@@ -158,6 +160,7 @@ Represents a cash shop item stored in a compartment. The asset model is flattene
 - `cashId` (int64): Unique cash item identifier (randomly generated or externally provided)
 - `templateId` (uint32): Item template ID
 - `commodityId` (uint32): Commodity catalog entry ID (0 if not from commodity purchase)
+- `currency` (uint32): Wallet bucket this asset was purchased with (1=credit/NX, 2=Maple Points, other=prepaid; 0 means a legacy row predating this column, or an asset never bought with currency)
 - `quantity` (uint32): Item quantity
 - `flag` (uint16): Item flags
 - `petId` (uint32): Associated pet ID (0 if the asset is not a pet)
@@ -166,21 +169,28 @@ Represents a cash shop item stored in a compartment. The asset model is flattene
 - `createdAt` (time.Time): Timestamp of creation
 - `giftFrom` (string): Sender's character name for a GIFT purchase; empty for every other asset
 - `giftMessage` (string): Sender's message for a GIFT purchase; empty for every other asset
+- `giftAcknowledged` (bool): Whether the gift list carrying this asset has been presented to the recipient (a LOAD_GIFT_SUCCESS announce has fired for it); this is not "the recipient clicked OK"
+- `giftNoteSent` (bool): Whether the gift-forward note for this asset has already been sent to the gifter; independent of `giftAcknowledged`
 
 #### ModelBuilder
 - Builder pattern via `NewBuilder(compartmentId, templateId)` and `Clone(model)`
-- Setters: `SetId`, `SetCompartmentId`, `SetCashId`, `SetTemplateId`, `SetCommodityId`, `SetQuantity`, `SetFlag`, `SetPetId`, `SetPurchasedBy`, `SetExpiration`, `SetCreatedAt`, `SetGiftFrom`, `SetGiftMessage`
+- Setters: `SetId`, `SetCompartmentId`, `SetCashId`, `SetTemplateId`, `SetCommodityId`, `SetCurrency`, `SetQuantity`, `SetFlag`, `SetPetId`, `SetPurchasedBy`, `SetExpiration`, `SetCreatedAt`, `SetGiftFrom`, `SetGiftMessage`, `SetGiftAcknowledged`, `SetGiftNoteSent`
 
 ### Invariants
 - Cash ID is unique within a tenant; generated randomly on creation or accepted from external source
 - `CreateWithCashId` uses find-or-create semantics: if an asset with the given cashId already exists, it returns the existing one (idempotent)
 - Flag defaults to 0 on creation
 - Expiration period defaults to 30 days when `commodityId` is 0 or the commodity lookup fails; otherwise uses the commodity's period (see Expiration Calculation)
+- Purchase flows record `currency` as `effectivePurchaseCurrency(currency)` (see Cash Shop below), never the raw wire value, so a stored 0 unambiguously means "not purchased with currency" rather than "purchased with the default bucket"
 
 ### State Transitions
 - `Create`: Generates a unique cashId, calculates expiration from commodity period and hourly configuration, creates the asset, emits CREATED status
+- `CreateGift`: Same as `Create`, additionally carrying the sender's `giftFrom`/`giftMessage` onto the created row
 - `CreateWithCashId`: Find-or-create by cashId. Used during compartment Accept to preserve the cashId from external systems
+- `NextCashId`: Reserves a fresh, collision-checked cash serial without creating an asset; used when a pet row and its cash asset must share one serial, reserved before either row exists
 - `UpdateQuantity`: Updates quantity in-place
+- `AcknowledgeGifts`: Marks every asset in a compartment whose cashId is in a given list as `giftAcknowledged`
+- `MarkGiftNoteSent`: Marks the asset in a compartment identified by cashId as `giftNoteSent`
 - `Release`: Soft-deletes the asset
 - `Delete`: Soft-deletes the asset
 - `Expire`: Deletes the asset, emits EXPIRED status, optionally creates a replacement asset (via `Create`, with quantity 1 and no commodity/pet) with the given replaceItemId
@@ -192,11 +202,15 @@ Represents a cash shop item stored in a compartment. The asset model is flattene
 - `GetById`: Retrieves asset by ID
 - `ByCompartmentIdProvider`: Provides all assets for a compartment
 - `GetByCompartmentId`: Retrieves all assets for a compartment
-- `Create`: Creates a new asset (generates cashId, calculates expiration), parameterized by compartmentId, templateId, commodityId, quantity, petId, purchasedBy
+- `Create`: Creates a new asset (generates cashId, calculates expiration), parameterized by compartmentId, templateId, commodityId, currency, quantity, petId, purchasedBy
 - `CreateAndEmit`: Creates asset and emits Kafka event
+- `CreateGift`: Creates a gift asset carrying `giftFrom`/`giftMessage`
+- `NextCashId`: Reserves a collision-checked cash serial without creating an asset
 - `CreateWithCashId`: Creates or finds asset by cashId (idempotent), same parameters plus cashId
 - `CreateWithCashIdAndEmit`: Creates or finds asset by cashId and emits Kafka event
 - `UpdateQuantity`: Updates asset quantity
+- `AcknowledgeGifts`: Marks a set of assets in a compartment as presented
+- `MarkGiftNoteSent`: Marks a single asset in a compartment as having had its gift-forward note sent
 - `Delete`: Soft-deletes an asset
 - `DeleteAndEmit`: Deletes asset (puts no event)
 - `Release`: Soft-deletes an asset (alias for delete with logging)
@@ -345,15 +359,21 @@ Thread-safe registry for tenant-specific configuration. Caches tenant config fet
 - `CashShop.Commodities.HourlyExpirations` ([]HourlyExpiration): Per-template hourly expiration overrides
   - `TemplateId` (uint32): Item template ID
   - `Hours` (uint32): Expiration in hours
+- `CashShop.Surprise.BoxTemplateIds` ([]uint32): Cash item template ids that open as a Cash Shop Surprise box for this tenant
+- `CashShop.Coupons.RateLimit`: Coupon redemption rate limit (`Attempts` uint32, `WindowSeconds` uint32)
 
 ### Invariants
 - Configurations are cached per tenant ID after first fetch
 - Cache uses double-checked locking (RWMutex)
 - If fetch fails, defaults to empty configuration
+- `GetSurpriseBoxTemplateIds` falls back to the stock box id (`DefaultSurpriseBoxTemplateId`, 5222000) when the tenant configures no box ids
+- `GetCouponRateLimit` falls back to `DefaultCouponAttempts` (10) / `DefaultCouponWindow` (1 hour) when the tenant configures a zero threshold or window; zero is treated as "unset", never as "zero allowed"
 
 ### Processors
 - `GetTenantConfig`: Retrieves cached or fetches tenant configuration
 - `GetHourlyExpirations`: Returns a map of templateId to hours from tenant config
+- `GetSurpriseBoxTemplateIds`: Returns the cash item template ids that open as a Surprise box for the tenant
+- `GetCouponRateLimit`: Returns the coupon redemption attempt budget and window for the tenant
 
 ---
 
@@ -417,6 +437,205 @@ Coordinates purchase flows: validates funds, determines compartment type from ch
 - `PurchaseInventoryIncreaseByType`/`PurchaseInventoryIncreaseByTypeAndEmit`: Purchases inventory capacity increase by type (4 slots for 4000 currency)
 - `PurchaseInventoryIncreaseByItem`/`PurchaseInventoryIncreaseByItemAndEmit`: Purchases inventory capacity increase using a commodity item (4 slots)
 - `PurchaseInventoryIncrease`: Core logic for inventory capacity increase with configurable cost and amount
+- `RebateAndEmit`: Refunds one locker asset's purchase price to the currency bucket it was purchased with and removes it
+- `GiftAndEmit`: Charges the sender's credit/NX balance and creates the commodity in the recipient's locker
+- `PurchasePackageAndEmit`: Resolves a cash package's member commodities, charges once for the package's own price, and creates one asset per member (buy-for-self or gift, discriminated by `recipientCharacterId`)
+- `PurchaseRingAndEmit`: Charges the buyer once and mints a ring pair (one asset in the buyer's locker, one in the partner's), recorded via the Ring domain
+- `PurchaseEquipSlotAndEmit`: Charges the buyer and queues a deferred equip-slot extension command (see `CompleteEquipSlotExtension`)
+- `CompleteEquipSlotExtension`: Performs the deferred atlas-character equip-slot write for a completed equip-slot purchase and emits EQUIP_SLOT_INCREASED
+- `AcknowledgeGiftsAndEmit`: Marks a set of locker assets across an account's compartments as gift-list presented
+- `MarkGiftNoteSentAndEmit`: Marks a single locker asset's gift-forward note as sent
+
+### Invariants (Gift, Package, Ring, Rebate, Equip Slot)
+- `RebateAndEmit`, `GiftAndEmit`, `PurchasePackageAndEmit`, `PurchaseRingAndEmit`, and `PurchaseEquipSlotAndEmit` each claim their `transactionId` via the Ledger domain as the first step of their transaction; a redelivery of an already-claimed transaction id is treated as success-without-effect (no error, no event)
+- A rebate resolves the target asset by cashId scoped to the requesting account's own compartments; an asset owned by another account is indistinguishable from a missing one and reports the same rejection
+- A rebate refuses an asset with `commodityId == 0` (never bought with currency), an expired asset, or one whose commodity no longer resolves
+- A gift purchase is always charged to the sender's credit/NX bucket; the target compartment and capacity check are the recipient's, not the sender's
+- A package purchase charges once for the package commodity's own price (never the sum of member commodity prices) and checks capacity against the full member count before charging
+- A ring purchase mints both halves from the same resolved commodity item id; both compartments (buyer and partner) must have room before either asset is created, and both halves are recorded as one pair in a single insert so a partial pair cannot persist
+- An equip-slot purchase creates no locker asset; it charges the buyer and extends the character's fixed pendant2 equip slot by the commodity's period (in days) via atlas-character, deferred behind the outbox so the cross-service write only happens after the wallet debit and purchase record have durably committed
+- Every purchase-path write in this domain (Purchase, Gift, Package, Ring, Equip Slot) also records the purchase (and, for gifts/packages, every member serial) against the buyer's/sender's account via the Purchase Record domain
+
+---
+
+## Purchase Record
+
+### Responsibility
+Tracks the durable, non-soft-deletable history of which commodity serial numbers an account has ever purchased, independent of whether the resulting asset still exists in the locker.
+
+### Core Models
+- One row per `(tenantId, accountId, serialNumber)`: `count` (number of purchases), `firstAt`, `lastAt`
+
+### Invariants
+- A rebate or withdrawal does not remove a purchase record; "purchased" is a historical fact
+- `Record` upserts atomically on the `(tenant_id, account_id, serial_number)` unique index, so two concurrent purchases of the same serial cannot land as separate rows
+- On boot, `Backfill` seeds records from existing `cash_assets` history (grouped by tenant/account/commodity) exactly once; it is a no-op once any record exists, and assets already hard-deleted before the backfill ran are unrecoverable
+
+### Processors
+
+#### Processor
+- `Record`: Upserts one purchase on a caller-supplied database handle (called inside the purchasing transaction)
+- `Get`: Returns the purchase count for an account/serial number pair (0 if never purchased)
+
+---
+
+## Ledger
+
+### Responsibility
+Claims transaction-scoped idempotency for cash shop commands (gift, package, ring, equip-slot, and locker-rebate purchases) using the shared `atlas-database` idempotency table.
+
+### Invariants
+- `Claim` must be the first statement inside the claiming command's transaction, so a Kafka redelivery aborts before any state changes
+- The claim keys on the bare transaction id, not `(transaction id, command type)`: a replay of the same transaction id under a different command type is still rejected as the same redelivery
+- Claiming the zero transaction id (`uuid.Nil`) is refused with an error, since `uuid.Nil` is documented elsewhere as "no correlation" and must never become a shared uniqueness claim
+- `ErrAlreadyProcessed` signals success-without-effect (a redelivery), not a failure to report to the client
+
+### Processors
+- `Claim(ctx, tx, transactionId, commandType, characterId)`: Writes the uniqueness claim, returning `ErrAlreadyProcessed` when the transaction id was already claimed
+
+---
+
+## Ring
+
+### Responsibility
+Records couple/friendship ring pairs purchased through the Cash Shop domain's `PurchaseRingAndEmit`, and serves a read-only query surface over them.
+
+### Core Models
+
+#### Type
+- `TypeCouple` (`"COUPLE"`), `TypeFriendship` (`"FRIENDSHIP"`)
+
+#### State
+- `StateActive`, `StateBroken`, `StateExpired`: records what happened to a pair half without deleting its history
+
+#### Model (one half of a pair)
+- `id` (uuid.UUID), `pairId` (uuid.UUID, shared by both halves), `characterId`, `partnerCharacterId`, `assetId`, `itemTemplateId`, `ringType` (Type), `state` (State), `createdAt`
+- `cashId` (int64): This half's own asset's cash id, captured at purchase time (survives the asset leaving the locker/being equipped, unlike `assetId`)
+- `partnerCashId` (int64): The sibling half's cash id, resolved at read time; zero if unresolvable
+- `partnerName` (string): The partner character's name, resolved at read time; empty if unresolvable
+
+#### Half
+- Purchase-time input to `CreatePair`: `CharacterId`, `AssetId`, `CashId`, `ItemTemplateId`
+
+### Invariants
+- Both halves of a pair are inserted in a single multi-row `INSERT`, so a partial pair cannot be persisted
+- `enrich` (read-time decoration of `cashId`/`partnerCashId`/`partnerName`) fails soft to the zero value on every lookup; a lookup failure never turns into an error for a caller that only wants the pair rows
+- `cashId`/`partnerCashId` prefer the value persisted on the row at purchase time; falling back to an `assetId` lookup is reserved for rows written before the `cashId` column existed, since a locker asset id stops resolving once the ring is equipped
+
+### Processors
+
+#### Processor
+- `CreatePair`: Inserts both halves of a pair on a caller-supplied transaction handle
+- `GetByCharacterId`/`GetByCharacterIdPaged`: Returns every ring half a character holds, enriched with `cashId`/`partnerCashId`/`partnerName`
+- `GetById`: Returns a single ring half by ID, enriched, scoped to the calling tenant
+
+---
+
+## Coupon
+
+### Responsibility
+Redeems a one-time-per-account coupon code for a bundle of currency and/or cash-item rewards, and exposes admin CRUD over coupon definitions. There is no REST redeem route by design; redemption is triggered only by the `REQUEST_COUPON_REDEMPTION` command.
+
+### Core Models
+
+#### Model
+- `id` (uuid.UUID), `batchId` (uuid.UUID, nil if not bulk-generated), `code` (string, stored normalized: trimmed + uppercased), `description`, `active` (bool), `startsAt`/`expiresAt` (*time.Time, nil = unbounded), `maxUses` (*uint32, nil = unlimited), `redemptionCount` (uint32), `rewards` (reward.Rewards), `createdAt`, `updatedAt`
+
+#### RedemptionError
+- Carries a client-facing key (one of `ErrorKeyInvalidCode`, `ErrorKeyNotRegistered`, `ErrorKeyExpired`, `ErrorKeyAlreadyUsed`, `ErrorKeyUsageLimit`, `ErrorKeyInventoryFull`, `ErrorKeyUnknown`) and a detail string
+
+### Invariants
+- `RedeemableAt(now)` runs the validation ladder answerable from the coupon row alone (active, window, usage-limit fast path), first failure wins, in that exact order
+- The one-time-per-account rule is enforced at the database level by a unique index on `(tenant_id, coupon_id, account_id)` in `coupon_redemptions`; the ladder check is only a friendly-error fast path
+- A coupon must grant at least one reward; each reward must validate for its type
+- `expiresAt` must be after `startsAt` when both are set; `maxUses` cannot be set below `redemptionCount`
+- Coupon codes are secrets: never logged or used as a metric label; only their length is ever recorded
+- Redemption attempts are rate-limited per account via the Limiter (Redis-backed, fails open on a Redis outage); a rate-limited attempt is reported to the player as `ErrorKeyInvalidCode` (not a distinct "rate limited" result) so an attacker cannot distinguish a real code from a blocked attempt
+- Deleting a coupon that has redemptions is refused (`ErrHasRedemptions`)
+- A coupon created inactive stays inactive: the entity carries no GORM column default for `active`
+
+### State Transitions
+- `RedeemAndEmit`: Resolves the redeeming account, checks the rate limiter, runs the redemption ladder inside one database transaction (code exists, redeemable, no prior redemption, locker capacity pre-flight, atomic use reservation, redemption row insert, reward grants), and emits `COUPON_REDEEMED` on success (via the outbox) or `COUPON_FAILED` on rejection (via the direct producer path)
+- Reservation (`reserveUse`) is one atomic conditional `UPDATE` on `redemption_count`, so two concurrent redemptions of a `maxUses = 1` coupon cannot both succeed
+
+### Processors
+
+#### Processor
+- `RedeemAndEmit`: Runs one redemption attempt end to end
+- `GetById`/`GetByCode`: Retrieves a coupon
+- `AllProvider`: Pages coupons with optional filters (code, active, batchId, expiresBefore/After)
+- `ValidateRewards`: Confirms every `CASH_ITEM` reward's serial number resolves to a real commodity
+- `Create`/`Update`/`Delete`: Admin CRUD
+
+---
+
+## Coupon Reward
+
+### Responsibility
+Represents the discriminated reward bundle a coupon grants.
+
+### Core Models
+
+#### Reward
+- `Type`: `TypeCurrency` (`"CURRENCY"`) or `TypeCashItem` (`"CASH_ITEM"`)
+- Currency reward: `currency` (uint32, following wallet's 1=credit/2=points/other=prepaid convention), `amount`
+- Cash item reward: `serialNumber` (commodity serial), `quantity`
+
+#### Rewards
+- `[]Reward`, persisted as one jsonb document; `CashItemCount()` returns the number of locker slots the bundle needs
+
+### Invariants
+- A currency reward's amount must be positive; a cash item reward's serial number and quantity must both be non-zero
+- A bundle must contain at least one reward
+
+### Granters (reward application)
+- `currencyGranter`: Credits the redeeming account's wallet via `wallet.Award`
+- `cashItemGranter`: Re-checks locker capacity inside the transaction, resolves the commodity, and creates a flattened asset; refuses to grant a pet-classified commodity (a coupon cannot create the accompanying pet row)
+
+---
+
+## Coupon Batch
+
+### Responsibility
+Generates a bulk set of single-use coupons sharing a common reward bundle and description, in one all-or-nothing operation.
+
+### Core Models
+
+#### Model
+- `id`, `description`, `requestedCount`, `generatedCount`, `redeemedCount` (computed at read time from `coupon_redemptions`, never stored), `createdAt`
+
+### Invariants
+- `generatedCount` always equals `requestedCount` on a successful batch: a code collision retries (up to a bound) rather than being skipped, so a short batch would indicate a bug
+- Every generated coupon gets `maxUses = 1`
+- The batch row and every generated coupon are inserted in one transaction; the whole batch rolls back if any code cannot be produced
+
+### Processors
+
+#### Processor
+- `GetById`/`AllProvider`: Retrieves batches, decorated with `redeemedCount`
+- `Generate`: Creates the batch row and its coupons, returning the batch and the plaintext generated codes (returned only on this call; never re-served by a later read)
+
+---
+
+## Coupon Redemption
+
+### Responsibility
+Read-only audit trail of successful coupon redemptions. No route creates, edits, or deletes a redemption; redemptions are written only by `Coupon.RedeemAndEmit`.
+
+### Core Models
+
+#### Model
+- `id`, `couponId`, `accountId`, `characterId`, `transactionId`, `rewardsGranted` (reward.Rewards snapshot at redemption time, never re-derived from the coupon's current bundle), `redeemedAt`
+
+### Invariants
+- Uniqueness on `(tenant_id, coupon_id, account_id)` is the database-level one-time-per-account enforcement
+- `rewardsGranted` is a snapshot: a later edit to the coupon's bundle never rewrites redemption history
+
+### Processors
+
+#### Processor
+- `ByCouponId`/`ByAccountId`: Paged listing of redemptions
+- `CountByBatchId`: Counts redemption rows across every coupon in a batch (a row count, not a sum of `redemption_count`, since `releaseUse` can decrement that column without deleting a row)
 
 ---
 

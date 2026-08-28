@@ -38,6 +38,10 @@ machine has exactly one implementation.
 | State | RouteState | The state at `now` |
 | NextState | RouteState | The state at `NextAt`; empty when `State` is `out_of_service` |
 | NextAt | time.Time | Zero when `State` is `out_of_service` |
+| TripId | uuid.UUID | The trip the transition's state is about. Zero when `State` is `out_of_service` |
+| DepartedAt | time.Time | `TripId`'s departure time-of-day materialized onto the calendar day it actually departed |
+| ArrivedTripId | uuid.UUID | The trip whose arrival is the most recent at or before `now`. Zero when no trip has arrived as of `now` |
+| ArrivedDepartedAt | time.Time | `ArrivedTripId`'s materialized departure instant |
 
 Schedule comparisons are time-of-day only (the schedule is computed once per
 reconcile and carries that day's date). `NextAt` is the governing time-of-day
@@ -72,6 +76,15 @@ note above).
 | boardingClosed | time.Time | Time boarding closes |
 | departure | time.Time | Departure time |
 | arrival | time.Time | Arrival time |
+
+### VoyageId (transport/voyage.go)
+
+`VoyageId(t, routeId, tripId, departedAt)` derives the durable identity of one
+trip of one route on one day as a pure function of the tenant id, route id,
+trip id, and the trip's departure date (`departedAt` truncated to its own
+calendar day). It is not stored state; it is re-derivable identically after a
+restart, a Redis flush of the route registry, or by two replicas evaluating
+independently.
 
 ### RouteState (transport/state.go)
 
@@ -224,6 +237,7 @@ State transitions trigger character warping:
 | GetRoute | Returns an instance route by ID |
 | IsTransitMap | Checks if a map ID is an instance transit map |
 | GetRouteByTransitMap | Returns an instance route by transit map ID |
+| GetInstancesByRoute | Returns all active instances for a route |
 | StartTransport | Starts an instance transport for a character |
 | StartTransportAndEmit | Starts transport and emits Kafka events |
 | HandleMapEnter | Handles character entering a map: cancels transport (emits CANCELLED, reason MAP_EXIT) if entering a non-transit map while in transport, or emits TRANSIT_ENTERED if entering a transit map belonging to the character's route |

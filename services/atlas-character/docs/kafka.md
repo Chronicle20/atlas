@@ -10,6 +10,7 @@
 | Session Status Event | EVENT_TOPIC_SESSION_STATUS | Event |
 | Drop Status Event | EVENT_TOPIC_DROP_STATUS | Event |
 | Account Status Event | EVENT_TOPIC_ACCOUNT_STATUS | Event |
+| Teleport Rock Command | COMMAND_TOPIC_TELEPORT_ROCK | Command |
 
 ## Topics Produced
 
@@ -19,6 +20,9 @@
 | Character Command | COMMAND_TOPIC_CHARACTER | Command |
 | Skill Command | COMMAND_TOPIC_SKILL | Command |
 | Drop Command | COMMAND_TOPIC_DROP | Command |
+| Teleport Rock Status Event | EVENT_TOPIC_TELEPORT_ROCK_STATUS | Event |
+| Character Pending Change Event | EVENT_TOPIC_CHARACTER_PENDING_CHANGE | Event |
+| Saga Command | COMMAND_TOPIC_SAGA | Command |
 
 ## Message Types
 
@@ -58,6 +62,13 @@
 | Type | Message Struct | Description |
 |------|---------------|-------------|
 | (none) | MovementCommand | Character movement update |
+
+#### Teleport Rock Command Topic
+
+| Type | Message Struct | Description |
+|------|---------------|-------------|
+| ADD_MAP | Command[AddMapCommandBody] | Register the character's current map on a saved-map list |
+| REMOVE_MAP | Command[RemoveMapCommandBody] | Remove a map from a saved-map list |
 
 ### Events Consumed
 
@@ -118,6 +129,20 @@ Every status event declared by this service is emitted by some processor path; t
 
 `CHANNEL_CHANGED` and `MAP_CHANGED` are not declared by this service. `atlas-maps` owns character location state and is the sole emitter of both events.
 
+#### Teleport Rock Status Event Topic
+
+| Type | Message Struct | Description |
+|------|---------------|-------------|
+| LIST_UPDATED | StatusEvent[ListUpdatedStatusBody] | A map was registered on or removed from a list |
+| ERROR | StatusEvent[ErrorStatusBody] | A registration or removal was rejected |
+
+#### Character Pending Change Event Topic
+
+| Type | Message Struct | Description |
+|------|---------------|-------------|
+| PENDING_CHANGE_CREATED | StatusEvent[CreatedEventBody] | A pending change request was accepted |
+| PENDING_CHANGE_RESOLVED | StatusEvent[ResolvedEventBody] | A pending change transitioned to a terminal status |
+
 ### Commands Produced
 
 #### Character Command Topic
@@ -141,6 +166,12 @@ Every status event declared by this service is emitted by some processor path; t
 | REQUEST_PICK_UP | Command[RequestPickUpCommandBody] | Request drop pickup |
 | CANCEL_RESERVATION | Command[CancelReservationCommandBody] | Cancel drop reservation |
 
+#### Saga Command Topic
+
+| Type | Message Struct | Description |
+|------|---------------|-------------|
+| (saga type field, shared atlas-saga contract) | sharedsaga.Saga | Cash-shop coupon destroy/award/consume-all steps for a pending change; five-step WorldTransfer saga (validate, leave guild, leave party, sever buddies, change world) |
+
 ## Account Status Event Messages
 
 **StatusEvent**
@@ -159,3 +190,7 @@ status: string
 - Account deletion events trigger cascade deletion of all characters for the account
 - The Character Command topic is both consumed and produced by this service (AWARD_LEVEL is self-produced when AWARD_EXPERIENCE crosses a level threshold)
 - Most database-mutating character operations emit through a transactional outbox (atlas-outbox): the status event is committed in the same database transaction as the row mutation and drained to Kafka asynchronously. LOGIN, LOGOUT, and TRANSFER_AP's resulting events are produced directly (not outbox-backed)
+- Teleport Rock commands are keyed by characterId; LIST_UPDATED/ERROR events are produced directly (not outbox-backed)
+- Pending Change events and Saga commands are outbox-backed, committed in the same transaction as the pending-change row mutation
+- Pending Change events are keyed by characterId; Saga commands are keyed by the saga's transaction ID (derived from the pending-change record ID and a purpose string, distinct per saga)
+- A pending-change expiry sweep runs as a background task on a fixed interval, resolving every PENDING request whose deadline has passed through the same transition guard as an operator cancel

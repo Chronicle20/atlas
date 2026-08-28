@@ -213,6 +213,94 @@ Retrieves the seed status for the `npc-conversations:quests` catalog group for t
 - Error conditions:
   - 500: Internal error reading status
 
+### GET /items/conversations
+
+Retrieves all item conversation definitions for the current tenant.
+
+- Parameters:
+  - `page[number]`, `page[size]` (query, optional) — Pagination
+- Request model: None
+- Response model: `[]item.RestModel` (JSON:API, resource type `"item-conversations"`)
+- Error conditions:
+  - 400: Invalid `page[number]`/`page[size]`
+  - 500: Internal error
+
+### GET /items/conversations/{conversationId}
+
+Retrieves a specific item conversation definition by UUID.
+
+- Parameters:
+  - `conversationId` (path, UUID) — Conversation ID
+- Request model: None
+- Response model: `item.RestModel` (JSON:API, resource type `"item-conversations"`)
+- Error conditions:
+  - 404: Item conversation not found
+  - 500: Internal error
+
+### POST /items/conversations
+
+Creates a new item conversation definition.
+
+- Parameters: None
+- Request model: `item.RestModel` (JSON:API, resource type `"item-conversations"`)
+  - `itemId` (uint32, required)
+  - `npcId` (uint32, optional metadata)
+  - `scriptName` (string, optional metadata)
+  - `startState` (string, required)
+  - `states` ([]RestStateModel, required, at least one)
+- Response model: `item.RestModel` (JSON:API, resource type `"item-conversations"`)
+- Error conditions:
+  - 400: `itemId` not a scripted item (per `atlas-constants/item` classification), or invalid input (extraction failure)
+  - 500: Internal error
+
+### PATCH /items/conversations/{conversationId}
+
+Updates an existing item conversation definition.
+
+- Parameters:
+  - `conversationId` (path, UUID) — Conversation ID
+- Request model: `item.RestModel` (JSON:API, resource type `"item-conversations"`)
+- Response model: `item.RestModel` (JSON:API, resource type `"item-conversations"`)
+- Error conditions:
+  - 400: `itemId` not a scripted item, or invalid input
+  - 500: Internal error
+
+### DELETE /items/conversations/{conversationId}
+
+Deletes an item conversation definition (soft delete).
+
+- Parameters:
+  - `conversationId` (path, UUID) — Conversation ID
+- Request model: None
+- Response model: None (204 No Content)
+- Error conditions:
+  - 500: Internal error
+
+### POST /items/conversations/seed
+
+Deletes all item conversations for the current tenant and reloads them from the `npc-conversations/items` path of the seed catalog rooted at `SEED_CATALOG_ROOT`. Runs asynchronously in the background; the request returns immediately.
+
+- Parameters: None
+- Request model: None
+- Response model: None (202 Accepted, empty body)
+- Error conditions: None (failures are recorded asynchronously and surfaced via `GET /items/conversations/seed/status`)
+
+### GET /items/conversations/seed/status
+
+Retrieves the seed status for the `npc-conversations:items` catalog group for the current tenant.
+
+- Parameters: None
+- Request model: None
+- Response model: `Status` (JSON)
+  - `groupName` (string)
+  - `subdomains` (map of subdomain name to `{count, updatedAt}`)
+  - `updatedAt` (timestamp, nullable)
+  - `catalogRevision` (string)
+  - `tenantSeededRevision` (string, nullable)
+  - `tenantSeededAt` (timestamp, nullable)
+- Error conditions:
+  - 500: Internal error reading status
+
 ### GET /items/{itemId}/recipes
 
 List recipes whose output is `itemId`. See `recipes.md`.

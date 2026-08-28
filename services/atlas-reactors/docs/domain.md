@@ -38,9 +38,20 @@ Represents reactor game data retrieved from atlas-data service.
 | name        | string                    | Reactor name from game data          |
 | tl          | point.Model               | Top-left bounding point              |
 | br          | point.Model               | Bottom-right bounding point          |
+| activateByTouch | bool                  | Whether the reactor activates on character touch rather than hit |
+| touchAreaInfo | map[int8]area.Model     | Per-state touch-detection rectangle  |
 | stateInfo   | map[int8][]state.Model    | State transition definitions         |
 | timeoutInfo | map[int8]int32            | Timeout per state                    |
 | timeoutNextStateInfo | map[int8]int8    | State to transition to when a state's timer fires |
+
+### area.Model
+
+Represents a touch-detection rectangle for a reactor state.
+
+| Field | Type         | Description               |
+|-------|--------------|----------------------------|
+| tl    | point.Model  | Top-left bounding point   |
+| br    | point.Model  | Bottom-right bounding point |
 
 ### state.Model
 
@@ -94,13 +105,31 @@ Composite key for map-scoped operations.
 - Item reactor activation type is identified by state event type 100
 - Reactors with state event type 100 persist at their final state rather than being destroyed
 - State event type 101 (timer-driven) reactors persist at their final state (including terminal states)
+- A reactor only reacts to a touch if `activateByTouch` is set and its current state has a configured touch area
+- A character may hold at most one touch latch per reactor at a time; a second touch enter for the same character/reactor pair is ignored until the character leaves
+- All touch latches for a reactor are cleared when the reactor is removed from the registry
 
 ## State Transitions
 
-Reactors advance through states via two mechanisms:
+Reactors advance through states via three mechanisms:
 
 1. **Hit** — a player attack triggers an event on the current state. The matched event's `nextState` becomes the reactor's new state. A hit can deliver a skill id; if a state's event lists `activeSkills`, only a matching skill id (or an event with empty `activeSkills`) is eligible.
 2. **State timeout** — if a state has a `timeout` set and a paired `timeoutNextState`, an in-process `time.AfterFunc` timer advances the reactor automatically. Timers are cancelled on hit, destroy, or teardown.
+3. **Touch** — for reactors with `activateByTouch` set, a character entering the current state's configured touch area triggers the state's first event (no skill gating). See "Touch-driven reactors" below.
+
+### Touch-driven reactors
+
+A TOUCH command carries `touching` (enter or leave) rather than a skill id.
+
+- On leave (`touching = false`), the character's touch latch for the reactor is released and no state transition occurs.
+- On enter (`touching = true`), the following checks are evaluated in order; any failure is a no-op:
+  1. The reactor exists.
+  2. The reactor's game data has `activateByTouch` set.
+  3. The reactor's current state has a configured touch area.
+  4. The touching character's position (retrieved from atlas-character) falls within the touch area, offset by the reactor's (x, y).
+  5. The character does not already hold a touch latch for this reactor.
+- On success, any pending state-timeout timer is cancelled, a TOUCH command is emitted to atlas-reactor-actions, and the state advances using the current state's first configured event (its `nextState` and `type`), following the same end-state persist/destroy handling as a Hit.
+- Touch does not use the skill-gating selection (`activeSkills`) that Hit uses.
 
 ### Event-type taxonomy
 
@@ -183,6 +212,18 @@ Processes a hit on a reactor:
    - Otherwise, triggers and destroys
 7. If next state has further transitions, updates state, arms state-timeout timer if applicable, and emits HIT status event
 
+### Touch
+
+Processes a TOUCH command:
+1. On leave (`touching = false`), releases the character's touch latch for the reactor and returns
+2. On enter, retrieves the reactor; if the reactor's game data does not have `activateByTouch` set, or the current state has no configured touch area, no-ops
+3. Retrieves the touching character's position from atlas-character; no-ops on error
+4. Compares the character's position against the reactor's touch area (offset by the reactor's position); no-ops if outside
+5. Attempts to latch the character to the reactor; no-ops if a latch already exists
+6. Cancels any pending state-timeout timer
+7. Emits TOUCH command to atlas-reactor-actions
+8. If the current state has no configured events, no-ops; otherwise advances state using the first configured event
+
 ### Trigger
 
 Emits a TRIGGER command to atlas-reactor-actions without destroying the reactor.
@@ -220,6 +261,10 @@ Cancels all pending item-reactor activations and destroys all reactors during se
 ### data.GetById
 
 Retrieves reactor game data from atlas-data service by classification ID.
+
+### character.Position
+
+Retrieves a character's (x, y) world position from atlas-character by character ID. Used by the Touch processor to evaluate whether a touching character is within a reactor's touch area.
 
 ## Background Tasks
 

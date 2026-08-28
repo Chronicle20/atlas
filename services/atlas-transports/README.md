@@ -28,6 +28,7 @@ Scheduled routes transition through states (awaiting return, open entry, locked 
 | EVENT_TOPIC_INSTANCE_TRANSPORT | Kafka topic for instance transport events | - |
 | COMMAND_TOPIC_CHARACTER | Kafka topic for character commands | - |
 | COMMAND_TOPIC_INSTANCE_TRANSPORT | Kafka topic for instance transport commands | - |
+| COMMAND_TOPIC_CONSUMABLE | Kafka topic for consumable effect commands | - |
 | EVENT_TOPIC_CONFIGURATION_STATUS | Kafka topic for configuration status events | - |
 | TENANTS | Base URL for tenants service | - |
 | MAPS | Base URL for maps service | - |

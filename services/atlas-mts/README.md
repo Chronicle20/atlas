@@ -25,8 +25,9 @@ service only reads a cash-shop balance for a best-effort pre-check.
   ITC serial counter.
 - Kafka — command/status topics for the high-level MTS domain
   (`COMMAND_TOPIC_MTS` / `EVENT_TOPIC_MTS_STATUS`), the custody sub-protocol
-  (`COMMAND_TOPIC_MTS_CUSTODY` / `EVENT_TOPIC_MTS_CUSTODY_STATUS`), and the
-  shared saga orchestrator (`COMMAND_TOPIC_SAGA`). See
+  (`COMMAND_TOPIC_MTS_CUSTODY` / `EVENT_TOPIC_MTS_CUSTODY_STATUS`), the
+  shared saga orchestrator (`COMMAND_TOPIC_SAGA`), and a consumed feed of
+  atlas-character's status events (`EVENT_TOPIC_CHARACTER_STATUS`). See
   [docs/kafka.md](docs/kafka.md).
 - atlas-cashshop (REST) — the authoritative wallet: read-only balance checks
   for the buy pre-check and the wallet passthrough endpoint. All balance
@@ -37,6 +38,8 @@ service only reads a cash-shop balance for a best-effort pre-check.
   increment), fetched and cached by the configuration registry.
 - atlas-saga orchestrator (via Kafka) — drives the multi-step
   list/buy/take-home/bid-escrow flows and their compensation.
+- atlas-character (via Kafka) — publishes the `NAME_CHANGED` status event
+  atlas-mts consumes to keep a listing's stored `seller_name` current.
 - atlas-outbox — transactional-outbox library backing the atomic
   local-write-plus-Kafka-emit pattern used by the command handlers; a
   background drainer (leader-gated by a Postgres advisory lock) publishes
@@ -54,8 +57,9 @@ service only reads a cash-shop balance for a best-effort pre-check.
 - Kafka topic-name environment variables corresponding to the tokens
   documented in [docs/kafka.md](docs/kafka.md) (`COMMAND_TOPIC_MTS`,
   `EVENT_TOPIC_MTS_STATUS`, `COMMAND_TOPIC_MTS_CUSTODY`,
-  `EVENT_TOPIC_MTS_CUSTODY_STATUS`, `COMMAND_TOPIC_SAGA`), plus the
-  consumer group id (resolved via `consumergroup.Resolve("MTS Service")`).
+  `EVENT_TOPIC_MTS_CUSTODY_STATUS`, `COMMAND_TOPIC_SAGA`,
+  `EVENT_TOPIC_CHARACTER_STATUS`), plus the consumer group id (resolved via
+  `consumergroup.Resolve("MTS Service")`).
 - Standard `atlas-service` / `atlas-database` / `atlas-tracing` bootstrap
   environment variables apply, as in other Atlas services.
 

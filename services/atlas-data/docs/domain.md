@@ -9,7 +9,10 @@ The data domain manages static game data that is parsed from WZ archives and ser
 ### Core Models
 
 #### Cash Item
-Represents cash shop item data with slot limits, spec modifiers, and time windows.
+Represents cash shop item data with slot limits, protect time, item-expiration-extender grant (addTime, maxDays), pet-revival lifespan (life), meso-sack award amount, state-change item, remote-merchant NPC target, BGM path, spec modifiers, time windows, pet skills, trade block/only/trade-available flags, and scissors karma type.
+
+#### Cash Package
+Represents a cash-shop package's serial numbers.
 
 #### Character Template
 Defines character creation templates with faces, hair styles, hair colors, skin colors, tops, bottoms, shoes, and weapons.
@@ -21,10 +24,10 @@ Represents commodity items with item ID, count, price, period, priority, gender,
 Represents consumable items with trade properties, price, slot limits, level requirements, and spec modifiers including HP/MP recovery, stat buffs, morph effects, monster summons, skills, rewards, and rechargeable status.
 
 #### Equipment
-Represents equipment statistics including strength, dexterity, intelligence, luck, HP, MP, weapon attack, magic attack, weapon defense, magic defense, accuracy, avoidability, speed, jump, slots, cash status, price, time-limited status, replace item ID, replace message, and bonus experience tiers. Equipment has related equipment slots.
+Represents equipment statistics including strength, dexterity, intelligence, luck, HP, MP, weapon attack, magic attack, weapon defense, magic defense, accuracy, avoidability, speed, jump, slots, cash status, price, time-limited status, trade block, only status, trade-available karma type, not-extend status, replace item ID, replace message, and bonus experience tiers. Equipment has related equipment slots.
 
 #### ETC Item
-Represents ETC items with price, unit price, slot limits, time-limited status, replace item ID, and replace message.
+Represents ETC items with price, unit price, slot limits, time-limited status, trade block, only status, trade-available karma type, replace item ID, and replace message.
 
 #### Face
 Represents face cosmetic data with cash status.
@@ -72,10 +75,10 @@ Represents quest requirements with NPC ID, level range, fame minimum, meso range
 Represents quest actions with NPC ID, experience, money, fame, item rewards, skill rewards, next quest, buff item ID, interval, and level minimum.
 
 #### Reactor
-Represents reactor data with name, bounding box (TL, BR), state info mapping state IDs to reactor states, and timeout info.
+Represents reactor data with name, bounding box (TL, BR), touch-activation status, touch area info mapping state IDs to touch bounding boxes, state info mapping state IDs to reactor states, and timeout info.
 
 #### Setup
-Represents setup items with price, slot max, recovery HP, trade block, not sale, required level, distance (X, Y), max diff, direction, time-limited status, replace item ID, and replace message.
+Represents setup items with price, slot max, recovery HP, trade block, only status, trade-available karma type, not sale, required level, distance (X, Y), max diff, direction, time-limited status, replace item ID, and replace message.
 
 #### Skill
 Represents skill data with name, action status, element type, animation time, and skill effects including stat modifiers, durations, targets, and special properties (including status-up sub-effects and card-item-up bonuses).
@@ -102,10 +105,11 @@ Ingest runs inside a dedicated Kubernetes Job (`MODE=ingest`), created by `POST 
 - `workers.Map` (Map.wz) — map
 - `workers.Character` (Character.wz) — equipment, face, hair, character template
 - `workers.UI` (UI.wz) — world-icon assets only (no documents)
-- `workers.Commodity` (Etc.wz) — commodity
+- `workers.Commodity` (Etc.wz) — commodity, cash package
 
 Each Worker delegates to the same per-type processors as the legacy path:
 - `cash.RegisterCash`
+- `cashpackage.RegisterCashPackage`
 - `templates.RegisterCharacterTemplate`
 - `commodity.RegisterCommodity`
 - `consumable.RegisterConsumable`

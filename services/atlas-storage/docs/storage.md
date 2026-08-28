@@ -31,6 +31,7 @@ Stored items. All item type fields are stored inline in this single table. The r
 | deleted_at | TIMESTAMP | INDEX, NULLABLE | Soft delete timestamp |
 | quantity | UINT32 | | Item count (stackable/cash items) |
 | owner_id | UINT32 | | Owner character (stackable items) |
+| owner | TEXT | NOT NULL, DEFAULT '' | Owner name (stackable items) |
 | flag | UINT16 | | Item flags bitmask (lock, spikes, cold, karma, untradeable) |
 | rechargeable | UINT64 | | Rechargeable amount (consumable items) |
 | strength | UINT16 | | STR stat (equipment) |

@@ -13,6 +13,7 @@ This service uses Redis for volatile storage. No relational database is used.
 | `reactors:map:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` | Set | Per-field index; members are reactor `id` values |
 | `reactor:cd:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}:{classification}:{x}:{y}` | String (TTL) | Cooldown marker; TTL is the reactor's `delay` in milliseconds |
 | `reactor:spot:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}:{classification}:{x}:{y}` | String | Spatial-slot guard; reserved by `TryClaimSpot` to prevent two concurrent CREATE commands from producing duplicate reactors at the same position |
+| `reactor:touch:{tenantId}:{reactorId}` | Hash | Touch latch; each field is a `characterId` currently latched to the reactor's touch area (`1`), set via `SETNX` |
 
 ID allocation does NOT live in this service — see [ID Generation](#id-generation) below.
 
@@ -43,12 +44,14 @@ JSON-serialized `Model` containing:
 
 - Each `reactor:{tenantId}:{id}` is referenced from exactly one `reactors:map:...` set (the field it lives in) AND from `reactors:all` (as a `{tenantId}:{id}` tuple).
 - `reactor:cd:...` and `reactor:spot:...` are coordinate-keyed and live independently of any specific reactor instance — a destroyed reactor's slot/cooldown persists past the reactor's removal so that respawn timing and dedup work correctly across the next CREATE.
+- `reactor:touch:{tenantId}:{reactorId}` is keyed to a specific reactor instance and is deleted whenever that reactor is removed from the registry.
 
 ## Indexes
 
 - `reactors:all` is the cross-tenant teardown sweep index.
 - `reactors:map:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` is the field-scoped query index used by hit/destroy/list paths.
 - Spot and cooldown keys are content-addressed by coordinates and need no separate index.
+- `reactor:touch:{tenantId}:{reactorId}` is content-addressed by reactor id and needs no separate index.
 
 ## Migration Rules
 
@@ -76,3 +79,9 @@ Cooldown keys (`reactor:cd:...`) carry a Redis TTL equal to the reactor's `delay
 `TryClaimSpot` writes a no-TTL value at `reactor:spot:...`. `ReleaseSpot` deletes it (called from `Destroy`, `DestroyInField`, and on Create-failure rollback). `ClearAllSpotsForMap` SCANs and DELs the per-map prefix during teardown.
 
 The guard exists to dedupe concurrent CREATE commands — two racing map-Enter spawns can both observe the same "missing reactor" and both issue CREATE; the first `TryClaimSpot` wins via Redis `SETNX`, the loser logs and returns without creating a duplicate.
+
+### Touch Latch
+
+`TryLatchTouch` writes a no-TTL hash field at `reactor:touch:{tenantId}:{reactorId}` keyed by `characterId`, via Redis `SETNX`. `ClearTouch` deletes one character's field on that character's leave. `ClearAllTouches` (and the equivalent inline delete in `Remove`) deletes the whole hash key when the reactor is removed.
+
+The guard exists to dedupe repeated touch-enter commands for a character already inside a reactor's touch area.

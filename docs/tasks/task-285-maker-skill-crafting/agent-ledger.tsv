@@ -35,3 +35,8 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-28T18:33:55Z	agent	Task 9	packet-implementer	opus	-	-	-	-	DONE	ab31624bd	-	-	-	-
 2026-08-28T18:59:43Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	ab31624bd	CHANGES_REQUIRED	yes	-	-
 2026-08-28T18:59:43Z	agent	Task 9 fix 1	packet-implementer	opus	-	-	-	-	DONE	5d2a2ed52	-	-	-	-
+2026-08-28T20:08:35Z	agent	Tasks 5-9 range	gate	-	-	-	-	-	PASS	00a8c4067	-	-	-	-
+2026-08-28T20:11:26Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE	3ba8a3aff	-	-	-	-
+2026-08-28T20:12:17Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	3ba8a3aff	APPROVED	no	-	-
+2026-08-28T20:22:09Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DONE	b36fff470	-	-	-	-
+2026-08-28T20:28:24Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	DONE	b36fff470	APPROVED_WITH_FINDINGS	no	-	-

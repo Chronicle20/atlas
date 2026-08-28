@@ -27,7 +27,7 @@
           "jobId": 0,
           "class": "Explorer only; no race index exists on this version",
           "verified": true,
-          "note": "CLogin::SendNewCharPacket 0x500545 encodes no race member and no sub-job member; the client cannot select or transmit any ordinal other than Explorer. (1,0) is shown here for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
+          "note": "CLogin::SendNewCharPacket 0x500545 encodes no race member and no sub-job member; the create-character request has no race field at all on this version, so no ordinal other than Explorer exists to select. (1,0) is shown here for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
         }
       ]
     },
@@ -42,7 +42,7 @@
           "jobId": 0,
           "class": "Explorer only; no race index exists on this version",
           "verified": true,
-          "note": "CLogin::SendNewCharPacket 0x5653e9 encodes no race member and no sub-job member. (1,0) shown for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
+          "note": "CLogin::SendNewCharPacket 0x5653e9 encodes no race member and no sub-job member; the create-character request has no race field at all on this version, so no ordinal other than Explorer exists to select. (1,0) shown for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
         }
       ]
     },
@@ -57,14 +57,14 @@
           "jobId": 0,
           "class": "Explorer only; no race index exists on this version",
           "verified": true,
-          "note": "CLogin::SendNewCharPacket 0x5b219a encodes no race member and no sub-job member. (1,0) shown for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
+          "note": "CLogin::SendNewCharPacket 0x5b219a encodes no race member and no sub-job member; the create-character request has no race field at all on this version, so no ordinal other than Explorer exists to select. (1,0) shown for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
         }
       ]
     },
     "gms_v79": {
       "region": "GMS",
       "majorVersion": 79,
-      "verified": true,
+      "verified": false,
       "slots": [
         {
           "raceIndex": 0,
@@ -83,10 +83,10 @@
         {
           "raceIndex": 2,
           "subJobIndex": 0,
-          "jobId": 2000,
+          "jobId": null,
           "class": "Aran-family dialog",
-          "verified": true,
-          "note": "CreateWnd y=207/width=276 match the Aran fingerprint; z=109 here vs 104 from v83 on. Ordinal 3 does not exist on this version -- the switch has only three arms."
+          "verified": false,
+          "note": "Ordinal verified, class by geometry only. CreateWnd y=207/width=276 match the Aran fingerprint; z=109 here vs 104 from v83 on. No class symbol in this IDB, unlike v83. Ordinal 3 does not exist on this version -- the switch has only three arms."
         }
       ]
     },

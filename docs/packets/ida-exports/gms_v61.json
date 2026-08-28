@@ -5298,15 +5298,14 @@
       "calls": []
     },
     "CMapLoadable::OnSetBackEffect": {
-      "address": "",
+      "address": "0x5a8316",
       "direction": "",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
-        }
-      ]
+      "calls": null
+    },
+    "CMapLoadable::OnClearBackEffect": {
+      "address": "0x5a871b",
+      "direction": "",
+      "calls": null
     },
     "CMapLoadable::SetObjectState": {
       "address": "",

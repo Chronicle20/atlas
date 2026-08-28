@@ -6123,6 +6123,11 @@
       "direction": "",
       "calls": null
     },
+    "CMapLoadable::OnClearBackEffect": {
+      "address": "0x5f5f54",
+      "direction": "",
+      "calls": null
+    },
     "CMapLoadable::SetObjectState": {
       "address": "0x5f4087",
       "direction": "",

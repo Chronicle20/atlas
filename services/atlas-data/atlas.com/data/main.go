@@ -14,6 +14,7 @@ import (
 	"atlas-data/equipment"
 	"atlas-data/etc"
 	"atlas-data/item"
+	"atlas-data/itemmake"
 	"atlas-data/job"
 	"atlas-data/jobavailability"
 	data2 "atlas-data/kafka/consumer/data"
@@ -192,6 +193,7 @@ func main() {
 		AddRouteInitializer(cash.InitResource(db)(GetServer())).
 		AddRouteInitializer(commodity.InitResource(db)(GetServer())).
 		AddRouteInitializer(cashpackage.InitResource(db)(GetServer())).
+		AddRouteInitializer(itemmake.InitResource(db)(GetServer())).
 		AddRouteInitializer(etc.InitResource(db)(GetServer())).
 		AddRouteInitializer(item.InitStringResource(db)(GetServer())).
 		AddRouteInitializer(setup.InitResource(db)(GetServer())).

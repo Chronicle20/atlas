@@ -14,6 +14,10 @@ const (
 	CommandTypeWeatherStart = "WEATHER_START"
 
 	CommandTypePlayJukebox = "PLAY_JUKEBOX"
+
+	CommandTypeSetEnvironmentState = "SET_ENVIRONMENT_STATE"
+
+	CommandTypeResetEnvironment = "RESET_ENVIRONMENT"
 )
 
 type Command[E any] struct {
@@ -37,3 +41,11 @@ type PlayJukeboxCommandBody struct {
 	PlayerName string `json:"playerName"`
 	DurationMs uint32 `json:"durationMs"`
 }
+
+type SetEnvironmentStateCommandBody struct {
+	Kind  string `json:"kind"`
+	Name  string `json:"name"`
+	State uint32 `json:"state"`
+}
+
+type ResetEnvironmentCommandBody struct{}

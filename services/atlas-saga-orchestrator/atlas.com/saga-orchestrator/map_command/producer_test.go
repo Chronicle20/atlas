@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 func TestPlayJukeboxCommandProvider(t *testing.T) {
@@ -37,4 +38,61 @@ func TestPlayJukeboxCommandProvider(t *testing.T) {
 	assert.Equal(t, uint32(5100000), c.Body.ItemId)
 	assert.Equal(t, "Chronicle", c.Body.PlayerName)
 	assert.Equal(t, uint32(45000), c.Body.DurationMs)
+}
+
+func TestSetEnvironmentStateCommandProvider(t *testing.T) {
+	transactionId := uuid.New()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910010000)).SetInstance(uuid.Nil).Build()
+
+	msgs, err := SetEnvironmentStateCommandProvider(transactionId, f, field.ObjectKindObstacle, "obs3", uint32(2))()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	assert.Equal(t, string(producer.CreateKey(int(f.MapId()))), string(msgs[0].Key))
+
+	var c mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &c))
+
+	assert.Equal(t, transactionId, c.TransactionId)
+	assert.Equal(t, world.Id(0), c.WorldId)
+	assert.Equal(t, channel.Id(1), c.ChannelId)
+	assert.Equal(t, _map.Id(910010000), c.MapId)
+	assert.Equal(t, uuid.Nil, c.Instance)
+	assert.Equal(t, mapKafka.CommandTypeSetEnvironmentState, c.Type)
+	assert.Equal(t, "OBSTACLE", c.Body.Kind)
+	assert.Equal(t, "obs3", c.Body.Name)
+	assert.Equal(t, uint32(2), c.Body.State)
+}
+
+func TestResetEnvironmentCommandProvider(t *testing.T) {
+	transactionId := uuid.New()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910010000)).SetInstance(uuid.Nil).Build()
+
+	msgs, err := ResetEnvironmentCommandProvider(transactionId, f)()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	assert.Equal(t, string(producer.CreateKey(int(f.MapId()))), string(msgs[0].Key))
+
+	var c mapKafka.Command[mapKafka.ResetEnvironmentCommandBody]
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &c))
+
+	assert.Equal(t, transactionId, c.TransactionId)
+	assert.Equal(t, world.Id(0), c.WorldId)
+	assert.Equal(t, channel.Id(1), c.ChannelId)
+	assert.Equal(t, _map.Id(910010000), c.MapId)
+	assert.Equal(t, uuid.Nil, c.Instance)
+	assert.Equal(t, mapKafka.CommandTypeResetEnvironment, c.Type)
+}
+
+func TestSetEnvironmentStateCommandProvider_EnvironmentKind(t *testing.T) {
+	transactionId := uuid.New()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910010000)).SetInstance(uuid.Nil).Build()
+
+	msgs, err := SetEnvironmentStateCommandProvider(transactionId, f, field.ObjectKindEnvironment, "obs3", uint32(2))()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	var c mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &c))
+
+	assert.Equal(t, "ENVIRONMENT", c.Body.Kind)
 }

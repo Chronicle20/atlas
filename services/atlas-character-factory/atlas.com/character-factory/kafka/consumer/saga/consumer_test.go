@@ -23,6 +23,7 @@ var emitted *producertest.Capture
 // this package can inspect what the saga-status bridge emitted on
 // EVENT_TOPIC_SEED_STATUS, without a broker.
 func TestMain(m *testing.M) {
+	os.Setenv(string(seedMessage.EnvEventTopicStatus), string(seedMessage.EnvEventTopicStatus))
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

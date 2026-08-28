@@ -32,3 +32,17 @@ func Transform(e BackEffectEntry) (RestModel, error) {
 		Duration: e.Duration,
 	}, nil
 }
+
+// TransformSlice maps a slice of domain BackEffectEntry values to their REST
+// projections. Returns the first transform error encountered, if any.
+func TransformSlice(es []BackEffectEntry) ([]RestModel, error) {
+	out := make([]RestModel, 0, len(es))
+	for _, e := range es {
+		rm, err := Transform(e)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, rm)
+	}
+	return out, nil
+}

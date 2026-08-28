@@ -35,15 +35,11 @@ func handleGetBackEffectsInMap(d *rest.HandlerDependency, c *rest.HandlerContext
 					return func(w http.ResponseWriter, r *http.Request) {
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						entries := NewProcessor(d.Logger(), d.Context()).GetActive(f)
-						res := make([]RestModel, 0, len(entries))
-						for _, e := range entries {
-							rm, err := Transform(e)
-							if err != nil {
-								d.Logger().WithError(err).Errorf("Creating REST model.")
-								server.WriteErrorResponse(d.Logger())(w)(err)
-								return
-							}
-							res = append(res, rm)
+						res, err := TransformSlice(entries)
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Creating REST model.")
+							server.WriteErrorResponse(d.Logger())(w)(err)
+							return
 						}
 						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 					}

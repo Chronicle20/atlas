@@ -300,24 +300,25 @@ Five distinct carousels, plus one unverified column:
    without checking; only the ordinal count is established.
 5. **`race5`** — `0 = Resistance, 1 = Explorer (subJob 1 = Dual Blade), 2 = Cygnus, 3 = Aran,
    4 = Evan`. Version key: `gms_95`. Evidence: `CLogin::Update` `0x5dee90` / jump table
-   `0x5df54f`, `CUINewCharRaceSelect::SelectRaceButton` `0x5f4d60`.
+   `0x5df54f`, `CUINewCharRaceSelect::SelectRaceButton` `0x5f4d60`. Ordinal 0 (Resistance/Citizen)
+   now resolves to `job.Id = 3000` — **human-supplied, not IDA-derived** (see "New job constants
+   required" above); it is no longer an open question.
 6. **`unverified`** — `gms_12`. No binary. Its single `(1,0)` slot is common to every carousel
    above that has a race index, so it is insensitive to this whole question.
 
 ### New job constants required (Task 4)
 
-**None derivable from IDA — Task 4 degenerates to a no-op unless a non-IDA source is authorised.**
+**None derivable from IDA.** The v95 client never carries a job id on the character-creation path.
+`CLogin::SendNewCharPacket` (`0x5d7bd0`) encodes name, race, sub-job, 8 avatar-look ids and gender;
+the job is derived server-side from `(race, subJob)`. To make this a sweep rather than a spot
+check, the whole login and login-UI address range `0x5d0000 - 0x5fa000` (51,643 instructions) was
+scanned for the immediates `2001` and `3000` — **zero matches for either**. No Citizen id and no
+Dual Blade id can be read out of this binary. That sweep result stands; nothing below contradicts
+it.
 
-The v95 client never carries a job id on the character-creation path. `CLogin::SendNewCharPacket`
-(`0x5d7bd0`) encodes name, race, sub-job, 8 avatar-look ids and gender; the job is derived
-server-side from `(race, subJob)`. To make this a sweep rather than a spot check, the whole login
-and login-UI address range `0x5d0000 - 0x5fa000` (51,643 instructions) was scanned for the
-immediates `2001` and `3000` — **zero matches for either**. No Citizen id and no Dual Blade id
-can be read out of this binary.
-
-Do not invent a value. If Task 4 needs a Citizen/Resistance beginner id, it must come from WZ
-data or an explicit decision, and that is an open question for the human, not something this
-document supplies.
+**Citizen / Resistance beginner `job.Id` = 3000 — human-supplied, NOT IDA-derived.** Escalated to
+the human because the sweep above found nothing; the human supplied `3000`, task-283 execution
+session, 2026-08-28. This value carries no binary citation and must not be presented as one.
 
 ### Seed rows to correct (Task 7, FR-20) — positive contradictions
 
@@ -352,6 +353,10 @@ These are statements that the currently seeded row **is wrong**, with the eviden
 - `template_gms_95_1.json` needs a `(4,0)` Evan row (see above). **`mapId` unknown from this
   work** — the client holds no map ids; source it from WZ, or from the existing 100030100 value
   currently mis-filed under `(3,0)`.
+- The `(0,0)` Resistance/Citizen row's `mapId` is **310010000** — **human-supplied, NOT
+  IDA-derived**, same citation as the job id above (task-283 execution session, 2026-08-28). The
+  client carries no map ids on this path (see the v84/v87 divergence note below), so this value
+  has no binary source and must not be presented as one.
 
 No other column is missing a row: v79/v83 seed exactly the three ordinals the client branches on,
 and v84/v87/v92/jms_185 seed exactly four.

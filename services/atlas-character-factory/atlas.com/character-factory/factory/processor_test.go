@@ -982,15 +982,22 @@ func TestFromIndex_PreBigBangFrozen(t *testing.T) {
 		expectOk    bool
 	}{
 		{"gms_12/1.0", "GMS", 12, 1, 1, 0, job.BeginnerId, true},
-		{"gms_48/0.0", "GMS", 48, 1, 0, 0, job.NoblesseId, true},
+		// gms_48/61/72 (0,0) and (2,0): findings.md positively contradicts these rows.
+		// CLogin::SendNewCharPacket encodes no race member and no sub-job member at all on
+		// these three versions (0x500545/0x5653e9/0x5b219a), so a client on them cannot
+		// select or transmit any ordinal other than (1,0) Explorer. Ruling R-5 (task-283):
+		// these six rows flip from the version-blind mapper's stale ok=true to the
+		// version-aware mapper's correct ok=false; the "no-race" carousel legitimately
+		// contains only (1,0).
+		{"gms_48/0.0", "GMS", 48, 1, 0, 0, 0, false},
 		{"gms_48/1.0", "GMS", 48, 1, 1, 0, job.BeginnerId, true},
-		{"gms_48/2.0", "GMS", 48, 1, 2, 0, job.LegendId, true},
-		{"gms_61/0.0", "GMS", 61, 1, 0, 0, job.NoblesseId, true},
+		{"gms_48/2.0", "GMS", 48, 1, 2, 0, 0, false},
+		{"gms_61/0.0", "GMS", 61, 1, 0, 0, 0, false},
 		{"gms_61/1.0", "GMS", 61, 1, 1, 0, job.BeginnerId, true},
-		{"gms_61/2.0", "GMS", 61, 1, 2, 0, job.LegendId, true},
-		{"gms_72/0.0", "GMS", 72, 1, 0, 0, job.NoblesseId, true},
+		{"gms_61/2.0", "GMS", 61, 1, 2, 0, 0, false},
+		{"gms_72/0.0", "GMS", 72, 1, 0, 0, 0, false},
 		{"gms_72/1.0", "GMS", 72, 1, 1, 0, job.BeginnerId, true},
-		{"gms_72/2.0", "GMS", 72, 1, 2, 0, job.LegendId, true},
+		{"gms_72/2.0", "GMS", 72, 1, 2, 0, 0, false},
 		{"gms_79/0.0", "GMS", 79, 1, 0, 0, job.NoblesseId, true},
 		{"gms_79/1.0", "GMS", 79, 1, 1, 0, job.BeginnerId, true},
 		{"gms_79/2.0", "GMS", 79, 1, 2, 0, job.LegendId, true},
@@ -1017,13 +1024,12 @@ func TestFromIndex_PreBigBangFrozen(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create test tenant: %v", err)
 			}
-			tenantModel.WithContext(context.Background(), testTenant)
 
-			// Until Task 5 lands, this asserts against the version-blind mapper directly.
-			// Task 5 rewrites this to job2.FromIndex(testTenant, tc.jobIndex, tc.subJobIndex)
-			// and adds an `ok` assertion against tc.expectOk.
-			jobId := job2.JobFromIndex(tc.jobIndex, tc.subJobIndex)
-			if jobId != tc.expectJobId {
+			jobId, ok := job2.FromIndex(testTenant, tc.jobIndex, tc.subJobIndex)
+			if ok != tc.expectOk {
+				t.Fatalf("ok mismatch: expected %v, got %v", tc.expectOk, ok)
+			}
+			if tc.expectOk && jobId != tc.expectJobId {
 				t.Errorf("jobId mismatch: expected %d, got %d", tc.expectJobId, jobId)
 			}
 		})

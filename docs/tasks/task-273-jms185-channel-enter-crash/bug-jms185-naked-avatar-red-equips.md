@@ -263,6 +263,40 @@ this round with byte-length fixtures.
 Every module-local `go build ./...` / `go test ./...` in `libs/atlas-packet`
 must pass, and no GMS fixture may change by a single byte.
 
+## Resolution
+
+Fixed in **`5e08e8365`**, merged with `origin/main` in **`720a56c36`** and
+pushed to PR 1555. Reviewed by `task-reviewer`:
+**APPROVED_WITH_FINDINGS**, 0 blocking (see
+`reviews/review-bug-jms185-naked-red.md`).
+
+**Confirmed live by the user on the JMS 185 client**: the character renders
+dressed and the equips no longer render red, and double-clicking the character
+no longer kills the client. Both root causes are therefore closed:
+
+- Root cause 1 (`CharacterInfo` 0x0035 eight bytes short) was proven from the
+  binary before the fix and is confirmed by the live re-test.
+- Root cause 2 (`nDurability = 0` on every JMS equip) was only a hypothesis when
+  the fix landed — the red-overlay predicate itself was never located. **The
+  live re-test is what confirms it.** Sending `-1` at the `Decode4` after `nEXP`
+  dresses the avatar and clears the red overlay, which is the behaviour a
+  "broken item" reading of durability 0 predicts. That is behavioural
+  confirmation, not a located predicate; the client function that consumes the
+  field remains unidentified.
+
+The merge with `origin/main` also collapsed latent defect 2 into main's own
+work: #1549 had already added `job.UsesExtendedSP(jobId, region, major)` to
+atlas-constants, and its JMS arm is byte-identical to `sub_5163A2`
+(`jobId/1000 == 3 || jobId/100 == 22 || jobId == EvanId`) — an independent
+derivation reaching the same rule. The local `isJmsExtendedSpJob`/`isEvanJob`
+helpers were deleted in favour of that shared predicate; the JMS test was
+retargeted at it so the codec stays pinned if it is ever edited, and now also
+asserts the GMS v84..91 arm stays Evan-only.
+
+Latent defect 1 (the 15-byte cash-equip shortfall) is fixed and fixture-pinned
+but remains **unexercised live** — character 41 holds no cash equips, so no
+session has yet put a JMS cash equip on the wire.
+
 ## Not yet answered
 
 - **What the two JMS `CharacterInfo` int32s mean.** Stored at `CUIUserInfo+670`

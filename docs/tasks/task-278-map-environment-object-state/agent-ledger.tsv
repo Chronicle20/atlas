@@ -1,0 +1,46 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-28T13:27:37Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	53314be59	-	-	-	-
+2026-08-28T13:28:27Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	53314be59	APPROVED	no	-	-
+2026-08-28T13:29:37Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	1fa1a2b	-	-	-	-
+2026-08-28T13:31:20Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	1fa1a2b93	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-28T13:32:35Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	f730acd	-	-	-	-
+2026-08-28T13:34:57Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	f730acd12	APPROVED	no	-	-
+2026-08-28T13:37:08Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	302ae4c	-	-	-	-
+2026-08-28T13:40:00Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	302ae4cf3	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-28T13:40:02Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	60000
+2026-08-28T13:58:35Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	fb4c53c89	-	-	-	-
+2026-08-28T14:04:39Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	fb4c53c89	APPROVED	no	.superpowers/sdd/plan/task-5-review.md	-
+2026-08-28T14:06:50Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	6c49b6c9b	-	-	-	-
+2026-08-28T14:09:36Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	6c49b6c9b	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan/task-6-review.md	-
+2026-08-28T14:09:44Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE	4355499	-	-	-	-
+2026-08-28T14:16:28Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	435549958	APPROVED	no	.superpowers/sdd/plan/task-7-review.md	-
+2026-08-28T14:17:23Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE	e2dec608a	-	-	-	-
+2026-08-28T14:17:24Z	handoff	after Task 8	-	-	-	-	-	-	-	-	-	-	-	55000
+2026-08-28T14:24:28Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	e2dec608a	APPROVED	no	.superpowers/sdd/plan/task-8-review.md	-
+2026-08-28T15:41:52Z	agent	Task 1-8 gate	verify.sh	-	-	-	-	-	PASS	e2dec608a	-	-	.superpowers/sdd/plan/tmp/gate-9.log	-
+2026-08-28T15:46:13Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DONE	da62898	-	-	-	-
+2026-08-28T15:46:13Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	da62898	APPROVED	no	.superpowers/sdd/plan/task-9-review.md	-
+2026-08-28T15:48:20Z	agent	Task 9 gate	verify.sh	-	-	-	-	-	PASS	da62898	-	-	.superpowers/sdd/plan/tmp/gate-10.log	-
+2026-08-28T15:55:00Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE	6218d31ea	-	-	-	-
+2026-08-28T15:55:00Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	6218d31ea	APPROVED	no	.superpowers/sdd/plan/task-10-review.md	-
+2026-08-28T15:57:13Z	agent	Task 10 gate	verify.sh	-	-	-	-	-	PASS	6218d31ea	-	-	.superpowers/sdd/plan/tmp/gate-11.log	-
+2026-08-28T16:01:43Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DONE	f2d466d	-	-	-	-
+2026-08-28T16:01:43Z	handoff	after Task 11	-	-	-	-	-	-	-	-	-	-	-	90000
+2026-08-28T16:03:18Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	DONE	f2d466d	APPROVED	no	.superpowers/sdd/plan/task-11-review.md	-
+2026-08-28T16:20:15Z	agent	Task 11 gate	verify.sh	-	-	-	-	-	PASS	f2d466dba	-	-	.superpowers/sdd/plan/tmp/gate-12.log	-
+2026-08-28T16:23:25Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	DONE	ec5240b	-	-	-	-
+2026-08-28T16:24:24Z	agent	Task 12 gate	verify.sh	-	-	-	-	-	PASS	ec5240bff	-	-	.superpowers/sdd/plan/tmp/gate-13.log	-
+2026-08-28T16:25:33Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	DONE	ec5240bff	APPROVED	no	.superpowers/sdd/plan/task-12-review.md	-
+2026-08-28T16:26:50Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	DONE	aedaa76	-	-	-	-
+2026-08-28T16:28:15Z	agent	Task 13 gate	verify.sh	-	-	-	-	-	PASS	aedaa7607	-	-	.superpowers/sdd/plan/tmp/gate-14.log	-
+2026-08-28T16:28:50Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	DONE	aedaa7607	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan/task-13-review.md	-
+2026-08-28T16:30:31Z	agent	Task 14	task-implementer	sonnet	-	-	-	-	DONE	68a4e1c	-	-	-	-
+2026-08-28T16:32:14Z	agent	Task 14	task-reviewer	sonnet	-	-	-	-	DONE	68a4e1cce	APPROVED	no	.superpowers/sdd/plan/task-14-review.md	-
+2026-08-28T17:32:44Z	agent	Final flagless gate (attempt 1)	task-verifier	haiku	-	-	-	-	ERROR	68a4e1cce	-	-	-	-
+2026-08-28T17:35:33Z	agent	Plan adherence 1-7	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	68a4e1cce	APPROVED	no	docs/tasks/task-278-map-environment-object-state/audit-tasks-1-7.md	-
+2026-08-28T17:37:58Z	agent	Plan adherence 8-14	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	68a4e1cce	APPROVED	no	docs/tasks/task-278-map-environment-object-state/audit-tasks-8-14.md	-
+2026-08-28T17:40:39Z	agent	Backend audit maps+orchestrator	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	68a4e1cce	CHANGES_REQUIRED	yes	docs/tasks/task-278-map-environment-object-state/audit-maps-orchestrator.md	-
+2026-08-28T17:40:40Z	agent	Final flagless gate (attempt 2)	verify.sh	-	-	-	-	-	ERROR	68a4e1cce	-	-	-	-
+2026-08-28T17:47:09Z	agent	Backend audit channel+actions	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	68a4e1cce	CHANGES_REQUIRED	yes	docs/tasks/task-278-map-environment-object-state/audit-channel-actions.md	-
+2026-08-28T17:56:50Z	agent	Fix round 1	task-implementer	sonnet	-	-	-	-	DONE	75b7b1c47	-	-	-	-
+2026-08-28T17:59:37Z	agent	Fix round 1	task-reviewer	sonnet	-	-	-	-	DONE	75b7b1c47	APPROVED	no	.superpowers/sdd/plan/fix-round-1-review.md	-

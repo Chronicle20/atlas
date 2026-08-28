@@ -1,0 +1,90 @@
+{
+  "service": "atlas-maps + atlas-saga-orchestrator (task-278 shard)",
+  "path": "services/atlas-maps, services/atlas-saga-orchestrator",
+  "date": "2026-08-28",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "map/environment (atlas-maps)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/constructor/methods live in processor.go", "status": "pass", "evidence": "map/environment/processor.go:20-62"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods live in rest.go", "status": "pass", "evidence": "map/environment/rest.go:5-32"},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "resource.go/rest.go/processor.go/producer.go/registry.go each single-purpose"},
+        {"id": "SUB-01", "name": "Business logic not in handler", "status": "pass", "evidence": "resource.go:47,85,114 delegate to NewProcessor(...)"},
+        {"id": "SUB-02", "name": "No db.Create/db.Save in resource.go", "status": "pass", "evidence": "no DB calls present"},
+        {"id": "SUB-03", "name": "POST uses RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:32"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "no json.Unmarshal/NewDecoder/io.ReadAll"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "pass", "evidence": "rest.go:25-32"},
+        {"id": "DOM-05", "name": "TransformSlice defined and used by list handlers", "status": "fail", "evidence": "resource.go:49-58 inline for-loop calling Transform; no TransformSlice in rest.go"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:31"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()/d.Context()", "status": "pass", "evidence": "resource.go:47,85,114"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "pass", "evidence": "resource.go:51-56"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "none found"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "handlers call only environment processor + one producer call"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never providers", "status": "pass", "evidence": "resource.go:47,85,114"},
+        {"id": "DOM-15", "name": "No db.Create/Save/Delete in handlers", "status": "pass", "evidence": "none present"},
+        {"id": "DOM-17", "name": "Domain errors map to correct HTTP status", "status": "pass", "evidence": "resource.go:78-82,86-89 (400 on invalid kind/blank name)"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "rest.go:12-23"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "RestModel{Id,Kind,Name,State}"},
+        {"id": "DOM-29", "name": "Cache/registry is application-scoped singleton via accessor", "status": "pass", "evidence": "registry.go:27-38 sync.Once + getRegistry()"},
+        {"id": "DOM-30", "name": "DB writes emit via AndEmit, not direct producer call on success path", "status": "pass", "evidence": "documented exception: no DB write, in-memory registry only (patterns-kafka.md:82-87); resource.go:91,116"},
+        {"id": "DOM-31", "name": "Tenant/trace travel only via context", "status": "pass", "evidence": "processor.go:41,53,60 tenant.MustFromContext(p.ctx); registry_test.go:87-102, resource_test.go:130-152 assert isolation"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:31-33; rest/handler.go:28,31 alias server.RegisterHandler"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "warn", "evidence": "registry_test.go, resource_test.go use individually-named func Test cases, not tests := []struct{...}{} + t.Run"},
+        {"id": "DOM-24", "name": "Emit-reaching test package installs producer stub", "status": "pass", "evidence": "testmain_test.go:14-17 producertest.InstallNoop()"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/map (atlas-maps)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "n-a", "evidence": "no go statement in consumer.go diff"},
+        {"id": "DOM-24", "name": "Emit-reaching test package installs producer stub", "status": "pass", "evidence": "kafka/consumer/map/testmain_test.go:10-12 (pre-existing)"},
+        {"id": "DOM-31", "name": "Tenant via context only", "status": "pass", "evidence": "consumer.go:110-152 resolves tenant only via ctx passed to environment.NewProcessor"},
+        {"id": "DOM-30", "name": "Direct producer/registry call only where no DB write", "status": "pass", "evidence": "documented exception; kafka/consumer/character/consumer.go:195-203 ep.Reset(mk.Field) after in-memory check"}
+      ]
+    },
+    {
+      "name": "map (atlas-maps, map/processor.go Exit teardown)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-31", "name": "Tenant consistency across teardown call", "status": "pass", "evidence": "map/processor.go:106-118 GetCharactersInMap and environment Reset both use p.ctx"},
+        {"id": "DOM-30", "name": "Direct producer call only where no DB write", "status": "pass", "evidence": "map/processor.go:118 still emits CHARACTER_EXIT via message.Buffer; Reset call itself does not emit"}
+      ]
+    },
+    {
+      "name": "map_command (atlas-saga-orchestrator)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface + methods in processor.go", "status": "pass", "evidence": "map_command/processor.go:15-50"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "processor.go + producer.go only"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:27"},
+        {"id": "DOM-21", "name": "No redeclared wire constant", "status": "pass", "evidence": "producer.go stringifies field.ObjectKind, no local const block"},
+        {"id": "DOM-30", "name": "Direct producer call only where no DB write", "status": "pass", "evidence": "documented exception; processor.go:44-50, package has no DB/model at all"},
+        {"id": "DOM-33", "name": "Interface change updates every mock in same diff", "status": "pass", "evidence": "saga/handler_test.go:1709-1731 mapCommandProcessorMock implements both new methods, static assertion at :1731"}
+      ]
+    },
+    {
+      "name": "saga (atlas-saga-orchestrator)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-33", "name": "Handler interface change updates its implementation in same diff", "status": "pass", "evidence": "handler.go:98,192-193 interface additions; handler.go:822-826,1041-1044 implementation + dispatch"},
+        {"id": "DOM-21", "name": "No redeclared saga action/type constant", "status": "pass", "evidence": "saga/model.go:258-259,400-401 re-exported = sharedsaga.X aliases"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-05: services/atlas-maps/atlas.com/maps/map/environment/resource.go:49-58 - handleGetEnvironmentInMap builds its response with an inline for-loop calling Transform per entry; no TransformSlice defined in rest.go"
+  ],
+  "nonBlocking": [
+    "DOM-20: services/atlas-maps/atlas.com/maps/map/environment/registry_test.go, resource_test.go, processor_test.go - new tests use individually-named func Test cases rather than table-driven tests := []struct{...}{} + t.Run form"
+  ],
+  "informational": [
+    "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/handler.go:813-820 - WithNoteProcessor drops every HandlerImpl field except l/ctx/t/noteP (pre-existing defect, out of scope for task-278 per brief, already logged separately). WithMapCommandProcessor added by this diff correctly uses the shallow-copy form and does not have this defect."
+  ]
+}

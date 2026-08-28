@@ -136,6 +136,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBackEffectSet(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBackEffectClear(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -1312,6 +1322,45 @@ func handleStatusEventEnvironmentReset(sc server.Model, wp writer.Producer) func
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast environment reset to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+func handleStatusEventBackEffectSet(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.BackEffectSet]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.BackEffectSet]) {
+		if e.Type != _map3.EventTopicMapStatusTypeBackEffectSet {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Back effect [%d] set in map [%d] instance [%s] for field [%d] page [%d] over [%d]ms.", e.Body.Effect, e.MapId, e.Instance, e.Body.FieldId, e.Body.PageId, e.Body.Duration)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			return doorAnnounce(l, ctx, wp, fieldcb.SetBackEffectWriter, fieldcb.NewSetBackEffect(byte(e.Body.Effect), e.Body.FieldId, byte(e.Body.PageId), e.Body.Duration).Encode, s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast back effect set to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+
+func handleStatusEventBackEffectClear(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.BackEffectClear]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.BackEffectClear]) {
+		if e.Type != _map3.EventTopicMapStatusTypeBackEffectClear {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Back effects cleared in map [%d] instance [%s].", e.MapId, e.Instance)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			return doorAnnounce(l, ctx, wp, fieldcb.ClearBackEffectWriter, fieldcb.NewClearBackEffect().Encode, s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast back effect clear to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
 	}
 }

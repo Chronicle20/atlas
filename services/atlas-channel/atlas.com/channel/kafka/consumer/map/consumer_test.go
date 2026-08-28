@@ -1274,3 +1274,177 @@ func TestHandleStatusEventEnvironmentReset_ObstacleOnlyRestore(t *testing.T) {
 		}
 	}
 }
+
+// backEffectAnnounce records one doorAnnounce call made by a back-effect
+// handler, capturing the encoded body so the exact wire contract can be
+// asserted through the real codec.
+type backEffectAnnounce struct {
+	Writer string
+	Body   []byte
+}
+
+// backEffectAnnounceRecorder collects backEffectAnnounce invocations made
+// concurrently -- the back-effect handlers fan the announce out through
+// map.(*ProcessorImpl).ForSessionsInMap, which runs the operator on one
+// goroutine per session (libs/atlas-model ExecuteForEachSlice), so a bare
+// captured slice races.
+type backEffectAnnounceRecorder struct {
+	mu   sync.Mutex
+	seen []backEffectAnnounce
+}
+
+func (r *backEffectAnnounceRecorder) record(a backEffectAnnounce) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.seen = append(r.seen, a)
+}
+
+// snapshot returns a copy of every call recorded so far, so the test body
+// can range/index it without holding the lock itself.
+func (r *backEffectAnnounceRecorder) snapshot() []backEffectAnnounce {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]backEffectAnnounce, len(r.seen))
+	copy(out, r.seen)
+	return out
+}
+
+// stubDoorAnnounceForBackEffect swaps doorAnnounce for a recording stub and
+// returns a restore func plus the recorder it captured into.
+func stubDoorAnnounceForBackEffect(t *testing.T) (restore func(), rec *backEffectAnnounceRecorder) {
+	t.Helper()
+	rec = &backEffectAnnounceRecorder{}
+
+	orig := doorAnnounce
+	doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
+		rec.record(backEffectAnnounce{Writer: writerName, Body: enc(l, ctx)(nil)})
+		return nil
+	}
+
+	return func() { doorAnnounce = orig }, rec
+}
+
+// decodeSetBackEffect decodes a captured SetBackEffect wire body via the real
+// codec, so the assertion exercises the same decode path the client would --
+// this is the cross-service seam check: the body atlas-maps' event drives must
+// round-trip to the exact four fields the client reads.
+func decodeSetBackEffect(t *testing.T, body []byte) fieldcb.SetBackEffect {
+	t.Helper()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m fieldcb.SetBackEffect
+	m.Decode(logrus.New(), context.Background())(&reader, nil)
+	return m
+}
+
+func TestHandleStatusEventBackEffectSet_BroadcastsToField(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.BackEffectSet]{
+		Type:      _map3.EventTopicMapStatusTypeBackEffectSet,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.BackEffectSet{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000},
+	}
+	handleStatusEventBackEffectSet(sc, nil)(l, ctx, e)
+
+	calls := rec.snapshot()
+	if len(calls) != 2 {
+		t.Fatalf("announce count = %d, want 2", len(calls))
+	}
+	for _, c := range calls {
+		if c.Writer != fieldcb.SetBackEffectWriter {
+			t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.SetBackEffectWriter)
+		}
+		m := decodeSetBackEffect(t, c.Body)
+		if m.Effect() != 0 {
+			t.Fatalf("effect = %d, want 0", m.Effect())
+		}
+		if m.FieldId() != 100000000 {
+			t.Fatalf("fieldId = %d, want 100000000", m.FieldId())
+		}
+		if m.PageId() != 1 {
+			t.Fatalf("pageId = %d, want 1", m.PageId())
+		}
+		if m.Duration() != 1000 {
+			t.Fatalf("duration = %d, want 1000", m.Duration())
+		}
+	}
+}
+
+func TestHandleStatusEventBackEffectSet_IgnoresOtherChannel(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.BackEffectSet]{
+		Type:      _map3.EventTopicMapStatusTypeBackEffectSet,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.BackEffectSet{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000},
+	}
+	handleStatusEventBackEffectSet(sc, nil)(l, ctx, e)
+
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}
+
+func TestHandleStatusEventBackEffectClear_BroadcastsToField(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.BackEffectClear]{
+		Type:      _map3.EventTopicMapStatusTypeBackEffectClear,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.BackEffectClear{},
+	}
+	handleStatusEventBackEffectClear(sc, nil)(l, ctx, e)
+
+	calls := rec.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("announce count = %d, want 1", len(calls))
+	}
+	if calls[0].Writer != fieldcb.ClearBackEffectWriter {
+		t.Fatalf("writer = %s, want %s", calls[0].Writer, fieldcb.ClearBackEffectWriter)
+	}
+	if len(calls[0].Body) != 0 {
+		t.Fatalf("body = % x, want zero-length", calls[0].Body)
+	}
+}

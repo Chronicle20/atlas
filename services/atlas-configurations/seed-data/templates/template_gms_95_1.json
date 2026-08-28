@@ -1385,6 +1385,24 @@
         ]
       },
       {
+        "opCode": "0xB5",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSolomonHandle",
+        "fname": "CWvsContext::SendExpUpItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB6",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseStoredExperienceHandle",
+        "fname": "CWvsContext::SendTempExpUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xB9",
         "validator": "LoggedInValidator",
         "handler": "CashItemGachaponHandle",

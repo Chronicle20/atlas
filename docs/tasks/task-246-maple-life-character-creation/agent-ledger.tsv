@@ -125,3 +125,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-27T23:12:12Z	agent	bug-maple-life-v84-registration	task-implementer	sonnet	-	-	-	-	DONE	7f1dc0a43	-	-	-	-
 2026-08-27T23:15:28Z	agent	bug-maple-life-v84-registration	task-reviewer	sonnet	-	-	-	-	DONE	7f1dc0a43	APPROVED_WITH_FINDINGS	no	-	-
 2026-08-27T23:18:40Z	agent	bug-maple-life-v84-comment-sweep	task-implementer	sonnet	-	-	-	-	DONE	2dfc1373f	-	-	-	-
+2026-08-27T23:34:54Z	agent	bug-maple-life-v84-registration-evidence-check-name	packet-verifier	sonnet	-	-	-	-	DONE	ee20210c1	-	-	-	-
+2026-08-27T23:34:54Z	agent	bug-maple-life-v84-registration-evidence-result	packet-verifier	sonnet	-	-	-	-	DONE	b9ef11774	-	-	-	-
+2026-08-27T23:34:55Z	agent	bug-maple-life-v84-registration-evidence-error	packet-verifier	sonnet	-	-	-	-	DONE	2fef11a98	-	-	-	-

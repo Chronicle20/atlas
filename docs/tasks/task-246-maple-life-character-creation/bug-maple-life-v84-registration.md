@@ -240,9 +240,43 @@ in full above.
   Comments-only diff, confirmed every changed line is a `//` comment; no struct,
   logic, gate, or assertion changed. `go build ./...` and `go test ./...` clean
   across `libs/atlas-packet`. Reviewer finding 1 is closed.
-- Evidence records `docs/packets/evidence/gms_v84/maplelife.*.yaml` and
-  promotion of the three gms_v84 matrix cells — `packet-verifier` work, one
-  cell per agent, deliberately excluded from this fix.
+- ~~Evidence records `docs/packets/evidence/gms_v84/maplelife.*.yaml` and
+  promotion of the three gms_v84 matrix cells.~~ **Done** — three
+  `packet-verifier` agents (sonnet), one cell each, serialized because they
+  share `status.json`, the matrix regen, and one git index:
+
+  | cell | v84 opcode | before → after | commit |
+  |---|---|---|---|
+  | `maplelife/serverbound/MaplelifeCheckName` | `0x107` | ⬜ → ✅ | `ee20210c1` |
+  | `maplelife/clientbound/MaplelifeMapleLifeResult` | `0x167` | ❌ → ✅ | `b9ef11774` |
+  | `maplelife/clientbound/MaplelifeMapleLifeError` | `0x168` | ❌ → ✅ | `2fef11a98` |
+
+  Each agent re-decompiled its function fresh in IDA session `46c2a2eb`
+  (`GMS_v84.1_U_DEVM.i64`) rather than trusting this file's derivation, and all
+  three confirmed it: sender `0x7fd86a` emits `COutPacket(263)` + one
+  `EncodeStr`; `0x7fd949` reads `DecodeStr(name)` then `Decode1(result)`;
+  `0x7fda6f` reads `Decode1(nType)` then `Decode4(nParam)` with the
+  `52`/`54`/else branches. The dispatcher-derived 359/360 held.
+
+  No codec in `libs/atlas-packet/maplelife/` carries a version gate, so no wire
+  change was needed on any already-verified version — each pass added only a
+  gms_v84 fixture row plus its `packet-audit:verify` marker. The three missing
+  fnames were spliced additively into `docs/packets/ida-exports/gms_v84.json`
+  (+10/+15/+15 lines, no existing entry touched).
+
+  Verified independently of the agents' reports: STATUS.md's v84 column now
+  reads `0x107 ✅`, `0x167 ✅`, `0x168 ✅`, and
+  `go run ./tools/packet-audit matrix --check` exits 0 (only the two
+  pre-existing n-a-evidence notes).
+
+  Gate over the three-commit range: `tools/verify.sh --quick --base c5b92a496`
+  → **PASS**, exit 0 (`libs/atlas-packet` build/vet green, analyzer, skill/job,
+  scope, and lint/format guards green across 91 modules). Note the template
+  guards reported `−` — *no tenant socket-config template changed* — which is
+  correct for this range: the template wiring landed earlier in `7f1dc0a43`,
+  and these three commits touch only tests, evidence, exports, and the matrix.
+  No `task-reviewer` was run: this range crosses no service boundary and
+  changes no contract.
 - A flagless `tools/verify.sh` run.
 - Live re-test on a v84.1 client.
 - jms_v185 remains unresolved as a *derivation* question; separately, its three

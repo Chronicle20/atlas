@@ -120,6 +120,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventEnvironmentStateChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventEnvironmentReset(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -1146,6 +1156,88 @@ func handleStatusEventJukeboxEnd(sc server.Model, wp writer.Producer) func(l log
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast jukebox end to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+
+// announceObjectState sends one (name, state) to s using the writer preferred
+// for kind, falling back to SetObjectState when the tenant routes no writer for
+// that opcode. The fallback is behaviourally identical: CField::OnSetObjectState
+// and CField::OnFieldObstacleOnOff are the same client function
+// (CMapLoadable::SetObjectState), differing only in opcode -- see design.md
+// section 1.1. gms_48_1 routes no obstacle writer at all and gms_61_1 routes
+// neither FieldObstacleOnOff nor FieldObstacleAllReset, so this is a branch on a
+// real "writer not found" error rather than a version sniff.
+func announceObjectState(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, kind field.ObjectKind, name string, state uint32, s session.Model) error {
+	if kind == field.ObjectKindObstacle {
+		if _, err := wp(fieldcb.FieldObstacleOnOffWriter); err == nil {
+			return doorAnnounce(l, ctx, wp, fieldcb.FieldObstacleOnOffWriter, writer.FieldObstacleOnOffBody(name, state), s)
+		}
+	}
+	if _, err := wp(fieldcb.SetObjectStateWriter); err != nil {
+		l.WithError(err).Errorf("Tenant routes no [%s] writer; unable to set object [%s] state.", fieldcb.SetObjectStateWriter, name)
+		return err
+	}
+	return doorAnnounce(l, ctx, wp, fieldcb.SetObjectStateWriter, writer.SetObjectStateBody(name, state), s)
+}
+
+func handleStatusEventEnvironmentStateChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.EnvironmentStateChanged]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.EnvironmentStateChanged]) {
+		if e.Type != _map3.EventTopicMapStatusTypeEnvironmentStateChanged {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		kind, err := field.ParseObjectKind(e.Body.Kind)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast environment state change in map [%d] instance [%s].", e.MapId, e.Instance)
+			return
+		}
+
+		l.Debugf("Environment object [%s] kind [%s] set to state [%d] in map [%d] instance [%s].", e.Body.Name, e.Body.Kind, e.Body.State, e.MapId, e.Instance)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			return announceObjectState(l, ctx, wp, kind, e.Body.Name, e.Body.State, s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast environment state change to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+
+func handleStatusEventEnvironmentReset(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.EnvironmentReset]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.EnvironmentReset]) {
+		if e.Type != _map3.EventTopicMapStatusTypeEnvironmentReset {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Environment reset in map [%d] instance [%s]; restoring [%d] tracked object(s).", e.MapId, e.Instance, len(e.Body.Cleared))
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			// FieldObstacleAllReset restores only the client's own obstacle
+			// list, and gms_48_1 / gms_61_1 route no such writer at all.
+			if _, werr := wp(fieldcb.FieldObstacleAllResetWriter); werr == nil {
+				_ = doorAnnounce(l, ctx, wp, fieldcb.FieldObstacleAllResetWriter, writer.FieldObstacleAllResetBody(), s)
+			}
+			// Explicitly zero every tracked object: this is the only thing that
+			// restores non-obstacle named objects -- see design.md section 1.2.
+			for _, o := range e.Body.Cleared {
+				kind, kerr := field.ParseObjectKind(o.Kind)
+				if kerr != nil {
+					l.WithError(kerr).Errorf("Skipping cleared object [%s] in map [%d] instance [%s].", o.Name, e.MapId, e.Instance)
+					continue
+				}
+				_ = announceObjectState(l, ctx, wp, kind, o.Name, 0, s)
+			}
+			return nil
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast environment reset to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
 	}
 }

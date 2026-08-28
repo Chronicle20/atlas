@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 
@@ -67,6 +68,8 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to get underlying sql.DB: %v", err)
 	}
 	sqlDB.SetMaxOpenConns(1)
+
+	database.RegisterTenantCallbacks(testLogger(), db)
 
 	// Use SQLite-compatible schema
 	err = db.AutoMigrate(&testEntity{}, &testHistoryEntity{})

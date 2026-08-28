@@ -258,6 +258,46 @@ None.
 
 ---
 
+### PATCH /gachapons/{gachaponId}/items/{itemId}
+
+Updates an existing gachapon item. The owning gachapon is not re-parented.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| gachaponId | path | string | yes |
+| itemId | path | uint32 | yes |
+
+#### Request Model
+
+JSON:API GachaponItem resource with fields to update.
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| ItemId | uint32 | itemId |
+| Quantity | uint32 | quantity |
+| Tier | string | tier |
+| Weight | uint32 | weight |
+| CommodityId | uint32 | commodityId |
+
+Resource type: `gachapon-items`
+
+#### Response Model
+
+None.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 204 No Content | Item updated |
+| 400 Bad Request | Invalid gachaponId/itemId or invalid tier (`ErrInvalidTier`) |
+| 404 Not Found | Item not found |
+| 500 Internal Server Error | Database error |
+
+---
+
 ### DELETE /gachapons/{gachaponId}/items/{itemId}
 
 Deletes a gachapon item.
@@ -356,6 +396,43 @@ None.
 |--------|-----------|
 | 201 Created | Item created |
 | 400 Bad Request | Model validation failure |
+| 500 Internal Server Error | Database error |
+
+---
+
+### PATCH /global-items/{itemId}
+
+Updates an existing global gachapon item.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| itemId | path | uint32 | yes |
+
+#### Request Model
+
+JSON:API GlobalGachaponItem resource with fields to update.
+
+| Field | Type | JSON Key |
+|-------|------|----------|
+| ItemId | uint32 | itemId |
+| Quantity | uint32 | quantity |
+| Tier | string | tier |
+
+Resource type: `global-gachapon-items`
+
+#### Response Model
+
+None.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 204 No Content | Item updated |
+| 400 Bad Request | Invalid itemId or invalid tier (`ErrInvalidTier`) |
+| 404 Not Found | Item not found |
 | 500 Internal Server Error | Database error |
 
 ---

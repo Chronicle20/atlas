@@ -21,7 +21,7 @@ by the service's internal periodic sweep task (`task/periodic.go`), not by
 a consumed Kafka command.
 
 Consumer registration applies `consumer.SetHeaderParsers(SpanHeaderParser,
-TenantHeaderParser)`.
+TenantHeaderParser, EnvHeaderParser)`.
 
 ### `COMMAND_TOPIC_MTS_CUSTODY` (env: `custody.EnvCommandTopic`) — command
 
@@ -39,7 +39,22 @@ Command types dispatched by registered handlers
 | `RESTORE_LISTING_FROM_HOLDING` | `custody.Command[custody.RestoreListingFromHoldingCommandBody]` |
 
 Consumer registration applies `consumer.SetHeaderParsers(SpanHeaderParser,
-TenantHeaderParser)`.
+TenantHeaderParser, EnvHeaderParser)`.
+
+### `EVENT_TOPIC_CHARACTER_STATUS` (env: `character.EnvStatusEventTopic`) — event
+
+The character status/event topic, published by atlas-character. Status
+types dispatched by registered handlers
+(`kafka/consumer/character/consumer.go`):
+
+| Status event type | Message struct |
+|---|---|
+| `NAME_CHANGED` | `character.StatusEvent[character.StatusEventNameChangedBody]` |
+
+The message contract in `kafka/message/character/kafka.go` is atlas-mts's
+own copy of atlas-character's producer contract; there is no shared module
+linking the two. Consumer registration applies
+`consumer.SetHeaderParsers(SpanHeaderParser, TenantHeaderParser)`.
 
 ## Topics Produced
 
@@ -99,17 +114,20 @@ messages (aliased from the shared `atlas-saga` library) of type
   `kafka/message/mts/kafka.go`.
 - `custody.Command[E]` / `custody.StatusEvent[E]` — the generic custody
   envelopes, defined in `kafka/message/custody/kafka.go`.
+- `character.StatusEvent[E]` — the generic character status envelope,
+  defined in `kafka/message/character/kafka.go`.
 - `saga.Saga` — the shared saga envelope (re-exported from
   `github.com/Chronicle20/atlas/libs/atlas-saga` in `saga/model.go`),
   composed of `saga.Step` entries.
 
-Required headers: both the `mts` and `custody` command consumers register
-with `SpanHeaderParser` and `TenantHeaderParser`, i.e. inbound commands
-must carry span and tenant headers. Outbound `mts`/`custody` status events
-are partition-keyed by the first 4 bytes of the transaction id
-(`keyFor`, `producer.CreateKey`); saga commands are keyed by the full
-transaction id string (`saga.CreateCommandProvider`), so all messages for
-one transaction/saga land on the same partition in order.
+Required headers: the `mts` and `custody` command consumers register with
+`SpanHeaderParser`, `TenantHeaderParser`, and `EnvHeaderParser`; the
+`character` status consumer registers with `SpanHeaderParser` and
+`TenantHeaderParser`. Outbound `mts`/`custody` status events are
+partition-keyed by the first 4 bytes of the transaction id (`keyFor`,
+`producer.CreateKey`); saga commands are keyed by the full transaction id
+string (`saga.CreateCommandProvider`), so all messages for one
+transaction/saga land on the same partition in order.
 
 ## Transaction Semantics
 

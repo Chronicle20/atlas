@@ -33,6 +33,7 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
     { title: "Socket Writers", href: `/tenants/${id}/writers` },
     { title: "Worlds", href: `/tenants/${id}/worlds` },
     { title: "MTS Configuration", href: `/tenants/${id}/mts-config` },
+    { title: "Diagnostics", href: `/tenants/${id}/diagnostics` },
   ];
   return (
     <DetailActionBarProvider>

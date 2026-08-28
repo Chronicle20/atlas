@@ -27,4 +27,4 @@ The atlas-parcel service is Duey the mailman's custody store. It holds items and
 - [Domain](docs/domain.md)
 - [Kafka](docs/kafka.md)
 - [REST](docs/rest.md)
-- [Parcel](docs/parcel.md)
+- [Storage](docs/storage.md)

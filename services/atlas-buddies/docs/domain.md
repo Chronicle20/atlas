@@ -28,11 +28,13 @@ Represents a character's buddy list containing buddies and a configurable capaci
 - `Create`: Creates a new buddy list with specified capacity
 - `Delete`: Deletes a character's buddy list and removes them from all buddies' lists
 - `RequestAddBuddy`: Initiates adding a buddy (handles mutual buddy logic and invites)
+- `RestoreBuddy`: Re-adds a target character to a character's list in one direction only, without the invite handshake and without touching the target's list; a no-op if the entry is already present
 - `RequestDeleteBuddy`: Initiates removing a buddy or rejecting an invite
 - `AcceptInvite`: Accepts a buddy invite and creates mutual buddy relationship
 - `DeleteBuddy`: Removes a buddy from a character's list
 - `UpdateBuddyChannel`: Updates channel information for a character across all buddy lists
 - `UpdateBuddyShopStatus`: Updates shop status for a character across all buddy lists
+- `UpdateBuddyName`: Propagates a character's new name to every buddy list entry that references that character, for entries whose stored name differs
 - `IncreaseCapacity`: Increases buddy list capacity (validates new capacity > current)
 - `IncreaseCapacityWithTransaction`: Increases capacity with transaction ID for saga coordination
 

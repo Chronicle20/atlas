@@ -4950,7 +4950,16 @@
           "channel"
         ]
       }
-    ]
+    ],
+    "unsupported": {
+      "handlers": [
+        "MapleLifeCheckNameHandle"
+      ],
+      "writers": [
+        "MapleLifeResult",
+        "MapleLifeError"
+      ]
+    }
   },
   "characters": {
     "templates": [

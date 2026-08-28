@@ -20,6 +20,7 @@ Guild command topic.
 | `CHANGE_MEMBER_TITLE` | `ChangeMemberTitleBody` | Change a member's title |
 | `REQUEST_DISBAND` | `RequestDisbandBody` | Request guild disbanding |
 | `REQUEST_CAPACITY_INCREASE` | `RequestCapacityIncreaseBody` | Request capacity increase |
+| `REJOIN` | `RejoinBody` | Restore a member to a guild at a specified title |
 
 **Required Headers**
 - Tenant header
@@ -54,6 +55,7 @@ Character status event topic.
 | `DELETED` | `StatusEventDeletedBody` | Character deleted |
 | `LOGIN` | `StatusEventLoginBody` | Character logged in |
 | `LOGOUT` | `StatusEventLogoutBody` | Character logged out |
+| `NAME_CHANGED` | `StatusEventNameChangedBody` | Character name changed |
 
 **Required Headers**
 - Tenant header
@@ -166,6 +168,11 @@ type ChangeNoticeBody struct {
 type LeaveBody struct {
     GuildId uint32
     Force   bool
+}
+
+type RejoinBody struct {
+    GuildId uint32
+    Title   byte
 }
 
 type RequestInviteBody struct {
@@ -327,6 +334,11 @@ type StatusEventLogoutBody struct {
 }
 
 type StatusEventDeletedBody struct {}
+
+type StatusEventNameChangedBody struct {
+    OldName string
+    NewName string
+}
 ```
 
 ### Invite Status Event Bodies

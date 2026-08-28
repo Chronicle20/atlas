@@ -36,6 +36,7 @@ Resource type: `routes`
 | cycleIntervalSeconds | uint32 | Cycle interval, in seconds |
 | nextTransitionAt | string | Absolute instant (RFC3339) of the next state change; empty when `out_of_service` |
 | nextState | string | The state the route moves to at `nextTransitionAt`; empty when `out_of_service` |
+| voyageId | string | Identity of the trip currently under way (`transport.VoyageId`); omitted unless `state` is `in_transit` |
 
 **Schedule is opt-in.** `Transform` attaches a full day of trip rows (~96 per
 route on a 15-minute cycle), so a twelve-route list would carry ~1,000 included
@@ -100,6 +101,7 @@ Resource type: `routes`
 | cycleIntervalSeconds | uint32 | Cycle interval, in seconds |
 | nextTransitionAt | string | Absolute instant (RFC3339) of the next state change; empty when `out_of_service` |
 | nextState | string | The state the route moves to at `nextTransitionAt`; empty when `out_of_service` |
+| voyageId | string | Identity of the trip currently under way (`transport.VoyageId`); omitted unless `state` is `in_transit` |
 
 **Time semantics.** The day's schedule is computed once per reconcile and the
 1-second ticker only re-derives state from it, comparing *time of day* only.

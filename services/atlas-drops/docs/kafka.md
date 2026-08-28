@@ -333,6 +333,27 @@ Emitted when a drop reservation fails.
 }
 ```
 
+#### MESO_AWARDED
+
+Emitted once per recipient when a meso drop is reserved and its meso amount is split among the picker and any online party members co-located in the drop's field. Exactly one event per drop reservation carries `picker: true`.
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "dropId": 0,
+  "type": "MESO_AWARDED",
+  "body": {
+    "characterId": 0,
+    "amount": 0,
+    "picker": true
+  }
+}
+```
+
 #### CONSUMED
 
 Emitted when a drop is consumed by a game mechanic.

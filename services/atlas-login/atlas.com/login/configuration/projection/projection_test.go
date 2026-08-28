@@ -4,6 +4,7 @@ import (
 	"atlas-login/configuration"
 	"atlas-login/configuration/projection"
 	"atlas-login/configuration/tenant"
+	"atlas-login/configuration/tenant/diagnostics"
 	"atlas-login/listener"
 	"context"
 	"encoding/json"
@@ -131,6 +132,39 @@ func TestComputeOps_AddRemovePortChangeUnchanged(t *testing.T) {
 	// TENANT MISSING: service references tenant not in tenantConfigs → skipped
 	ops = projection.ComputeOps(nil, nil, mk(8484), nil)
 	require.Empty(t, ops, "tenant config missing → no Add op")
+}
+
+// TestComputeOps_DiagnosticsOnlyChangeEmitsNoOps verifies FR-1.6: flipping
+// diagnostics.tracePackets on a live tenant must not drain or re-add a
+// single listener -- ComputeOps only reacts to fields that affect listener
+// identity (region/version/port), not to the diagnostics mirror.
+func TestComputeOps_DiagnosticsOnlyChangeEmitsNoOps(t *testing.T) {
+	tid := uuid.New()
+
+	svc := &configuration.RestModel{
+		Tenants: []configuration.TenantRestModel{
+			{Id: tid.String(), Port: 8484},
+		},
+	}
+
+	prevTenants := map[uuid.UUID]tenant.RestModel{
+		tid: {
+			Region:       "GMS",
+			MajorVersion: 83,
+			MinorVersion: 1,
+			Diagnostics:  diagnostics.RestModel{TracePackets: false},
+		},
+	}
+	nextTenants := map[uuid.UUID]tenant.RestModel{
+		tid: {
+			Region:       "GMS",
+			MajorVersion: 83,
+			MinorVersion: 1,
+			Diagnostics:  diagnostics.RestModel{TracePackets: true},
+		},
+	}
+
+	require.Empty(t, projection.ComputeOps(svc, prevTenants, svc, nextTenants))
 }
 
 func TestCaughtUp_TransitionsAndUnblocksWaiters(t *testing.T) {

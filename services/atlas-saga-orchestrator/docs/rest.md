@@ -243,6 +243,7 @@ The following actions have registered payload unmarshalers for the POST endpoint
 | warp_to_random_portal | WarpToRandomPortalPayload |
 | warp_to_portal | WarpToPortalPayload |
 | destroy_asset | DestroyAssetPayload |
+| destroy_all_assets | DestroyAllAssetsPayload |
 | destroy_asset_from_slot | DestroyAssetFromSlotPayload |
 
 Actions not listed above pass the raw payload through without typed deserialization.
@@ -254,11 +255,31 @@ Actions not listed above pass the raw payload through without typed deserializat
 | InventoryTransaction | inventory_transaction |
 | QuestReward | quest_reward |
 | TradeTransaction | trade_transaction |
+| TradeStaging | trade_staging |
 | CharacterCreation | character_creation |
 | StorageOperation | storage_operation |
 | CharacterRespawn | character_respawn |
 | GachaponTransaction | gachapon_transaction |
+| PetEvolution | pet_evolution |
+| PetRevive | pet_revive |
+| ItemTagUse | item_tag_use |
+| SealingLockUse | sealing_lock_use |
+| IncubatorUse | incubator_use |
+| ExpirationExtenderUse | expiration_extender_use |
+| KarmaScissorsUse | karma_scissors_use |
+| PointReset | point_reset |
+| MesoSackUse | meso_sack_use |
 | MtsOperation | mts_operation |
+| NoteSend | note_send |
+| SkillBookUse | skill_book_use |
+| PetNameTagUse | pet_name_tag_use |
+| RemoteMerchant | remote_merchant |
+| WorldTransfer | world_transfer |
+| ScriptedItemUse | scripted_item_use |
+| RemoteNpcUse | remote_npc_use |
+| ParcelSend | parcel_send |
+| ParcelReceive | parcel_receive |
+| MapleLifeUse | maple_life_use |
 
 ## Step Statuses
 

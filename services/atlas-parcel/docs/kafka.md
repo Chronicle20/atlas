@@ -29,11 +29,13 @@ Parcel custody status (ack) events, echoing the command's `transactionId` so the
 
 ### EVENT_TOPIC_PARCEL_STATUS
 
-Player-facing arrival notification events (design §7.1) — a sibling of the custody status topic, not the same topic: custody acks saga steps, this one notifies players. Addressed to the recipient by `characterId`.
+Player-facing parcel status events — a sibling of the custody status topic, not the same topic: custody acks saga steps, this one notifies players. Addressed by `characterId` to whichever party the event concerns.
 
 | Event Type | Body Type | Description |
 |------------|-----------|-------------|
-| `PARCEL_ARRIVED` | StatusEventParcelArrivedBody | A parcel has become receivable; emitted once per parcel by NotificationTask |
+| `PARCEL_ARRIVED` | StatusEventParcelArrivedBody | A parcel has become receivable; emitted once per parcel by NotificationTask, addressed to the recipient (design §7.1) |
+| `PARCEL_SENT` | StatusEventParcelSentBody | A parcel's send saga completed (accept_to_parcel, the saga's last step); emitted by the custody consumer's ACCEPT_TO_PARCEL handler, addressed to the sender |
+| `PARCEL_RECEIVED` | StatusEventParcelReceivedBody | A parcel was released from custody (received); emitted by the custody consumer's RELEASE_FROM_PARCEL handler, addressed to the recipient |
 
 ---
 
@@ -134,11 +136,22 @@ senderName: string
 hasItem: bool
 ```
 
+**StatusEventParcelSentBody**
+```
+(no fields)
+```
+
+**StatusEventParcelReceivedBody**
+```
+parcelId: UUID
+```
+
 ---
 
 ## Transaction Semantics
 
 - Custody commands carry `transactionId` so the saga orchestrator can correlate the ack with the step that issued the command.
 - `ACCEPT_TO_PARCEL` and `RELEASE_FROM_PARCEL` are the forward legs of the send and withdraw sagas, respectively; `RESTORE_PARCEL` and `REMOVE_PARCEL` are their late-compensation inverses and are idempotent (0 rows affected is success, not an error).
-- The custody status topic and the arrival status topic are independent: a parcel's custody lifecycle (accepted/released) is orthogonal to whether its arrival has been announced to the player.
+- The custody status topic and the parcel status topic are independent: a parcel's custody lifecycle (accepted/released) is orthogonal to whether its arrival, send, or receipt has been announced to the player.
 - The arrival notification sweep (NotificationTask) is skipped entirely — no claim, no stamp — when `EVENT_TOPIC_PARCEL_STATUS` is not configured, so an unconfigured deployment never silently marks a parcel notified without actually notifying.
+- `PARCEL_SENT` and `PARCEL_RECEIVED` are emitted synchronously from the custody command consumer's `ACCEPT_TO_PARCEL` and `RELEASE_FROM_PARCEL` handlers, in the same buffered emit as the corresponding custody status ack.

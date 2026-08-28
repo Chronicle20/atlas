@@ -46,6 +46,7 @@ Map commands consumed by the service.
 | Type | Body Struct | Description |
 |------|-------------|-------------|
 | WEATHER_START | WeatherStartCommandBody | Start weather effect in a map |
+| PLAY_JUKEBOX | PlayJukeboxCommandBody | Start jukebox playback in a map |
 
 ### COMMAND_TOPIC_CHARACTER
 
@@ -84,7 +85,7 @@ Data ingestion events, filtered to the MAP worker. Toggled off via DATA_EVENTS_C
 
 ### EVENT_TOPIC_MAP_STATUS
 
-Map status events emitted when characters enter or exit maps, when weather effects start or end, and when a map-stay timer is started.
+Map status events emitted when characters enter or exit maps, when weather effects start or end, when jukebox playback starts or ends, and when a map-stay timer is started.
 
 | Type | Body Struct | Description |
 |------|-------------|-------------|
@@ -93,6 +94,8 @@ Map status events emitted when characters enter or exit maps, when weather effec
 | WEATHER_START | WeatherStart | Weather effect started in map |
 | WEATHER_END | WeatherEnd | Weather effect ended in map |
 | MAP_TIMER_STARTED | MapTimerStarted | Map-stay timer started for a character |
+| JUKEBOX_START | JukeboxStart | Jukebox playback started in map |
+| JUKEBOX_END | JukeboxEnd | Jukebox playback ended in map |
 
 ### COMMAND_TOPIC_CHARACTER
 
@@ -101,6 +104,7 @@ Commands to character service.
 | Type | Body Struct | Description |
 |------|-------------|-------------|
 | CHANGE_MAP | ChangeMapBody | Move a character to a different map |
+| CHANGE_MP | changeMpBody | Restore MP to a character inside an active RECOVERY-kind mist's bounding box on a tick |
 
 ### COMMAND_TOPIC_REACTOR
 
@@ -138,11 +142,19 @@ Mist lifecycle events.
 
 ### COMMAND_TOPIC_CHARACTER_BUFF
 
-Disease-application commands sent when a character is inside an active mist's bounding box on a tick.
+Disease-application commands sent when a character is inside an active DISEASE-kind mist's bounding box on a tick.
 
 | Type | Body Struct | Description |
 |------|-------------|-------------|
 | APPLY | applyDiseaseBody | Apply a disease/stat-change buff to a character |
+
+### COMMAND_TOPIC_MONSTER
+
+Status-application commands sent when a monster is inside an active MONSTER-target mist's bounding box on a tick.
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| APPLY_STATUS | applyStatusBody | Apply a damage-over-time status to a monster |
 
 ## Message Types
 
@@ -315,6 +327,16 @@ Command[E] {
 }
 ```
 
+#### PlayJukeboxCommandBody
+
+```
+{
+    itemId: uint32
+    playerName: string
+    durationMs: uint32
+}
+```
+
 ### Character Channel Change Request Command (Consumed)
 
 ```
@@ -379,8 +401,14 @@ Command[E] {
     tickIntervalMs: int64
     sourceSkillId: uint32
     sourceSkillLevel: uint32
+    targetKind: string
+    effectKind: string
+    recoveryMp: int32
+    partyMemberIds: []uint32
 }
 ```
+
+`targetKind` is "CHARACTER" or "MONSTER"; empty means CHARACTER. `effectKind` is "DISEASE", "DAMAGE_OVER_TIME", "PROTECTION", or "RECOVERY"; empty means DISEASE.
 
 #### CancelCommandBody
 
@@ -446,6 +474,23 @@ StatusEvent[E] {
 }
 ```
 
+#### JukeboxStart
+
+```
+{
+    itemId: uint32
+    playerName: string
+}
+```
+
+#### JukeboxEnd
+
+```
+{
+    itemId: uint32
+}
+```
+
 ### Character Command (Produced)
 
 ```
@@ -469,6 +514,15 @@ Command[E] {
     useTargetPosition: bool
     targetX: int16
     targetY: int16
+}
+```
+
+#### changeMpBody
+
+```
+{
+    channelId: channel.Id
+    amount: int16
 }
 ```
 
@@ -555,6 +609,9 @@ Event[E] {
     rbX: int16
     rbY: int16
     duration: int64
+    elemAttr: int32
+    skillDelay: int16
+    effectKind: string
 }
 ```
 
@@ -563,6 +620,34 @@ Event[E] {
 ```
 {
     reason: string
+}
+```
+
+### Monster Command (Produced)
+
+```
+Command[E] {
+    worldId: world.Id
+    channelId: channel.Id
+    mapId: map.Id
+    instance: UUID
+    monsterId: uint32
+    type: string
+    body: E
+}
+```
+
+#### applyStatusBody
+
+```
+{
+    sourceType: string
+    sourceCharacterId: uint32
+    sourceSkillId: uint32
+    sourceSkillLevel: uint32
+    statuses: map[string]int32
+    duration: uint32
+    tickInterval: uint32
 }
 ```
 
@@ -606,8 +691,9 @@ buffCommand[E] {
 - Most messages include transactionId (UUID) for tracing; Mist commands/events and the Character Buff command carry tenant/target identifiers instead of transactionId
 - Character status consumers generate new transactionId for downstream operations
 - Messages are keyed by mapId for partition ordering
-- MAP_TIMER_STARTED, CHANGE_MAP, MAP_CHANGED, CHANNEL_CHANGED, and Character Buff APPLY messages are keyed by characterId
+- MAP_TIMER_STARTED, CHANGE_MAP, MAP_CHANGED, CHANNEL_CHANGED, CHANGE_MP, and Character Buff APPLY messages are keyed by characterId
 - Mist events are keyed by mistId
+- Monster Command APPLY_STATUS messages are keyed by the monster's unique id
 - Headers include span and tenant information for distributed tracing and multi-tenancy
 - Map command consumer starts from last offset (does not replay historical commands)
 - Data event (EVENT_TOPIC_DATA) consumer starts from last offset and runs in a dedicated consumer group

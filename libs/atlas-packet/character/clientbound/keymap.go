@@ -18,10 +18,22 @@ const CharacterKeyMapWriter = "CharacterKeyMap"
 // (CFuncKeyMappedMan::OnInit v79 @0x569e69 `v5 = 89`, memcpy 0x1BD = 445 = 89*5);
 // v83+ keeps the historical 90 the codec has always emitted (documented as a
 // benign over-send / truncation in the gms_v83 CharacterKeyMap evidence notes).
+//
+// JMS reads 94 entries: CFuncKeyMappedMan::OnInit @0x5e79aa (JMS 185, IDB
+// a977912e) sets `v5 = 94` and memcpy's 0x1D6 = 470 = 94*5 bytes. Unlike GMS
+// v95's OnInit @0x568c30 — which reads 89 entries and guards on
+// `iPacket->m_uDataLen < 0x1BDu` (0x1BD = 445 = 89*5), falling back to the
+// default-config path on a short packet — JMS 185 has no such m_uDataLen
+// guard: FUNCKEY_MAPPED::Decode's underlying DecodeBuffer throws ZException(38)
+// on a short read, which is what a 90-entry (GMS-shaped) encode against a
+// JMS client triggers (task-273 round 7).
 func keyMapEntryCount(ctx context.Context) int32 {
 	t := tenant.MustFromContext(ctx)
 	if t.Region() == "GMS" && t.MajorVersion() < 83 {
 		return 89
+	}
+	if t.Region() == "JMS" {
+		return 94
 	}
 	return 90
 }

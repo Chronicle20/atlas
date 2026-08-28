@@ -43,6 +43,7 @@ const (
 	EnvStatusEventTopic            = "EVENT_TOPIC_SKILL_STATUS"
 	StatusEventTypeCreated         = "CREATED"
 	StatusEventTypeUpdated         = "UPDATED"
+	StatusEventTypeDeleted         = "DELETED"
 	StatusEventTypeCooldownApplied = "COOLDOWN_APPLIED"
 	StatusEventTypeCooldownExpired = "COOLDOWN_EXPIRED"
 )
@@ -71,3 +72,6 @@ type StatusEventCooldownAppliedBody struct {
 }
 
 type StatusEventCooldownExpiredBody struct{}
+
+// StatusEventDeletedBody is the empty body emitted alongside StatusEventTypeDeleted.
+type StatusEventDeletedBody struct{}

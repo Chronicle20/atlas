@@ -4,6 +4,8 @@ import (
 	"atlas-channel/configuration"
 	"atlas-channel/configuration/projection"
 	"atlas-channel/configuration/tenant"
+	"atlas-channel/configuration/tenant/diagnostics"
+	"atlas-channel/configuration/tenant/socket"
 	"atlas-channel/listener"
 	"atlas-channel/server"
 	"context"
@@ -146,6 +148,50 @@ func TestComputeOps_AddRemovePortChangeUnchanged(t *testing.T) {
 	// TENANT MISSING: service references tenant not in tenantConfigs → skipped
 	ops = projection.ComputeOps(nil, nil, mk(8585), nil)
 	require.Empty(t, ops, "tenant config missing → no Add op")
+}
+
+// TestComputeOps_DiagnosticsOnlyChangeEmitsNoOps verifies FR-1.6: flipping
+// diagnostics.tracePackets on a live tenant must not drain or re-add a
+// single listener -- ComputeOps only reacts to fields that affect listener
+// identity (region/version/socket/worlds), not to the diagnostics mirror.
+func TestComputeOps_DiagnosticsOnlyChangeEmitsNoOps(t *testing.T) {
+	tid := uuid.New()
+
+	svc := &configuration.RestModel{
+		Tenants: []configuration.ChannelTenantRestModel{{
+			Id:        tid.String(),
+			IPAddress: "10.0.0.1",
+			Worlds: []configuration.ChannelWorldRestModel{{
+				Id: 1,
+				Channels: []configuration.ChannelChannelRestModel{
+					{Id: 0, Port: 8585},
+				},
+			}},
+		}},
+	}
+
+	prevTenants := map[uuid.UUID]tenant.RestModel{
+		tid: {
+			Region:       "GMS",
+			MajorVersion: 83,
+			MinorVersion: 1,
+			Socket:       socket.RestModel{},
+			Worlds:       nil,
+			Diagnostics:  diagnostics.RestModel{TracePackets: false},
+		},
+	}
+	nextTenants := map[uuid.UUID]tenant.RestModel{
+		tid: {
+			Region:       "GMS",
+			MajorVersion: 83,
+			MinorVersion: 1,
+			Socket:       socket.RestModel{},
+			Worlds:       nil,
+			Diagnostics:  diagnostics.RestModel{TracePackets: true},
+		},
+	}
+
+	require.Empty(t, projection.ComputeOps(svc, prevTenants, svc, nextTenants))
 }
 
 func TestCaughtUp_TransitionsAndUnblocksWaiters(t *testing.T) {

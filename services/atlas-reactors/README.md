@@ -10,6 +10,7 @@ This service uses a Redis-backed registry pattern. Reactor instances exist only 
 - Redis (REDIS_URL)
 - OpenTelemetry Collector (TRACE_ENDPOINT)
 - atlas-data service (DATA root URL)
+- atlas-character service (CHARACTERS root URL)
 
 ## Runtime Configuration
 
@@ -28,6 +29,7 @@ This service uses a Redis-backed registry pattern. Reactor instances exist only 
 | COMMAND_TOPIC_DROP             | Kafka topic for drop commands            |
 | ITEM_REACTOR_ACTIVATION_DELAY_MS | Item reactor activation delay in milliseconds (default: 5000) |
 | DATA                           | Root URL for atlas-data service          |
+| CHARACTERS                     | Root URL for atlas-character service     |
 
 ## Documentation
 

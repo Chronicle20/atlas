@@ -107,8 +107,16 @@ func (s *Model) announce(b []byte) error {
 	return err
 }
 
-func (s *Model) WriteHello(majorVersion uint16, minorVersion uint16) error {
-	return s.announce(WriteHello(nil)(majorVersion, minorVersion, s.send.IV(), s.recv.IV(), s.locale))
+// WriteHello sends the unencrypted handshake. tracer, when non-nil, is
+// invoked with the plaintext hello bytes before they reach the connection
+// (FR-4.3, FR-4.4). Passed in rather than resolved here so Model keeps no
+// dependency on the configuration package and the IVs stay unexported.
+func (s *Model) WriteHello(majorVersion uint16, minorVersion uint16, tracer func([]byte)) error {
+	b := WriteHello(nil)(majorVersion, minorVersion, s.send.IV(), s.recv.IV(), s.locale)
+	if tracer != nil {
+		tracer(b)
+	}
+	return s.announce(b)
 }
 
 func (s *Model) ReceiveAESOFB() *crypto.AESOFB {

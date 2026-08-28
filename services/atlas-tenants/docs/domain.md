@@ -14,11 +14,17 @@ Represents a game server tenant with identification, region, and version informa
 - `region` (string): Tenant region
 - `majorVersion` (uint16): Major version number
 - `minorVersion` (uint16): Minor version number
+- `environment` (string): Owning environment. Empty is the legacy value.
 
 ### Invariants
 
 - Name is required
 - Region is required
+- A tenant row belongs to exactly one environment. A write (update or delete)
+  is rejected unless the caller's environment matches the target row's
+  environment, except that a caller with no environment (legacy) is always
+  authorized. Reads are filtered to the caller's environment; a caller with
+  no environment sees every tenant, unfiltered.
 
 ### Processors
 
@@ -39,7 +45,7 @@ Represents a game server tenant with identification, region, and version informa
 
 ### Responsibility
 
-Manages tenant-specific configuration resources including routes, vessels, and instance routes. RPS rewards and MTS configs support seeding from JSON files on the filesystem via the Processor's seed operations below; routes, vessels, and instance routes are seeded from the shared `deploy/seed/shared/all` catalog via `libs/atlas-seeder` (see `configuration/seed`) instead — see the REST API docs for the header-scoped `POST|GET /api/tenants/configurations/<routes|vessels|instance-routes>/seed[/status]` endpoints.
+Manages tenant-specific configuration resources including routes, vessels, instance routes, RPS rewards, MTS configs, trade configs, rankings, kite configs, and imprint configs. RPS rewards, MTS configs, trade configs, and imprint configs support seeding from JSON files on the filesystem via the Processor's seed operations below; routes, vessels, and instance routes are seeded from the shared `deploy/seed/shared/all` catalog via `libs/atlas-seeder` (see `configuration/seed`) instead — see the REST API docs for the header-scoped `POST|GET /api/tenants/configurations/<routes|vessels|instance-routes>/seed[/status]` endpoints. Rankings and kite configs have no seed operation.
 
 ### Core Models
 
@@ -110,9 +116,71 @@ Manages tenant-specific configuration resources including routes, vessels, and i
 - `MtsConfigByIdProvider`: Returns a provider for an MTS config by ID
 - `AllMtsConfigsProvider`: Returns a provider for all MTS configs for a tenant
 
+**Processor (RPS Reward Operations)**
+- `CreateRpsReward`: Creates a new RPS reward configuration
+- `CreateRpsRewardAndEmit`: Creates a new RPS reward configuration and emits a Kafka event
+- `UpdateRpsReward`: Updates an existing RPS reward configuration
+- `UpdateRpsRewardAndEmit`: Updates an existing RPS reward configuration and emits a Kafka event
+- `DeleteRpsReward`: Deletes an RPS reward configuration
+- `DeleteRpsRewardAndEmit`: Deletes an RPS reward configuration and emits a Kafka event
+- `GetRpsRewardById`: Retrieves an RPS reward by ID
+- `GetAllRpsRewards`: Retrieves all RPS rewards for a tenant
+- `RpsRewardByIdProvider`: Returns a provider for an RPS reward by ID
+- `AllRpsRewardsProvider`: Returns a provider for all RPS rewards for a tenant
+
+**Processor (Trade Config Operations)**
+- `CreateTradeConfig`: Creates a new trade configuration
+- `CreateTradeConfigAndEmit`: Creates a new trade configuration and emits a Kafka event
+- `UpdateTradeConfig`: Updates an existing trade configuration
+- `UpdateTradeConfigAndEmit`: Updates an existing trade configuration and emits a Kafka event
+- `DeleteTradeConfig`: Deletes a trade configuration
+- `DeleteTradeConfigAndEmit`: Deletes a trade configuration and emits a Kafka event
+- `GetTradeConfigById`: Retrieves a trade configuration by ID
+- `GetAllTradeConfigs`: Retrieves all trade configurations for a tenant
+- `TradeConfigByIdProvider`: Returns a provider for a trade configuration by ID
+- `AllTradeConfigsProvider`: Returns a provider for all trade configurations for a tenant
+
+**Processor (Rankings Operations)**
+
+One rankings configuration per tenant.
+- `CreateRankings`: Creates the rankings configuration for a tenant
+- `CreateRankingsAndEmit`: Creates the rankings configuration and emits a Kafka event
+- `UpdateRankings`: Updates the rankings configuration for a tenant
+- `UpdateRankingsAndEmit`: Updates the rankings configuration and emits a Kafka event
+- `DeleteRankings`: Deletes the rankings configuration for a tenant
+- `DeleteRankingsAndEmit`: Deletes the rankings configuration and emits a Kafka event
+- `GetRankings`: Retrieves the rankings configuration for a tenant
+- `RankingsProvider`: Returns a provider for the rankings configuration
+
+**Processor (Kite Config Operations)**
+
+One kite-configs configuration per tenant.
+- `CreateKiteConfig`: Creates the kite-configs configuration for a tenant
+- `CreateKiteConfigAndEmit`: Creates the kite-configs configuration and emits a Kafka event
+- `UpdateKiteConfig`: Updates the kite-configs configuration for a tenant
+- `UpdateKiteConfigAndEmit`: Updates the kite-configs configuration and emits a Kafka event
+- `DeleteKiteConfig`: Deletes the kite-configs configuration for a tenant
+- `DeleteKiteConfigAndEmit`: Deletes the kite-configs configuration and emits a Kafka event
+- `GetKiteConfig`: Retrieves the kite-configs configuration for a tenant
+- `KiteConfigProvider`: Returns a provider for the kite-configs configuration
+
+**Processor (Imprint Config Operations)**
+- `CreateImprintConfig`: Creates a new imprint configuration
+- `CreateImprintConfigAndEmit`: Creates a new imprint configuration and emits a Kafka event
+- `UpdateImprintConfig`: Updates an existing imprint configuration
+- `UpdateImprintConfigAndEmit`: Updates an existing imprint configuration and emits a Kafka event
+- `DeleteImprintConfig`: Deletes an imprint configuration
+- `DeleteImprintConfigAndEmit`: Deletes an imprint configuration and emits a Kafka event
+- `GetImprintConfigById`: Retrieves an imprint configuration by ID
+- `GetAllImprintConfigs`: Retrieves all imprint configurations for a tenant
+- `ImprintConfigByIdProvider`: Returns a provider for an imprint configuration by ID
+- `AllImprintConfigsProvider`: Returns a provider for all imprint configurations for a tenant
+
 **Processor (Seed Operations)**
 - `SeedRpsRewards`: Deletes all existing RPS rewards for a tenant and loads them from seed files
 - `SeedMtsConfigs`: Deletes all existing MTS configs for a tenant and loads them from seed files
+- `SeedTradeConfigs`: Deletes all existing trade configs for a tenant and loads them from seed files
+- `SeedImprintConfigs`: Deletes all existing imprint configs for a tenant and loads them from seed files
 
 Routes, vessels, and instance routes are no longer seeded through the
 `Processor` (the former `SeedRoutes` / `SeedInstanceRoutes` / `SeedVessels`

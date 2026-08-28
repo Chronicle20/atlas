@@ -166,7 +166,8 @@ JSON:API resource for reactor scripts.
     "reactorId": "2000",
     "description": "Maple Island Box",
     "hitRules": [],
-    "actRules": []
+    "actRules": [],
+    "touchRules": []
   }
 }
 ```
@@ -179,6 +180,7 @@ JSON:API resource for reactor scripts.
 | description | string | Human-readable description |
 | hitRules | array | Rules for hit events |
 | actRules | array | Rules for trigger events |
+| touchRules | array | Rules for touch events |
 
 ### Rule Structure
 

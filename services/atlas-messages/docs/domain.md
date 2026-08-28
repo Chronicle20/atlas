@@ -83,6 +83,7 @@ A command consists of a Producer function that matches message patterns and retu
 | PQStageCommandProducer | `@pq stage` | Force-advances the current party quest stage |
 | WeatherCommandProducer | `@weather <itemId> <message>` | Triggers a weather effect in the current field (30s) |
 | AwardTamenessCommandProducer | `@award <petName> tameness <amount>` | Awards tameness (closeness) to a named pet of the issuing character |
+| ReactorDestroyAllCommandProducer | `@reactor destroy all` | Destroys all reactors in the current map and clears their cooldowns |
 
 Target values:
 - `me` - The command issuer
@@ -113,11 +114,34 @@ Provides character data retrieval for message processing and command execution.
 | accountId | uint32 | Associated account ID |
 | worldId | world.Id | World the character is in |
 | name | string | Character name |
+| gender | byte | Character gender |
+| skinColor | byte | Character skin color |
+| face | uint32 | Character face ID |
+| hair | uint32 | Character hair ID |
 | level | byte | Character level |
-| jobId | uint16 | Character job ID |
-| mapId | uint32 | Current map ID |
+| jobId | job.Id | Character job ID |
+| strength | uint16 | Strength stat |
+| dexterity | uint16 | Dexterity stat |
+| intelligence | uint16 | Intelligence stat |
+| luck | uint16 | Luck stat |
+| hp | uint16 | Current HP |
+| maxHp | uint16 | Maximum HP |
+| mp | uint16 | Current MP |
+| maxMp | uint16 | Maximum MP |
+| hpMpUsed | int | HP/MP AP allocation used |
+| ap | uint16 | Unassigned AP |
+| sp | string | Comma-separated SP table |
+| experience | uint32 | Experience points |
+| fame | int16 | Fame value |
+| gachaponExperience | uint32 | Gachapon experience |
+| spawnPoint | uint32 | Spawn point |
 | gm | int | GM status (1 = GM) |
+| meso | uint32 | Meso amount |
+| x | int16 | X position |
+| y | int16 | Y position |
 | skills | []skill.Model | Character's skills |
+
+Note: `Model.Stance()` and `Model.Rank()`/`Model.RankMove()`/`Model.JobRank()`/`Model.JobRankMove()` are hardcoded accessors that always return 0; they have no backing field on `Model`.
 
 ### Invariants
 
@@ -181,6 +205,7 @@ Builds and submits saga transactions for command execution. Commands produce sag
 | TransactionId | uuid.UUID | Unique transaction identifier |
 | SagaType | Type | Type of saga (inventory_transaction, quest_reward, trade_transaction) |
 | InitiatedBy | string | Initiator of the saga |
+| Timeout | int64 | Optional per-saga timeout in milliseconds; 0 uses the orchestrator default |
 | Steps | []Step | Steps in the saga |
 
 #### Step

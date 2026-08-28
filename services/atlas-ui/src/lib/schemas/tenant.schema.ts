@@ -59,3 +59,12 @@ export const tenantNameSchema = z.object({
 });
 
 export type TenantNameFormData = z.infer<typeof tenantNameSchema>;
+
+/**
+ * Schema for the tenant diagnostics form (packet trace logging toggle).
+ */
+export const diagnosticsFormSchema = z.object({
+  tracePackets: z.boolean(),
+});
+
+export type DiagnosticsFormValues = z.infer<typeof diagnosticsFormSchema>;

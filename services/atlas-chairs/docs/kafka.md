@@ -12,6 +12,7 @@
 | Topic Environment Variable | Description |
 |---------------------------|-------------|
 | EVENT_TOPIC_CHAIR_STATUS | Chair status events |
+| COMMAND_TOPIC_CHARACTER | Character HP/MP change commands |
 
 ## Message Types
 
@@ -36,6 +37,7 @@ Consumed from COMMAND_TOPIC_CHAIR. Generic envelope with typed body.
 |------|-----------|-------------|
 | USE | UseChairCommandBody | Sit on chair |
 | CANCEL | CancelChairCommandBody | Stop sitting |
+| RECOVERY | RecoveryCommandBody | HP/MP recovery tick |
 
 ##### UseChairCommandBody
 
@@ -50,6 +52,14 @@ Consumed from COMMAND_TOPIC_CHAIR. Generic envelope with typed body.
 | Field | Type |
 |-------|------|
 | CharacterId | uint32 |
+
+##### RecoveryCommandBody
+
+| Field | Type |
+|-------|------|
+| CharacterId | uint32 |
+| Hp | int16 |
+| Mp | int16 |
 
 ### Events Consumed
 
@@ -153,6 +163,40 @@ Produced to EVENT_TOPIC_CHAIR_STATUS.
 |-------|------|
 | CharacterId | uint32 |
 | Type | string |
+
+### Commands Produced
+
+#### Command (Character)
+
+Produced to COMMAND_TOPIC_CHARACTER.
+
+| Field | Type |
+|-------|------|
+| WorldId | world.Id |
+| CharacterId | uint32 |
+| Type | string |
+| Body | varies |
+
+##### Character Command Types
+
+| Type | Body Type | Description |
+|------|-----------|-------------|
+| CHANGE_HP | ChangeHPCommandBody | Change character HP |
+| CHANGE_MP | ChangeMPCommandBody | Change character MP |
+
+##### ChangeHPCommandBody
+
+| Field | Type |
+|-------|------|
+| ChannelId | channel.Id |
+| Amount | int16 |
+
+##### ChangeMPCommandBody
+
+| Field | Type |
+|-------|------|
+| ChannelId | channel.Id |
+| Amount | int16 |
 
 ## Transaction Semantics
 

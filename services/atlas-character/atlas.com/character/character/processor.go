@@ -616,7 +616,7 @@ func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UU
 			return txErr
 		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, jobChangedEventProvider(transactionId, characterId, channel, jobId))
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeJob}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeJob}, map[string]interface{}{"job": jobId}))
 		return nil
 	}
 }
@@ -650,7 +650,7 @@ func (p *ProcessorImpl) ChangeHair(mb *message.Buffer) func(transactionId uuid.U
 			return txErr
 		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, hairChangedEventProvider(transactionId, characterId, channel.WorldId(), oldHair, styleId))
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHair}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHair}, map[string]interface{}{"hair": styleId}))
 		return nil
 	}
 }
@@ -684,7 +684,7 @@ func (p *ProcessorImpl) ChangeFace(mb *message.Buffer) func(transactionId uuid.U
 			return txErr
 		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, faceChangedEventProvider(transactionId, characterId, channel.WorldId(), oldFace, styleId))
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeFace}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeFace}, map[string]interface{}{"face": styleId}))
 		return nil
 	}
 }
@@ -718,7 +718,7 @@ func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.U
 			return txErr
 		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, skinColorChangedEventProvider(transactionId, characterId, channel.WorldId(), oldSkin, styleId))
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeSkin}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeSkin}, map[string]interface{}{"skin": styleId}))
 		return nil
 	}
 }
@@ -789,7 +789,7 @@ func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId u
 			)
 		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, experienceChangedEventProvider(transactionId, characterId, channel, emittedExperience, current))
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeExperience}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeExperience}, map[string]interface{}{"experience": current}))
 		if awardedLevels > 0 {
 			_ = mb.Put(character2.EnvCommandTopic, awardLevelCommandProvider(transactionId, characterId, channel, awardedLevels))
 		}
@@ -835,7 +835,7 @@ func (p *ProcessorImpl) DeductExperience(mb *message.Buffer) func(transactionId 
 		// Create an experience distribution representing the deduction (negative display)
 		deduction := []ExperienceModel{{experienceType: character2.ExperienceDistributionTypeDeath, amount: amount, attr1: 0}}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, experienceChangedEventProvider(transactionId, characterId, channel, deduction, current))
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeExperience}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeExperience}, map[string]interface{}{"experience": current}))
 		return nil
 	}
 }
@@ -876,7 +876,7 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 			return txErr
 		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, levelChangedEventProvider(transactionId, characterId, channel, actual, current))
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeLevel}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeLevel}, map[string]interface{}{"level": current}))
 		return nil
 	}
 }
@@ -914,14 +914,15 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 			return ErrMesoOverflow
 		}
 
-		if err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(c); err != nil {
+		newMeso := uint32(int64(c.Meso()) + int64(amount))
+		if err = dynamicUpdate(tx)(SetMeso(newMeso))(c); err != nil {
 			return err
 		}
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			if err := buf.Put(character2.EnvEventTopicCharacterStatus, mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType, showEffect)); err != nil {
 				return err
 			}
-			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeMeso}, nil))
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeMeso}, map[string]interface{}{"meso": newMeso}))
 		})
 	})
 	if errors.Is(txErr, ErrNotEnoughMeso) && rejectEmit != nil {
@@ -971,7 +972,8 @@ func (p *ProcessorImpl) AwardPickedUpMeso(transactionId uuid.UUID, f field.Model
 				p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
 				return ErrMesoOverflow
 			}
-			if err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(c); err != nil {
+			newMeso := uint32(int64(c.Meso()) + int64(meso))
+			if err = dynamicUpdate(tx)(SetMeso(newMeso))(c); err != nil {
 				return err
 			}
 			return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
@@ -982,7 +984,7 @@ func (p *ProcessorImpl) AwardPickedUpMeso(transactionId uuid.UUID, f field.Model
 				if err = buf.Put(character2.EnvEventTopicCharacterStatus, mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), int32(meso), dropId, actorTypeDrop, false)); err != nil {
 					return err
 				}
-				return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(f.WorldId(), f.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+				return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(f.WorldId(), f.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, map[string]interface{}{"meso": newMeso}))
 			})
 		})
 		if txErr != nil {
@@ -1013,11 +1015,12 @@ func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Mod
 			return ErrNotEnoughMeso
 		}
 
-		if err = dynamicUpdate(tx)(SetMeso(c.Meso() - amount))(c); err != nil {
+		newMeso := c.Meso() - amount
+		if err = dynamicUpdate(tx)(SetMeso(newMeso))(c); err != nil {
 			return err
 		}
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, map[string]interface{}{"meso": newMeso}))
 		})
 	})
 	if errors.Is(txErr, ErrNotEnoughMeso) && rejectEmit != nil {
@@ -1050,7 +1053,7 @@ func (p *ProcessorImpl) RequestChangeFame(transactionId uuid.UUID, characterId u
 			if err := buf.Put(character2.EnvEventTopicCharacterStatus, fameChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType)); err != nil {
 				return err
 			}
-			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeFame}, nil))
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeFame}, map[string]interface{}{"fame": total}))
 		})
 	})
 }
@@ -1144,10 +1147,12 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 		err = dynamicUpdate(tx)(eufs...)(c)
 		if err != nil {
 			rejectEmit = func() error {
-				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableAP}, nil))
+				return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableAP}, map[string]interface{}{"available_ap": c.AP()}))
 			}
 			return err
 		}
+
+		values["available_ap"] = c.AP() - spent
 
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, stats, values))
@@ -1189,11 +1194,12 @@ func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId
 		if c.SP(sb) < uint32(amount) {
 			return errors.New("not enough sp")
 		}
-		if err = dynamicUpdate(tx)(SetSP(c.SP(sb)-uint32(amount), uint32(sb)))(c); err != nil {
+		newSp := c.SP(sb) - uint32(amount)
+		if err = dynamicUpdate(tx)(SetSP(newSp, uint32(sb)))(c); err != nil {
 			return err
 		}
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableSP}, nil))
+			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableSP}, map[string]interface{}{"available_sp": newSp}))
 		})
 	})
 	if txErr != nil {
@@ -1452,7 +1458,7 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 			_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, f.MapId(), 0, character2.KillerTypeUnknown))
 		}
 
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, map[string]interface{}{"hp": adjusted}))
 		return nil
 	}
 }
@@ -1504,7 +1510,7 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 			_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, f.MapId(), 0, character2.KillerTypeUnknown))
 		}
 
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, map[string]interface{}{"hp": clamped}))
 		return nil
 	}
 }
@@ -1519,6 +1525,7 @@ func (p *ProcessorImpl) ChangeMPAndEmit(transactionId uuid.UUID, channel channel
 
 func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
+		var adjusted uint16
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
@@ -1531,14 +1538,14 @@ func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUI
 			effectiveStats, err := effective_stats.RequestByCharacter(p.ctx, channel, c.Id())(p.l, p.ctx)
 			maxMP := resolveEffectiveMax(p.l, c.MaxMp(), effectiveStats.MaxMp, err, c.Id(), "MaxMP")
 
-			adjusted := enforceBounds(amount, c.Mp(), maxMP, 0)
+			adjusted = enforceBounds(amount, c.Mp(), maxMP, 0)
 			p.l.Debugf("Attempting to adjust character [%d] mana by [%d] to [%d].", characterId, amount, adjusted)
 			return dynamicUpdate(tx)(SetMana(adjusted))(c)
 		})
 		if txErr != nil {
 			return txErr
 		}
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeMp}, nil))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeMp}, map[string]interface{}{"mp": adjusted}))
 		return nil
 	}
 }
@@ -1573,7 +1580,7 @@ func (p *ProcessorImpl) ClampHP(mb *message.Buffer) func(transactionId uuid.UUID
 		}
 
 		if clamped {
-			_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, nil))
+			_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, map[string]interface{}{"hp": maxValue}))
 		}
 		return nil
 	}
@@ -1609,7 +1616,7 @@ func (p *ProcessorImpl) ClampMP(mb *message.Buffer) func(transactionId uuid.UUID
 		}
 
 		if clamped {
-			_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeMp}, nil))
+			_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeMp}, map[string]interface{}{"mp": maxValue}))
 		}
 		return nil
 	}
@@ -1636,6 +1643,8 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 		var newMaxHP, newMaxMP uint16
 		var newStr, newDex uint16
 		var newInt uint16
+		var newAP uint16
+		var newSP uint32
 
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById(p.SkillModelDecorator)(characterId)
@@ -1681,10 +1690,12 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 			newMaxHP = c.MaxHp() + addedHP
 			newMaxMP = c.MaxMp() + addedMP
 			newInt = c.Intelligence()
+			newAP = c.AP() + addedAP
+			newSP = c.SP(sb) + addedSP
 
 			eufs := []EntityUpdateFunction{
-				SetAP(c.AP() + addedAP),
-				SetSP(c.SP(sb)+addedSP, uint32(sb)),
+				SetAP(newAP),
+				SetSP(newSP, uint32(sb)),
 				SetHealth(newMaxHP),
 				SetMaxHp(newMaxHP),
 				SetMana(newMaxMP),
@@ -1709,6 +1720,10 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 		}
 
 		values := map[string]interface{}{
+			"available_ap": newAP,
+			"available_sp": newSP,
+			"hp":           newMaxHP,
+			"mp":           newMaxMP,
 			"max_hp":       newMaxHP,
 			"max_mp":       newMaxMP,
 			"intelligence": newInt,
@@ -1892,6 +1907,8 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 		var addedMP uint16
 		var newMaxHP, newMaxMP uint16
 		var newInt uint16
+		var newAP uint16
+		var newSP uint32
 
 		randBoundFunc := func(lower uint16, upper uint16) uint16 {
 			return uint16(rand.Float32()*float32(upper-lower+1)) + lower
@@ -1961,13 +1978,19 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 			// unresolved curJid still yields the correct "book 0" answer.
 			curJid, _ := p.set().Job.Resolve(c.JobId())
 			sb := getSkillBook(curJid)
-			return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(newMaxHP), SetMaxHp(newMaxHP), SetMana(newMaxMP), SetMaxMp(newMaxMP))(c)
+			newAP = c.AP() + addedAP
+			newSP = c.SP(sb) + addedSP
+			return dynamicUpdate(tx)(SetAP(newAP), SetSP(newSP, uint32(sb)), SetHealth(newMaxHP), SetMaxHp(newMaxHP), SetMana(newMaxMP), SetMaxMp(newMaxMP))(c)
 		})
 		if txErr != nil {
 			return txErr
 		}
 
 		values := map[string]interface{}{
+			"available_ap": newAP,
+			"available_sp": newSP,
+			"hp":           newMaxHP,
+			"mp":           newMaxMP,
 			"max_hp":       newMaxHP,
 			"max_mp":       newMaxMP,
 			"intelligence": newInt,
@@ -2214,6 +2237,7 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 		const baseStat uint16 = 4
 
+		var newAP uint16
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
@@ -2242,12 +2266,13 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 				c.Intelligence(), baseStat,
 				c.Luck(), baseStat)
 
+			newAP = c.AP() + returnedAP
 			return dynamicUpdate(tx)(
 				SetStrength(baseStat),
 				SetDexterity(baseStat),
 				SetIntelligence(baseStat),
 				SetLuck(baseStat),
-				SetAP(c.AP()+returnedAP),
+				SetAP(newAP),
 			)(c)
 		})
 		if txErr != nil {
@@ -2255,6 +2280,7 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 		}
 
 		values := map[string]interface{}{
+			"available_ap": newAP,
 			"strength":     baseStat,
 			"dexterity":    baseStat,
 			"intelligence": baseStat,
@@ -2309,6 +2335,7 @@ func (p *ProcessorImpl) RebalanceAP(mb *message.Buffer) func(transactionId uuid.
 			targets)
 
 		values := map[string]interface{}{
+			"available_ap": result.Unallocated,
 			"strength":     result.Str,
 			"dexterity":    result.Dex,
 			"intelligence": result.Int,

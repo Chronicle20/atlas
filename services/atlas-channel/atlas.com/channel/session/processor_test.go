@@ -1,11 +1,17 @@
 package session_test
 
 import (
+	"atlas-channel/configuration"
+	"atlas-channel/configuration/tenant"
+	"atlas-channel/configuration/tenant/diagnostics"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"atlas-channel/test"
 	"context"
 	"errors"
+	"io"
+	"net"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -958,4 +964,124 @@ func TestInMapAllInstancesModelProvider_ExcludesCashSceneSessions(t *testing.T) 
 	if len(got) != 1 || !set[100] {
 		t.Errorf("InMapAllInstancesModelProvider = chars %v, want exactly {100} (cash-scene 200/300 excluded)", set)
 	}
+}
+
+// TestAnnounce_TracesOutboundPacket exercises the trace gate end to end
+// through Announce: flag off emits nothing (FR-2.1), flag on emits exactly
+// one [PKT OUT] entry rendering the writer's plaintext bytes before
+// encryption (FR-4.2, FR-4.4), and a writer-resolution failure still
+// returns the original error with no trace emitted (FR-4.5).
+//
+// Each subtest publishes its own snapshot for the trace flag before
+// exercising Announce, so it does not depend on a prior subtest's
+// published state -- the flag is per-tenant, per-snapshot global state,
+// and the tenant id is shared across this package's tests.
+func TestAnnounce_TracesOutboundPacket(t *testing.T) {
+	_, cleanup := testSetup()
+	defer cleanup()
+
+	ctx := test.CreateTestContext()
+	tenantId := test.DefaultTenantId
+
+	body := []byte{0x7d, 0x00, 0xaa, 0xbb}
+	encoder := packet.Encode(func(_ logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+		return func(_ map[string]interface{}) []byte { return nil }
+	})
+
+	newSession := func(t *testing.T) session.Model {
+		serverConn, clientConn := net.Pipe()
+		t.Cleanup(func() {
+			_ = serverConn.Close()
+			_ = clientConn.Close()
+		})
+		go func() { _, _ = io.Copy(io.Discard, clientConn) }()
+
+		s := session.NewSession(uuid.New(), test.CreateDefaultMockTenant(), 0, serverConn)
+		session.AddSessionToRegistry(tenantId, s)
+		return s
+	}
+
+	t.Run("flag off -- no trace entry", func(t *testing.T) {
+		configuration.PublishSnapshot(&configuration.RestModel{Id: uuid.New()}, map[uuid.UUID]tenant.RestModel{
+			tenantId: {Diagnostics: diagnostics.RestModel{TracePackets: false}},
+		})
+
+		s := newSession(t)
+		l, h := logtest.NewNullLogger()
+		l.SetLevel(logrus.DebugLevel)
+
+		wp := writer.Producer(func(_ string) (socketwriter.BodyFunc, error) {
+			return func(_ logrus.FieldLogger, _ context.Context) func(encoder packet.Encode) []byte {
+				return func(_ packet.Encode) []byte { return body }
+			}, nil
+		})
+		op := session.Announce(l)(ctx)(wp)("CHARACTER_DATA")(encoder)
+		if err := op(s); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for _, e := range h.AllEntries() {
+			if strings.HasPrefix(e.Message, "[PKT OUT]") {
+				t.Fatalf("unexpected [PKT OUT] entry: %q", e.Message)
+			}
+		}
+	})
+
+	t.Run("flag on -- exactly one [PKT OUT] entry with the writer's plaintext bytes", func(t *testing.T) {
+		configuration.PublishSnapshot(&configuration.RestModel{Id: uuid.New()}, map[uuid.UUID]tenant.RestModel{
+			tenantId: {Diagnostics: diagnostics.RestModel{TracePackets: true}},
+		})
+
+		s := newSession(t)
+		l, h := logtest.NewNullLogger()
+		l.SetLevel(logrus.DebugLevel)
+
+		wp := writer.Producer(func(_ string) (socketwriter.BodyFunc, error) {
+			return func(_ logrus.FieldLogger, _ context.Context) func(encoder packet.Encode) []byte {
+				return func(_ packet.Encode) []byte { return body }
+			}, nil
+		})
+		op := session.Announce(l)(ctx)(wp)("CHARACTER_DATA")(encoder)
+		if err := op(s); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		entries := h.AllEntries()
+		if len(entries) != 1 {
+			t.Fatalf("expected 1 entry, got %d", len(entries))
+		}
+		if entries[0].Level != logrus.DebugLevel {
+			t.Fatalf("expected DebugLevel, got %v", entries[0].Level)
+		}
+		wantPrefix := "[PKT OUT] writer=CHARACTER_DATA op=0x007d len=4 session=" + s.SessionId().String()
+		if !strings.HasPrefix(entries[0].Message, wantPrefix) {
+			t.Fatalf("message = %q, want prefix %q", entries[0].Message, wantPrefix)
+		}
+		wantBody := "0000  7d 00 aa bb                                       |}...|"
+		if !strings.Contains(entries[0].Message, wantBody) {
+			t.Fatalf("message = %q, want it to contain %q", entries[0].Message, wantBody)
+		}
+	})
+
+	t.Run("writer resolution fails -- error returned unchanged, no trace emitted (FR-4.5)", func(t *testing.T) {
+		configuration.PublishSnapshot(&configuration.RestModel{Id: uuid.New()}, map[uuid.UUID]tenant.RestModel{
+			tenantId: {Diagnostics: diagnostics.RestModel{TracePackets: true}},
+		})
+
+		s := newSession(t)
+		l, h := logtest.NewNullLogger()
+		l.SetLevel(logrus.DebugLevel)
+
+		wantErr := errors.New("writer not found")
+		failingWp := writer.Producer(func(_ string) (socketwriter.BodyFunc, error) {
+			return nil, wantErr
+		})
+		failingOp := session.Announce(l)(ctx)(failingWp)("CHARACTER_DATA")(encoder)
+		if err := failingOp(s); !errors.Is(err, wantErr) {
+			t.Fatalf("err = %v, want %v", err, wantErr)
+		}
+		for _, e := range h.AllEntries() {
+			if strings.HasPrefix(e.Message, "[PKT OUT]") {
+				t.Fatalf("unexpected [PKT OUT] entry: %q", e.Message)
+			}
+		}
+	})
 }

@@ -5,4 +5,4 @@ category: TIER1-FIXTURE
 ida:
     function: CNpcPool::OnNpcEnterField
     address: "0x72068f"
-    decompile_sha256: 0432b05137dbacad758a59d569f5d56ec957290165796e2a680a15863355548b
+    decompile_sha256: 3025a1d77173c62a88bcac30825fc7816d5457c5b76e4d65a4c42c6bc2a35343

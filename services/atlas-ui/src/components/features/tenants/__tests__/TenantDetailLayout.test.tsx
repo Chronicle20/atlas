@@ -86,4 +86,17 @@ describe("TenantDetailLayout", () => {
       screen.getByRole("link", { name: "Maple Life" }),
     ).toBeInTheDocument();
   });
+
+  it("shows the Diagnostics nav item", () => {
+    vi.mocked(useTenantConfiguration).mockReturnValue({
+      data: {
+        id: "tnt-1",
+        attributes: { socket: { handlers: [], writers: [] } },
+      },
+    } as never);
+    renderAt("tnt-1");
+
+    const link = screen.getByRole("link", { name: "Diagnostics" });
+    expect(link).toHaveAttribute("href", "/tenants/tnt-1/diagnostics");
+  });
 });

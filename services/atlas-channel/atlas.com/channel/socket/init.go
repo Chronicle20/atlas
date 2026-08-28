@@ -80,8 +80,8 @@ func (d dualWaitGroup) Done()     { d.a.Done(); d.b.Done() }
 // sessionWg is fanned out per accepted connection, so a handle-scoped
 // waitgroup sees real session lifetime without also counting the
 // accept loop, which lives as long as the handle does.
-func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg socket.WaitGrouper, sessionWg socket.WaitGrouper) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) (net.Listener, error) {
-	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) (net.Listener, error) {
+func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg socket.WaitGrouper, sessionWg socket.WaitGrouper) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int, names map[uint16]string) (net.Listener, error) {
+	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int, names map[uint16]string) (net.Listener, error) {
 		// Bind before any other side effect: a failed bind must leave
 		// nothing for Registry.Add's rollback to unwind. Bind the wildcard
 		// address, not ipAddress -- ipAddress is advertisement-only.
@@ -136,6 +136,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg socket.Wa
 					sp.DestroyByIdWithSpan(sessionId)
 				}),
 				socket.SetReadWriter(rw),
+				socket.SetPacketTracer(NewPacketTracer(l, t, names)),
 				socket.SetIdleNotifier(session.SendPing(l, ctx, wp), idleThreshold),
 			)
 			if err != nil {

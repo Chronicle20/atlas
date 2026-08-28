@@ -2380,6 +2380,22 @@
   fname: CITC::OnNormalItemResult
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+- op: MAPLELIFE_RESULT
+  direction: clientbound
+  opcode: 359
+  fname: CUICharacterSaleDlg::OnCheckDuplicatedIDResult
+  provenance: ida-discovered
+  ida:
+    address: 8378697
+  note: 'task-246 bug fix: CUICharacterSaleDlg::OnPacket (v84 0x7fd845) decodes `if (a2 == 359) OnCheckDuplicatedIDResult(this, a3)`, read directly off the dispatcher (not inferred). Reached via the CField forwarder at 0x544395 (IDB-named CField::OnItemUpgrade, this[134]/CField+0x21C) — task-129 already annotated it as "routes 359/360"; the sibling symbol CField::OnCharacterSale (this[135]/CField+0x220, v84 0x5443af) is misapplied and actually forwards to CUIItemUpgrade (Vicious Hammer). DecodeStr(name) then Decode1(result): 0 -> success; >0 -> "name taken" (5052); negative -> unknown error (5757), matching the AVAILABLE:0/TAKEN:1/UNKNOWN_ERROR:255 table used by v83/v87/v92/v95. Retracts derivation.md §2.0 VERSION-ABSENT (see §2.0-CORRECTION). Clientbound 359 has no other claimant.'
+- op: MAPLELIFE_ERROR
+  direction: clientbound
+  opcode: 360
+  fname: CUICharacterSaleDlg::OnCreateNewCharacterResult
+  provenance: ida-discovered
+  ida:
+    address: 8378991
+  note: 'task-246 bug fix: CUICharacterSaleDlg::OnPacket (v84 0x7fd845) decodes `if (a2 == 360) OnCreateNewCharacterResult(a3)`, read directly off the same dispatcher as MAPLELIFE_RESULT (359), via the CField forwarder at 0x544395 (this[134]). Decode1(result) then Decode4(u32): 52 -> success; 54 -> "name taken" notice (5051); else -> unknown error formatted with the u32 (5757) — SUCCESS:52/NAME_TAKEN_AT_SUBMIT:54/UNKNOWN_ERROR:255, identical to gms_83_1''s table. Retracts derivation.md §2.0 VERSION-ABSENT (see §2.0-CORRECTION). Clientbound 360 has no other claimant.'
 - op: VICIOUS_HAMMER
   direction: clientbound
   opcode: 364
@@ -4221,6 +4237,14 @@
   ida:
     address: 5959634
   note: 'task-102: v84 opcode corrected 253->260 (0xFD->0x104). CITC::OnRegisterSaleEntry @0x5aefd2 (GMS_v84.1_U_DEVM.exe, IDA port 13337) builds COutPacket(0x104) — push 104h @0x5aefff; all 16 sibling CITC senders (OnSaleCurrentItem @0x5af1db, OnBuy @0x5af9fa, OnBuyAuctionImm @0x5afa6d, OnSetZzim @0x5afc00, OnBuyZzim @0x5afc73, OnDeleteZzim @0x5afd11, OnViewWish @0x5afd84, OnBuyWish @0x5afdf7, OnCancelWish @0x5afe6a, OnCancelSaleItem @0x5afedd, OnMoveITCPurchaseItemLtoS @0x5aff86, OnChangedCategory @0x5af5fa, OnChangedCategorySub @0x5af6d9, OnChangedPage @0x5af7c8, OnRegisterWishEntry @0x5af8a5) plus the two inlined dialog handlers (CITCWnd_Tab::OnButtonClicked @0x5c77ca, CITCBidAuctionDlg::OnButtonClicked @0x5d3ec7) all build COutPacket(260). The stale csv value 253 (0xFD) was the v83 opcode carried over unshifted — same +7 region shift as the sibling ITC_STATUS_CHARGE 251->258 and ITC_QUERY_CASH_REQUEST 252->259 corrections (CATCH_MONSTER_WITH_ITEM 251->257 class). Serverbound 260 has no other claimant.'
+- op: MAPLELIFE_CHECK_NAME
+  direction: serverbound
+  opcode: 263
+  fname: CUICharacterSaleDlg::SendCheckDuplicateIDPacket
+  provenance: ida-discovered
+  ida:
+    address: 8378474
+  note: 'task-246 bug fix: CUICharacterSaleDlg::SendCheckDuplicateIDPacket (v84 0x7fd86a) is instruction-for-instruction identical to the v87 twin @0x82e04d (size 0xbf both), sending COutPacket::COutPacket(v12, 263) — push 107h. Located by structural fingerprint after the class was misidentified as VERSION-ABSENT on v84 by derivation.md §2.0 (retracted; see §2.0-CORRECTION). Serverbound 263 has no other claimant.'
 - op: ITEM_UPGRADE_UPDATE
   direction: serverbound
   opcode: 267

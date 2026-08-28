@@ -30,6 +30,7 @@ Character status events for synchronizing character state.
 | LEVEL_CHANGED | Character level changed |
 | JOB_CHANGED | Character job changed |
 | GM_CHANGED | Character GM status changed |
+| NAME_CHANGED | Character name changed |
 
 Consumer Group: `Party Service` (default; overridable via `KAFKA_CONSUMER_GROUP`)
 
@@ -71,6 +72,7 @@ Party member status events for member state changes.
 | LOGOUT | Party member logged out |
 | LEVEL_CHANGED | Party member level changed |
 | JOB_CHANGED | Party member job changed |
+| NAME_CHANGED | Party member name changed |
 
 ### COMMAND_TOPIC_INVITE
 
@@ -118,6 +120,15 @@ Invite commands for creating party invitations.
 }
 ```
 
+Body for `NAME_CHANGED`:
+
+```json
+{
+  "oldName": string,
+  "newName": string
+}
+```
+
 ### Character Status Event
 
 ```json
@@ -127,6 +138,15 @@ Invite commands for creating party invitations.
   "characterId": uint32,
   "type": string,
   "body": object
+}
+```
+
+Body for `NAME_CHANGED`:
+
+```json
+{
+  "oldName": string,
+  "newName": string
 }
 ```
 

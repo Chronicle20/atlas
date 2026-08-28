@@ -6,9 +6,6 @@ import (
 	"errors"
 
 	"github.com/sirupsen/logrus"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -32,16 +29,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(uniqueId uint32) (Model, error) {
-	t := tenant.MustFromContext(p.ctx)
-	if m, ok := GetCache().Get(t, uniqueId); ok {
-		return m, nil
-	}
-	m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, uniqueId), Extract)()
-	if err != nil {
-		return Model{}, err
-	}
-	GetCache().Put(t, uniqueId, m)
-	return m, nil
+	return getByIdCached(p.l, p.ctx, uniqueId)
 }
 
 func (p *ProcessorImpl) GetEffect(uniqueId uint32, level byte) (effect.Model, error) {

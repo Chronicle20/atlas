@@ -45,7 +45,7 @@ var knownTopLevelKeys = map[string]bool{
 }
 
 var knownSocketKeys = map[string]bool{
-	"handlers": true, "writers": true,
+	"handlers": true, "writers": true, "unsupported": true,
 }
 
 var knownEntryKeys = map[string]bool{
@@ -83,8 +83,50 @@ type seedDoc struct {
 }
 
 type seedSocket struct {
-	Handlers []seedEntry `json:"handlers"`
-	Writers  []seedEntry `json:"writers"`
+	Handlers    []seedEntry     `json:"handlers"`
+	Writers     []seedEntry     `json:"writers"`
+	Unsupported seedUnsupported `json:"unsupported,omitempty"`
+}
+
+// seedUnsupported mirrors atlas-configurations' socket.UnsupportedRestModel:
+// the audited-and-absent lists that distinguish "this version does not have
+// this packet" from "nobody has looked yet". The names are implementation
+// names, never opcodes, so seed-fname has nothing to resolve here - it only
+// has to carry the section through a --write round-trip intact.
+//
+// Both fields are omitempty and the whole section is emitted only when at
+// least one list is non-empty (see MarshalJSON): normalizing an absent
+// section into {"handlers":[],"writers":[]} is the configurations service's
+// job at its REST boundary, and doing it here would churn every template that
+// has never needed the section.
+type seedUnsupported struct {
+	Handlers []string `json:"handlers,omitempty"`
+	Writers  []string `json:"writers,omitempty"`
+}
+
+func (u seedUnsupported) empty() bool { return len(u.Handlers) == 0 && len(u.Writers) == 0 }
+
+// MarshalJSON drops an entirely empty section. encoding/json has no omitempty
+// for structs, so the choice is this or a *seedUnsupported that would make
+// every read site nil-check.
+func (s seedSocket) MarshalJSON() ([]byte, error) {
+	type socketWithUnsupported struct {
+		Handlers    []seedEntry     `json:"handlers"`
+		Writers     []seedEntry     `json:"writers"`
+		Unsupported seedUnsupported `json:"unsupported"`
+	}
+	type socketPlain struct {
+		Handlers []seedEntry `json:"handlers"`
+		Writers  []seedEntry `json:"writers"`
+	}
+	if s.Unsupported.empty() {
+		return json.Marshal(socketPlain{Handlers: s.Handlers, Writers: s.Writers})
+	}
+	return json.Marshal(socketWithUnsupported{
+		Handlers:    s.Handlers,
+		Writers:     s.Writers,
+		Unsupported: s.Unsupported,
+	})
 }
 
 // seedEntry is the ONLY fully-modelled structure. loadSeedTemplate's

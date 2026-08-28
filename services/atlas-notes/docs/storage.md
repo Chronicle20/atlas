@@ -13,6 +13,7 @@
 | message | string | Note content |
 | timestamp | time.Time | When the note was created |
 | flag | byte | Note flag |
+| gift_note | bool | Whether the note originated from a cash-shop gift acknowledgement |
 | created_at | time.Time | Record creation timestamp |
 | updated_at | time.Time | Record update timestamp |
 | deleted_at | gorm.DeletedAt | Soft delete timestamp |

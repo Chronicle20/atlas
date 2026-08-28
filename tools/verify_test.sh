@@ -98,7 +98,14 @@ facts_key() { local k="$1"; shift; "$VERIFY" --facts "$@" 2>/dev/null | sed -n "
 # next run removes, instead of one per attempt.
 probe_suite="$HERE/zz-verify-probe_test.sh"
 probe_deploy="$HERE/../deploy/.zz-verify-probe.tmp"
-cleanup() { rm -f "$probe_suite" "$probe_deploy"; }
+probe_ban_dir="$HERE/../services/atlas-ban/zz-verify-probe"
+probe_account_dir="$HERE/../services/atlas-account/zz-verify-probe"
+probe_bake_ban="$probe_ban_dir/go.mod"
+probe_bake_account="$probe_account_dir/go.mod"
+cleanup() {
+  rm -f "$probe_suite" "$probe_deploy" "$probe_bake_ban" "$probe_bake_account"
+  rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
+}
 trap cleanup EXIT
 cleanup
 printf '#!/usr/bin/env bash\nexit 0\n' > "$probe_suite"
@@ -159,6 +166,34 @@ want_mods="$("$VERIFY" --quick --base HEAD 2>/dev/null \
 want_mods="${want_mods:-0}"
 got_mods="$(facts_key modules_selected --quick --base HEAD)"
 assert_eq "module count agrees" "$want_mods" "$got_mods"
+
+# --- bake selection: one solve, not one per target --------------------------
+#
+# bake_targets() matches a changed path against each service's `path` from
+# .github/config/services.json, requiring the path to end in go.mod. CHANGED
+# includes untracked files, so two untracked go.mods select exactly two
+# targets — and must produce exactly one bake gate, not two.
+mkdir -p "$probe_ban_dir" "$probe_account_dir"
+: > "$probe_bake_ban"
+: > "$probe_bake_account"
+
+assert_eq "two changed go.mods select two bake targets" "atlas-account,atlas-ban" \
+  "$(facts_key bake_targets --base HEAD)"
+
+bake_gate_lines="$(facts_selected --base HEAD | grep -c '^docker buildx bake' || true)"
+assert_eq "two bake targets produce exactly one bake gate" "1" "$bake_gate_lines"
+
+bake_gate_name="$(facts_selected --base HEAD | grep '^docker buildx bake')"
+assert_eq "the gate names the target count" "docker buildx bake (2 target(s))" "$bake_gate_name"
+
+rm -f "$probe_bake_ban" "$probe_bake_account"
+rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
+
+no_bake_lines="$(facts_selected --base HEAD | grep -c '^docker buildx bake' || true)"
+assert_eq "no probes, no bake gate" "0" "$no_bake_lines"
+
+assert_eq "no per-target bake loop remains" "0" \
+  "$(grep -c 'for t in .\{0,4\}TARGETS' "$VERIFY")"
 
 # --- --facts runs nothing --------------------------------------------------
 #

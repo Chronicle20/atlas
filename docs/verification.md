@@ -206,8 +206,12 @@ that reaches outside `libs/`/`services/` in an existing one) means it silently
 loses that content unless the `.dockerignore` gets another `!` line first —
 check this before adding one.
 
-`docker buildx bake atlas-<svc>` for every service whose `go.mod` changed.
-**This is mandatory, not optional.**
+`docker buildx bake` over every target whose `go.mod` changed — all selected
+targets in a **single** invocation, not one bake per target: one context
+transfer instead of one per target, and BuildKit shares the `libs/` mod-only
+and source layers across targets within the solve instead of resolving them
+once per invocation. A failure is BuildKit's own solve output naming the
+failing target and step. **This is mandatory, not optional.**
 
 The shared root `Dockerfile` is parameterized by `ARG SERVICE`; `docker-bake.hcl`
 enumerates one target per Go service, driven by `.github/config/services.json`

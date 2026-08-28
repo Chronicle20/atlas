@@ -282,6 +282,12 @@ fi
 # A broken build still FAILS under cacheonly (every stage runs; only the export
 # is dropped) — verified against both a bad COPY path and a Go type error.
 # To actually PRODUCE runnable `<svc>:local` images, use tools/build-services.sh.
+#
+# All selected targets go into a single `docker buildx bake` invocation rather
+# than one bake per target: BuildKit solves the whole target graph in one
+# call, so a failure is BuildKit's own solve output naming the failing target
+# and step, recorded here as one `FAILED` entry with the full solve output
+# printed — not re-derived by re-running targets individually.
 BAKE_OUTPUT='*.output=type=cacheonly'
 
 bake_targets() {
@@ -333,9 +339,8 @@ else
     elif [ "${#TARGETS[@]}" -eq 0 ]; then
         skip "docker buildx bake (no go.mod touched)"
     else
-        for t in "${TARGETS[@]}"; do
-            step "docker buildx bake $t" docker buildx bake --set "$BAKE_OUTPUT" "$t"
-        done
+        step "docker buildx bake (${#TARGETS[@]} target(s))" \
+            docker buildx bake --set "$BAKE_OUTPUT" "${TARGETS[@]}"
     fi
 fi
 

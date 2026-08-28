@@ -272,6 +272,15 @@ func isEvanJob(jobId uint16) bool {
 	return jobId == 2001 || jobId/100 == 22
 }
 
+// isJmsExtendedSpJob reports whether JMS 185's GW_CharacterStat::Decode gates
+// the extended-SP block for this job. JMS 185's gate is sub_5163A2 @0x5163a2:
+// jobId/1000 == 3 (Resistance 3xxx) || jobId/100 == 22 (Evan growths) ||
+// jobId == 2001 (Evan beginner) — Resistance too, not just Evan as on GMS.
+// IDA-verified; distinct from isEvanJob, which is the GMS-only gate.
+func isJmsExtendedSpJob(jobId uint16) bool {
+	return jobId/1000 == 3 || jobId/100 == 22 || jobId == 2001
+}
+
 func (m *CharacterData) encodeStats(w *response.Writer, t tenant.Model) {
 	w.WriteInt(m.Stats.Id)
 
@@ -313,9 +322,12 @@ func (m *CharacterData) encodeStats(w *response.Writer, t tenant.Model) {
 	w.WriteShort(m.Stats.Mp)
 	w.WriteShort(m.Stats.MaxMp)
 	w.WriteShort(m.Stats.Ap)
-	if t.IsRegion("GMS") && t.MajorAtLeast(84) && isEvanJob(m.Stats.JobId) {
-		// Evan extended SP: byte count + count×(masterLevelIdx, sp) byte-pairs
-		// (GW_CharacterStat::DecodeExtendSP). 0 for a freshly-created Evan (no SP allocated).
+	useExtendedSp := (t.IsRegion("GMS") && t.MajorAtLeast(84) && isEvanJob(m.Stats.JobId)) ||
+		(t.Region() == "JMS" && isJmsExtendedSpJob(m.Stats.JobId))
+	if useExtendedSp {
+		// Extended SP: byte count + count×(masterLevelIdx, sp) byte-pairs
+		// (GW_CharacterStat::DecodeExtendSP). 0 for a freshly-created character
+		// of the gated job (no SP allocated).
 		w.WriteByte(0)
 	} else {
 		w.WriteShort(m.Stats.Sp)
@@ -394,8 +406,10 @@ func (m *CharacterData) decodeStats(r *request.Reader, t tenant.Model) {
 	m.Stats.Mp = r.ReadUint16()
 	m.Stats.MaxMp = r.ReadUint16()
 	m.Stats.Ap = r.ReadUint16()
-	if t.IsRegion("GMS") && t.MajorAtLeast(84) && isEvanJob(m.Stats.JobId) {
-		// Evan extended SP (mirror of Encode): byte count + count×(masterLevelIdx, sp).
+	useExtendedSp := (t.IsRegion("GMS") && t.MajorAtLeast(84) && isEvanJob(m.Stats.JobId)) ||
+		(t.Region() == "JMS" && isJmsExtendedSpJob(m.Stats.JobId))
+	if useExtendedSp {
+		// Extended SP (mirror of Encode): byte count + count×(masterLevelIdx, sp).
 		count := r.ReadByte()
 		for i := byte(0); i < count; i++ {
 			_ = r.ReadByte() // master-level index

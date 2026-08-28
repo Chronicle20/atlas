@@ -133,7 +133,19 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 		w.WriteBool(m.hasMarriageRing) // marriage ring
 		w.WriteAsciiString(m.guildName)
 		w.WriteAsciiString("") // alliance name
-		w.WriteByte(0)         // medal info
+		if t.Region() == "JMS" {
+			// Two unidentified int32s: CWvsContext::OnCharacterInfo @0xb0ab0f /
+			// @0xb0ab19, pushed to CUIUserInfo::SetUserInfo @0xb0ab70/@0xb0ab79
+			// and stored at CUIUserInfo+670/+671 by SetUserInfo @0x9bb7e6 —
+			// display-only fields adjacent to the community/alliance strings.
+			// Their meaning is NOT established in this dump; most plausibly ids
+			// paired with the two preceding strings. Sent as 0, which is correct
+			// in effect for a guildless/allianceless character; unverified for one
+			// with a guild or alliance.
+			w.WriteInt(0)
+			w.WriteInt(0)
+		}
+		w.WriteByte(0) // medal info
 
 		// Pets: iterate 3 slots
 		for slot := int8(0); slot < 3; slot++ {
@@ -256,7 +268,12 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 		m.hasMarriageRing = r.ReadBool() // marriage ring
 		m.guildName = r.ReadAsciiString()
 		_ = r.ReadAsciiString() // alliance name
-		_ = r.ReadByte()        // medal info
+		if t.Region() == "JMS" {
+			// Mirror of Encode: two unidentified int32s @0xb0ab0f/@0xb0ab19.
+			_ = r.ReadInt32()
+			_ = r.ReadInt32()
+		}
+		_ = r.ReadByte() // medal info
 
 		// Pets: bool-terminated loop
 		m.pets = nil

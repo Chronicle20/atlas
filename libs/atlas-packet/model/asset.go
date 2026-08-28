@@ -265,13 +265,25 @@ func (m *Asset) encodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) f
 				w.WriteByte(m.levelType)
 				w.WriteByte(m.level)
 				w.WriteInt(m.experience)
-				if t.IsRegion("GMS") && t.MajorAtLeast(84) {
-					w.WriteInt32(-1) // nDurability (-1 = no durability): GMS v84+ equip field, ordered experience/durability/hammersApplied (GW_ItemSlotEquip::RawDecode +212; absent v83). IDA-verified.
+				if (t.IsRegion("GMS") && t.MajorAtLeast(84)) || t.Region() == "JMS" {
+					// nDurability (-1 = no durability): GMS v84+ equip field, ordered
+					// experience/durability/hammersApplied (GW_ItemSlotEquip::RawDecode
+					// +212; absent v83). IDA-verified. JMS 185's Decode4 at this same
+					// position (@0x50feb9, aligned against GMS v95's RawDecode
+					// @0x4f8360) is nDurability too — atlas previously wrote
+					// hammersApplied (always 0) here on JMS, which the client reads as
+					// "broken": the red-overlay / naked-avatar bug
+					// (bug-jms185-naked-avatar-red-equips.md root cause 2).
+					w.WriteInt32(-1)
 				}
 				// hammersApplied (nIUC): added in the v79 revision (v72 @0x4d0172
 				// reads a single Decode4 = experience; v79 @0x4d7ee8 / v83 @0x4e3c3d
-				// read two). IDA-verified.
-				if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+				// read two). IDA-verified for GMS. nIUC's position on the JMS wire is
+				// NOT established (the trailing Decode4 before the buffers is the
+				// natural candidate given v95's field set, but that ordering is
+				// unproven) — so hammersApplied is left unsent on JMS rather than
+				// guessed into a slot.
+				if t.IsRegion("GMS") && t.MajorAtLeast(79) {
 					w.WriteInt(m.hammersApplied)
 				}
 
@@ -355,6 +367,21 @@ func (m *Asset) encodeCashEquipableInfo(l logrus.FieldLogger, ctx context.Contex
 				}
 				for i := 0; i < filler; i++ {
 					w.WriteByte(0x40)
+				}
+				// JMS 185's GW_ItemSlotEquip::RawDecode @0x50feb9 reads this block —
+				// Decode1 + Decode2×5 + Decode4 — unconditionally for cash and
+				// non-cash items alike (only the first trailing DecodeBuffer(8) is
+				// gated on liCashItemSN == 0); the non-cash arm already emits it
+				// (encodeEquipableInfo above). Without it, any JMS character holding
+				// a cash equip desyncs CharacterData by 15 bytes.
+				if t.Region() == "JMS" {
+					w.WriteByte(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteInt(0)
 				}
 				w.WriteInt64(94354848000000000)
 				w.WriteInt32(-1)
@@ -617,6 +644,16 @@ func (m *Asset) decodeEquipableInfo(r *request.Reader, t tenant.Model, isCash bo
 					for i := 0; i < fillerLen; i++ {
 						_ = r.ReadByte()
 					}
+					// JMS-only 15-byte block (mirror of encodeCashEquipableInfo).
+					if t.Region() == "JMS" {
+						_ = r.ReadByte()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint32()
+					}
 					_ = r.ReadInt64() // 94354848000000000
 					_ = r.ReadInt32() // -1
 				}
@@ -626,11 +663,12 @@ func (m *Asset) decodeEquipableInfo(r *request.Reader, t tenant.Model, isCash bo
 					m.levelType = r.ReadByte()
 					m.level = r.ReadByte()
 					m.experience = r.ReadUint32()
-					if t.IsRegion("GMS") && t.MajorAtLeast(84) {
-						_ = r.ReadInt32() // nDurability: GMS v84+ (mirror of Encode)
+					if (t.IsRegion("GMS") && t.MajorAtLeast(84)) || t.Region() == "JMS" {
+						_ = r.ReadInt32() // nDurability: GMS v84+ / JMS (mirror of Encode)
 					}
-					// hammersApplied (nIUC): v79+ only (mirror of Encode).
-					if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+					// hammersApplied (nIUC): GMS v79+ only (mirror of Encode). Not sent
+					// on JMS — see the Encode-side comment on nIUC's unproven position.
+					if t.IsRegion("GMS") && t.MajorAtLeast(79) {
 						m.hammersApplied = r.ReadUint32()
 					}
 

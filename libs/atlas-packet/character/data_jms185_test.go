@@ -194,3 +194,79 @@ func TestCharacterDataByteOutputJMS185(t *testing.T) {
 			len(actual), len(expected), actual, expected)
 	}
 }
+
+// TestIsJmsExtendedSpJob pins sub_5163A2 @0x5163a2: job/1000 == 3 (Resistance)
+// || job/100 == 22 (Evan growths) || job == 2001 (Evan beginner). Distinct from
+// isEvanJob (the GMS-only gate), which does not accept Resistance.
+func TestIsJmsExtendedSpJob(t *testing.T) {
+	for _, c := range []struct {
+		job  uint16
+		want bool
+	}{
+		{2001, true},
+		{2200, true},
+		{2218, true},
+		{3000, true}, // Citizen (Resistance beginner)
+		{3001, true}, // Battle Mage
+		{3500, true}, // Mechanic
+		{0, false},
+		{100, false},
+		{312, false},
+		{2000, false},
+		{2300, false},
+		{4000, false},
+	} {
+		if got := isJmsExtendedSpJob(c.job); got != c.want {
+			t.Errorf("isJmsExtendedSpJob(%d) = %v, want %v", c.job, got, c.want)
+		}
+	}
+}
+
+// TestJmsResistanceExtendedSP reproduces bug-jms185-naked-avatar-red-equips.md's
+// latent defect 2: the extended-SP job gate was GMS-only (Evan), so a JMS
+// Resistance character (job 3xxx) always wrote the plain 2-byte nSP short even
+// though JMS 185's GW_CharacterStat::Decode (sub_5163A2 @0x5163a2) reads the
+// 1-byte ExtendSP count for that job too — desyncing the stat block. The GMS
+// Evan-only gate must stay unchanged (isEvanJob does not accept Resistance).
+func TestJmsResistanceExtendedSP(t *testing.T) {
+	mk := func(jobId uint16) CharacterData {
+		return CharacterData{
+			Stats: CharacterStats{
+				Id: 1, Name: "Resistance", Level: 1, JobId: jobId,
+				Hp: 100, MaxHp: 100, Mp: 100, MaxMp: 100, Sp: 0,
+				MapId: 100030102,
+			},
+			BuddyCapacity: 20,
+			Inventory: InventoryData{
+				EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+				EtcCapacity: 24, CashCapacity: 24,
+			},
+		}
+	}
+	ctx := pt.CreateContext("JMS", 185, 1)
+
+	resistance := mk(3000)
+	normal := mk(100)
+	resistanceBytes := pt.Encode(t, ctx, resistance.Encode, nil)
+	normalBytes := pt.Encode(t, ctx, normal.Encode, nil)
+	if len(resistanceBytes) != len(normalBytes)-1 {
+		t.Errorf("JMS Resistance CharacterData len %d; want normal len %d - 1 (SP count byte vs SP short)", len(resistanceBytes), len(normalBytes))
+	}
+
+	out := CharacterData{}
+	pt.RoundTrip(t, ctx, resistance.Encode, out.Decode, nil)
+	if out.Stats.JobId != 3000 {
+		t.Errorf("roundtrip jobId: got %d, want 3000", out.Stats.JobId)
+	}
+
+	// GMS never takes the Resistance branch: the Evan-only gate must be
+	// unaffected by this change.
+	gmsCtx := pt.CreateContext("GMS", 87, 1)
+	gmsResistance := mk(3000)
+	gmsNormal := mk(100)
+	gmsResistanceBytes := pt.Encode(t, gmsCtx, gmsResistance.Encode, nil)
+	gmsNormalBytes := pt.Encode(t, gmsCtx, gmsNormal.Encode, nil)
+	if len(gmsResistanceBytes) != len(gmsNormalBytes) {
+		t.Errorf("GMS Resistance CharacterData len %d; want %d (GMS gate is Evan-only, unaffected)", len(gmsResistanceBytes), len(gmsNormalBytes))
+	}
+}

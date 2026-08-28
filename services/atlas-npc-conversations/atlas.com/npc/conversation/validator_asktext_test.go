@@ -243,8 +243,20 @@ func TestValidateAskText(t *testing.T) {
 }
 
 // TestValidateAskTextCircularReference verifies the visitor arm walks
-// matches[].nextState, not only the fallback nextState: a → b → c → a via a
-// match target closes a cycle that only a full walk detects.
+// matches[].nextState, not only the fallback nextState: a → b → c → a with
+// no state offering an exit. cycleHasNoExit (validator.go) only reports a
+// cycle "infinite" when every outgoing edge of every state in the cycle —
+// fallback nextState *and* every matches[].nextState — stays inside the
+// cycle; giving the fallback an escape (e.g. to a dead-end "exit" state)
+// makes cycleHasNoExit report an exit and the cycle goes unreported
+// regardless of the match edges, so this fixture keeps both the fallback
+// and the sole match on each state inside {a, b, c}. A visitor that omitted
+// the matches[] loop would still discover this exact cycle via the fallback
+// chain alone here, since both chains coincide; the test therefore proves
+// the visitor detects a fully match-driven askText cycle at all, though it
+// cannot isolate the matches[] loop from the fallback line-for-line — see
+// the task report for why cycleHasNoExit's semantics make full isolation
+// with this algorithm infeasible.
 func TestValidateAskTextCircularReference(t *testing.T) {
 	aAskText := &AskTextModel{
 		text:       "A?",

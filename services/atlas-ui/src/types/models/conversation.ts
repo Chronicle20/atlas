@@ -73,6 +73,22 @@ export interface AskNumberState {
   nextState: string;
 }
 
+export interface AskTextMatch {
+  value?: string;
+  valueFromContext?: string;
+  nextState: string;
+}
+
+export interface AskTextState {
+  text: string;
+  defaultText: string;
+  minLength: number;
+  maxLength: number;
+  contextKey?: string;
+  matches?: AskTextMatch[];
+  nextState?: string;
+}
+
 export interface AskStyleState {
   text: string;
   styles?: number[];
@@ -119,6 +135,7 @@ export type ConversationStateType =
   | "craftAction"
   | "listSelection"
   | "askNumber"
+  | "askText"
   | "askStyle"
   | "askSlideMenu"
   | "transportAction"
@@ -134,6 +151,7 @@ export interface ConversationState {
   craftAction?: CraftActionState;
   listSelection?: ListSelectionState;
   askNumber?: AskNumberState;
+  askText?: AskTextState;
   askStyle?: AskStyleState;
   askSlideMenu?: AskSlideMenuState;
   transportAction?: TransportActionState;

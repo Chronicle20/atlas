@@ -69,3 +69,57 @@ from this file.
   progress they own; no cross-NPC quest-progress read was needed here.
 - Validated with `go run ./tools/catalog-lint deploy/seed` — no errors. Every
   `nextState` resolves within its own file or is `null`.
+
+## Task 18: `npc-1063011.json` (Thief/Puppeteer password merge)
+
+- Sources: `<cosmic>/scripts/npc/ThiefPassword.js` and
+  `<cosmic>/scripts/npc/PupeteerPassword.js` (external Cosmic checkout, not
+  available in this repository). The brief's state table (task-18-brief.md)
+  was used as the sole authority; no direct read of the Cosmic source was
+  needed or performed.
+- **Two Cosmic scripts, one Atlas NPC.** Cosmic lets the *portal* name the
+  script it opens: `<cosmic>/scripts/portal/thief_in1.js` calls
+  `pi.openNpc(1063011, "ThiefPassword")` and
+  `<cosmic>/scripts/portal/enterDollcave.js` calls
+  `pi.openNpc(1063011, "PupeteerPassword")`. Atlas keys conversations by NPC
+  id and `atlas-portal-actions` has no "open NPC conversation" operation, so
+  both scripts had to merge into the single `npc-1063011.json`, sharing the
+  same `askText` prompt with two `matches` (`"Open Sesame"` → the Thief gate,
+  `"Francis is a genius Puppeteer!"` → the Puppeteer gate) and a single
+  `wrongPassword` fallback. **Portal-side implication for any future
+  content-authoring or portal-action work touching `thief_in1` /
+  `enterDollcave`:** neither portal can be modeled as "open a dedicated NPC
+  conversation" — both must resolve to opening NPC 1063011, and the
+  distinction between "which script the portal meant" only survives inside
+  that NPC's `askText` matches, not at the portal layer. If Atlas ever gains
+  a portal action that opens an NPC by id, it will point both portals at the
+  same id and rely on this merge; it cannot recover which original Cosmic
+  script fired.
+- **Doll-cave map id derivation (brief Step 1).** WZ `Map.wz` is not checked
+  into this repository and neither portal is seeded under
+  `deploy/seed/*/portal-actions/portals/`, so the id could not come from
+  static repo contents. It was derived instead from the live `atlas-data`
+  service in the `atlas-main` Kubernetes namespace (tenant `GMS v83`,
+  region `GMS`, majorVersion `83`, minorVersion `1`) via
+  `GET /api/data/npcs/1063011/maps`, which returned NPC 1063011 spawned on
+  map `105070300` ("The Cave of Evil Eye III", street name "Dungeon").
+  `GET /api/data/maps/105070300/portals` confirmed portal id `3` (`in00`)
+  carries `scriptName: "enterDollcave"`, matching the brief's citation
+  verbatim. `puppeteerPreCheck`'s first outcome therefore gates on
+  `{"type": "mapId", "operator": "=", "value": "105070300"}` AND
+  `questStatus(21728) = 2`, per the brief's Step 2 table.
+- `puppeteerGate1` and `puppeteerGate2` are two sequential states (not one
+  `OR`ed condition list) because a `genericAction`'s condition list is an
+  `AND`; Cosmic's gate is an `OR` of two quest conditions. Chained on
+  failure, per the brief and consistent with Task 17's identical reasoning
+  (`design.md` §9).
+- `send_message` with `messageType: "PINK_TEXT"` reproduces Cosmic's
+  `playerMessage(5, …)` (`operation_executor.go:2042`), per the brief.
+- `enterDollcave.js`'s quest-completed pre-branch (20730 or 21734 completed
+  → warp `105040201` portal `2`) belongs to the **portal**, not this NPC, and
+  is out of scope here — the same exclusion applied to `secretDoor.js` in
+  Task 16 and to the per-NPC branches in Task 17.
+- The ten seed files (`gms/{48,61,72,79,83,84,87,92,95}_1` and `jms/185_1`)
+  are byte-identical (verified via `md5sum`); one file was authored and
+  copied to the other nine paths.
+- Validated with `go run ./tools/catalog-lint deploy/seed` — no errors.

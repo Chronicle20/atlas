@@ -14,7 +14,9 @@ const (
 )
 
 const (
-	CommandTypeWeatherStart = "WEATHER_START"
+	CommandTypeWeatherStart    = "WEATHER_START"
+	CommandTypeSetBackEffect   = "SET_BACK_EFFECT"
+	CommandTypeClearBackEffect = "CLEAR_BACK_EFFECT"
 )
 
 type Command[E any] struct {
@@ -32,3 +34,12 @@ type WeatherStartCommandBody struct {
 	Message    string `json:"message"`
 	DurationMs uint32 `json:"durationMs"`
 }
+
+type SetBackEffectCommandBody struct {
+	Effect   uint8  `json:"effect"`
+	FieldId  uint32 `json:"fieldId"`
+	PageId   uint8  `json:"pageId"`
+	Duration uint32 `json:"duration"`
+}
+
+type ClearBackEffectCommandBody struct{}

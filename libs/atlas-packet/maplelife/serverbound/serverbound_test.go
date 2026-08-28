@@ -79,7 +79,7 @@ func TestMapleLifeCheckNameOperation(t *testing.T) {
 // Framing: WriteAsciiString is a uint16 LE length prefix + raw bytes.
 // Field order: derivation.md §6 (a single EncodeStr sCharName, no other
 // fields) — IDENTICAL SHAPE on every in-scope version, so the fixture is
-// deliberately the same bytes for all four.
+// deliberately the same bytes for all five.
 // ---------------------------------------------------------------------------
 
 // mapleLifeCheckNameGoldenBody: sCharName = "Chronicle" (9 ascii bytes).

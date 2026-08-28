@@ -153,3 +153,175 @@ func TestCreditStoredExperienceUnknownCharacter(t *testing.T) {
 	evts := decodeStatChangedSince(t, db, 0)
 	require.Empty(t, evts)
 }
+
+// decodeExperienceChangedSince decodes every EXPERIENCE_CHANGED event enqueued
+// to the outbox for the character-status topic with an id greater than
+// sinceId, in enqueue order.
+func decodeExperienceChangedSince(t *testing.T, db *gorm.DB, sinceId uint64) []character2.StatusEvent[character2.ExperienceChangedStatusEventBody] {
+	t.Helper()
+	var rows []outbox.Entity
+	require.NoError(t, db.Where("topic = ? AND id > ?", character2.EnvEventTopicCharacterStatus, sinceId).Order("id asc").Find(&rows).Error)
+	var evts []character2.StatusEvent[character2.ExperienceChangedStatusEventBody]
+	for _, r := range rows {
+		var evt character2.StatusEvent[character2.ExperienceChangedStatusEventBody]
+		if err := json.Unmarshal(r.MessageValue, &evt); err != nil {
+			continue
+		}
+		if evt.Type == character2.StatusEventTypeExperienceChanged {
+			evts = append(evts, evt)
+		}
+	}
+	return evts
+}
+
+// TestRedeemStoredExperience pins FR-11: redeeming the stored-EXP counter
+// awards it as real character experience and zeroes the counter, unless the
+// character's level exceeds the client's cap (CUIStatusBar::TryUseTempExp,
+// characterLevel <= 0x32) or the balance is already zero, in which case it is
+// a total no-op — no write, no event, no error.
+func TestRedeemStoredExperience(t *testing.T) {
+	tests := []struct {
+		name           string
+		balance        uint32
+		level          byte
+		expectExpDelta uint32
+		expectBalance  uint32
+		expectMessages bool
+	}{
+		{
+			name:           "redeems the whole balance",
+			balance:        5000,
+			level:          30,
+			expectExpDelta: 5000,
+			expectBalance:  0,
+			expectMessages: true,
+		},
+		{
+			name:           "at the level bound",
+			balance:        5000,
+			level:          50,
+			expectExpDelta: 5000,
+			expectBalance:  0,
+			expectMessages: true,
+		},
+		{
+			name:           "above the level bound is a no-op",
+			balance:        5000,
+			level:          51,
+			expectExpDelta: 0,
+			expectBalance:  5000,
+			expectMessages: false,
+		},
+		{
+			name:           "zero balance is a no-op",
+			balance:        0,
+			level:          30,
+			expectExpDelta: 0,
+			expectBalance:  0,
+			expectMessages: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tctx := tenant.WithContext(context.Background(), testTenant())
+			db := testDatabase(t)
+			p := character.NewProcessor(testLogger(), tctx, db)
+
+			input, err := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("SExpRedeem").SetLevel(tt.level).Build()
+			require.NoError(t, err)
+			c, err := p.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
+			require.NoError(t, err)
+
+			cha := channel.NewModel(1, 2)
+
+			if tt.balance > 0 {
+				require.NoError(t, p.CreditStoredExperienceAndEmit(uuid.New(), cha, c.Id(), tt.balance, "seed"))
+			}
+
+			startingExperience := c.Experience()
+			baseline := maxOutboxId(t, db)
+
+			require.NoError(t, p.RedeemStoredExperienceAndEmit(uuid.New(), cha, c.Id()))
+
+			got, err := p.GetById()(c.Id())
+			require.NoError(t, err)
+			require.Equal(t, tt.expectBalance, got.GachaponExperience())
+			require.Equal(t, startingExperience+tt.expectExpDelta, got.Experience())
+
+			statEvts := decodeStatChangedSince(t, db, baseline)
+			expEvts := decodeExperienceChangedSince(t, db, baseline)
+			if !tt.expectMessages {
+				require.Empty(t, statEvts, "no-op redeem must not emit STAT_CHANGED")
+				require.Empty(t, expEvts, "no-op redeem must not emit EXPERIENCE_CHANGED")
+				return
+			}
+
+			require.Len(t, expEvts, 1)
+			require.Len(t, statEvts, 2)
+			require.Equal(t, []stat.Type{stat.TypeExperience}, statEvts[0].Body.Updates)
+			require.Equal(t, []stat.Type{stat.TypeGachaponExperience}, statEvts[1].Body.Updates)
+			require.Equal(t, float64(0), statEvts[1].Body.Values["gachapon_experience"])
+		})
+	}
+}
+
+// TestRedeemStoredExperienceIsExactlyOnce pins FR-13: a replayed redeem must
+// not double-award. The second call reads a zero balance inside its own
+// transaction and short-circuits with no write and no emitted message.
+func TestRedeemStoredExperienceIsExactlyOnce(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+	p := character.NewProcessor(testLogger(), tctx, db)
+
+	input, err := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("SExpOnce").SetLevel(30).Build()
+	require.NoError(t, err)
+	c, err := p.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
+	require.NoError(t, err)
+
+	cha := channel.NewModel(1, 2)
+	require.NoError(t, p.CreditStoredExperienceAndEmit(uuid.New(), cha, c.Id(), 5000, "seed"))
+	startingExperience := c.Experience()
+
+	require.NoError(t, p.RedeemStoredExperienceAndEmit(uuid.New(), cha, c.Id()))
+
+	baseline := maxOutboxId(t, db)
+	require.NoError(t, p.RedeemStoredExperienceAndEmit(uuid.New(), cha, c.Id()))
+
+	got, err := p.GetById()(c.Id())
+	require.NoError(t, err)
+	require.Equal(t, uint32(0), got.GachaponExperience())
+	require.Equal(t, startingExperience+5000, got.Experience())
+
+	statEvts := decodeStatChangedSince(t, db, baseline)
+	expEvts := decodeExperienceChangedSince(t, db, baseline)
+	require.Empty(t, statEvts, "replayed redeem must not emit STAT_CHANGED")
+	require.Empty(t, expEvts, "replayed redeem must not emit EXPERIENCE_CHANGED")
+}
+
+// TestRedeemStoredExperienceDistributionIsItem asserts the EXPERIENCE_CHANGED
+// event emitted by a redeem carries exactly one distribution tagged ITEM, so
+// downstream consumers can distinguish a stored-EXP redeem from other EXP
+// sources.
+func TestRedeemStoredExperienceDistributionIsItem(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+	p := character.NewProcessor(testLogger(), tctx, db)
+
+	input, err := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("SExpDist").SetLevel(30).Build()
+	require.NoError(t, err)
+	c, err := p.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
+	require.NoError(t, err)
+
+	cha := channel.NewModel(1, 2)
+	require.NoError(t, p.CreditStoredExperienceAndEmit(uuid.New(), cha, c.Id(), 5000, "seed"))
+
+	baseline := maxOutboxId(t, db)
+	require.NoError(t, p.RedeemStoredExperienceAndEmit(uuid.New(), cha, c.Id()))
+
+	expEvts := decodeExperienceChangedSince(t, db, baseline)
+	require.Len(t, expEvts, 1)
+	require.Len(t, expEvts[0].Body.Distributions, 1)
+	require.Equal(t, character2.ExperienceDistributionTypeItem, expEvts[0].Body.Distributions[0].ExperienceType)
+	require.Equal(t, uint32(5000), expEvts[0].Body.Distributions[0].Amount)
+}

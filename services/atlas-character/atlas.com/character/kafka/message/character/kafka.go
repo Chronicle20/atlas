@@ -36,6 +36,7 @@ const (
 	CommandClampMP                = "CLAMP_MP"
 	CommandDeleteCharacter        = "DELETE_CHARACTER"
 	CommandCreditStoredExperience = "CREDIT_STORED_EXPERIENCE"
+	CommandRedeemStoredExperience = "REDEEM_STORED_EXPERIENCE"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -199,6 +200,14 @@ type CreditStoredExperienceCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    uint32     `json:"amount"`
 	Reason    string     `json:"reason"`
+}
+
+// RedeemStoredExperienceCommandBody redeems the WHOLE stored-EXP counter
+// (`gachapon_experience`, the client's GW_CharacterStat::nTempEXP) into real
+// character EXP and zeroes it. There is no amount: the client's
+// CUIStatusBar::TryUseTempExp charges the entire balance or nothing.
+type RedeemStoredExperienceCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type ResetStatsCommandBody struct {

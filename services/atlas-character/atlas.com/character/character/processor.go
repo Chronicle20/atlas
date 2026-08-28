@@ -136,6 +136,8 @@ type Processor interface {
 	ChangeHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
 	CreditStoredExperienceAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint32, reason string) error
 	CreditStoredExperience(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint32, reason string) error
+	RedeemStoredExperienceAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32) error
+	RedeemStoredExperience(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32) error
 	SetHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error
 	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error
 	ChangeMPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
@@ -1504,6 +1506,66 @@ func (p *ProcessorImpl) CreditStoredExperience(mb *message.Buffer) func(transact
 			return nil
 		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeGachaponExperience}, map[string]interface{}{"gachapon_experience": adjusted}))
+		return nil
+	}
+}
+
+// storedExperienceMaxLevel is the inclusive level bound the client applies to a
+// stored-EXP charge. CUIStatusBar::TryUseTempExp gates on characterLevel <= 0x32
+// and CWvsContext::SendTempExpUseRequest re-checks it, emitting StringPool
+// 0xC97 ("Your level is too high to use the selected item.") above it.
+const storedExperienceMaxLevel = byte(50)
+
+func (p *ProcessorImpl) RedeemStoredExperienceAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RedeemStoredExperience(buf)(transactionId, channel, characterId)
+		})
+	})
+}
+
+func (p *ProcessorImpl) RedeemStoredExperience(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32) error {
+	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32) error {
+		var redeemed uint32
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			ip := p.WithTransaction(tx)
+			c, err := ip.GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			if c.GachaponExperience() == 0 {
+				// FR-11: a zero balance is a total no-op — no write, no event,
+				// no error, no disconnect. This is also what makes a replayed
+				// redeem safe: the second one reads 0 inside its own
+				// transaction and stops here (FR-13).
+				return nil
+			}
+			if c.Level() > storedExperienceMaxLevel {
+				p.l.Debugf("Character [%d] is level [%d]; refusing to redeem stored experience above level [%d].", characterId, c.Level(), storedExperienceMaxLevel)
+				return nil
+			}
+			redeemed = c.GachaponExperience()
+
+			// Zero the counter and award the EXP on the SAME tx. Ordering is
+			// zero-then-award so a failure in the award rolls the zero back
+			// with it. database.ExecuteTransaction short-circuits to fn(tx)
+			// when already inside a transaction, so AwardExperience's internal
+			// ExecuteTransaction joins this one rather than committing
+			// independently (libs/atlas-database/transaction.go:9-26).
+			if err := dynamicUpdate(tx)(SetGachaponExperience(0))(c); err != nil {
+				return err
+			}
+			experience := []ExperienceModel{NewExperienceModel(character2.ExperienceDistributionTypeItem, redeemed, 0)}
+			return ip.AwardExperience(mb)(transactionId, characterId, channel, experience, false)
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not redeem stored experience for character [%d].", characterId)
+			return txErr
+		}
+		if redeemed == 0 {
+			return nil
+		}
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeGachaponExperience}, map[string]interface{}{"gachapon_experience": uint32(0)}))
 		return nil
 	}
 }

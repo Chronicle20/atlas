@@ -16,6 +16,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -66,7 +67,7 @@ func newSpawnProcessor(t *testing.T, eff effect.Model) (*ProcessorImpl, tenant.M
 		ctx:     ctx,
 		t:       ten,
 		effects: stubEffectSource{eff: eff},
-		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+		emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error {
 			return nil
 		},
 	}

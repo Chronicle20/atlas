@@ -330,7 +330,7 @@ func TestProcessor_RequestChangeAndEmit_RejectsOnCharacterNotFound(t *testing.T)
 	assert.NoError(t, err)
 
 	// (a) the rejection fired on the DIRECT path.
-	msgs, ok := (*captured)[messageFame.EnvEventTopicFameStatus]
+	msgs, ok := (*captured)[string(messageFame.EnvEventTopicFameStatus)]
 	assert.True(t, ok, "expected a direct-path message for topic %s", messageFame.EnvEventTopicFameStatus)
 	assert.Len(t, msgs, 1)
 
@@ -379,9 +379,9 @@ func TestProcessor_RequestChangeAndEmit_SuccessEnqueuesOutbox(t *testing.T) {
 	assert.NoError(t, err)
 
 	// (a) success does NOT fire on the direct path.
-	_, ok := (*captured)[messageFame.EnvEventTopicFameStatus]
+	_, ok := (*captured)[string(messageFame.EnvEventTopicFameStatus)]
 	assert.False(t, ok, "success must not fire the status event directly")
-	_, ok = (*captured)[messageCharacter.EnvCommandTopic]
+	_, ok = (*captured)[string(messageCharacter.EnvCommandTopic)]
 	assert.False(t, ok, "success must not fire the character command directly")
 
 	// (b) the fame log WAS created.

@@ -64,7 +64,7 @@ func tickProcessor(ctx context.Context, now *time.Time, hp uint16, hpErr error, 
 func changeHPAmounts(t *testing.T) []int16 {
 	t.Helper()
 	var out []int16
-	for _, m := range emitted.Messages(character2.EnvCommandTopicCharacter) {
+	for _, m := range emitted.Messages(string(character2.EnvCommandTopicCharacter)) {
 		var cmd character2.CharacterCommand[character2.ChangeHPCommandBody]
 		require.NoError(t, json.Unmarshal(m.Value, &cmd))
 		if cmd.Type != character2.CommandChangeHP {
@@ -78,7 +78,7 @@ func changeHPAmounts(t *testing.T) []int16 {
 func changeHPCommands(t *testing.T) []character2.CharacterCommand[character2.ChangeHPCommandBody] {
 	t.Helper()
 	var out []character2.CharacterCommand[character2.ChangeHPCommandBody]
-	for _, m := range emitted.Messages(character2.EnvCommandTopicCharacter) {
+	for _, m := range emitted.Messages(string(character2.EnvCommandTopicCharacter)) {
 		var cmd character2.CharacterCommand[character2.ChangeHPCommandBody]
 		require.NoError(t, json.Unmarshal(m.Value, &cmd))
 		out = append(out, cmd)
@@ -426,7 +426,7 @@ func TestPeriodicTickRestartsAfterRecast(t *testing.T) {
 func periodicEffectEvents(t *testing.T) []character2.StatusEvent[character2.PeriodicEffectStatusEventBody] {
 	t.Helper()
 	var out []character2.StatusEvent[character2.PeriodicEffectStatusEventBody]
-	for _, m := range emitted.Messages(character2.EnvEventStatusTopic) {
+	for _, m := range emitted.Messages(string(character2.EnvEventStatusTopic)) {
 		var e character2.StatusEvent[character2.PeriodicEffectStatusEventBody]
 		require.NoError(t, json.Unmarshal(m.Value, &e))
 		if e.Type != character2.EventStatusTypePeriodicEffect {

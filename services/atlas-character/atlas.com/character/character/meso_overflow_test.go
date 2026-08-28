@@ -47,7 +47,7 @@ func TestRequestChangeMeso_OverflowEmitsMesoOverflowErrorEvent(t *testing.T) {
 	// The rejection commits nothing: no MESO_CHANGED / STAT_CHANGED outbox rows.
 	require.Equal(t, before, outboxRowCount(t, db))
 
-	msgs := capture.Messages(character2.EnvEventTopicCharacterStatus)
+	msgs := capture.Messages(string(character2.EnvEventTopicCharacterStatus))
 	require.Len(t, msgs, 1, "overflow must emit exactly one status event")
 
 	var e character2.StatusEvent[character2.StatusEventMesoErrorBody]

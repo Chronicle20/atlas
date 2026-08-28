@@ -424,7 +424,7 @@ func TestCancelByCorrelationEmitsExpiredPerRemovedBuff(t *testing.T) {
 	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
 
 	byCharacter := make(map[uint32]character2.StatusEvent[character2.ExpiredStatusEventBody])
-	for _, msg := range emitted.Messages(character2.EnvEventStatusTopic) {
+	for _, msg := range emitted.Messages(string(character2.EnvEventStatusTopic)) {
 		var evt character2.StatusEvent[character2.ExpiredStatusEventBody]
 		require.NoError(t, json.Unmarshal(msg.Value, &evt))
 		if evt.Type != character2.EventStatusTypeBuffExpired {

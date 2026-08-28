@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -70,7 +71,7 @@ func TestExpiryTaskAppliesEnvContextToDespawn(t *testing.T) {
 		gotMarker = pctx.Value(envMarker)
 		return &ProcessorImpl{
 			l: l, ctx: pctx, t: tenant.MustFromContext(pctx),
-			emit: func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+			emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		}
 	}
 	task.Run()
@@ -98,7 +99,7 @@ func TestBeholderTaskAppliesEnvContextToSweep(t *testing.T) {
 	task.pick = func(int) int { return 0 }
 
 	var gotMarker any
-	task.emit = func(emitCtx context.Context, _ string, provider model.Provider[[]kafka.Message]) error {
+	task.emit = func(emitCtx context.Context, _ topic.Token, provider model.Provider[[]kafka.Message]) error {
 		if gotMarker == nil {
 			gotMarker = emitCtx.Value(envMarker)
 		}

@@ -145,7 +145,7 @@ func TestCreateDropsWithNoKillerSpawnsUnownedDrop(t *testing.T) {
 		t.Fatalf("expected nil error for a no-killer detonation, got %v", err)
 	}
 
-	msgs := emitted.Messages(drop.EnvCommandTopic)
+	msgs := emitted.Messages(string(drop.EnvCommandTopic))
 	if len(msgs) != 1 {
 		t.Fatalf("expected exactly one spawn drop command, got %d", len(msgs))
 	}

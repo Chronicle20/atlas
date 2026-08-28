@@ -135,6 +135,11 @@ func FixModule(dir string) ([]Finding, error) {
 func runGoVet(dir string) (string, error) {
 	cmd := exec.Command("go", "vet", "./...")
 	cmd.Dir = dir
+	// -mod=readonly is mandatory: without it, `go vet` silently rewrites the
+	// module's own go.mod/go.sum (moving requirements between direct/indirect
+	// blocks) as a side effect of module-graph resolution. That must never
+	// happen to a module this tool wasn't asked to touch.
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=readonly")
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf

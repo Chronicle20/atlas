@@ -64,7 +64,7 @@ func TestCompletedBridgeCarriesTransactionId(t *testing.T) {
 
 	handleSagaCompletedEvent(l, context.Background(), e)
 
-	msgs := emitted.Messages(seedMessage.EnvEventTopicStatus)
+	msgs := emitted.Messages(string(seedMessage.EnvEventTopicStatus))
 	require.Len(t, msgs, 1)
 	ev := decodeCreated(t, msgs[0].Value)
 	require.Equal(t, transactionId.String(), ev.TransactionId)
@@ -92,7 +92,7 @@ func TestFailedBridgeCarriesTransactionId(t *testing.T) {
 
 	handleSagaFailedEvent(l, context.Background(), e)
 
-	msgs := emitted.Messages(seedMessage.EnvEventTopicStatus)
+	msgs := emitted.Messages(string(seedMessage.EnvEventTopicStatus))
 	require.Len(t, msgs, 1)
 	ev := decodeFailed(t, msgs[0].Value)
 	require.Equal(t, transactionId.String(), ev.TransactionId)
@@ -120,7 +120,7 @@ func TestNonCharacterCreationSagaStillDropped(t *testing.T) {
 		},
 	}
 	handleSagaCompletedEvent(l, context.Background(), completed)
-	require.Empty(t, emitted.Messages(seedMessage.EnvEventTopicStatus))
+	require.Empty(t, emitted.Messages(string(seedMessage.EnvEventTopicStatus)))
 
 	failed := sagaMessage.StatusEvent[sagaMessage.StatusEventFailedBody]{
 		TransactionId: transactionId,
@@ -132,7 +132,7 @@ func TestNonCharacterCreationSagaStillDropped(t *testing.T) {
 		},
 	}
 	handleSagaFailedEvent(l, context.Background(), failed)
-	require.Empty(t, emitted.Messages(seedMessage.EnvEventTopicStatus))
+	require.Empty(t, emitted.Messages(string(seedMessage.EnvEventTopicStatus)))
 }
 
 // TestStatusEventMarshalsTransactionId pins the wire contract: a populated

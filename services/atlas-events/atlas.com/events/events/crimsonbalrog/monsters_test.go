@@ -32,7 +32,7 @@ func newEmitCapture(t *testing.T) *fakes {
 func (f *fakes) emittedHideVisuals(wantType string) []event.VisualEvent[event.HideVisualBody] {
 	f.t.Helper()
 	var out []event.VisualEvent[event.HideVisualBody]
-	for _, m := range emitted.Messages(event.EnvEventTopicEventVisual) {
+	for _, m := range emitted.Messages(string(event.EnvEventTopicEventVisual)) {
 		var e event.VisualEvent[event.HideVisualBody]
 		if err := json.Unmarshal(m.Value, &e); err != nil {
 			f.t.Fatalf("decode visual event: %v", err)

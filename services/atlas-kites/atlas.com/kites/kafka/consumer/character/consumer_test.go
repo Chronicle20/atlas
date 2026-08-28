@@ -21,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -37,14 +38,14 @@ import (
 // not an injected producer.Provider.
 type recorder struct {
 	mu   sync.Mutex
-	msgs map[string][]kafka.Message
+	msgs map[topic.Token][]kafka.Message
 	fail bool
 }
 
-func newRecorder() *recorder { return &recorder{msgs: make(map[string][]kafka.Message)} }
+func newRecorder() *recorder { return &recorder{msgs: make(map[topic.Token][]kafka.Message)} }
 
 func (r *recorder) provider() producer.Provider {
-	return func(t string) producer.MessageProducer {
+	return func(t topic.Token) producer.MessageProducer {
 		return func(p model.Provider[[]kafka.Message]) error {
 			if r.fail {
 				return errors.New("emit failed")
@@ -124,7 +125,7 @@ func TestMapChangedDestroysAgainstOldFieldWithInstance(t *testing.T) {
 		t.Error("kite survived the owner's map change")
 	}
 
-	msgs := capture.Messages(kiteMsg.EnvEventTopicStatus)
+	msgs := capture.Messages(string(kiteMsg.EnvEventTopicStatus))
 	if len(msgs) != 1 {
 		t.Fatalf("emitted %d status events, want 1 (DESTROYED)", len(msgs))
 	}

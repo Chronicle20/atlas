@@ -54,7 +54,7 @@ func TestHandlePickupCardItemEmitsMonsterBookCommand(t *testing.T) {
 	handlePickup(logger, ctx, cmd)
 
 	// EnvProvider falls back to the env var token name when unset.
-	msgs := emitted.Messages(mbmsg.EnvCommandTopic)
+	msgs := emitted.Messages(string(mbmsg.EnvCommandTopic))
 	if len(msgs) != 1 {
 		t.Fatalf("expected 1 monster book message, got %d", len(msgs))
 	}
@@ -97,7 +97,7 @@ func TestHandlePickupNonCardItemSkips(t *testing.T) {
 
 	handlePickup(logger, ctx, cmd)
 
-	if got := len(emitted.Messages(mbmsg.EnvCommandTopic)); got > 0 {
+	if got := len(emitted.Messages(string(mbmsg.EnvCommandTopic))); got > 0 {
 		t.Fatalf("expected no monster book emission for non-card item, got %d messages", got)
 	}
 }
@@ -119,7 +119,7 @@ func TestHandlePickupWrongTypeSkips(t *testing.T) {
 
 	handlePickup(logger, ctx, cmd)
 
-	if got := len(emitted.Messages(mbmsg.EnvCommandTopic)); got > 0 {
+	if got := len(emitted.Messages(string(mbmsg.EnvCommandTopic))); got > 0 {
 		t.Fatalf("expected no monster book emission for wrong type, got %d messages", got)
 	}
 }

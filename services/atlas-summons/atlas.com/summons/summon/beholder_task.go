@@ -8,6 +8,7 @@ import (
 	"time"
 
 	producer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -32,7 +33,7 @@ type BeholderTask struct {
 	// atlas-channel) query/route the wrong tenant and silently drop the message. It
 	// is a field so tests can substitute a capturing emitter and avoid a real kafka
 	// publish; production uses producer.ProviderImpl.
-	emit func(ctx context.Context, topic string, provider model.Provider[[]kafka.Message]) error
+	emit func(ctx context.Context, tok topic.Token, provider model.Provider[[]kafka.Message]) error
 	// pick returns a pseudo-random index in [0,n) and selects which single Hex
 	// statup the buff sweep applies this pulse (one random buff per pulse, so the
 	// owner's buffs accumulate one-at-a-time — original-GMS behavior). It is a
@@ -54,8 +55,8 @@ func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Du
 		l:        l,
 		ctx:      ctx,
 		interval: interval,
-		emit: func(emitCtx context.Context, topic string, provider model.Provider[[]kafka.Message]) error {
-			return producer.ProviderImpl(l)(emitCtx)(topic)(provider)
+		emit: func(emitCtx context.Context, tok topic.Token, provider model.Provider[[]kafka.Message]) error {
+			return producer.ProviderImpl(l)(emitCtx)(tok)(provider)
 		},
 		pick:       rand.Intn,
 		envContext: envContext,

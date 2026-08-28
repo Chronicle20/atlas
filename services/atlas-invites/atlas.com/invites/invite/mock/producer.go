@@ -6,6 +6,7 @@ import (
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -30,8 +31,8 @@ func (m *ProducerMock) SetError(err error) {
 }
 
 // Provider returns a producer.Provider function for use in tests.
-func (m *ProducerMock) Provider() func(token string) producer.MessageProducer {
-	return func(token string) producer.MessageProducer {
+func (m *ProducerMock) Provider() producer.Provider {
+	return func(token topic.Token) producer.MessageProducer {
 		return func(p model.Provider[[]kafka.Message]) error {
 			if m.err != nil {
 				return m.err
@@ -42,7 +43,7 @@ func (m *ProducerMock) Provider() func(token string) producer.MessageProducer {
 			}
 			m.mu.Lock()
 			defer m.mu.Unlock()
-			m.messages[token] = append(m.messages[token], msgs...)
+			m.messages[string(token)] = append(m.messages[string(token)], msgs...)
 			return nil
 		}
 	}

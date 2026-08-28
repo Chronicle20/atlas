@@ -116,7 +116,7 @@ func TestRequestDeleteBuddyMissingListRoutesRejectDirect(t *testing.T) {
 
 	// The rejection must instead have been fired on the DIRECT producer
 	// path.
-	msgs := (*captured)[list2.EnvStatusEventTopic]
+	msgs := (*captured)[string(list2.EnvStatusEventTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("expected exactly 1 direct-path message on topic %s, got %d", list2.EnvStatusEventTopic, len(msgs))
 	}
@@ -242,7 +242,7 @@ func TestAcceptInviteMissingListRoutesRejectDirect(t *testing.T) {
 		t.Fatalf("expected caller-supplied buffer to be empty on a rolled-back tx (D7), got: %#v", events)
 	}
 
-	msgs := (*captured)[list2.EnvStatusEventTopic]
+	msgs := (*captured)[string(list2.EnvStatusEventTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("expected exactly 1 direct-path message on topic %s, got %d", list2.EnvStatusEventTopic, len(msgs))
 	}

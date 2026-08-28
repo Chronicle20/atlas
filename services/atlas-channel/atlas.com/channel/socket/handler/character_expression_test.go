@@ -127,7 +127,7 @@ func TestCharacterExpressionHandleFunc_Gate(t *testing.T) {
 				t.Errorf("seam itemId: got %d, want %d", (*calls)[0], tc.expectItemId)
 			}
 
-			msgs := (*captured)[expression2.EnvExpressionCommand]
+			msgs := (*captured)[string(expression2.EnvExpressionCommand)]
 			if len(msgs) != tc.expectCommands {
 				t.Fatalf("commands emitted: got %d, want %d", len(msgs), tc.expectCommands)
 			}
@@ -168,7 +168,7 @@ func TestCharacterExpressionHandleFunc_ForwardsDurationAndByItemOption(t *testin
 
 	CharacterExpressionHandleFunc(l, ctx, nil)(s, &reader, map[string]interface{}{})
 
-	msgs := (*captured)[expression2.EnvExpressionCommand]
+	msgs := (*captured)[string(expression2.EnvExpressionCommand)]
 	if len(msgs) != 1 {
 		t.Fatalf("commands emitted: got %d, want 1", len(msgs))
 	}

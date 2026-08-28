@@ -496,7 +496,7 @@ func TestMake_InvalidJSON(t *testing.T) {
 }
 
 func TestProcessor_Create_EnqueuesOutboxRow(t *testing.T) {
-	t.Setenv(EnvServiceStatusTopic, "test.svc.topic")
+	t.Setenv(string(EnvServiceStatusTopic), "test.svc.topic")
 
 	db := setupTestDB(t)
 	if err := outboxlib.Migration(db); err != nil {

@@ -20,21 +20,22 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // capturingProducer records every emitted message by topic.
 type capturingProducer struct {
-	messages map[string][]kafka.Message
+	messages map[topic.Token][]kafka.Message
 }
 
 func newCapturingProducer() *capturingProducer {
-	return &capturingProducer{messages: make(map[string][]kafka.Message)}
+	return &capturingProducer{messages: make(map[topic.Token][]kafka.Message)}
 }
 
 func (c *capturingProducer) Provider() kafkaproducer.Provider {
-	return func(token string) kafkaproducer.MessageProducer {
+	return func(token topic.Token) kafkaproducer.MessageProducer {
 		return func(p model.Provider[[]kafka.Message]) error {
 			ms, err := p()
 			if err != nil {

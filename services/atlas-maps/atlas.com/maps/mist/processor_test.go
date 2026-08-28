@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	mistKafka "atlas-maps/kafka/message/mist"
 
@@ -25,15 +26,15 @@ import (
 // without going through Kafka.
 type recordingProducer struct {
 	mu       sync.Mutex
-	messages map[string][]kafka.Message
+	messages map[topic.Token][]kafka.Message
 }
 
 func newRecordingProducer() *recordingProducer {
-	return &recordingProducer{messages: map[string][]kafka.Message{}}
+	return &recordingProducer{messages: map[topic.Token][]kafka.Message{}}
 }
 
 func (m *recordingProducer) Provider() producer.Provider {
-	return func(token string) producer.MessageProducer {
+	return func(token topic.Token) producer.MessageProducer {
 		return func(prov model.Provider[[]kafka.Message]) error {
 			msgs, err := prov()
 			if err != nil {
@@ -47,10 +48,10 @@ func (m *recordingProducer) Provider() producer.Provider {
 	}
 }
 
-func (m *recordingProducer) Messages(topic string) []kafka.Message {
+func (m *recordingProducer) Messages(t topic.Token) []kafka.Message {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return append([]kafka.Message(nil), m.messages[topic]...)
+	return append([]kafka.Message(nil), m.messages[t]...)
 }
 
 func newTestMistProcessor(t *testing.T, tt tenant.Model, rec *recordingProducer) (*ProcessorImpl, context.Context) {

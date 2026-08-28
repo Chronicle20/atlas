@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -135,7 +136,7 @@ func TestManager_CloseErrorsDoNotShortCircuit(t *testing.T) {
 	t.Setenv("C", "C")
 
 	for _, k := range []string{"A", "B", "C"} {
-		if _, err := m.Writer(l, k); err != nil {
+		if _, err := m.Writer(l, topic.Token(k)); err != nil {
 			t.Fatalf("Writer(%s): %v", k, err)
 		}
 	}

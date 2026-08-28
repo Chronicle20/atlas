@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -525,7 +526,7 @@ func TestCreateAndEquipEventFlow(t *testing.T) {
 func TestEnvironmentVariableConstants(t *testing.T) {
 	tests := []struct {
 		name        string
-		constant    string
+		constant    topic.Token
 		expected    string
 		description string
 	}{

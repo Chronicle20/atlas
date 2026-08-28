@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 func TestMessageValidation(t *testing.T) {
@@ -180,22 +181,22 @@ func TestMessageValidation(t *testing.T) {
 		provider1 := func() ([]kafka.Message, error) { return []kafka.Message{message1}, nil }
 		provider2 := func() ([]kafka.Message, error) { return []kafka.Message{message2}, nil }
 
-		err := buffer.Put(topic1, provider1)
+		err := buffer.Put(topic.Token(topic1), provider1)
 		assert.NoError(t, err)
-		err = buffer.Put(topic2, provider2)
+		err = buffer.Put(topic.Token(topic2), provider2)
 		assert.NoError(t, err)
 
 		allMessages := buffer.GetAll()
 		assert.Len(t, allMessages, 2)
 		assert.Contains(t, allMessages, topic1)
 		assert.Contains(t, allMessages, topic2)
-		assert.Equal(t, []kafka.Message{message1}, allMessages[topic1])
-		assert.Equal(t, []kafka.Message{message2}, allMessages[topic2])
+		assert.Equal(t, []kafka.Message{message1}, allMessages[topic.Token(topic1)])
+		assert.Equal(t, []kafka.Message{message2}, allMessages[topic.Token(topic2)])
 	})
 
 	t.Run("message buffer accumulation", func(t *testing.T) {
 		buffer := NewBuffer()
-		topic := "test-topic"
+		tok := topic.Token("test-topic")
 
 		message1 := kafka.Message{Key: []byte("key1"), Value: []byte("value1")}
 		message2 := kafka.Message{Key: []byte("key2"), Value: []byte("value2")}
@@ -206,29 +207,29 @@ func TestMessageValidation(t *testing.T) {
 		provider2 := func() ([]kafka.Message, error) { return []kafka.Message{message2}, nil }
 		provider3 := func() ([]kafka.Message, error) { return []kafka.Message{message3}, nil }
 
-		err := buffer.Put(topic, provider1)
+		err := buffer.Put(tok, provider1)
 		assert.NoError(t, err)
-		err = buffer.Put(topic, provider2)
+		err = buffer.Put(tok, provider2)
 		assert.NoError(t, err)
-		err = buffer.Put(topic, provider3)
+		err = buffer.Put(tok, provider3)
 		assert.NoError(t, err)
 
 		messages := buffer.GetAll()
 		assert.Len(t, messages, 1)
-		assert.Contains(t, messages, topic)
-		assert.Len(t, messages[topic], 3)
+		assert.Contains(t, messages, tok)
+		assert.Len(t, messages[tok], 3)
 
 		// Messages should be in order
-		assert.Equal(t, message1, messages[topic][0])
-		assert.Equal(t, message2, messages[topic][1])
-		assert.Equal(t, message3, messages[topic][2])
+		assert.Equal(t, message1, messages[tok][0])
+		assert.Equal(t, message2, messages[tok][1])
+		assert.Equal(t, message3, messages[tok][2])
 	})
 }
 
 func TestMessageBufferErrorHandling(t *testing.T) {
 	t.Run("buffer with nil messages", func(t *testing.T) {
 		buffer := NewBuffer()
-		topic := "test-topic"
+		tok := topic.Token("test-topic")
 
 		// Put nil message - should handle gracefully
 		nilMessage := kafka.Message{
@@ -237,19 +238,19 @@ func TestMessageBufferErrorHandling(t *testing.T) {
 		}
 
 		provider := func() ([]kafka.Message, error) { return []kafka.Message{nilMessage}, nil }
-		err := buffer.Put(topic, provider)
+		err := buffer.Put(tok, provider)
 		assert.NoError(t, err)
 
 		messages := buffer.GetAll()
 		assert.Len(t, messages, 1)
-		assert.Contains(t, messages, topic)
-		assert.Len(t, messages[topic], 1)
-		assert.Equal(t, nilMessage, messages[topic][0])
+		assert.Contains(t, messages, tok)
+		assert.Len(t, messages[tok], 1)
+		assert.Equal(t, nilMessage, messages[tok][0])
 	})
 
 	t.Run("buffer with empty key", func(t *testing.T) {
 		buffer := NewBuffer()
-		topic := "test-topic"
+		tok := topic.Token("test-topic")
 
 		emptyKeyMessage := kafka.Message{
 			Key:   []byte(""),
@@ -257,14 +258,14 @@ func TestMessageBufferErrorHandling(t *testing.T) {
 		}
 
 		provider := func() ([]kafka.Message, error) { return []kafka.Message{emptyKeyMessage}, nil }
-		err := buffer.Put(topic, provider)
+		err := buffer.Put(tok, provider)
 		assert.NoError(t, err)
 
 		messages := buffer.GetAll()
 		assert.Len(t, messages, 1)
-		assert.Contains(t, messages, topic)
-		assert.Len(t, messages[topic], 1)
-		assert.Equal(t, emptyKeyMessage, messages[topic][0])
+		assert.Contains(t, messages, tok)
+		assert.Len(t, messages[tok], 1)
+		assert.Equal(t, emptyKeyMessage, messages[tok][0])
 	})
 
 	t.Run("buffer with empty topic", func(t *testing.T) {
@@ -277,13 +278,13 @@ func TestMessageBufferErrorHandling(t *testing.T) {
 		}
 
 		provider := func() ([]kafka.Message, error) { return []kafka.Message{message}, nil }
-		err := buffer.Put(emptyTopic, provider)
+		err := buffer.Put(topic.Token(emptyTopic), provider)
 		assert.NoError(t, err)
 
 		messages := buffer.GetAll()
 		assert.Len(t, messages, 1)
 		assert.Contains(t, messages, emptyTopic)
-		assert.Len(t, messages[emptyTopic], 1)
-		assert.Equal(t, message, messages[emptyTopic][0])
+		assert.Len(t, messages[topic.Token(emptyTopic)], 1)
+		assert.Equal(t, message, messages[topic.Token(emptyTopic)][0])
 	})
 }

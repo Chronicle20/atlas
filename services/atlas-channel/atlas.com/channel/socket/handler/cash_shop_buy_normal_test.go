@@ -78,7 +78,7 @@ func TestBuyNormalPurchaseCurrency(t *testing.T) {
 				t.Fatalf("RequestPurchase: %v", err)
 			}
 
-			msgs := captured.Messages(messageCashShop.EnvCommandTopic)
+			msgs := captured.Messages(string(messageCashShop.EnvCommandTopic))
 			if len(msgs) != 1 {
 				t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1", len(msgs))
 			}
@@ -116,7 +116,7 @@ func TestBuyNormalHandleEmitsPurchase(t *testing.T) {
 
 	CashShopOperationHandleFunc(logrus.New(), ctx, nil)(s, buyNormalPacket(t, mode, serial), buyNormalOperationsOptions(mode))
 
-	msgs := captured.Messages(messageCashShop.EnvCommandTopic)
+	msgs := captured.Messages(string(messageCashShop.EnvCommandTopic))
 	if len(msgs) != 1 {
 		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1", len(msgs))
 	}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -235,10 +236,10 @@ func newEmitCapture(t *testing.T) *emitCapture {
 
 // emitted decodes every message captured on topic whose Type equals wantType
 // as a buff.Command[buff.CancelByCorrelationCommandBody].
-func (f *emitCapture) emitted(topic, wantType string) []buff.Command[buff.CancelByCorrelationCommandBody] {
+func (f *emitCapture) emitted(topic topic.Token, wantType string) []buff.Command[buff.CancelByCorrelationCommandBody] {
 	f.t.Helper()
 	var out []buff.Command[buff.CancelByCorrelationCommandBody]
-	for _, m := range emitted.Messages(topic) {
+	for _, m := range emitted.Messages(string(topic)) {
 		var c buff.Command[buff.CancelByCorrelationCommandBody]
 		if err := json.Unmarshal(m.Value, &c); err != nil {
 			f.t.Fatalf("decode buff command: %v", err)

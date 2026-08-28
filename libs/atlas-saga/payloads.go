@@ -1351,6 +1351,26 @@ type PlayJukeboxPayload struct {
 	DurationMs uint32     `json:"durationMs"` // Song length in MILLISECONDS (client-supplied, server-capped)
 }
 
+// SetBackEffectPayload represents the payload for starting a back effect in a field.
+type SetBackEffectPayload struct {
+	WorldId   world.Id   `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id    `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID  `json:"instance"`  // Instance UUID of the field
+	Effect    uint8      `json:"effect"`    // Back effect type
+	FieldId   uint32     `json:"fieldId"`   // Back effect field ID
+	PageId    uint8      `json:"pageId"`    // Back effect page ID
+	Duration  uint32     `json:"duration"`  // Fade length in MILLISECONDS, not a lifetime
+}
+
+// ClearBackEffectPayload represents the payload for stopping the active back effect in a field.
+type ClearBackEffectPayload struct {
+	WorldId   world.Id   `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id    `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID  `json:"instance"`  // Instance UUID of the field
+}
+
 // SetAssetOwnerPayload represents the payload required to set the owner tag on an asset in a specific inventory slot.
 type SetAssetOwnerPayload struct {
 	CharacterId   uint32 `json:"characterId"`   // CharacterId associated with the action

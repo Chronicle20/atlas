@@ -44,7 +44,7 @@ Module root: `services/atlas-consumables/atlas.com/consumables`.
 
 **Do not** generalise `IsZombified` into a shared `HasStat` helper. The design rejects that explicitly (§3.1); `IsZombified` is pinned by task-256 and must not be rewritten.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append `TestIsPotionLocked` to `character/buff/model_test.go`. Table-driven, same
 struct shape and same `for … t.Run` footer as the existing `TestIsZombified`
@@ -90,7 +90,7 @@ func TestIsPotionLocked(t *testing.T) {
 
 Write all seven rows out in full; the ellipsis above is shorthand for this plan only.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run from `services/atlas-consumables/atlas.com/consumables`:
 
@@ -100,7 +100,7 @@ go test ./character/buff/ -run TestIsPotionLocked -v
 
 Expected: build failure — `undefined: IsPotionLocked`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `character/buff/model.go`, directly after `IsZombified`:
 
@@ -126,7 +126,7 @@ func IsPotionLocked(bs []Model) bool {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 go test ./character/buff/ -v
@@ -134,7 +134,7 @@ go test ./character/buff/ -v
 
 Expected: PASS, including the untouched `TestIsZombified` and `TestExpiredHonoursNoExpiry`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-consumables/atlas.com/consumables/character/buff/model.go \
@@ -162,7 +162,7 @@ Module root: `services/atlas-consumables/atlas.com/consumables`.
   - `ErrPotionLocked error` (package `consumable`)
   - `consumeErrorType(ErrPotionLocked) == consumable.ErrorTypePotionLocked`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `consumable/processor_test.go`. The file already imports
 `"atlas-consumables/kafka/message/consumable"`, `errors`, `encoding/json`?  — it
@@ -194,7 +194,7 @@ func TestErrorEventProviderPotionLocked(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 go test ./consumable/ -run 'TestConsumeErrorType_PotionLocked|TestErrorEventProviderPotionLocked' -v
@@ -202,7 +202,7 @@ go test ./consumable/ -run 'TestConsumeErrorType_PotionLocked|TestErrorEventProv
 
 Expected: build failure — `undefined: ErrPotionLocked`, `undefined: consumable.ErrorTypePotionLocked`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `kafka/message/consumable/kafka.go`, add to the `ErrorType*` group (keep the
 block gofmt-aligned; adding this longer name re-aligns the group):
@@ -242,7 +242,7 @@ and add the arm to `consumeErrorType`, above the default return:
 	return consumable.ErrorTypeConsumeFailed
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 go build ./... && go test ./consumable/ -run 'TestConsumeErrorType|TestErrorEventProvider' -v
@@ -250,7 +250,7 @@ go build ./... && go test ./consumable/ -run 'TestConsumeErrorType|TestErrorEven
 
 Expected: PASS, including the pre-existing `TestConsumeErrorType_GenericFailure`, `_PetCannotConsume`, `_PetCannotLearn`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-consumables/atlas.com/consumables/kafka/message/consumable/kafka.go \
@@ -295,7 +295,7 @@ Notes the implementer needs:
   scope), `2030000` → 203 (town warp, out of scope), `2120000` → 212 (pet food,
   out of scope), `2380000` → 238 (monster card, out of scope).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `consumable/processor_potion_lock_test.go`, package `consumable`.
 Construct the processor directly as `&ProcessorImpl{l: …, ctx: context.Background(), bp: …, cpp: …}`
@@ -377,7 +377,7 @@ character id.
 | `unlocked` | `[]buff.Model{}, nil` | `false` |
 | `read error` | `nil, errors.New("boom")` | `false` |
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 go test ./consumable/ -run 'PotionLock|RequestItemConsume_' -v
@@ -385,7 +385,7 @@ go test ./consumable/ -run 'PotionLock|RequestItemConsume_' -v
 
 Expected: build failure — `unknown field bp in struct literal`, `undefined: resolvePotionLocked`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Add the field and its construction:
 
@@ -481,7 +481,7 @@ func (p *ProcessorImpl) rejectPotionLocked(characterId uint32, itemId item2.Id) 
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 go build ./... && go test ./consumable/... ./character/... -v
@@ -491,7 +491,7 @@ Expected: PASS. The pre-existing zombify cases in `processor_test.go`,
 `morph_coupon_test.go`, and every other suite in the package must pass
 untouched — the `bp` field addition is purely additive.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-consumables/atlas.com/consumables/consumable/processor.go \
@@ -529,7 +529,7 @@ routing only, never a buff read.
 The channel `kafka.go` has no `ErrorTypeConsumeFailed` constant today; do not
 add one. The test row for `CONSUME_FAILED` uses the string literal.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `kafka/consumer/consumable/consumer_test.go`, package `consumable`.
 Imports: `"testing"` and `consumable2 "atlas-channel/kafka/message/consumable"`.
@@ -579,7 +579,7 @@ the response is the same unstick, and inventing a fourth action with an
 identical body would be dead weight. Recognition is proven by the explicit
 `case` in the classifier, which the next step adds.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 go test ./kafka/consumer/consumable/ -v
@@ -587,7 +587,7 @@ go test ./kafka/consumer/consumable/ -v
 
 Expected: build failure — `undefined: errorAction`, `undefined: consumableErrorAction`, `undefined: consumable2.ErrorTypePotionLocked`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `kafka/message/consumable/kafka.go`, add to the `ErrorType*` group:
 
@@ -683,7 +683,7 @@ each arm's existing statements verbatim:
 		}
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 go build ./... && go test ./kafka/consumer/consumable/... -v
@@ -691,7 +691,7 @@ go build ./... && go test ./kafka/consumer/consumable/... -v
 
 Expected: PASS on all nine cases.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/message/consumable/kafka.go \
@@ -711,7 +711,7 @@ git commit -m "feat(channel): route POTION_LOCKED consumable errors through an e
 No source changes. This task exists so the plan ends on a green flagless gate
 rather than on a module-local `go test`.
 
-- [ ] **Step 1: Run the full gate**
+- [x] **Step 1: Run the full gate**
 
 ```bash
 tools/verify.sh
@@ -720,13 +720,13 @@ tools/verify.sh
 Expected: exit 0. `--quick` / `--no-docker` do NOT satisfy this — they skip the
 bake and `-race`.
 
-- [ ] **Step 2: If it fails**
+- [x] **Step 2: If it fails**
 
 Fix inside the owning task's files, re-run the module-local tests for that
 service, then re-run the flagless gate. Do not amend a passing commit to
 silence an unrelated failure; report it instead.
 
-- [ ] **Step 3: Commit any fixes**
+- [x] **Step 3: Commit any fixes**
 
 ```bash
 git add -A

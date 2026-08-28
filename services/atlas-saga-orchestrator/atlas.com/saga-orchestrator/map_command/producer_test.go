@@ -96,3 +96,50 @@ func TestSetEnvironmentStateCommandProvider_EnvironmentKind(t *testing.T) {
 
 	assert.Equal(t, "ENVIRONMENT", c.Body.Kind)
 }
+
+func TestSetBackEffectCommandProvider(t *testing.T) {
+	transactionId := uuid.New()
+	instanceId := uuid.New()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).SetInstance(instanceId).Build()
+
+	msgs, err := SetBackEffectCommandProvider(transactionId, f, 0, 100000000, 1, 1000)()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	assert.Equal(t, producer.CreateKey(100000000), msgs[0].Key)
+
+	var c mapKafka.Command[mapKafka.SetBackEffectCommandBody]
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &c))
+
+	assert.Equal(t, mapKafka.CommandTypeSetBackEffect, c.Type)
+	assert.Equal(t, transactionId, c.TransactionId)
+	assert.Equal(t, world.Id(0), c.WorldId)
+	assert.Equal(t, channel.Id(1), c.ChannelId)
+	assert.Equal(t, _map.Id(100000000), c.MapId)
+	assert.Equal(t, instanceId, c.Instance)
+	assert.Equal(t, uint8(0), c.Body.Effect)
+	assert.Equal(t, uint32(100000000), c.Body.FieldId)
+	assert.Equal(t, uint8(1), c.Body.PageId)
+	assert.Equal(t, uint32(1000), c.Body.Duration)
+}
+
+func TestClearBackEffectCommandProvider(t *testing.T) {
+	transactionId := uuid.New()
+	instanceId := uuid.New()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).SetInstance(instanceId).Build()
+
+	msgs, err := ClearBackEffectCommandProvider(transactionId, f)()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	assert.Equal(t, producer.CreateKey(100000000), msgs[0].Key)
+
+	var c mapKafka.Command[mapKafka.ClearBackEffectCommandBody]
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &c))
+
+	assert.Equal(t, mapKafka.CommandTypeClearBackEffect, c.Type)
+	assert.Equal(t, transactionId, c.TransactionId)
+	assert.Equal(t, world.Id(0), c.WorldId)
+	assert.Equal(t, channel.Id(1), c.ChannelId)
+	assert.Equal(t, _map.Id(100000000), c.MapId)
+	assert.Equal(t, instanceId, c.Instance)
+	assert.Equal(t, mapKafka.ClearBackEffectCommandBody{}, c.Body)
+}

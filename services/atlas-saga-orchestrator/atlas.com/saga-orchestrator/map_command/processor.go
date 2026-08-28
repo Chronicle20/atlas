@@ -17,6 +17,8 @@ type Processor interface {
 	PlayJukebox(transactionId uuid.UUID, f field.Model, itemId uint32, playerName string, durationMs uint32) error
 	SetEnvironmentState(transactionId uuid.UUID, f field.Model, kind field.ObjectKind, name string, state uint32) error
 	ResetEnvironment(transactionId uuid.UUID, f field.Model) error
+	SetBackEffect(transactionId uuid.UUID, f field.Model, effect uint8, fieldId uint32, pageId uint8, duration uint32) error
+	ClearBackEffect(transactionId uuid.UUID, f field.Model) error
 }
 
 type ProcessorImpl struct {
@@ -47,4 +49,12 @@ func (p *ProcessorImpl) SetEnvironmentState(transactionId uuid.UUID, f field.Mod
 
 func (p *ProcessorImpl) ResetEnvironment(transactionId uuid.UUID, f field.Model) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(mapKafka.EnvCommandTopicMap)(ResetEnvironmentCommandProvider(transactionId, f))
+}
+
+func (p *ProcessorImpl) SetBackEffect(transactionId uuid.UUID, f field.Model, effect uint8, fieldId uint32, pageId uint8, duration uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(mapKafka.EnvCommandTopicMap)(SetBackEffectCommandProvider(transactionId, f, effect, fieldId, pageId, duration))
+}
+
+func (p *ProcessorImpl) ClearBackEffect(transactionId uuid.UUID, f field.Model) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(mapKafka.EnvCommandTopicMap)(ClearBackEffectCommandProvider(transactionId, f))
 }

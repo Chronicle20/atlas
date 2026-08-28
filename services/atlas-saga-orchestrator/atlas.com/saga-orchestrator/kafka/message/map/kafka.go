@@ -21,6 +21,9 @@ const (
 	CommandTypeSetEnvironmentState = "SET_ENVIRONMENT_STATE"
 
 	CommandTypeResetEnvironment = "RESET_ENVIRONMENT"
+
+	CommandTypeSetBackEffect   = "SET_BACK_EFFECT"
+	CommandTypeClearBackEffect = "CLEAR_BACK_EFFECT"
 )
 
 type Command[E any] struct {
@@ -52,3 +55,12 @@ type SetEnvironmentStateCommandBody struct {
 }
 
 type ResetEnvironmentCommandBody struct{}
+
+type SetBackEffectCommandBody struct {
+	Effect   uint8  `json:"effect"`
+	FieldId  uint32 `json:"fieldId"`
+	PageId   uint8  `json:"pageId"`
+	Duration uint32 `json:"duration"`
+}
+
+type ClearBackEffectCommandBody struct{}

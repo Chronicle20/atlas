@@ -61,6 +61,10 @@ import (
 var (
 	ErrPetCannotConsume = errors.New("pet cannot consume")
 	ErrPetCannotLearn   = errors.New("pet cannot learn")
+	// ErrPotionLocked is returned by RequestItemConsume when a
+	// standard-consumer item is refused because the character carries an
+	// unexpired STOP_PORTION buff. See task-280.
+	ErrPotionLocked = errors.New("potion use locked")
 )
 
 type ItemConsumer func(l logrus.FieldLogger) func(ctx context.Context) error
@@ -445,6 +449,9 @@ func consumeErrorType(err error) string {
 	}
 	if errors.Is(err, ErrPetCannotLearn) {
 		return consumable.ErrorTypePetCannotLearn
+	}
+	if errors.Is(err, ErrPotionLocked) {
+		return consumable.ErrorTypePotionLocked
 	}
 	return consumable.ErrorTypeConsumeFailed
 }

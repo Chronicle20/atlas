@@ -8,6 +8,7 @@ import (
 	"atlas-consumables/character/buff/stat"
 	"atlas-consumables/equipable"
 	"atlas-consumables/kafka/message/consumable"
+	"encoding/json"
 	"errors"
 	"io"
 	"testing"
@@ -819,4 +820,27 @@ func TestResolveZombified(t *testing.T) {
 			assert.Equal(t, tc.wantWarnLogs, warnCount)
 		})
 	}
+}
+
+// task-280 FR-6: the potion-lock rejection must classify to its own wire
+// value rather than falling into ErrorTypeConsumeFailed, so the channel can
+// route it explicitly instead of via its catch-all.
+func TestConsumeErrorType_PotionLocked(t *testing.T) {
+	assert.Equal(t, consumable.ErrorTypePotionLocked, consumeErrorType(ErrPotionLocked))
+	assert.Equal(t, "POTION_LOCKED", consumable.ErrorTypePotionLocked)
+}
+
+// The ERROR event carrying POTION_LOCKED must be exactly one message whose
+// body.error is the wire value. Asserted through the provider directly, per
+// the producer_reward_test.go precedent -- no broker involved.
+func TestErrorEventProviderPotionLocked(t *testing.T) {
+	msgs, err := ErrorEventProvider(ts.Id(7), consumable.ErrorTypePotionLocked)()
+	assert.NoError(t, err)
+	assert.Len(t, msgs, 1)
+
+	var e consumable.Event[consumable.ErrorBody]
+	assert.NoError(t, json.Unmarshal(msgs[0].Value, &e))
+	assert.Equal(t, consumable.EventTypeError, e.Type)
+	assert.Equal(t, ts.Id(7), e.CharacterId)
+	assert.Equal(t, "POTION_LOCKED", e.Body.Error)
 }

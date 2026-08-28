@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	movementMsg "atlas-channel/kafka/message/movement"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 )
 
@@ -20,6 +22,9 @@ import (
 var sharedCapture *producertest.Capture
 
 func TestMain(m *testing.M) {
+	os.Setenv(string(movementMsg.EnvCommandCharacterMovement), string(movementMsg.EnvCommandCharacterMovement))
+	os.Setenv(string(movementMsg.EnvCommandPetMovement), string(movementMsg.EnvCommandPetMovement))
+	os.Setenv(string(movementMsg.EnvCommandMonsterMovement), string(movementMsg.EnvCommandMonsterMovement))
 	sharedCapture = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

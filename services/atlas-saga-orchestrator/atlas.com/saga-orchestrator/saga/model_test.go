@@ -9,6 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 func TestSaga_Failing(t *testing.T) {
@@ -1163,4 +1166,65 @@ func TestStepLateCompensatedMarker_RoundTrip(t *testing.T) {
 	// Out-of-range index errors.
 	_, err = s.WithStepLateCompensated(9)
 	assert.Error(t, err)
+}
+
+func TestUnmarshalStep_MoveEnvironment(t *testing.T) {
+	data := []byte(`{
+		"stepId": "move-environment-obs3",
+		"status": "pending",
+		"action": "move_environment",
+		"payload": {
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 910010000,
+			"instance": "00000000-0000-0000-0000-000000000000",
+			"kind": "OBSTACLE",
+			"name": "obs3",
+			"state": 2
+		}
+	}`)
+
+	var s Step[any]
+	require.NoError(t, json.Unmarshal(data, &s))
+
+	assert.Equal(t, MoveEnvironment, s.Action())
+
+	p, ok := s.Payload().(MoveEnvironmentPayload)
+	require.True(t, ok, "payload type = %T, want MoveEnvironmentPayload", s.Payload())
+	assert.Equal(t, field.ObjectKindObstacle, p.Kind)
+	assert.Equal(t, "obs3", p.Name)
+	assert.Equal(t, uint32(2), p.State)
+}
+
+func TestUnmarshalStep_ResetEnvironment(t *testing.T) {
+	data := []byte(`{
+		"stepId": "reset-environment-1",
+		"status": "pending",
+		"action": "reset_environment",
+		"payload": {
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 910010000,
+			"instance": "00000000-0000-0000-0000-000000000000"
+		}
+	}`)
+
+	var s Step[any]
+	require.NoError(t, json.Unmarshal(data, &s))
+
+	assert.Equal(t, ResetEnvironment, s.Action())
+
+	p, ok := s.Payload().(ResetEnvironmentPayload)
+	require.True(t, ok, "payload type = %T, want ResetEnvironmentPayload", s.Payload())
+	assert.Equal(t, uint32(910010000), uint32(p.MapId))
+}
+
+func TestEventAcceptance_EnvironmentActionsAreFireAndForget(t *testing.T) {
+	events, ok := acceptanceTable[sharedsaga.MoveEnvironment]
+	require.True(t, ok, "sharedsaga.MoveEnvironment missing from acceptanceTable")
+	assert.Len(t, events, 0)
+
+	events, ok = acceptanceTable[sharedsaga.ResetEnvironment]
+	require.True(t, ok, "sharedsaga.ResetEnvironment missing from acceptanceTable")
+	assert.Len(t, events, 0)
 }

@@ -95,6 +95,7 @@ type Handler interface {
 	// green.
 	WithPartyProcessor(party.Processor) Handler
 	WithPendingChangeProcessor(pending_change.Processor) Handler
+	WithMapCommandProcessor(map_command.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -188,6 +189,8 @@ type Handler interface {
 	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
 	handleFieldEffectWeather(s Saga, st Step[any]) error
 	handlePlayJukebox(s Saga, st Step[any]) error
+	handleMoveEnvironment(s Saga, st Step[any]) error
+	handleResetEnvironment(s Saga, st Step[any]) error
 	handleStartRPSGame(s Saga, st Step[any]) error
 	handleIncubatorResult(s Saga, st Step[any]) error
 	handleEmitMegaphone(s Saga, st Step[any]) error
@@ -816,6 +819,12 @@ func (h *HandlerImpl) WithNoteProcessor(noteP note.Processor) Handler {
 	}
 }
 
+func (h *HandlerImpl) WithMapCommandProcessor(mapCommandP map_command.Processor) Handler {
+	c := *h
+	c.mapCommandP = mapCommandP
+	return &c
+}
+
 // ActionHandler is a function type for handling different saga action types
 type ActionHandler func(s Saga, st Step[any]) error
 
@@ -1029,6 +1038,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleFieldEffectWeather, true
 	case PlayJukebox:
 		return h.handlePlayJukebox, true
+	case MoveEnvironment:
+		return h.handleMoveEnvironment, true
+	case ResetEnvironment:
+		return h.handleResetEnvironment, true
 	case StartRPSGame:
 		return h.handleStartRPSGame, true
 	case SetAssetOwner:
@@ -3764,6 +3777,65 @@ func (h *HandlerImpl) handlePlayJukebox(s Saga, st Step[any]) error {
 	err := h.mapCommandP.PlayJukebox(s.TransactionId(), f, payload.ItemId, payload.PlayerName, payload.DurationMs)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to start jukebox.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handleMoveEnvironment handles the MoveEnvironment action.
+// Produces a SET_ENVIRONMENT_STATE command to COMMAND_TOPIC_MAP.
+// Fire-and-forget: the step completes when the command is produced, and there
+// is no compensating action -- reversing a move is the script author's job.
+func (h *HandlerImpl) handleMoveEnvironment(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(MoveEnvironmentPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"map_id":         payload.MapId,
+		"kind":           string(payload.Kind),
+		"name":           payload.Name,
+		"state":          payload.State,
+	}).Debug("Moving field environment object")
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	err := h.mapCommandP.SetEnvironmentState(s.TransactionId(), f, payload.Kind, payload.Name, payload.State)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to move field environment object.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handleResetEnvironment handles the ResetEnvironment action.
+// Produces a RESET_ENVIRONMENT command to COMMAND_TOPIC_MAP.
+func (h *HandlerImpl) handleResetEnvironment(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ResetEnvironmentPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"map_id":         payload.MapId,
+	}).Debug("Resetting field environment objects")
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	err := h.mapCommandP.ResetEnvironment(s.TransactionId(), f)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to reset field environment objects.")
 		return err
 	}
 

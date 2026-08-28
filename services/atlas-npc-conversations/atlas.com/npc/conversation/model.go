@@ -44,6 +44,7 @@ const (
 	PartyQuestBonusActionType StateType = "partyQuestBonusAction"
 	ListSelectionType         StateType = "listSelection"
 	AskNumberType             StateType = "askNumber"
+	AskTextType               StateType = "askText"
 	AskStyleType              StateType = "askStyle"
 	AskSlideMenuType          StateType = "askSlideMenu"
 )
@@ -62,6 +63,7 @@ type StateModel struct {
 	partyQuestBonusAction *PartyQuestBonusActionModel
 	listSelection         *ListSelectionModel
 	askNumber             *AskNumberModel
+	askText               *AskTextModel
 	askStyle              *AskStyleModel
 	askSlideMenu          *AskSlideMenuModel
 }
@@ -124,6 +126,11 @@ func (s StateModel) ListSelection() *ListSelectionModel {
 // AskNumber returns the ask number model (if type is askNumber)
 func (s StateModel) AskNumber() *AskNumberModel {
 	return s.askNumber
+}
+
+// AskText returns the ask text model (if type is askText)
+func (s StateModel) AskText() *AskTextModel {
+	return s.askText
 }
 
 // AskStyle returns the ask style model (if type is askStyle)
@@ -636,6 +643,74 @@ func (a AskNumberModel) ContextKey() string {
 
 // NextState returns the next state ID
 func (a AskNumberModel) NextState() string {
+	return a.nextState
+}
+
+// AskTextMatchModel represents a single ordered, exact-match branch in an ask text state
+type AskTextMatchModel struct {
+	value            string
+	valueFromContext string
+	nextState        string
+}
+
+// Value returns the literal value to match against
+func (m AskTextMatchModel) Value() string {
+	return m.value
+}
+
+// ValueFromContext returns the context key whose value is matched against
+func (m AskTextMatchModel) ValueFromContext() string {
+	return m.valueFromContext
+}
+
+// NextState returns the next state ID for this match
+func (m AskTextMatchModel) NextState() string {
+	return m.nextState
+}
+
+// AskTextModel represents an ask text (free-text) state
+type AskTextModel struct {
+	text        string
+	defaultText string
+	minLength   uint16
+	maxLength   uint16
+	contextKey  string
+	matches     []AskTextMatchModel
+	nextState   string
+}
+
+// Text returns the ask text prompt
+func (a AskTextModel) Text() string {
+	return a.text
+}
+
+// DefaultText returns the default text
+func (a AskTextModel) DefaultText() string {
+	return a.defaultText
+}
+
+// MinLength returns the minimum accepted text length
+func (a AskTextModel) MinLength() uint16 {
+	return a.minLength
+}
+
+// MaxLength returns the maximum accepted text length
+func (a AskTextModel) MaxLength() uint16 {
+	return a.maxLength
+}
+
+// ContextKey returns the context key
+func (a AskTextModel) ContextKey() string {
+	return a.contextKey
+}
+
+// Matches returns the ordered, first-match-wins branch table
+func (a AskTextModel) Matches() []AskTextMatchModel {
+	return a.matches
+}
+
+// NextState returns the next state ID
+func (a AskTextModel) NextState() string {
 	return a.nextState
 }
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Machine-readable projection of docs/tasks/task-283-race-index-job-mapping/findings.md. Neither the Go server nor the admin UI loads this at runtime; both assert their compiled tables against it in tests (task-283 design D-9). Adding a slot here without adding it to BOTH tables fails those tests, which is the point. Per-version `verified` is true only when every slot in that version is individually `verified: true`; a slot's `verified` mirrors the corresponding findings.md row's status column (`verified` -> true, anything else -> false). `jobId: null` means the numeric job id could not be established (class unverified, or the row itself is unestablished) -- never a guess. `class` matches the findings.md class column for that row; where findings.md used markdown emphasis purely for rendering (the three no-race versions), the emphasis markers are stripped but the wording is unchanged.",
+  "_comment": "Machine-readable projection of docs/tasks/task-283-race-index-job-mapping/findings.md. Neither the Go server nor the admin UI loads this at runtime; both assert their compiled tables against it in tests (task-283 design D-9). Adding a slot here without adding it to BOTH tables fails those tests, which is the point. Per-version `verified` is true only when every slot in that version is individually `verified: true`; a slot's `verified` mirrors the corresponding findings.md row's status column (`verified` -> true, anything else -> false). `jobId` and `verified` are two independent axes, not one: `verified` records confidence in the `class` label only (whether IDA could pin the symbolic name), while `jobId` is the mapping itself, which FR-21 freezes for every pre-Big-Bang slot (gms_12 through gms_v92) at its currently-shipped value regardless of label confidence -- `verified: false` on a slot in that range does NOT mean `jobId` is a guess or should be null; the frozen value in services/atlas-character-factory/atlas.com/character-factory/factory/processor_test.go is the authority for it. `jobId: null` is reserved for slots with no established mapping to freeze at all (outside FR-21's range, or genuinely unestablished) -- never a guess. `class` matches the findings.md class column for that row; where findings.md used markdown emphasis purely for rendering (the three no-race versions), the emphasis markers are stripped but the wording is unchanged.",
   "versions": {
     "gms_12": {
       "region": "GMS",
@@ -83,10 +83,10 @@
         {
           "raceIndex": 2,
           "subJobIndex": 0,
-          "jobId": null,
+          "jobId": 2000,
           "class": "Aran-family dialog",
           "verified": false,
-          "note": "Ordinal verified, class by geometry only. CreateWnd y=207/width=276 match the Aran fingerprint; z=109 here vs 104 from v83 on. No class symbol in this IDB, unlike v83. Ordinal 3 does not exist on this version -- the switch has only three arms."
+          "note": "jobId 2000 (job.LegendId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_79/2.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified: ordinal verified, class by geometry only. CreateWnd y=207/width=276 match the Aran fingerprint; z=109 here vs 104 from v83 on. No class symbol in this IDB, unlike v83. Ordinal 3 does not exist on this version -- the switch has only three arms."
         }
       ]
     },
@@ -148,10 +148,10 @@
         {
           "raceIndex": 3,
           "subJobIndex": 0,
-          "jobId": null,
+          "jobId": 2001,
           "class": "fourth race (Evan slot)",
           "verified": false,
-          "note": "Ordinal verified, class unverified. Distinct class (own vftables, own singleton), but its CreateWnd geometry equals the shared Explorer/Evan fingerprint and there is no symbol or RTTI string in this IDB, so which class it is could not be established."
+          "note": "jobId 2001 (job.EvanId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_84/3.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified: ordinal verified, class unverified. Distinct class (own vftables, own singleton), but its CreateWnd geometry equals the shared Explorer/Evan fingerprint and there is no symbol or RTTI string in this IDB, so which class it is could not be established."
         }
       ]
     },
@@ -184,10 +184,10 @@
         {
           "raceIndex": 3,
           "subJobIndex": 0,
-          "jobId": null,
+          "jobId": 2001,
           "class": "fourth race (Evan slot)",
           "verified": false,
-          "note": "Ordinal verified, class unverified -- same situation as gms_v84 race 3."
+          "note": "jobId 2001 (job.EvanId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_87/3.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified -- same situation as gms_v84 race 3."
         }
       ]
     },
@@ -213,18 +213,18 @@
         {
           "raceIndex": 2,
           "subJobIndex": 0,
-          "jobId": null,
+          "jobId": 2000,
           "class": "Aran or Evan (one of the two)",
           "verified": false,
-          "note": "Ordinal verified, class unverified -- which of Aran/the fourth-race slot this ordinal is was not established within budget."
+          "note": "jobId 2000 (job.LegendId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_92/2.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified: ordinal verified, which of Aran/the fourth-race slot this ordinal is was not established within budget."
         },
         {
           "raceIndex": 3,
           "subJobIndex": 0,
-          "jobId": null,
+          "jobId": 2001,
           "class": "Aran or Evan (the other)",
           "verified": false,
-          "note": "Ordinal verified, class unverified -- the complement of ordinal 2 above."
+          "note": "jobId 2001 (job.EvanId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_92/3.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified: ordinal verified, class unverified -- the complement of ordinal 2 above."
         },
         {
           "raceIndex": 1,

@@ -96,6 +96,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotBuffStatUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -664,5 +669,28 @@ func handleSnapshotBuffExpired(sc server.Model, _ writer.Producer) message.Handl
 			return
 		}
 		snapshot.GetRegistry().RemoveBuff(t, e.CharacterId, e.Body.SourceId)
+	}
+}
+
+// handleSnapshotBuffStatUpdated invalidates the character snapshot
+// registry's buff component on a STAT_UPDATED event (bug-shadow-buffs-dead-code
+// part 2): atlas-buffs emits STAT_UPDATED when a buff's Amount is mutated in
+// place (character/processor.go UpdateStatValue — Aran Combo orb count,
+// Energy Charge), and the buff feed otherwise has no handler for it, so a
+// buff read via GetBuffs() after an in-place mutation would be frozen at its
+// APPLIED-time value. Invalidate rather than apply in place — the thin-event
+// pattern (design.md §2): the next read refetches the mutated value over
+// REST rather than this handler reconstructing it from the event's changes.
+// Update-only, same as APPLIED/EXPIRED above.
+func handleSnapshotBuffStatUpdated(sc server.Model, _ writer.Producer) message.Handler[buff2.StatusEvent[buff2.StatUpdatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.StatUpdatedStatusEventBody]) {
+		if e.Type != buff2.EventStatusTypeStatUpdated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateBuffs(t, e.CharacterId)
 	}
 }

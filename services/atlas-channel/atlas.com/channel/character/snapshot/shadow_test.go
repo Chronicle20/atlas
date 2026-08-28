@@ -2,6 +2,8 @@ package snapshot
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
+	"atlas-channel/character/buff/stat"
 	"atlas-channel/inventory"
 	"context"
 	"sync"
@@ -11,6 +13,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/sirupsen/logrus"
+
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )
 
 func TestShadow_DisabledByDefault(t *testing.T) {
@@ -84,6 +88,64 @@ func TestShadow_SamplesAndCountsDivergence(t *testing.T) {
 			div := compareProjection(snapM, restM, nil, nil)
 			if len(div) != 1 || div[0] != componentCore {
 				t.Fatalf("level divergence must flag core: %v", div)
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
+	}
+}
+
+// TestShadow_BuffsDivergenceFires proves both call sites now thread real
+// served buffs into maybeShadow (bug-shadow-buffs-dead-code part 1): before
+// the fix, servedBuffs was always nil at both call sites, so
+// compareProjection's buff branch could never execute and the buffs
+// divergence metric could never fire.
+func TestShadow_BuffsDivergenceFires(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"rate=1.0 shadow-fetches on a full hit and records exactly one buffs divergence when the projectile-gate buff drops out server-side", func(t *testing.T) {
+			resetRegistryForTest(t)
+			resetShadowForTest(t)
+			t.Setenv("CHAR_SNAPSHOT_SHADOW_SAMPLE_RATE", "1.0")
+			p, tm := newTestProcessor(t)
+			installFetchSeams(t, 7)
+
+			// Populate core/inv/skills (Get() does not touch buffs; buffs
+			// are seeded directly through the registry, the same seam
+			// GetBuffs()'s own backfill uses).
+			if _, err := p.Get(7); err != nil {
+				t.Fatalf("populate: %v", err)
+			}
+
+			soulArrow := buff.NewBuff(3111004, 20, 60000,
+				[]stat.Model{stat.NewStat(string(charconst.TemporaryStatTypeSoulArrow), 1)},
+				time.Now(), time.Now().Add(time.Minute), false)
+			r := GetRegistry()
+			bv := r.View(tm, 7)
+			if !r.BackfillBuffs(tm, 7, []buff.Model{soulArrow}, bv.BuffsGen) {
+				t.Fatalf("seed backfill rejected")
+			}
+
+			divergenceBefore := testutil.ToFloat64(snapshotDivergenceTotal.WithLabelValues(tm.Id().String(), componentBuffs))
+
+			// The REST projection no longer carries the gate buff.
+			// installFetchSeams already registered a cleanup that restores
+			// the pre-test seams, so reassigning here is safe.
+			buffsFetchFn = func(l logrus.FieldLogger, ctx context.Context, id uint32) ([]buff.Model, error) {
+				return []buff.Model{}, nil
+			}
+
+			if _, err := p.Get(7); err != nil { // full hit (fast path) — servedBuffs must now be non-nil
+				t.Fatalf("hit: %v", err)
+			}
+			waitForShadowDrain(t)
+
+			divergenceAfter := testutil.ToFloat64(snapshotDivergenceTotal.WithLabelValues(tm.Id().String(), componentBuffs))
+			if divergenceAfter-divergenceBefore != 1 {
+				t.Fatalf("shadow divergence must record the buffs component once: before=%v after=%v", divergenceBefore, divergenceAfter)
 			}
 		}},
 	}

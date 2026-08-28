@@ -58,7 +58,16 @@ func (p *Processor) Get(characterId uint32) (character.Model, error) {
 		recordRead(p.t, componentCore, outcomeHit)
 		recordRead(p.t, componentSkills, outcomeHit)
 		recordRead(p.t, componentInventory, outcomeHit)
-		p.maybeShadow(characterId, m, nil)
+		// ComposedIfValid already required buffsValid, so the registry's
+		// current buffs are what a same-moment GetBuffs() call would serve
+		// for this swing (shadow.go's buff-divergence branch, design §8).
+		// Not recorded as a componentBuffs read: Get() does not serve buffs
+		// to its own caller here, only to the shadow sample.
+		var servedBuffs []buff.Model
+		if bv := r.View(p.t, characterId); bv.BuffsValid {
+			servedBuffs = filterActive(bv.Buffs)
+		}
+		p.maybeShadow(characterId, m, servedBuffs)
 		return m, nil
 	}
 
@@ -148,7 +157,18 @@ func (p *Processor) Get(characterId uint32) (character.Model, error) {
 		m = m.SetSkills(skills)
 	}
 	if fullHit {
-		p.maybeShadow(characterId, m, nil)
+		// Same reasoning as the fast path above: the buffs component is
+		// orthogonal to fullHit (core+inv+skills), so pass the registry's
+		// current buffs only when that component is itself valid — an
+		// invalid buffs component means "not consulted for this read", and
+		// nil is the correct signal for shadowCompare to skip the component
+		// (controller ruling R9) rather than compare against a fabricated
+		// empty set.
+		var servedBuffs []buff.Model
+		if v.BuffsValid {
+			servedBuffs = filterActive(v.Buffs)
+		}
+		p.maybeShadow(characterId, m, servedBuffs)
 	}
 	return m, nil
 }

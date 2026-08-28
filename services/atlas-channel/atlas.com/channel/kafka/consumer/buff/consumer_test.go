@@ -145,3 +145,82 @@ func TestHandleSnapshotBuff(t *testing.T) {
 		t.Run(tt.name, tt.run)
 	}
 }
+
+// TestHandleSnapshotBuffStatUpdated proves the STAT_UPDATED arm
+// (bug-shadow-buffs-dead-code part 2): a valid buffs component is
+// invalidated rather than mutated in place, and an event for a character
+// with no existing snapshot entry is a no-op (same update-only contract as
+// APPLIED/EXPIRED).
+func TestHandleSnapshotBuffStatUpdated(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{
+			name: "StatUpdated_InvalidatesBuffs",
+			run: func(t *testing.T) {
+				tm := newTestTenant(t)
+				ctx := tenant.WithContext(context.Background(), tm)
+				sc := newTestServer(t, tm)
+				seedBuffs(t, tm, 81)
+
+				ae := buff2.StatusEvent[buff2.AppliedStatusEventBody]{
+					WorldId: 0, CharacterId: 81, Type: buff2.EventStatusTypeBuffApplied,
+					Body: buff2.AppliedStatusEventBody{
+						SourceId: 5220001, Level: 1, Duration: 60000,
+						Changes:   []buff2.StatChange{{Type: "COMBO_COUNTER", Amount: 1}},
+						CreatedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute),
+					},
+				}
+				handleSnapshotBuffApplied(sc, nil)(logrus.New(), ctx, ae)
+
+				v := snapshot.GetRegistry().View(tm, 81)
+				if !v.BuffsValid || len(v.Buffs) != 1 {
+					t.Fatalf("precondition: buffs must be valid and populated: %+v", v)
+				}
+
+				su := buff2.StatusEvent[buff2.StatUpdatedStatusEventBody]{
+					WorldId: 0, CharacterId: 81, Type: buff2.EventStatusTypeStatUpdated,
+					Body: buff2.StatUpdatedStatusEventBody{
+						SourceId: 5220001, Level: 1, Duration: 60000,
+						Changes:   []buff2.StatChange{{Type: "COMBO_COUNTER", Amount: 2}},
+						CreatedAt: ae.Body.CreatedAt, ExpiresAt: ae.Body.ExpiresAt,
+					},
+				}
+				handleSnapshotBuffStatUpdated(sc, nil)(logrus.New(), ctx, su)
+
+				v = snapshot.GetRegistry().View(tm, 81)
+				if v.BuffsValid {
+					t.Fatalf("STAT_UPDATED must invalidate the buffs component, not apply in place: %+v", v)
+				}
+			},
+		},
+		{
+			name: "StatUpdated_NoSnapshot_NoOp",
+			run: func(t *testing.T) {
+				tm := newTestTenant(t)
+				ctx := tenant.WithContext(context.Background(), tm)
+				sc := newTestServer(t, tm)
+
+				su := buff2.StatusEvent[buff2.StatUpdatedStatusEventBody]{
+					WorldId: 0, CharacterId: 999999, Type: buff2.EventStatusTypeStatUpdated,
+					Body: buff2.StatUpdatedStatusEventBody{
+						SourceId: 5220001, Level: 1, Duration: 60000,
+						Changes:   []buff2.StatChange{{Type: "COMBO_COUNTER", Amount: 2}},
+						CreatedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute),
+					},
+				}
+				handleSnapshotBuffStatUpdated(sc, nil)(logrus.New(), ctx, su)
+
+				v := snapshot.GetRegistry().View(tm, 999999)
+				if v.BuffsGen != 0 || v.BuffsValid || len(v.Buffs) != 0 {
+					t.Fatalf("STAT_UPDATED for unknown character must not create a snapshot entry: %+v", v)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, tt.run)
+	}
+}

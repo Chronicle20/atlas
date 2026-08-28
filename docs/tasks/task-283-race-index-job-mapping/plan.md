@@ -1279,7 +1279,7 @@ git commit -m "fix(atlas-ui): label creation-template classes per tenant client 
 
 No file is edited by this task unless the gate demands it.
 
-- [ ] **Step 1: Confirm FR-4 — exactly one mapper survives**
+- [x] **Step 1: Confirm FR-4 — exactly one mapper survives**
 
 ```bash
 grep -rn "FromIndex" --include="*.go" .
@@ -1290,7 +1290,7 @@ from the worktree root. Expected: matches only in
 `job/carousel_test.go`, `factory/processor.go`, `factory/processor_test.go`. Any hit in
 `libs/atlas-constants/`, or any `JobFromIndex` hit at all, fails the acceptance criterion.
 
-- [ ] **Step 2: Confirm no raw version comparison crept in (FR-2)**
+- [x] **Step 2: Confirm no raw version comparison crept in (FR-2)**
 
 ```bash
 grep -rn "MajorVersion() >\|MajorVersion() <\|MajorVersion() ==" --include="*.go" services/atlas-character-factory
@@ -1299,7 +1299,7 @@ grep -rn "MajorVersion() >\|MajorVersion() <\|MajorVersion() ==" --include="*.go
 Expected: no output. Every version predicate must be `IsRegion` / `MajorAtLeast` /
 `MajorAtMost` / `MajorInRange`.
 
-- [ ] **Step 3: Confirm no stub or placeholder landed**
+- [x] **Step 3: Confirm no stub or placeholder landed**
 
 ```bash
 grep -rn "TODO\|FIXME\|BladeRecruit TODO" --include="*.go" services/atlas-character-factory/atlas.com/character-factory/job services/atlas-character-factory/atlas.com/character-factory/factory
@@ -1323,7 +1323,7 @@ is covered there.
 Dispatch this via `task-verifier` in its own context rather than running it inline — the build
 and lint output should not land in an implementer's window.
 
-- [ ] **Step 5: Confirm every acceptance criterion in the PRD**
+- [x] **Step 5: Confirm every acceptance criterion in the PRD**
 
 Walk `prd.md` §10 item by item and record PASS + the evidence (file:line, test name, or command
 output) for each in the task report. The three that are easy to leave unproven:

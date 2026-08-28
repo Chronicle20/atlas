@@ -4,6 +4,7 @@ import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/kafka/message/cashshop"
+	"atlas-cashshop/kafka/message/item"
 	"atlas-cashshop/surprise/opening"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,8 @@ import (
 const testBoxTemplateId = uint32(5222000)
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(cashshop.EnvEventTopicStatus), string(cashshop.EnvEventTopicStatus))
+	_ = os.Setenv(string(item.EnvStatusTopic), string(item.EnvStatusTopic))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

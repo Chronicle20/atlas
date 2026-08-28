@@ -229,7 +229,7 @@ func TestGetItemMakeById(t *testing.T) {
 	url := fmt.Sprintf("%s/data/item-makes/1082002", ts.URL)
 	resp, err := http.DefaultClient.Do(createRequestWithTenant("GET", url, tenantId))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -298,7 +298,7 @@ func TestGetItemMakeByIdFromEachGroup(t *testing.T) {
 
 		var response map[string]interface{}
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		data := response["data"].(map[string]interface{})
 		attributes := data["attributes"].(map[string]interface{})
@@ -317,7 +317,7 @@ func TestGetItemMakeByIdNotFound(t *testing.T) {
 	url := fmt.Sprintf("%s/data/item-makes/9999999", ts.URL)
 	resp, err := http.DefaultClient.Do(createRequestWithTenant("GET", url, tenantId))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
@@ -334,7 +334,7 @@ func TestGetItemMakeRandomRewardOrderSurvivesREST(t *testing.T) {
 	url := fmt.Sprintf("%s/data/item-makes/4260000", ts.URL)
 	resp, err := http.DefaultClient.Do(createRequestWithTenant("GET", url, tenantId))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -386,7 +386,7 @@ func TestListItemMakesPaginates(t *testing.T) {
 	url := fmt.Sprintf("%s/data/item-makes?page[number]=2&page[size]=10", ts.URL)
 	resp, err := http.DefaultClient.Do(createRequestWithTenant("GET", url, tenantId))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -433,7 +433,7 @@ func TestRegisterIsIdempotent(t *testing.T) {
 	url := fmt.Sprintf("%s/data/item-makes/1082002", ts.URL)
 	resp, err := http.DefaultClient.Do(createRequestWithTenant("GET", url, tenantId))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 

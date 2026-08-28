@@ -217,3 +217,7 @@ candidates for the null-`CNpcPool` crash are in the **enter-field burst**
    down happens between the stage swap and the `0x116` delivery.
 3. The unhandled client → server ops `0xEA` / `0xDA` observed at 23:13:12.7 —
    still uncharacterised.
+
+> **Tracked:** the two latent JMS divergences below are filed as
+> [Chronicle20/atlas#1544](https://github.com/Chronicle20/atlas/issues/1544)
+> and are deliberately NOT fixed on this branch.

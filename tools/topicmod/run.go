@@ -10,13 +10,14 @@ import (
 	"strings"
 )
 
-// Run walks dirs, applying Rewrite to every .go file it finds (skipping
-// _test.go, vendor/, and testdata/ paths), formats the result with
-// go/format, and writes it back unless check is true. It returns every
-// residue Finding collected across all files, plus — when check is true —
-// a "check" Finding for every file Rewrite would change, so a caller can
-// treat any un-migrated site (residue or would-change) as a non-zero
-// exit rather than silently reporting nothing.
+// Run walks dirs, applying Rewrite to every .go file it finds — including
+// _test.go files, since test callers of a retyped API need the same R1-R4
+// rewrites production code does — skipping vendor/ and testdata/ paths,
+// formats the result with go/format, and writes it back unless check is
+// true. It returns every residue Finding collected across all files, plus —
+// when check is true — a "check" Finding for every file Rewrite would
+// change, so a caller can treat any un-migrated site (residue or
+// would-change) as a non-zero exit rather than silently reporting nothing.
 func Run(dirs []string, check bool) ([]Finding, error) {
 	var findings []Finding
 
@@ -31,7 +32,7 @@ func Run(dirs []string, check bool) ([]Finding, error) {
 				}
 				return nil
 			}
-			if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			if !strings.HasSuffix(path, ".go") {
 				return nil
 			}
 

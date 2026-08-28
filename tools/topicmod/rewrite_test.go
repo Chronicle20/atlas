@@ -11,7 +11,7 @@ import (
 )
 
 func TestRewrite(t *testing.T) {
-	cases := []string{"r1_decl", "r2_buffer", "r3_propagate", "r3_propagate_decl", "r4_newconfig", "r4_newconfig_delegate"}
+	cases := []string{"r1_decl", "r2_buffer", "r3_propagate", "r3_propagate_decl", "r3_propagate_multi", "r4_newconfig", "r4_newconfig_delegate"}
 
 	for _, name := range cases {
 		t.Run(name, func(t *testing.T) {

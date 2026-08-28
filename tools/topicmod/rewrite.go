@@ -540,13 +540,109 @@ func blockDeclaresStringVarBefore(list []ast.Stmt, name string, targetIdx int) b
 	return false
 }
 
-// errGuard builds `if err != nil { return err }`.
-func errGuard() *ast.IfStmt {
+// errGuard builds `if err != nil { return err }` for a function that
+// returns only error, or, for a function with additional result types
+// preceding the trailing error, declares a zero value for each of them and
+// returns those alongside err — e.g. `if err != nil { var zero0 T; return
+// zero0, err }`. results is the enclosing function's result list (as
+// returned by funcReturnsError's caller); it must have a trailing `error`
+// result. Preceding result types errGuard cannot safely zero (anything but
+// an identifier, selector, pointer, slice, array, or map type) fall back to
+// the single-value `return err`, which remains correct only when there are
+// no other results — callers must not invoke errGuard for a multi-return
+// function whose non-error result types it cannot zero; rewriteEnvProviderErrors
+// enforces this via canZeroResults.
+func errGuard(results *ast.FieldList) *ast.IfStmt {
+	body := []ast.Stmt{}
+	values := []ast.Expr{}
+
+	if results != nil && len(results.List) > 1 {
+		zeroIdx := 0
+		for _, field := range results.List[:len(results.List)-1] {
+			count := len(field.Names)
+			if count == 0 {
+				count = 1
+			}
+			for i := 0; i < count; i++ {
+				name := "zero" + strconv.Itoa(zeroIdx)
+				zeroIdx++
+				body = append(body, &ast.DeclStmt{Decl: &ast.GenDecl{
+					Tok: token.VAR,
+					Specs: []ast.Spec{&ast.ValueSpec{
+						Names: []*ast.Ident{ast.NewIdent(name)},
+						Type:  cloneTypeExpr(field.Type),
+					}},
+				}})
+				values = append(values, ast.NewIdent(name))
+			}
+		}
+	}
+	values = append(values, ast.NewIdent("err"))
+	body = append(body, &ast.ReturnStmt{Results: values})
+
 	return &ast.IfStmt{
 		Cond: &ast.BinaryExpr{X: ast.NewIdent("err"), Op: token.NEQ, Y: ast.NewIdent("nil")},
-		Body: &ast.BlockStmt{List: []ast.Stmt{
-			&ast.ReturnStmt{Results: []ast.Expr{ast.NewIdent("err")}},
-		}},
+		Body: &ast.BlockStmt{List: body},
+	}
+}
+
+// cloneTypeExpr deep-copies the type expression shapes errGuard needs to
+// emit a `var zeroN T` declaration without sharing AST nodes across
+// multiple inserted guards.
+func cloneTypeExpr(t ast.Expr) ast.Expr {
+	switch v := t.(type) {
+	case *ast.Ident:
+		return ast.NewIdent(v.Name)
+	case *ast.SelectorExpr:
+		return &ast.SelectorExpr{X: cloneTypeExpr(v.X), Sel: ast.NewIdent(v.Sel.Name)}
+	case *ast.StarExpr:
+		return &ast.StarExpr{X: cloneTypeExpr(v.X)}
+	case *ast.ArrayType:
+		var len_ ast.Expr
+		if v.Len != nil {
+			len_ = cloneTypeExpr(v.Len)
+		}
+		return &ast.ArrayType{Len: len_, Elt: cloneTypeExpr(v.Elt)}
+	case *ast.MapType:
+		return &ast.MapType{Key: cloneTypeExpr(v.Key), Value: cloneTypeExpr(v.Value)}
+	case *ast.InterfaceType:
+		return &ast.InterfaceType{Methods: &ast.FieldList{}}
+	case *ast.BasicLit:
+		return &ast.BasicLit{Kind: v.Kind, Value: v.Value}
+	default:
+		// Unhandled type shape: return it as-is. Sharing the node across
+		// guards is a formatting/positional wrinkle at worst, not a
+		// correctness one, since each guard's `var zeroN T` only reads the
+		// shared node rather than mutating it.
+		return t
+	}
+}
+
+// canZeroResults reports whether errGuard can safely synthesize a zero
+// value for every result preceding the trailing error in results.
+func canZeroResults(results *ast.FieldList) bool {
+	if results == nil || len(results.List) <= 1 {
+		return true
+	}
+	for _, field := range results.List[:len(results.List)-1] {
+		if !isZeroableType(field.Type) {
+			return false
+		}
+	}
+	return true
+}
+
+// isZeroableType reports whether cloneTypeExpr (and therefore a `var zeroN
+// T` declaration) can handle t.
+func isZeroableType(t ast.Expr) bool {
+	switch v := t.(type) {
+	case *ast.Ident, *ast.SelectorExpr, *ast.StarExpr, *ast.ArrayType, *ast.MapType, *ast.InterfaceType:
+		return true
+	case *ast.Ellipsis:
+		return false
+	default:
+		_ = v
+		return false
 	}
 }
 
@@ -568,11 +664,22 @@ func varErrDecl() *ast.DeclStmt {
 // block statement, are reported as residue rather than rewritten.
 func rewriteEnvProviderErrors(fset *token.FileSet, f *ast.File) (changed bool, residue []Finding) {
 	type match struct {
-		block  *ast.BlockStmt
-		assign *ast.AssignStmt
+		block   *ast.BlockStmt
+		assign  *ast.AssignStmt
+		results *ast.FieldList
 	}
 	var matches []match
 	var funcStack []ast.Node
+
+	funcResults := func(n ast.Node) *ast.FieldList {
+		switch fn := n.(type) {
+		case *ast.FuncDecl:
+			return fn.Type.Results
+		case *ast.FuncLit:
+			return fn.Type.Results
+		}
+		return nil
+	}
 
 	astutil.Apply(f, func(c *astutil.Cursor) bool {
 		switch n := c.Node().(type) {
@@ -601,7 +708,16 @@ func rewriteEnvProviderErrors(fset *token.FileSet, f *ast.File) (changed bool, r
 				})
 				return true
 			}
-			matches = append(matches, match{block: block, assign: n})
+			results := funcResults(funcStack[len(funcStack)-1])
+			if !canZeroResults(results) {
+				residue = append(residue, Finding{
+					Pos:    fset.Position(n.Pos()),
+					Rule:   "R3",
+					Reason: "enclosing function's non-error result type cannot be safely zeroed",
+				})
+				return true
+			}
+			matches = append(matches, match{block: block, assign: n, results: results})
 		}
 		return true
 	}, func(c *astutil.Cursor) bool {
@@ -617,10 +733,12 @@ func rewriteEnvProviderErrors(fset *token.FileSet, f *ast.File) (changed bool, r
 	}
 
 	byBlock := map[*ast.BlockStmt][]*ast.AssignStmt{}
+	blockResults := map[*ast.BlockStmt]*ast.FieldList{}
 	var blockOrder []*ast.BlockStmt
 	for _, m := range matches {
 		if _, ok := byBlock[m.block]; !ok {
 			blockOrder = append(blockOrder, m.block)
+			blockResults[m.block] = m.results
 		}
 		byBlock[m.block] = append(byBlock[m.block], m.assign)
 	}
@@ -652,7 +770,7 @@ func rewriteEnvProviderErrors(fset *token.FileSet, f *ast.File) (changed bool, r
 		if len(targets) == 0 {
 			continue
 		}
-		block.List = rewriteBlockList(block.List, targets)
+		block.List = rewriteBlockList(block.List, targets, blockResults[block])
 		changed = true
 	}
 
@@ -665,7 +783,7 @@ func rewriteEnvProviderErrors(fset *token.FileSet, f *ast.File) (changed bool, r
 // declaration is inserted immediately after the block's `var <name> string`
 // declaration for that assignment's own LHS identifier (verified by the
 // caller to exist), unless a `var err error` already exists.
-func rewriteBlockList(list []ast.Stmt, targets map[*ast.AssignStmt]bool) []ast.Stmt {
+func rewriteBlockList(list []ast.Stmt, targets map[*ast.AssignStmt]bool, results *ast.FieldList) []ast.Stmt {
 	hasVarErr := false
 	for _, s := range list {
 		if declaresVarErrError(s) {
@@ -693,7 +811,7 @@ func rewriteBlockList(list []ast.Stmt, targets map[*ast.AssignStmt]bool) []ast.S
 		}
 		if as, ok := s.(*ast.AssignStmt); ok && targets[as] {
 			as.Lhs[1] = ast.NewIdent("err")
-			out = append(out, errGuard())
+			out = append(out, errGuard(results))
 		}
 	}
 	return out

@@ -1,0 +1,7 @@
+package character
+
+func Setup(l logrus.FieldLogger) (int, error) {
+	t, _ := topic.EnvProvider(l)(characterMsg.EnvEventTopicStatus)()
+	doSomething(t)
+	return 1, nil
+}

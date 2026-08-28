@@ -1,0 +1,56 @@
+# coverage-manifest — task-281-map-back-effects
+#
+# Written retroactively (Task 13, this file) per docs/packets/PROCESS.md's
+# coverage-manifest schema, in response to a BLOCKING packet-completeness-critic
+# finding (docs/tasks/task-281-map-back-effects/completeness-critic.md) that no
+# manifest existed for this branch. Declares the op x version scope this
+# branch's codecs (libs/atlas-packet/field/clientbound/set_back_effect.go,
+# clear_back_effect.go) actually cover, grounded against
+# docs/packets/audits/status.json, docs/packets/audits/STATUS.md, this task's
+# structures/ derivation records, and docs/packets/feature-na-evidence.yaml.
+
+ops:
+  # field/clientbound/SetBackEffect (status.json op SET_BACK_EFFECT,
+  # fname CMapLoadable::OnSetBackEffect) — CMapLoadable::OnPacket case that
+  # tweens a back-layer page's alpha to 255 (show) or 0 (hide).
+  - field/clientbound/SetBackEffect
+
+  # field/clientbound/ClearBackEffect (status.json op CLEAR_BACK_EFFECT,
+  # fname CMapLoadable::OnClearBackEffect) — sibling case in the same switch;
+  # zero-length payload, thunks to CMapLoadable::ReloadBack.
+  - field/clientbound/ClearBackEffect
+
+versions:
+  # Both ops share the identical ten-column disposition (status.json cells,
+  # confirmed against STATUS.md:187,190 and this task's structures/ records):
+  # gms_v48 is the sole n-a/VERSION-ABSENT cell (structures/gms_v48.md: no
+  # CMapLoadable::OnPacket router exists on this version at all — the
+  # exhaustive CField::OnPacket enumeration reaches no back-effect handler);
+  # the other nine columns are verified.
+  - field/clientbound/SetBackEffect: [gms_v48 (n-a), gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v92, gms_v95, jms_v185]
+  - field/clientbound/ClearBackEffect: [gms_v48 (n-a), gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v92, gms_v95, jms_v185]
+
+fields:
+  - "field/clientbound/SetBackEffect: effect:byte, fieldId:uint32, pageId:byte, duration:uint32 (10 bytes total, per structures/jms_v185.md's Field::BackEffect::Decode transcription and the gms_v95 reference in design.md §1.1). No MajorAtLeast gate in the codec (libs/atlas-packet/field/clientbound/set_back_effect.go) — the six GMS versions gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v92 were derived layout-IDENTICAL to this shape, gms_v61's handler (sub_5A8316, structures/gms_v61.md) reads the same four fields at the same widths despite being unnamed in that IDB, and jms_v185 (structures/jms_v185.md) is IDENTICAL to the gms_v95 reference — same four reads, same order, same widths, same two-value nEffect enum."
+  - "field/clientbound/ClearBackEffect: zero-payload op across every present version — structures/jms_v185.md confirms the handler is a bare thunk to CMapLoadable::ReloadBack with iPacket untouched, matching the gms_v95 reference (design.md §1.2)."
+
+out_of_scope:
+  # SET_MAP_OBJECT_VISIBLE — status.json op (STATUS.md:227, case 145 in the
+  # same CMapLoadable::OnPacket switch this task decompiled). Explicitly
+  # excluded per design §2.4; recorded as the next-cheapest follow-up in
+  # docs/tasks/task-281-map-back-effects/follow-ups.md, which also notes it
+  # is VERSION-ABSENT on gms_v48/gms_v61/gms_v72/gms_v79 (no arm in those
+  # versions' field routers) and present-but-unimplemented (❌) on
+  # gms_v83/gms_v84/gms_v87/gms_v92/gms_v95/jms_v185.
+  - field/clientbound/SetMapObjectVisible
+
+residual:
+  # gms_v48's two n-a cells (SET_BACK_EFFECT, CLEAR_BACK_EFFECT) rest on
+  # docs/packets/feature-na-evidence.yaml entries (router-enumeration proof:
+  # no CMapLoadable::OnPacket exists on gms_v48, and the complete
+  # CField::OnPacket router reaches no back-effect handler) rather than an
+  # `evidence pin` record, because `evidence pin` requires a resolvable v48
+  # address and none exists for an absent feature. STATUS.md:187,190 render
+  # these two cells as ⬜, not the n-a state status.json's cells carry;
+  # tools/packet-audit/cmd/na_consistency.go is the gate that reads the
+  # feature-na-evidence.yaml entries backing this disposition.

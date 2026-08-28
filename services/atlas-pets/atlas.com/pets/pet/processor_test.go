@@ -47,6 +47,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(pet2.EnvStatusEventTopic), string(pet2.EnvStatusEventTopic))
+
 	mr, err := miniredis.Run()
 	if err != nil {
 		panic(err)

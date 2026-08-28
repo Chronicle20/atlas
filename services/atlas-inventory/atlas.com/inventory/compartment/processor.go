@@ -36,6 +36,43 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// EquipStats carries an explicit upgrade-slot count and explicit per-stat
+// values for a crafted equip through CreateAssetAndEmit/CreateAssetAndLock/
+// CreateAsset into asset.CreateOptions. It is passed as a trailing variadic
+// argument on those three methods so every pre-existing call site -- none of
+// which cares about explicit stats -- keeps compiling and behaving exactly
+// as before; only a caller that supplies one (the CREATE_ASSET command
+// consumer, once its body carries explicit stats) opts in.
+type EquipStats struct {
+	Slots         uint16
+	Strength      uint16
+	Dexterity     uint16
+	Intelligence  uint16
+	Luck          uint16
+	HP            uint16
+	MP            uint16
+	WeaponAttack  uint16
+	MagicAttack   uint16
+	WeaponDefense uint16
+	MagicDefense  uint16
+	Accuracy      uint16
+	Avoidability  uint16
+	Hands         uint16
+	Speed         uint16
+	Jump          uint16
+}
+
+// firstEquipStats returns the first element of stats, or a zero-valued
+// EquipStats when the caller supplied none -- the zero value leaves
+// asset.CreateOptions' explicit-stat fields all zero, so Create falls back
+// to its pre-existing roll/average behaviour.
+func firstEquipStats(stats []EquipStats) EquipStats {
+	if len(stats) > 0 {
+		return stats[0]
+	}
+	return EquipStats{}
+}
+
 type Processor interface {
 	WithTransaction(db *gorm.DB) *ProcessorImpl
 	WithAssetProcessor(ap asset.Processor) *ProcessorImpl
@@ -76,9 +113,9 @@ type Processor interface {
 	DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
 	ExpireAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
 	ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
-	CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
-	CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
-	CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
+	CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...EquipStats) error
+	CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...EquipStats) error
+	CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...EquipStats) error
 	AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error
 	AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error
 	AttemptItemPickUpAndEmit(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
@@ -1243,7 +1280,7 @@ func (p *ProcessorImpl) ExtendAssetExpiration(mb *message.Buffer) func(transacti
 	}
 }
 
-func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...EquipStats) error {
 	// CreateAsset buffers a CREATION_FAILED rejection (compartment status topic)
 	// when the create fails, but the transactional emit path discards the buffer
 	// on error and the surrounding tx rolls back — so a caller waiting on that
@@ -1253,7 +1290,7 @@ func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId 
 	rejection := message.NewBuffer()
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			err := p.WithTransaction(tx).CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+			err := p.WithTransaction(tx).CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats, stats...)
 			if err != nil {
 				if msgs, ok := buf.GetAll()[compartment.EnvEventTopicStatus]; ok {
 					_ = rejection.Put(compartment.EnvEventTopicStatus, model.FixedProvider(msgs))
@@ -1277,18 +1314,19 @@ func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId 
 	return txErr
 }
 
-func (p *ProcessorImpl) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (p *ProcessorImpl) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...EquipStats) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...EquipStats) error {
 		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
-		return p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+		return p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats, stats...)
 	}
 }
 
-func (p *ProcessorImpl) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (p *ProcessorImpl) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...EquipStats) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...EquipStats) error {
 		p.l.Debugf("Character [%d] attempting to create asset in inventory [%d].", characterId, inventoryType)
+		es := firstEquipStats(stats)
 
 		var a asset.Model
 		var compartmentId uuid.UUID
@@ -1331,6 +1369,22 @@ func (p *ProcessorImpl) CreateAsset(mb *message.Buffer) func(transactionId uuid.
 									Flag:            flag,
 									Rechargeable:    rechargeable,
 									UseAverageStats: useAverageStats,
+									Slots:           es.Slots,
+									Strength:        es.Strength,
+									Dexterity:       es.Dexterity,
+									Intelligence:    es.Intelligence,
+									Luck:            es.Luck,
+									HP:              es.HP,
+									MP:              es.MP,
+									WeaponAttack:    es.WeaponAttack,
+									MagicAttack:     es.MagicAttack,
+									WeaponDefense:   es.WeaponDefense,
+									MagicDefense:    es.MagicDefense,
+									Accuracy:        es.Accuracy,
+									Avoidability:    es.Avoidability,
+									Hands:           es.Hands,
+									Speed:           es.Speed,
+									Jump:            es.Jump,
 								})
 								return err
 							}
@@ -1350,6 +1404,22 @@ func (p *ProcessorImpl) CreateAsset(mb *message.Buffer) func(transactionId uuid.
 				Flag:            flag,
 				Rechargeable:    rechargeable,
 				UseAverageStats: useAverageStats,
+				Slots:           es.Slots,
+				Strength:        es.Strength,
+				Dexterity:       es.Dexterity,
+				Intelligence:    es.Intelligence,
+				Luck:            es.Luck,
+				HP:              es.HP,
+				MP:              es.MP,
+				WeaponAttack:    es.WeaponAttack,
+				MagicAttack:     es.MagicAttack,
+				WeaponDefense:   es.WeaponDefense,
+				MagicDefense:    es.MagicDefense,
+				Accuracy:        es.Accuracy,
+				Avoidability:    es.Avoidability,
+				Hands:           es.Hands,
+				Speed:           es.Speed,
+				Jump:            es.Jump,
 			})
 			if err != nil {
 				return err

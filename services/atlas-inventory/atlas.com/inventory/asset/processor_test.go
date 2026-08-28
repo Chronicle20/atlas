@@ -4,6 +4,9 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"atlas-inventory/kafka/message"
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -272,5 +275,124 @@ func TestExtendExpirationRedeliveryIsIdempotent(t *testing.T) {
 	}
 	if len(mb.GetAll()) == 0 {
 		t.Error("redelivery must still emit UPDATED so the saga step completes")
+	}
+}
+
+// TestCreateAssetAppliesExplicitStats verifies that explicit per-stat values
+// and an explicit upgrade-slot count on CreateOptions land on the persisted
+// asset exactly as given -- not rolled, not averaged. This is the seam a
+// crafted equip depends on: a recipe's reagent-adjusted stats must be
+// reproducible, not randomized.
+func TestCreateAssetAppliesExplicitStats(t *testing.T) {
+	db := testDatabase(t)
+	l, _ := test.NewNullLogger()
+	ctx := testContext(t)
+	p := NewProcessor(l, ctx, db)
+
+	mb := message.NewBuffer()
+	opts := CreateOptions{
+		Quantity:        1,
+		Slots:           7,
+		Strength:        3,
+		WeaponAttack:    4,
+		WeaponDefense:   6,
+		HP:              15,
+		UseAverageStats: false,
+	}
+	a, err := p.Create(mb)(uuid.New(), 12345, uuid.New(), 1082002, 1, opts)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if a.Strength() != 3 {
+		t.Errorf("Strength = %d, want 3", a.Strength())
+	}
+	if a.WeaponAttack() != 4 {
+		t.Errorf("WeaponAttack = %d, want 4", a.WeaponAttack())
+	}
+	if a.WeaponDefense() != 6 {
+		t.Errorf("WeaponDefense = %d, want 6", a.WeaponDefense())
+	}
+	if a.Hp() != 15 {
+		t.Errorf("Hp = %d, want 15", a.Hp())
+	}
+	if a.Slots() != 7 {
+		t.Errorf("Slots = %d, want 7", a.Slots())
+	}
+}
+
+// TestCreateAssetExplicitStatsTakePrecedenceOverAverage documents and pins
+// the precedence rule: when both UseAverageStats and explicit stats are set,
+// the explicit values win. This is the only rule under which a craft's
+// reagent-adjusted stats are reproducible -- UseAverageStats rolls off the
+// template's base stats, which have nothing to do with the recipe.
+func TestCreateAssetExplicitStatsTakePrecedenceOverAverage(t *testing.T) {
+	db := testDatabase(t)
+	l, _ := test.NewNullLogger()
+	ctx := testContext(t)
+	p := NewProcessor(l, ctx, db)
+
+	mb := message.NewBuffer()
+	opts := CreateOptions{
+		Quantity:        1,
+		Slots:           7,
+		Strength:        3,
+		WeaponAttack:    4,
+		WeaponDefense:   6,
+		HP:              15,
+		UseAverageStats: true,
+	}
+	a, err := p.Create(mb)(uuid.New(), 12345, uuid.New(), 1082002, 1, opts)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if a.Strength() != 3 {
+		t.Errorf("Strength = %d, want 3 (explicit must win over UseAverageStats)", a.Strength())
+	}
+	if a.WeaponAttack() != 4 {
+		t.Errorf("WeaponAttack = %d, want 4 (explicit must win over UseAverageStats)", a.WeaponAttack())
+	}
+	if a.Slots() != 7 {
+		t.Errorf("Slots = %d, want 7 (explicit must win over UseAverageStats)", a.Slots())
+	}
+}
+
+// TestCreateAssetWithoutExplicitStatsIsUnchanged is the regression guard for
+// every existing caller: when no stat fields and no Slots are set, Create
+// behaves exactly as it did before this task -- fetching the template's
+// stats from atlas-data via statProcessor and applying them verbatim under
+// UseAverageStats, not silently zeroing the equip.
+func TestCreateAssetWithoutExplicitStatsIsUnchanged(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = fmt.Fprint(w, `{"data":{"type":"statistics","id":"1072001","attributes":{`+
+			`"strength":10,"dexterity":8,"intelligence":6,"luck":4,"hp":100,"mp":50,`+
+			`"weaponAttack":15,"magicAttack":12,"weaponDefense":20,"magicDefense":18,`+
+			`"accuracy":5,"avoidability":3,"speed":10,"jump":5,"slots":7,"cash":false}}}`)
+	}))
+	defer srv.Close()
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+	db := testDatabase(t)
+	l, _ := test.NewNullLogger()
+	ctx := testContext(t)
+	p := NewProcessor(l, ctx, db)
+
+	mb := message.NewBuffer()
+	opts := CreateOptions{
+		Quantity:        1,
+		UseAverageStats: true,
+	}
+	a, err := p.Create(mb)(uuid.New(), 12345, uuid.New(), 1072001, 1, opts)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if a.Strength() != 10 {
+		t.Errorf("Strength = %d, want 10 (verbatim template stat under UseAverageStats)", a.Strength())
+	}
+	if a.WeaponAttack() != 15 {
+		t.Errorf("WeaponAttack = %d, want 15", a.WeaponAttack())
+	}
+	if a.Slots() != 7 {
+		t.Errorf("Slots = %d, want 7", a.Slots())
 	}
 }

@@ -1,0 +1,112 @@
+{
+  "service": "atlas-channel + atlas-character",
+  "path": "services/atlas-channel/atlas.com/channel, services/atlas-character/atlas.com/character",
+  "date": "2026-08-27",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "character/snapshot",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "character/snapshot/processor.go:39-45"},
+        {"id": "FILE-06", "name": "No catch-all file with >=2 responsibilities", "status": "pass", "evidence": "registry.go, processor.go, shadow.go, metrics.go each single-purpose"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "character/snapshot/shadow.go:73"},
+        {"id": "DOM-29", "name": "Singleton cache/registry via accessor", "status": "pass", "evidence": "character/snapshot/registry.go:57-67, processor.go:56"},
+        {"id": "DOM-31", "name": "Tenant travels in context only", "status": "pass", "evidence": "registry.go methods take tenant.Model from tenant.MustFromContext(ctx); no rest.go in package"},
+        {"id": "immutability", "name": "Snapshot components not mutated in place", "status": "pass", "evidence": "registry.go:184-189, 455-465; registry_test.go:293 TestRegistry_AssetMutationDoesNotAliasPriorReads"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "character/snapshot/processor_test.go and shadow_test.go: 0 table-driven tests; registry_test.go: 17 Test funcs, only 1 table-driven"},
+        {"id": "DOM-24", "name": "Producer stub where emit reached", "status": "n-a", "evidence": "processor_test.go/shadow_test.go reach only REST fetch seams, never AndEmit/message.Emit/producer.ProviderImpl"}
+      ]
+    },
+    {
+      "name": "character/skill",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go has NewBuilder(), fluent setters, validating Build()", "status": "fail", "evidence": "character/skill/builder.go:21-23 defines only NewModelBuilder(id); no NewBuilder() exists in the package"},
+        {"id": "FILE-05", "name": "Builder in builder.go", "status": "pass", "evidence": "character/skill/builder.go placement correct; only constructor naming deviates"}
+      ]
+    },
+    {
+      "name": "data/skill",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-29", "name": "Singleton cache via sync.Once + accessor", "status": "pass", "evidence": "data/skill/cache.go:104-117, processor.go:31-33"},
+        {"id": "DOM-31", "name": "Tenant from context only", "status": "pass", "evidence": "cache.go:177-201, 101, 137, 151, 169-174; main.go dataskill.EvictTenant(tid)"},
+        {"id": "EXT-03", "name": "Only genuine 404 maps to not-found; other errors bubble", "status": "pass", "evidence": "data/skill/cache.go:193-198"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "data/skill/cache_test.go: 0 table-driven tests"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "cache.go single-purpose; clean 1:1 swap for deleted registry.go"}
+      ]
+    },
+    {
+      "name": "monster",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Bare go justified with goroutine-guard:allow", "status": "pass", "evidence": "monster/live_mirror.go:59-60; tools/goroutine-guard.sh exit 0"},
+        {"id": "DOM-31", "name": "Tenant from context, keyed per tenant", "status": "pass", "evidence": "monster/live_mirror.go:44-46; EvictTenant wired from main.go"},
+        {"id": "DOM-29", "name": "Singleton via accessor", "status": "pass", "evidence": "monster/live_mirror.go:49-63"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "monster/live_mirror_test.go uses []struct{ + t.Run"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/{character,asset,buff,compartment,skill}",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "DOM-31", "name": "Tenant scoping before every snapshot mutation", "status": "pass", "evidence": "kafka/consumer/character/consumer.go:561-566, kafka/consumer/asset/consumer.go:623-627, kafka/consumer/buff/consumer.go:641-651, kafka/consumer/compartment/consumer.go:217-221, kafka/consumer/skill/consumer.go:205-209"},
+        {"id": "DOM-24", "name": "Producer stub where emit reached", "status": "n-a", "evidence": "handleSnapshot* tests call handlers with wp=nil; only registry mutation reached, no Kafka emit"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "buff/consumer_test.go, character/consumer_test.go, skill/consumer_test.go: 0 table-driven tests; asset/consumer_test.go and compartment/consumer_test.go do use table-driven shape"},
+        {"id": "DOM-21", "name": "New event type/body vs libs/atlas-constants", "status": "pass", "evidence": "kafka/message/skill/kafka.go StatusEventTypeDeleted/StatusEventDeletedBody, no redeclaration"}
+      ]
+    },
+    {
+      "name": "movement",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "movement/processor.go diff retains routine.Go(p.l, p.ctx, func(_ context.Context) {...})"},
+        {"id": "DOM-31", "name": "Tenant from p.t, not request data", "status": "pass", "evidence": "movement/processor.go SetPosition/UpdatePosition calls use p.t"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "movement/processor_test.go and teleport_test.go: 0 table-driven tests"}
+      ]
+    },
+    {
+      "name": "socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-31", "name": "Tenant from context for monster resolvers", "status": "pass", "evidence": "socket/handler/character_attack_common.go:107-155"},
+        {"id": "immutability", "name": "Per-swing resolver memoization scoped to closure", "status": "pass", "evidence": "character_attack_common.go:110-112, 141"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "character_attack_common_test.go, character_attack_drain_test.go, character_attack_mortal_blow_test.go all use table-driven shape"}
+      ]
+    },
+    {
+      "name": "atlas-character/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-31", "name": "No tenant/trace leakage introduced", "status": "pass", "evidence": "changes only populate existing statChangedProvider values map"},
+        {"id": "DOM-33", "name": "Mocks updated for interface change", "status": "n-a", "evidence": "no Processor/Provider/Administrator interface method added/removed/re-signed"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "not-evaluable", "evidence": "stat_values_test.go delegates to libs/atlas-database/databasetest.NewInMemoryTenantDB, outside changed-file surface"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "character/stat_values_test.go: 0 table-driven tests"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-10: character/stat_values_test.go's DB bootstrap (databasetest.NewInMemoryTenantDB) is a libs/atlas-database helper not touched by this diff; confirming RegisterTenantCallbacks requires reading outside the changed-file surface"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-channel/atlas.com/channel/character/skill/builder.go:21 - new builder.go defines only NewModelBuilder(id), no NewBuilder() constructor",
+    "DOM-20: services/atlas-channel/atlas.com/channel/character/snapshot/processor_test.go - no table-driven tests",
+    "DOM-20: services/atlas-channel/atlas.com/channel/character/snapshot/shadow_test.go - no table-driven tests",
+    "DOM-20: services/atlas-channel/atlas.com/channel/character/snapshot/registry_test.go - 17 test functions, only 1 table-driven",
+    "DOM-20: services/atlas-channel/atlas.com/channel/data/skill/cache_test.go - no table-driven tests",
+    "DOM-20: services/atlas-channel/atlas.com/channel/kafka/consumer/buff/consumer_test.go - no table-driven tests",
+    "DOM-20: services/atlas-channel/atlas.com/channel/kafka/consumer/character/consumer_test.go - no table-driven tests",
+    "DOM-20: services/atlas-channel/atlas.com/channel/kafka/consumer/skill/consumer_test.go - no table-driven tests",
+    "DOM-20: services/atlas-channel/atlas.com/channel/movement/processor_test.go - no table-driven tests",
+    "DOM-20: services/atlas-channel/atlas.com/channel/movement/teleport_test.go - no table-driven tests",
+    "DOM-20: services/atlas-character/atlas.com/character/character/stat_values_test.go - no table-driven tests"
+  ],
+  "nonBlocking": [
+    "character/snapshot/shadow.go:73 - func(ctx context.Context) instead of service-wide func(_ context.Context) convention (cosmetic, unused parameter)",
+    "character/snapshot/shadow.go:105 - buffs-skip note logs at Debug level; would not surface above Debug in production for this already-optional, env-gated diagnostic"
+  ]
+}

@@ -176,8 +176,9 @@ func TestOnDamageApplied_NotCalledForReflectedEntry(t *testing.T) {
 				MaxDamage: 9999,
 			}, true
 		},
-		getMonster: func(monsterId uint32) (monster.Model, error) {
-			return monster.NewBuilder(monsterId, f, 100100).Build()
+		getMonster: func(monsterId uint32) (monster.LiveEntry, error) {
+			mo, err := monster.NewBuilder(monsterId, f, 100100).Build()
+			return monster.LiveEntryFromModel(mo), err
 		},
 		applyDamage: func(_ field.Model, _, _ uint32, _ []uint32, _ byte) error {
 			damaged = true

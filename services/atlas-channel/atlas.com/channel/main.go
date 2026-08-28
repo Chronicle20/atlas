@@ -5,7 +5,9 @@ import (
 	"atlas-channel/battleship"
 	channel3 "atlas-channel/channel"
 	"atlas-channel/character/combo"
+	snapshot "atlas-channel/character/snapshot"
 	"atlas-channel/configuration/projection"
+	dataskill "atlas-channel/data/skill"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/asset"
 	"atlas-channel/kafka/consumer/buddylist"
@@ -165,6 +167,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -306,8 +310,10 @@ func main() {
 		account.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetStatusMirror().EvictTenant(tid)
 		monsterDomain.GetLiveMirror().EvictTenant(tid)
+		snapshot.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetAutoAggroGate().EvictTenant(tid)
 		monsterinfo.EvictTenant(tid)
+		dataskill.EvictTenant(tid)
 		ring.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
@@ -363,6 +369,7 @@ func main() {
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(restserver.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(restserver.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(restserver.MountReadiness("/readyz", rt.Ready)).
 		Run()
 

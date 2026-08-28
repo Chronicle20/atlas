@@ -201,6 +201,7 @@ func resolvePotionLocked(l logrus.FieldLogger, bp buff.Processor, characterId ui
 	bs, err := bp.GetByCharacterId(characterId)
 	if err != nil {
 		l.WithError(err).Warnf("Unable to read buffs for character [%d]; treating potion use as unlocked.", characterId)
+		degrade.Observe(l, "consumable.potion-lock.buffs", characterId, err)
 		return false
 	}
 	return buff.IsPotionLocked(bs)

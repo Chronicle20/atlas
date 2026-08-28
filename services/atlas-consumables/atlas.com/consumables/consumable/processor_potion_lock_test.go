@@ -181,13 +181,26 @@ func TestRequestItemConsume_BuffReadErrorFailsOpen(t *testing.T) {
 	// lookup also logs a Warn (unset EVENT_TOPIC_COMPARTMENT_STATUS env var
 	// in this test environment) that is unrelated to the fail-open path.
 	var warnEntries []string
+	var degradeEntries []string
 	for _, e := range hook.AllEntries() {
-		if e.Level == logrus.WarnLevel && strings.Contains(e.Message, "Unable to read buffs") {
+		if e.Level != logrus.WarnLevel {
+			continue
+		}
+		if strings.Contains(e.Message, "Unable to read buffs") {
 			warnEntries = append(warnEntries, e.Message)
+		}
+		if strings.Contains(e.Message, "Enrichment degraded") {
+			degradeEntries = append(degradeEntries, e.Message)
 		}
 	}
 	if assert.Len(t, warnEntries, 1) {
 		assert.Contains(t, warnEntries[0], "555")
+	}
+
+	// degrade.Observe must fire on the fail-open branch so
+	// atlas_enrichment_degraded_total increments (DOM-28).
+	if assert.Len(t, degradeEntries, 1) {
+		assert.Contains(t, degradeEntries[0], "consumable.potion-lock.buffs")
 	}
 }
 

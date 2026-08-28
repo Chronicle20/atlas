@@ -31,3 +31,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-28T18:04:58Z	agent	Task 8	packet-implementer	opus	-	-	-	-	DONE_WITH_CONCERNS	8f596fd97	-	-	-	-
 2026-08-28T18:11:02Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	8f596fd97	CHANGES_REQUIRED	no	reviews/task-8.md	-
 2026-08-28T18:11:03Z	agent	Task 8 FAILED-key research	Explore	sonnet	-	-	-	-	DONE	-	-	-	-	-
+2026-08-28T18:28:22Z	agent	gate e29058143..(moving tree)	verify.sh	-	-	-	-	-	INVALID_MOVING_TREE	-	-	-	-	-
+2026-08-28T18:33:55Z	agent	Task 9	packet-implementer	opus	-	-	-	-	DONE	ab31624bd	-	-	-	-

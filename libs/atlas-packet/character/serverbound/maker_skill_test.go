@@ -262,30 +262,21 @@ func assertMakerSkillBytes(t *testing.T, index int, name string) {
 // Encode1(bCatalystMounted)@0x760e06, Encode4(nNumGemMounted)@0x760e14 and the
 // gem loop Encode4@0x760e39.
 //
-// EVIDENCE (pin pending - CUIItemMaker::RequestItemMake is absent from every
-// docs/packets/ida-exports/*.json, so `evidence pin` cannot resolve it; the
-// export splice + packet-audit:verify marker land with the verification pass):
-// packet=character/serverbound/MakerSkill version=gms_v72 ida=0x760cc3
+// packet-audit:verify packet=character/serverbound/MakerSkill version=gms_v72 ida=0x760cc3
 func TestMakerSkillByteOutputV72(t *testing.T) { assertMakerSkillBytes(t, 9, "GMS v72") }
 
 // IDA evidence (session 5a1cd4f3, GMS_v79_1_DEVM.exe.i64):
 // CUIItemMaker::RequestItemMake@0x795dc3, one in-arm mode Encode4 at 0x795ee6 /
 // 0x795ecc / 0x795e8b; arm bodies identical to v72 (wire-derivation.md §3).
 //
-// EVIDENCE (pin pending - CUIItemMaker::RequestItemMake is absent from every
-// docs/packets/ida-exports/*.json, so `evidence pin` cannot resolve it; the
-// export splice + packet-audit:verify marker land with the verification pass):
-// packet=character/serverbound/MakerSkill version=gms_v79 ida=0x795dc3
+// packet-audit:verify packet=character/serverbound/MakerSkill version=gms_v79 ida=0x795dc3
 func TestMakerSkillByteOutputV79(t *testing.T) { assertMakerSkillBytes(t, 10, "GMS v79") }
 
 // IDA evidence (session 754107bf, MapleStory_dump.exe.i64 v83_Me):
 // CUIItemMaker::RequestItemMake@0x827096, one in-arm mode Encode4 at 0x8271b9 /
 // 0x82719f / 0x82715e; arm bodies identical to v72.
 //
-// EVIDENCE (pin pending - CUIItemMaker::RequestItemMake is absent from every
-// docs/packets/ida-exports/*.json, so `evidence pin` cannot resolve it; the
-// export splice + packet-audit:verify marker land with the verification pass):
-// packet=character/serverbound/MakerSkill version=gms_v83 ida=0x827096
+// packet-audit:verify packet=character/serverbound/MakerSkill version=gms_v83 ida=0x827096
 func TestMakerSkillByteOutputV83(t *testing.T) { assertMakerSkillBytes(t, 1, "GMS v83") }
 
 // IDA evidence (session 46c2a2eb, GMS_v84.1_U_DEVM.i64): the v84 IDB carries no
@@ -294,10 +285,7 @@ func TestMakerSkillByteOutputV83(t *testing.T) { assertMakerSkillBytes(t, 1, "GM
 // decompilation - same four guards, COutPacket(113) matching the registry
 // opcode, one in-arm mode Encode4 at 0x8525da / 0x8525c0 / 0x85257f.
 //
-// EVIDENCE (pin pending - CUIItemMaker::RequestItemMake is absent from every
-// docs/packets/ida-exports/*.json, so `evidence pin` cannot resolve it; the
-// export splice + packet-audit:verify marker land with the verification pass):
-// packet=character/serverbound/MakerSkill version=gms_v84 ida=0x8524b7
+// packet-audit:verify packet=character/serverbound/MakerSkill version=gms_v84 ida=0x8524b7
 func TestMakerSkillByteOutputV84(t *testing.T) { assertMakerSkillBytes(t, 5, "GMS v84") }
 
 // IDA evidence (session c0829805, GMSv87_4GB.exe.i64):
@@ -305,10 +293,7 @@ func TestMakerSkillByteOutputV84(t *testing.T) { assertMakerSkillBytes(t, 5, "GM
 // 0x88b0da / 0x88b099; the mode-3 arm encodes literal 3 then one item id, the
 // mode-4 arm literal 4 then item id, inventory type, slot position.
 //
-// EVIDENCE (pin pending - CUIItemMaker::RequestItemMake is absent from every
-// docs/packets/ida-exports/*.json, so `evidence pin` cannot resolve it; the
-// export splice + packet-audit:verify marker land with the verification pass):
-// packet=character/serverbound/MakerSkill version=gms_v87 ida=0x88afd1
+// packet-audit:verify packet=character/serverbound/MakerSkill version=gms_v87 ida=0x88afd1
 func TestMakerSkillByteOutputV87(t *testing.T) { assertMakerSkillBytes(t, 2, "GMS v87") }
 
 // IDA evidence (session 019cd393, GMS_v92_1_DEVM.exe.i64): no CUIItemMaker
@@ -317,10 +302,7 @@ func TestMakerSkillByteOutputV87(t *testing.T) { assertMakerSkillBytes(t, 2, "GM
 // decompilation with COutPacket(0x7C) = registry opcode 124. Renders as a
 // switch with `default: break` - wire-identical to the v72 if-chain.
 //
-// EVIDENCE (pin pending - CUIItemMaker::RequestItemMake is absent from every
-// docs/packets/ida-exports/*.json, so `evidence pin` cannot resolve it; the
-// export splice + packet-audit:verify marker land with the verification pass):
-// packet=character/serverbound/MakerSkill version=gms_v92 ida=0x7afdc0
+// packet-audit:verify packet=character/serverbound/MakerSkill version=gms_v92 ida=0x7afdc0
 func TestMakerSkillByteOutputV92(t *testing.T) { assertMakerSkillBytes(t, 11, "GMS v92") }
 
 // IDA evidence (session ecc757f4, GMS_v95.0_U_DEVM.exe.i64): the reference
@@ -328,18 +310,12 @@ func TestMakerSkillByteOutputV92(t *testing.T) { assertMakerSkillBytes(t, 11, "G
 // m_nRecipeClass, m_nTargetItem, m_CatalystSlot.bMounted, m_nNumGem_Mounted,
 // m_nTI_DisassbleItem and m_nSlotPosition_DisassbleItem.
 //
-// EVIDENCE (pin pending - CUIItemMaker::RequestItemMake is absent from every
-// docs/packets/ida-exports/*.json, so `evidence pin` cannot resolve it; the
-// export splice + packet-audit:verify marker land with the verification pass):
-// packet=character/serverbound/MakerSkill version=gms_v95 ida=0x7d58d0
+// packet-audit:verify packet=character/serverbound/MakerSkill version=gms_v95 ida=0x7d58d0
 func TestMakerSkillByteOutputV95(t *testing.T) { assertMakerSkillBytes(t, 3, "GMS v95") }
 
 // IDA evidence (session a977912e, MapleStory_dump_SCY.exe.i64):
 // CUIItemMaker::RequestItemMake@0x8b1040, COutPacket(0x6C)@0x8b10db = registry
 // opcode 108, one in-arm mode Encode4 at 0x8b1163 / 0x8b1149 / 0x8b1108.
 //
-// EVIDENCE (pin pending - CUIItemMaker::RequestItemMake is absent from every
-// docs/packets/ida-exports/*.json, so `evidence pin` cannot resolve it; the
-// export splice + packet-audit:verify marker land with the verification pass):
-// packet=character/serverbound/MakerSkill version=jms_v185 ida=0x8b1040
+// packet-audit:verify packet=character/serverbound/MakerSkill version=jms_v185 ida=0x8b1040
 func TestMakerSkillByteOutputJMS185(t *testing.T) { assertMakerSkillBytes(t, 4, "JMS v185") }

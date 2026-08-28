@@ -2544,6 +2544,7 @@
   direction: serverbound
   opcode: 113
   fname: CUIItemMaker::RequestItemMake
+  packet: character/serverbound/MakerSkill
   provenance: csv-import
 - op: SUE_CHARACTER
   direction: serverbound

@@ -13,6 +13,68 @@
       "direction": "",
       "calls": null
     },
+    "CUIItemMaker::RequestItemMake": {
+      "address": "0x7d58d0",
+      "direction": "serverbound",
+      "notes": "MAKER_SKILL (serverbound, gms_v95 opcode 125/0x7d). CUIItemMaker::RequestItemMake, session ecc757f4, GMS_v95.0_U_DEVM.exe.i64. Guards precede the send (m_nState==3, class-2 IsExistMakableItem, IsExistEmptySlot, IsEnoughMeso, IsAbleToMake, and class-3 requires a loaded recipe slot); then COutPacket::COutPacket(&oPacket, 125) and a switch with default: break on m_nRecipeClass. The recipe class is encoded exactly ONCE, as the first Encode4 INSIDE the selected arm (mode 1|2 @0x7d59af, mode 3 @0x7d5a22, mode 4 @0x7d5a3d) - there is no pre-switch mode encode, and a class outside 1..4 sends an empty body. task-285.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "m_nRecipeClass (mode; encoded inside the arm, not before the switch)",
+          "guard": "mode == 1 || mode == 2"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nTargetItem (nTargetItemID of the recipe being made)",
+          "guard": "mode == 1 || mode == 2"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_CatalystSlot.bMounted (catalyst mounted flag)",
+          "guard": "mode == 1 || mode == 2"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nNumGem_Mounted (gem count; length prefix for the loop below)",
+          "guard": "mode == 1 || mode == 2"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nGemItemID from m_aGemSlot[i].pItem->nItemID (emitted only for non-null slots)",
+          "guard": "mode == 1 || mode == 2, loop count m_nNumGemSlot"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nRecipeClass literal 3",
+          "guard": "mode == 3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_aRecipeSlot[0].pItem->nItemID (monster-crystal / leftover source item)",
+          "guard": "mode == 3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nRecipeClass literal 4",
+          "guard": "mode == 4"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_aRecipeSlot[0].pItem->nItemID (item to disassemble)",
+          "guard": "mode == 4"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nTI_DisassbleItem (inventory type of the disassemble target)",
+          "guard": "mode == 4"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nSlotPosition_DisassbleItem (slot position of the disassemble target)",
+          "guard": "mode == 4"
+        }
+      ]
+    },
     "CAffectedAreaPool::OnAffectedAreaCreated": {
       "address": "0x437ec0",
       "direction": "clientbound",

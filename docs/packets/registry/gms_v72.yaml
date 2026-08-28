@@ -2652,6 +2652,7 @@
   direction: serverbound
   opcode: 112
   fname: CUIItemMaker::RequestItemMake
+  packet: character/serverbound/MakerSkill
   provenance: ida-discovered
   ida:
     address: 7736515

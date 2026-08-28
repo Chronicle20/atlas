@@ -2617,6 +2617,7 @@
   direction: serverbound
   opcode: 108
   fname: CUIItemMaker::RequestItemMake
+  packet: character/serverbound/MakerSkill
   provenance: csv-import
 - op: REPAIR_DURABILITY_ALL
   direction: serverbound

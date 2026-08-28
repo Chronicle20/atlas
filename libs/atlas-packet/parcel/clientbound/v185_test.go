@@ -28,14 +28,23 @@ import (
 // `if t.Region()=="JMS" { WriteByte(0) }` gate)+15x Decode2 (the stat
 // shorts, matching encodeEquipmentStats)+DecodeStr(owner name)+
 // Decode2(flag)+Decode1(levelType)+Decode1(level, again)+Decode4(experience)
-// +Decode4(hammersApplied) -- NOT the GMS v92+ nGrade/nCHUC/nOption1-3/
-// nSocket1-2 byte+byte+short*5 (12-byte) block; instead exactly the
-// pre-existing JMS-branch shape at asset.go:286-293 (byte+short*5+int,
-// 15 bytes, all confirmed zero-value here) -- then an 8-byte buffer (skipped
-// entirely when liCashItemSN is set, read when not), an unconditional
-// second 8-byte buffer, and a trailing int32. This CONFIRMS the existing
-// JMS branch in asset.go is correct for jms_v185: no wire divergence, no
-// codec change needed (task-241 Task 28 batch 8/8).
+// +Decode4 @0x5100e1 -- NOT the GMS v92+ nGrade/nCHUC/nOption1-3/nSocket1-2
+// byte+byte+short*5 (12-byte) block; instead exactly the pre-existing
+// JMS-branch shape at asset.go:286-293 (byte+short*5+int, 15 bytes, all
+// confirmed zero-value here) -- then an 8-byte buffer (skipped entirely when
+// liCashItemSN is set, read when not), an unconditional second 8-byte
+// buffer, and a trailing int32.
+//
+// CORRECTION (bug-jms185-naked-avatar-red-equips.md root cause 2): the
+// Decode4 @0x5100e1 was originally read as hammersApplied by this session,
+// but aligning JMS 185's field order against GMS v95's fully-typed
+// GW_ItemSlotEquip::RawDecode @0x4f8360 (nEXP → nDurability → nIUC) shows it
+// is nDurability, immediately after nEXP -- the same position where the GMS
+// v84+ arm sends -1 ("no durability"). Atlas's JMS arm previously sent
+// hammersApplied (0 for a fresh item) there instead, which the client reads
+// as a broken item: unworn on the avatar, rendered with a red overlay. This
+// fixture is updated to the corrected -1 value; nIUC's actual JMS wire
+// position remains unproven and is not sent.
 func wantEquipItemBytesV185() []byte {
 	var b []byte
 	b = append(b, 0x01)                                                       // cash-type-byte marker (JMS always writes 1, asset.go:232-234)
@@ -51,7 +60,7 @@ func wantEquipItemBytesV185() []byte {
 	b = append(b, 0x00)                                                       // levelType = 0
 	b = append(b, 0x00)                                                       // level = 0 (again)
 	b = append(b, 0x00, 0x00, 0x00, 0x00)                                     // experience = 0 (Decode4 @0x5100c7)
-	b = append(b, 0x00, 0x00, 0x00, 0x00)                                     // hammersApplied = 0 (Decode4 @0x5100e1)
+	b = append(b, 0xff, 0xff, 0xff, 0xff)                                     // nDurability = -1, "no durability" (Decode4 @0x5100e1; see corrected comment above)
 	b = append(b, 0x00)                                                       // JMS trailer byte (Decode1 @0x510106, asset.go:287)
 	b = append(b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00) // JMS trailer 5x short = 0 (Decode2 x5 @0x510115-0x51017d, asset.go:288-292)
 	b = append(b, 0x00, 0x00, 0x00, 0x00)                                     // JMS trailer int = 0 (Decode4 @0x510197, asset.go:293)

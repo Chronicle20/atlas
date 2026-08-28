@@ -606,8 +606,8 @@ func TestKafkaMessageValidation(t *testing.T) {
 
 	t.Run("TopicConfiguration", func(t *testing.T) {
 		// Test topic environment variables are properly defined
-		assert.Equal(t, "COMMAND_TOPIC_MARRIAGE", marriageMessage.EnvCommandTopic)
-		assert.Equal(t, "EVENT_TOPIC_MARRIAGE_STATUS", marriageMessage.EnvEventTopicStatus)
+		assert.Equal(t, "COMMAND_TOPIC_MARRIAGE", string(marriageMessage.EnvCommandTopic))
+		assert.Equal(t, "EVENT_TOPIC_MARRIAGE_STATUS", string(marriageMessage.EnvEventTopicStatus))
 	})
 }
 

@@ -9,8 +9,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify packet=model/Asset version=jms_v185 ida=0x50feb9
-
+// model.Asset is a shared sub-struct, not a registry-declared packet, so this
+// test carries no `packet-audit:verify` marker — coverage-matrix cells belong to
+// the packets that embed it.
+//
 // TestAssetJMSEquipableLength pins the JMS non-cash equip block at 98 bytes
 // (2-byte slot prefix + 96-byte item body), matching the captured
 // SetField(0x007b) block size from bug-jms185-naked-avatar-red-equips.md

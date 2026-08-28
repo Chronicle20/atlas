@@ -65,6 +65,7 @@ import (
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	summonpkt "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -398,7 +399,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			if eerr != nil {
 				// Fails open: an unreachable atlas-maps costs the replayed
 				// object state, not the map entry.
-				l.WithError(eerr).Errorf("Unable to retrieve environment state for map [%d] instance [%s].", f.MapId(), f.Instance())
+				degrade.Observe(l.WithField("instance", f.Instance()), "channel.map.environment_replay", uint32(f.MapId()), eerr)
 				return
 			}
 			if len(entries) == 0 {

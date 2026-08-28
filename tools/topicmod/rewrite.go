@@ -469,9 +469,9 @@ func declaresVarErrError(s ast.Stmt) bool {
 	return false
 }
 
-// declaresVarStringDecl reports whether s is a `var <name> string`
-// declaration.
-func declaresVarStringDecl(s ast.Stmt) bool {
+// declaresVarStringDeclNamed reports whether s is a `var <name> string`
+// declaration for the given name.
+func declaresVarStringDeclNamed(s ast.Stmt, name string) bool {
 	ds, ok := s.(*ast.DeclStmt)
 	if !ok {
 		return false
@@ -485,7 +485,55 @@ func declaresVarStringDecl(s ast.Stmt) bool {
 		if !ok || vs.Type == nil {
 			continue
 		}
-		if ident, ok := vs.Type.(*ast.Ident); ok && ident.Name == "string" {
+		ident, ok := vs.Type.(*ast.Ident)
+		if !ok || ident.Name != "string" {
+			continue
+		}
+		for _, n := range vs.Names {
+			if n.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// declaresAnyVarStringDecl reports whether s is a `var <name> string`
+// declaration for any name in names.
+func declaresAnyVarStringDecl(s ast.Stmt, names map[string]bool) bool {
+	for name := range names {
+		if declaresVarStringDeclNamed(s, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// assignTargetName reports the name of as's first LHS identifier — the
+// variable an `=`-form EnvProvider discard assigns into.
+func assignTargetName(as *ast.AssignStmt) (string, bool) {
+	ident, ok := as.Lhs[0].(*ast.Ident)
+	if !ok {
+		return "", false
+	}
+	return ident.Name, true
+}
+
+// stmtIndex returns the index of target within list, or -1 if not found.
+func stmtIndex(list []ast.Stmt, target ast.Stmt) int {
+	for i, s := range list {
+		if s == target {
+			return i
+		}
+	}
+	return -1
+}
+
+// blockDeclaresStringVarBefore reports whether list contains a
+// `var <name> string` declaration at an index strictly before targetIdx.
+func blockDeclaresStringVarBefore(list []ast.Stmt, name string, targetIdx int) bool {
+	for i := 0; i < targetIdx; i++ {
+		if declaresVarStringDeclNamed(list[i], name) {
 			return true
 		}
 	}
@@ -580,19 +628,43 @@ func rewriteEnvProviderErrors(fset *token.FileSet, f *ast.File) (changed bool, r
 	for _, block := range blockOrder {
 		targets := make(map[*ast.AssignStmt]bool, len(byBlock[block]))
 		for _, a := range byBlock[block] {
+			if a.Tok == token.ASSIGN {
+				name, ok := assignTargetName(a)
+				idx := stmtIndex(block.List, a)
+				if !ok || idx < 0 || !blockDeclaresStringVarBefore(block.List, name, idx) {
+					// The `=`-form hoist heuristic only knows how to insert
+					// `var err error` after a `var <name> string`
+					// declaration for the exact variable this assignment's
+					// LHS reuses. Without one — a named return value, a
+					// variable from an outer scope, or simply not present
+					// before this site in the block — there is nowhere safe
+					// to hoist, so this site is residue rather than a guess.
+					residue = append(residue, Finding{
+						Pos:    fset.Position(a.Pos()),
+						Rule:   "R3",
+						Reason: "assignment-form EnvProvider discard has no preceding `var <name> string` declaration in the same block to hoist `var err error` after",
+					})
+					continue
+				}
+			}
 			targets[a] = true
 		}
+		if len(targets) == 0 {
+			continue
+		}
 		block.List = rewriteBlockList(block.List, targets)
+		changed = true
 	}
 
-	return true, residue
+	return changed, residue
 }
 
 // rewriteBlockList rewrites list, replacing each target assignment's blank
 // second LHS with `err` and inserting an `if err != nil { return err }`
 // guard after it. If any target is an `=` assignment, a `var err error`
-// declaration is inserted immediately after the block's existing
-// `var t string` declaration, unless one already exists.
+// declaration is inserted immediately after the block's `var <name> string`
+// declaration for that assignment's own LHS identifier (verified by the
+// caller to exist), unless a `var err error` already exists.
 func rewriteBlockList(list []ast.Stmt, targets map[*ast.AssignStmt]bool) []ast.Stmt {
 	hasVarErr := false
 	for _, s := range list {
@@ -602,18 +674,20 @@ func rewriteBlockList(list []ast.Stmt, targets map[*ast.AssignStmt]bool) []ast.S
 		}
 	}
 
-	needsHoist := false
-	for _, s := range list {
-		if as, ok := s.(*ast.AssignStmt); ok && targets[as] && as.Tok == token.ASSIGN {
-			needsHoist = true
-			break
+	hoistNames := map[string]bool{}
+	for as := range targets {
+		if as.Tok == token.ASSIGN {
+			if name, ok := assignTargetName(as); ok {
+				hoistNames[name] = true
+			}
 		}
 	}
+	needsHoist := len(hoistNames) > 0
 
 	out := make([]ast.Stmt, 0, len(list)+2)
 	for _, s := range list {
 		out = append(out, s)
-		if needsHoist && !hasVarErr && declaresVarStringDecl(s) {
+		if needsHoist && !hasVarErr && declaresAnyVarStringDecl(s, hoistNames) {
 			out = append(out, varErrDecl())
 			hasVarErr = true
 		}
@@ -744,9 +818,49 @@ func rewriteNewConfigAssignment(fd *ast.FuncDecl) bool {
 	return changed
 }
 
+// isNewConfigDelegate reports whether fd's body is a thin one-statement
+// delegate — `return <expr>.NewConfig(<l>)` — forwarding to another
+// package's `NewConfig` with fd's own (single) logger parameter. This is
+// the shape of the ~60 per-service `NewConfig` wrappers that just call the
+// real implementation another R4 match already retypes; retyping its
+// `token string` parameter to `topic.Token` keeps the delegate's signature
+// in lockstep with the real implementation without touching its body.
+func isNewConfigDelegate(fd *ast.FuncDecl) bool {
+	if fd.Body == nil || len(fd.Body.List) != 1 {
+		return false
+	}
+	ret, ok := fd.Body.List[0].(*ast.ReturnStmt)
+	if !ok || len(ret.Results) != 1 {
+		return false
+	}
+	call, ok := ret.Results[0].(*ast.CallExpr)
+	if !ok || len(call.Args) != 1 {
+		return false
+	}
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok || sel.Sel.Name != "NewConfig" {
+		return false
+	}
+	arg, ok := call.Args[0].(*ast.Ident)
+	if !ok {
+		return false
+	}
+	if fd.Type.Params == nil || len(fd.Type.Params.List) != 1 {
+		return false
+	}
+	param := fd.Type.Params.List[0]
+	if len(param.Names) != 1 {
+		return false
+	}
+	return arg.Name == param.Names[0].Name
+}
+
 // rewriteNewConfig implements R4: retype the `NewConfig` curried token
 // wrapper's `token string` parameter to `topic.Token`, and turn its
-// discarded EnvProvider error into a fatal log.
+// discarded EnvProvider error into a fatal log. A `NewConfig` whose
+// signature matches the curried chain but whose body is neither the direct
+// `EnvProvider` assignment nor a thin delegate to another `NewConfig` is
+// reported as residue rather than silently left untouched.
 func rewriteNewConfig(fset *token.FileSet, f *ast.File) (changed bool, residue []Finding) {
 	for _, decl := range f.Decls {
 		fd, ok := decl.(*ast.FuncDecl)
@@ -759,11 +873,20 @@ func rewriteNewConfig(fset *token.FileSet, f *ast.File) (changed bool, residue [
 		if !isNewConfigCurriedChain(fd.Type.Results.List[0].Type) {
 			continue
 		}
-		if !rewriteNewConfigAssignment(fd) {
-			continue
+		switch {
+		case rewriteNewConfigAssignment(fd):
+			retypeTokenParams(fd)
+			changed = true
+		case isNewConfigDelegate(fd):
+			retypeTokenParams(fd)
+			changed = true
+		default:
+			residue = append(residue, Finding{
+				Pos:    fset.Position(fd.Pos()),
+				Rule:   "R4",
+				Reason: "NewConfig signature matches curried chain but body is neither the direct EnvProvider assignment nor a thin delegate to another NewConfig",
+			})
 		}
-		retypeTokenParams(fd)
-		changed = true
 	}
 	return changed, residue
 }

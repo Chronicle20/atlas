@@ -131,6 +131,20 @@ func ChannelChangeRequestProvider(transactionId uuid.UUID, characterId uint32, w
 	return producer.SingleMessageProvider(key, value)
 }
 
+func RedeemStoredExperienceCommandProvider(f field.Model, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character.Command[character.RedeemStoredExperienceCommandBody]{
+		TransactionId: uuid.New(),
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		Type:          character.CommandRedeemStoredExperience,
+		Body: character.RedeemStoredExperienceCommandBody{
+			ChannelId: f.ChannelId(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func AwardExperienceCommandProvider(f field.Model, characterId uint32, distributions []character.ExperienceDistributions, showEffect bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.AwardExperienceCommandBody]{

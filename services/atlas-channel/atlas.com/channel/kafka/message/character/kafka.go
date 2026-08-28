@@ -11,15 +11,16 @@ import (
 )
 
 const (
-	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
-	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
-	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
-	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
-	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
-	CommandChangeHP            = "CHANGE_HP"
-	CommandChangeMP            = "CHANGE_MP"
-	CommandSetHP               = "SET_HP"
-	CommandAwardExperience     = "AWARD_EXPERIENCE"
+	EnvCommandTopic               = "COMMAND_TOPIC_CHARACTER"
+	CommandRequestDistributeAp    = "REQUEST_DISTRIBUTE_AP"
+	CommandRequestDistributeSp    = "REQUEST_DISTRIBUTE_SP"
+	CommandRequestDropMeso        = "REQUEST_DROP_MESO"
+	CommandRequestChangeMeso      = "REQUEST_CHANGE_MESO"
+	CommandChangeHP               = "CHANGE_HP"
+	CommandChangeMP               = "CHANGE_MP"
+	CommandSetHP                  = "SET_HP"
+	CommandAwardExperience        = "AWARD_EXPERIENCE"
+	CommandRedeemStoredExperience = "REDEEM_STORED_EXPERIENCE"
 
 	CommandDistributeApAbilityStrength     = "STRENGTH"
 	CommandDistributeApAbilityDexterity    = "DEXTERITY"
@@ -83,6 +84,10 @@ type AwardExperienceCommandBody struct {
 	ChannelId     channel.Id                `json:"channelId"`
 	Distributions []ExperienceDistributions `json:"distributions"`
 	ShowEffect    bool                      `json:"showEffect"`
+}
+
+type RedeemStoredExperienceCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
 }
 
 const (

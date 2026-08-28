@@ -7,8 +7,18 @@ Export: none used — live IDB.
 > be a VERSION-ABSENT proof for both ops, on the strength of the checked-in export
 > recording `CMapLoadable::OnSetBackEffect` as `unresolved: true`. That was a lead,
 > not evidence: the handler exists, it is simply unnamed in this IDB (`sub_5A8316`).
-> `docs/packets/registry/gms_v61.yaml` currently has **no** entry for either op.
-> This is the same failure mode the controller ruling flagged for v72/v79.
+> `docs/packets/registry/gms_v61.yaml:648-665` already carries TWO placeholder
+> entries at exactly the addresses derived below: `op: IDA_0X05F` (opcode 95,
+> `fname: sub_5A8316`, `ida.address: 5931798` = `0x5A8316`) and `op: IDA_0X060`
+> (opcode 96, `fname: sub_5A871B`, `ida.address: 5932827` = `0x5A871B`), both
+> `provenance: manual` with a note ending "v61-region low op; exact op-name
+> Stage E." The placeholder addresses match this file's derivation exactly.
+> This is a **pending Stage-E name-resolution** case, not an absent entry, and
+> it is a different failure mode than the v72/v79 mis-attribution the
+> controller ruling flagged there (where the opcode was claimed by
+> `SET_MAP_OBJECT_VISIBLE` at an address that is really the clear thunk). For
+> v61, Task 4 should **rename** these two placeholders in place once the
+> op-names resolve, not remove-and-replace them as v72/v79 requires.
 
 Step 0 (already implemented?): NO. `grep -rl BackEffect libs/atlas-packet/`
 returns nothing — genuinely new codec.

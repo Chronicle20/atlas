@@ -24,7 +24,7 @@ switch ( nType )                                                     /*0x6ba109*
 - case `0x7E` (126) -> `CMapLoadable::OnSetBackEffect` @ `0x6ba27f`
 - case `0x80` (128) -> `CMapLoadable::OnClearBackEffect` @ `0x6ba684`
 
-Opcode cross-check: `docs/packets/registry/jms_v185.yaml:623,633` record
+Opcode cross-check: `docs/packets/registry/jms_v185.yaml:625,635` record
 `SET_BACK_EFFECT opcode: 126` (`0x7E`) and `CLEAR_BACK_EFFECT opcode: 128`
 (`0x80`). Both MATCH the router and the task opcode table (jms_185 = `0x07E` /
 `0x080`).

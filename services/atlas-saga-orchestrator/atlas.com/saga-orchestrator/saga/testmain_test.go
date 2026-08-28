@@ -1,6 +1,9 @@
 package saga
 
 import (
+	incubatormsg "atlas-saga-orchestrator/kafka/message/incubator"
+	npcmsg "atlas-saga-orchestrator/kafka/message/npc"
+	sagamsg "atlas-saga-orchestrator/kafka/message/saga"
 	"os"
 	"testing"
 
@@ -8,6 +11,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(incubatormsg.EnvEventTopicIncubatorResult), string(incubatormsg.EnvEventTopicIncubatorResult))
+	_ = os.Setenv(string(npcmsg.EnvCommandTopic), string(npcmsg.EnvCommandTopic))
+	_ = os.Setenv(string(sagamsg.EnvStatusEventTopic), string(sagamsg.EnvStatusEventTopic))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

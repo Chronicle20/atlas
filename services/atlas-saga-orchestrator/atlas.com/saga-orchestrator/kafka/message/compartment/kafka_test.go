@@ -547,7 +547,7 @@ func TestEnvironmentVariableConstants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.constant, tt.description)
+			assert.Equal(t, tt.expected, string(tt.constant), tt.description)
 		})
 	}
 }

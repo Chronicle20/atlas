@@ -188,8 +188,8 @@ func TestMessageValidation(t *testing.T) {
 
 		allMessages := buffer.GetAll()
 		assert.Len(t, allMessages, 2)
-		assert.Contains(t, allMessages, topic1)
-		assert.Contains(t, allMessages, topic2)
+		assert.Contains(t, allMessages, topic.Token(topic1))
+		assert.Contains(t, allMessages, topic.Token(topic2))
 		assert.Equal(t, []kafka.Message{message1}, allMessages[topic.Token(topic1)])
 		assert.Equal(t, []kafka.Message{message2}, allMessages[topic.Token(topic2)])
 	})
@@ -283,7 +283,7 @@ func TestMessageBufferErrorHandling(t *testing.T) {
 
 		messages := buffer.GetAll()
 		assert.Len(t, messages, 1)
-		assert.Contains(t, messages, emptyTopic)
+		assert.Contains(t, messages, topic.Token(emptyTopic))
 		assert.Len(t, messages[topic.Token(emptyTopic)], 1)
 		assert.Equal(t, message, messages[topic.Token(emptyTopic)][0])
 	})

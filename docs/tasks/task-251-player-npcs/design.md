@@ -507,6 +507,13 @@ outranks a written summary (CLAUDE.md evidence rule).
 
 ### 7.2 Spawn path — D-4
 
+> **Amended (bug report §5, `bug-player-npc-no-chat-balloon.md`).** D-4 as written below is
+> reversed: the spawn arm DOES send `NpcSpawnRequestControllerWriter`. The controller grant is
+> the only path to `CNpcPool::SetLocalNpc` -> `CNpc::SetActive`, without which the client never
+> runs `CNpc::DoActionOrChat` and the Player NPC never shows its chat balloon. §7.3's exclusion
+> is amended with it: Player NPC object ids enter the controller registry like any other NPC,
+> and the inbound NPC action/move paths resolve them through `atlas-channel/playernpc`.
+
 PRD §7 says to reuse `NpcSpawnRequestControllerWriter` for the spawn arm; FR-7.4 says Player NPCs
 must never participate in controller assignment. These contradict.
 

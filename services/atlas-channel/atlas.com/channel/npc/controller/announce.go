@@ -31,10 +31,34 @@ func AnnounceGrant(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 				l.WithError(err).Warnf("Unable to load NPC [%d] for controller grant to [%d].", npcObjectId, characterId)
 				return err
 			}
-			l.Debugf("Granting NPC [%d] control to character [%d] in field [%s].", npcObjectId, characterId, f.Id())
-			return session.Announce(l)(ctx)(wp)(npccb.NpcSpawnRequestControllerWriter)(body)(s)
+			return announceGrantBody(l, ctx, wp, f, characterId, npcObjectId, body)(s)
 		})
 	}
+}
+
+// AnnounceGrantWith sends a controller grant whose payload the caller has
+// already built, for callers holding the object's authoritative state in
+// hand. Re-reading it here would source the grant from a second, later
+// snapshot than the spawn the caller just broadcast, and the grant body
+// carries the full position payload -- see PlayerNpcGrantBody.
+func AnnounceGrantWith(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model, characterId uint32, npcObjectId uint32, body packet.Encode) error {
+	return func(f field.Model, characterId uint32, npcObjectId uint32, body packet.Encode) error {
+		return session.NewProcessor(l, ctx).IfPresentByCharacterId(f.Channel())(characterId, announceGrantBody(l, ctx, wp, f, characterId, npcObjectId, body))
+	}
+}
+
+func announceGrantBody(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, characterId uint32, npcObjectId uint32, body packet.Encode) func(s session.Model) error {
+	return func(s session.Model) error {
+		l.Debugf("Granting NPC [%d] control to character [%d] in field [%s].", npcObjectId, characterId, f.Id())
+		return session.Announce(l)(ctx)(wp)(npccb.NpcSpawnRequestControllerWriter)(body)(s)
+	}
+}
+
+// PlayerNpcGrantBody builds the OnNpcChangeController grant payload from an
+// already-loaded Player NPC model, so a caller that has just spawned the
+// object grants control over exactly the coordinates it spawned it at.
+func PlayerNpcGrantBody(n playernpc.Model) packet.Encode {
+	return npcpkt.NpcControllerGrantBody(n.ObjectId(), n.ScriptId(), n.X(), n.Cy(), int32(n.Dir()), n.Fh(), n.RX0(), n.RX1(), true)
 }
 
 // grantBody builds the OnNpcChangeController grant payload for npcObjectId,
@@ -45,7 +69,7 @@ func grantBody(l logrus.FieldLogger, ctx context.Context, f field.Model, npcObje
 		if err != nil {
 			return nil, err
 		}
-		return npcpkt.NpcControllerGrantBody(n.ObjectId(), n.ScriptId(), n.X(), n.Cy(), int32(n.Dir()), n.Fh(), n.RX0(), n.RX1(), true), nil
+		return PlayerNpcGrantBody(n), nil
 	}
 	n, err := npc.NewProcessor(l, ctx).GetInMapByObjectId(f.MapId(), npcObjectId)
 	if err != nil {

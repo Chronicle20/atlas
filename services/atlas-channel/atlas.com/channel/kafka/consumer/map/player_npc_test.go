@@ -154,7 +154,7 @@ func TestSpawnPlayerNpcForSession(t *testing.T) {
 		f := newTestField()
 		stubBuffsServer(t)
 		stubControllerRegistry(t)
-		stubPlayerNpcListServer(t, playerNpcAttrJSON(uuid.New().String(), 100001, 9900001))
+		stubPlayerNpcListServer(t, playerNpcAttrJSON(uuid.New().String(), 101001, 9901001))
 		calls, imitatedCount := stubPlayerNpcAnnounce(t)
 
 		if err := spawnPlayerNpcsForSession(l, ctx, nil, session.Model{}, f); err != nil {
@@ -179,7 +179,7 @@ func TestSpawnPlayerNpcForSession(t *testing.T) {
 		f := newTestField()
 		stubBuffsServer(t)
 		stubControllerRegistry(t)
-		stubPlayerNpcListServer(t, playerNpcAttrJSON(uuid.New().String(), 100002, 9900002))
+		stubPlayerNpcListServer(t, playerNpcAttrJSON(uuid.New().String(), 101002, 9901002))
 		calls, _ := stubPlayerNpcAnnounce(t)
 
 		if err := spawnPlayerNpcsForSession(l, ctx, nil, session.Model{}, f); err != nil {
@@ -203,14 +203,14 @@ func TestSpawnPlayerNpcForSession(t *testing.T) {
 		ten := tenant.MustFromContext(ctx)
 		stubBuffsServer(t)
 		stubControllerRegistry(t)
-		stubPlayerNpcListServer(t, playerNpcAttrJSON(uuid.New().String(), 100007, 9900007))
+		stubPlayerNpcListServer(t, playerNpcAttrJSON(uuid.New().String(), 101007, 9901007))
 		_, _ = stubPlayerNpcAnnounce(t)
 
 		if err := spawnPlayerNpcsForSession(l, ctx, nil, session.Model{}, f); err != nil {
 			t.Fatalf("spawnPlayerNpcsForSession: %v", err)
 		}
 
-		if _, ok, oerr := controllernpc.GetRegistry().ControllerOf(ctx, ten, f, 100007); oerr != nil || !ok {
+		if _, ok, oerr := controllernpc.GetRegistry().ControllerOf(ctx, ten, f, 101007); oerr != nil || !ok {
 			t.Fatalf("ControllerOf(playerNpc) = ok=%v err=%v, want ok=true (claimed)", ok, oerr)
 		}
 	})
@@ -221,9 +221,9 @@ func TestSpawnPlayerNpcForSession(t *testing.T) {
 		stubBuffsServer(t)
 		stubControllerRegistry(t)
 		stubPlayerNpcListServer(t,
-			playerNpcAttrJSON(uuid.New().String(), 100003, 9900003),
-			playerNpcAttrJSON(uuid.New().String(), 100004, 9900004),
-			playerNpcAttrJSON(uuid.New().String(), 100005, 9900005),
+			playerNpcAttrJSON(uuid.New().String(), 101003, 9901003),
+			playerNpcAttrJSON(uuid.New().String(), 101004, 9901004),
+			playerNpcAttrJSON(uuid.New().String(), 101005, 9901005),
 		)
 		calls, imitatedCount := stubPlayerNpcAnnounce(t)
 
@@ -267,14 +267,14 @@ func TestExitReleasesPlayerNpcControllerEntry(t *testing.T) {
 
 	const exitingCharacterId uint32 = 42
 	const ordinaryNpcObjectId uint32 = 500
-	const playerNpcObjectId uint32 = 100006
+	const playerNpcObjectId uint32 = 101006
 
 	stubBuffsServer(t)
 	stubControllerRegistry(t)
 
 	// Deploy the Player NPC via the real spawn path, as the exiting
 	// character -- it claims control on the way in.
-	stubPlayerNpcListServer(t, playerNpcAttrJSON(uuid.New().String(), playerNpcObjectId, 9900006))
+	stubPlayerNpcListServer(t, playerNpcAttrJSON(uuid.New().String(), playerNpcObjectId, 9901006))
 	_, _ = stubPlayerNpcAnnounce(t)
 	addFieldSession(t, ctx, l, exitingCharacterId, f)
 	if err := session.NewProcessor(l, ctx).IfPresentByCharacterId(f.Channel())(exitingCharacterId, func(s session.Model) error {

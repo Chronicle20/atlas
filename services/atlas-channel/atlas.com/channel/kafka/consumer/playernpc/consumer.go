@@ -127,10 +127,10 @@ func toPlayerNpcModel(m StatusModel) (playernpc.Model, error) {
 	return playernpc.Extract(rm)
 }
 
-// broadcastSpawn sends the plain SPAWN_NPC (design D-4 -- no controller
-// grant, FR-7.4) then the single-entry IMITATED_NPC_DATA for one deployed
-// Player NPC to every session in field f -- this channel pod's own
-// sessions only. Every channel of the world runs its own atlas-channel
+// broadcastSpawn sends the plain SPAWN_NPC, then the single-entry
+// IMITATED_NPC_DATA, for one deployed Player NPC to every session in field
+// f -- this channel pod's own sessions only -- and finally elects one of
+// those sessions to control it. Every channel of the world runs its own atlas-channel
 // pod consuming the same broadcast event, so "every channel of the world"
 // (plan.md Task 19) falls out of each pod independently broadcasting
 // within its own field; there is no per-event channelId to gate on
@@ -147,23 +147,29 @@ func broadcastSpawn(l logrus.FieldLogger, ctx context.Context, wp writer.Produce
 	if err != nil {
 		l.WithError(err).Errorf("Unable to broadcast Player NPC [%d] spawn to map [%d].", n.ObjectId(), f.MapId())
 	}
-	electController(l, ctx, wp, f, n.ObjectId())
+	electController(l, ctx, wp, f, n)
 }
 
-// electController assigns one live session in f control of npcObjectId and
-// announces the grant. Without it a Player NPC deployed while players are
-// already standing in the map stays mute until someone re-enters, because
+// electController assigns one live session in f control of n and announces
+// the grant. Without it a Player NPC deployed while players are already
+// standing in the map stays mute until someone re-enters, because
 // CNpc::SetActive -- and therefore the client's chat balloon -- is reached
 // only through the controller grant (task-251 bug report §5).
-func electController(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, npcObjectId uint32) {
+//
+// The grant body is built from the caller's model, the same one the spawn
+// it follows was built from: the grant carries the full position payload,
+// so re-reading the object here would risk granting control over
+// coordinates other than the ones just broadcast.
+func electController(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, n playernpc.Model) {
 	cp := controllernpc.NewProcessor(l, ctx)
-	assignments, err := cp.ElectFor(f, []uint32{npcObjectId})
+	assignments, err := cp.ElectFor(f, []uint32{n.ObjectId()})
 	if err != nil {
-		l.WithError(err).Warnf("Unable to elect a controller for Player NPC [%d] in map [%d].", npcObjectId, f.MapId())
+		l.WithError(err).Warnf("Unable to elect a controller for Player NPC [%d] in map [%d].", n.ObjectId(), f.MapId())
 		return
 	}
+	body := controllernpc.PlayerNpcGrantBody(n)
 	for npcId, winner := range assignments {
-		if gerr := controllernpc.AnnounceGrant(l, ctx, wp)(f, winner, npcId); gerr != nil {
+		if gerr := controllernpc.AnnounceGrantWith(l, ctx, wp)(f, winner, npcId, body); gerr != nil {
 			l.WithError(gerr).Warnf("Unable to announce Player NPC [%d] controller grant to [%d].", npcId, winner)
 		}
 	}
@@ -272,7 +278,7 @@ func handleRepositioned(sc server.Model, wp writer.Producer) message.Handler[Sta
 		}
 
 		entries := make([]npcpkt.ImitatedNpc, 0, len(e.Body.Npcs))
-		respawned := make([]uint32, 0, len(e.Body.Npcs))
+		respawned := make([]playernpc.Model, 0, len(e.Body.Npcs))
 		for _, rn := range e.Body.Npcs {
 			n, ok := byObjectId[rn.ObjectId]
 			if !ok {
@@ -284,14 +290,19 @@ func handleRepositioned(sc server.Model, wp writer.Producer) message.Handler[Sta
 				l.WithError(removeErr).Errorf("Unable to broadcast Player NPC [%d] despawn for reposition to map [%d].", rn.ObjectId, f.MapId())
 				continue
 			}
-			spawn := npcpkt.NewNpcSpawn(n.ObjectId(), n.ScriptId(), rn.X, rn.Cy, int32(n.Dir()), rn.Fh, rn.Rx0, rn.Rx1)
+			// The event's coordinates are the authoritative ones here --
+			// the read-back model above may predate the reposition -- so
+			// they are folded into the model and every packet emitted for
+			// this object below is built from that one snapshot.
+			n = n.AtPosition(rn.X, rn.Cy, rn.Fh, rn.Rx0, rn.Rx1)
+			spawn := _map.PlayerNpcSpawn(n)
 			spawnErr := mapProcessor.NewProcessor(l, ctx).ForSessionsInMap(f, announceOp(l, ctx, wp, npcpkt.NpcSpawnWriter, spawn.Encode))
 			if spawnErr != nil {
 				l.WithError(spawnErr).Errorf("Unable to broadcast Player NPC [%d] respawn for reposition to map [%d].", rn.ObjectId, f.MapId())
 				continue
 			}
 			entries = append(entries, _map.PlayerNpcImitatedEntry(n))
-			respawned = append(respawned, rn.ObjectId)
+			respawned = append(respawned, n)
 		}
 		if len(entries) == 0 {
 			return
@@ -306,12 +317,16 @@ func handleRepositioned(sc server.Model, wp writer.Producer) message.Handler[Sta
 		// old controller entry is stale. Release, then elect afresh, or the
 		// repositioned NPCs go mute (task-251 bug report §5).
 		cp := controllernpc.NewProcessor(l, ctx)
-		if rerr := cp.Release(f, respawned...); rerr != nil {
+		objectIds := make([]uint32, 0, len(respawned))
+		for _, n := range respawned {
+			objectIds = append(objectIds, n.ObjectId())
+		}
+		if rerr := cp.Release(f, objectIds...); rerr != nil {
 			l.WithError(rerr).Warnf("Unable to release controller entries for repositioned Player NPCs in map [%d].", f.MapId())
 			return
 		}
-		for _, objectId := range respawned {
-			electController(l, ctx, wp, f, objectId)
+		for _, n := range respawned {
+			electController(l, ctx, wp, f, n)
 		}
 	}
 }

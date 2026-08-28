@@ -12,7 +12,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	npcbody "github.com/Chronicle20/atlas/libs/atlas-packet/npc"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
@@ -50,13 +49,6 @@ func PlayerNpcAvatar(n playernpc.Model) packetmodel.Avatar {
 // avatar arm leads with scriptId, not a WZ NPC template).
 func PlayerNpcImitatedEntry(n playernpc.Model) npcpkt.ImitatedNpc {
 	return npcpkt.NewImitatedNpc(n.ScriptId(), n.Name(), PlayerNpcAvatar(n))
-}
-
-// PlayerNpcControllerGrant builds the controller-grant body for a deployed
-// Player NPC n -- the same payload as PlayerNpcSpawn, on the client's
-// OnNpcChangeController arm.
-func PlayerNpcControllerGrant(n playernpc.Model) packet.Encode {
-	return npcbody.NpcControllerGrantBody(n.ObjectId(), n.ScriptId(), n.X(), n.Cy(), int32(n.Dir()), n.Fh(), n.RX0(), n.RX1(), true)
 }
 
 // spawnPlayerNpcsForSession sends SPAWN_NPC for every Player NPC deployed
@@ -110,7 +102,7 @@ func spawnPlayerNpcsForSession(l logrus.FieldLogger, ctx context.Context, wp wri
 		if !claimed {
 			continue
 		}
-		if gerr := playerNpcAnnounce(l, ctx, wp, npcpkt.NpcSpawnRequestControllerWriter, PlayerNpcControllerGrant(n), s); gerr != nil {
+		if gerr := playerNpcAnnounce(l, ctx, wp, npcpkt.NpcSpawnRequestControllerWriter, controllernpc.PlayerNpcGrantBody(n), s); gerr != nil {
 			return gerr
 		}
 	}

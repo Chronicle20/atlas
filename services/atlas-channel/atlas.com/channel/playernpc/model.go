@@ -74,6 +74,21 @@ func (m Model) Equipment() []EquipmentModel {
 }
 func (m Model) DeployedAt() time.Time { return m.deployedAt }
 
+// AtPosition returns a copy of m relocated to the given coordinates,
+// leaving every other attribute (including dir, which no reposition
+// carries) untouched. REPOSITIONED delivers new coordinates for an
+// object atlas-player-npcs may not have re-published yet, so folding
+// them into the model keeps every packet the handler emits for that
+// object -- respawn and controller grant alike -- on one snapshot.
+func (m Model) AtPosition(x int16, cy int16, fh uint16, rx0 int16, rx1 int16) Model {
+	m.x = x
+	m.cy = cy
+	m.fh = fh
+	m.rx0 = rx0
+	m.rx1 = rx1
+	return m
+}
+
 // EquipmentModel is one frozen equipment slot on a deployed Player NPC.
 type EquipmentModel struct {
 	slot   int16

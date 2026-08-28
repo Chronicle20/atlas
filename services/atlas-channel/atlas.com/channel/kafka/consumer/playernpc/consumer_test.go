@@ -5,6 +5,7 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -111,6 +112,7 @@ func addFieldSession(t *testing.T, ctx context.Context, l logrus.FieldLogger, ch
 type announceCall struct {
 	writerName  string
 	characterId uint32
+	encode      packet.Encode
 }
 
 // stubAnnounce swaps the package's announce seam for a recording stub,
@@ -124,9 +126,9 @@ func stubAnnounce(t *testing.T) *[]announceCall {
 	var mu sync.Mutex
 	var seen []announceCall
 	orig := announce
-	announce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, s session.Model) error {
+	announce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, enc packet.Encode, s session.Model) error {
 		mu.Lock()
-		seen = append(seen, announceCall{writerName: writerName, characterId: s.CharacterId()})
+		seen = append(seen, announceCall{writerName: writerName, characterId: s.CharacterId(), encode: enc})
 		mu.Unlock()
 		return nil
 	}
@@ -190,7 +192,7 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		sc := newTestServer(t, ctx, worldId, channelId)
 		calls := stubAnnounce(t)
 
-		e := StatusEvent[StatusModel]{Type: EventTypeDeployed, Body: statusModelFixture(100001, 9900001, worldId, mapId)}
+		e := StatusEvent[StatusModel]{Type: EventTypeDeployed, Body: statusModelFixture(101001, 9901001, worldId, mapId)}
 		handleDeployed(sc, nil)(l, ctx, e)
 
 		if len(*calls) != 4 {
@@ -231,7 +233,7 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		sc := newTestServer(t, ctx, worldId, channelId)
 		calls := stubAnnounce(t)
 
-		e := StatusEvent[StatusModel]{Type: EventTypeDeployed, Body: statusModelFixture(100001, 9900001, world.Id(99), mapId)}
+		e := StatusEvent[StatusModel]{Type: EventTypeDeployed, Body: statusModelFixture(101001, 9901001, world.Id(99), mapId)}
 		handleDeployed(sc, nil)(l, ctx, e)
 
 		if len(*calls) != 0 {
@@ -248,7 +250,7 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		sc := newTestServer(t, ctx, worldId, channelId)
 		calls := stubAnnounce(t)
 
-		e := StatusEvent[StatusModel]{Type: EventTypeUpdated, Body: statusModelFixture(100001, 9900001, worldId, mapId)}
+		e := StatusEvent[StatusModel]{Type: EventTypeUpdated, Body: statusModelFixture(101001, 9901001, worldId, mapId)}
 		handleUpdated(sc, nil)(l, ctx, e)
 
 		if len(*calls) != 1 || (*calls)[0].writerName != npcpkt.NpcImitatedDataWriter {
@@ -267,7 +269,7 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		calls := stubAnnounce(t)
 
 		e := StatusEvent[StatusRemovedBody]{Type: EventTypeRemoved, Body: StatusRemovedBody{
-			Id: uuid.New(), ObjectId: 100001, MapId: uint32(mapId), WorldId: byte(worldId),
+			Id: uuid.New(), ObjectId: 101001, MapId: uint32(mapId), WorldId: byte(worldId),
 		}}
 		handleRemoved(sc, nil)(l, ctx, e)
 
@@ -290,16 +292,16 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		sc := newTestServer(t, ctx, worldId, channelId)
 
 		stubPlayerNpcListServer(t,
-			playerNpcAttrJSON(uuid.New().String(), 100001, 9900001),
-			playerNpcAttrJSON(uuid.New().String(), 100002, 9900002),
+			playerNpcAttrJSON(uuid.New().String(), 101001, 9901001),
+			playerNpcAttrJSON(uuid.New().String(), 101002, 9901002),
 		)
 		calls := stubAnnounce(t)
 
 		e := StatusEvent[StatusRepositionedBody]{Type: EventTypeRepositioned, Body: StatusRepositionedBody{
 			WorldId: byte(worldId), MapId: uint32(mapId),
 			Npcs: []StatusRepositionedNpc{
-				{Id: uuid.New(), ObjectId: 100001, X: 10, Cy: 20, Fh: 1, Rx0: 0, Rx1: 100},
-				{Id: uuid.New(), ObjectId: 100002, X: 30, Cy: 40, Fh: 1, Rx0: 0, Rx1: 100},
+				{Id: uuid.New(), ObjectId: 101001, X: 10, Cy: 20, Fh: 1, Rx0: 0, Rx1: 100},
+				{Id: uuid.New(), ObjectId: 101002, X: 30, Cy: 40, Fh: 1, Rx0: 0, Rx1: 100},
 			},
 		}}
 		handleRepositioned(sc, nil)(l, ctx, e)
@@ -321,6 +323,30 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 			if (*calls)[i].writerName != w {
 				t.Fatalf("calls[%d] = %s, want %s (full sequence %v)", i, (*calls)[i].writerName, w, *calls)
 			}
+		}
+
+		// The respawn must carry the EVENT's coordinates, not the ones the
+		// read-back model still holds -- the read may predate the
+		// reposition. Every packet the handler emits for the object, the
+		// controller grant included, is built from this one folded model
+		// (task-251 bug report §5 review, blocking #2).
+		opts := map[string]interface{}{}
+		wantSpawns := [][]byte{
+			npcpkt.NewNpcSpawn(101001, 9901001, 10, 20, 0, 1, 0, 100).Encode(l, ctx)(opts),
+			npcpkt.NewNpcSpawn(101002, 9901002, 30, 40, 0, 1, 0, 100).Encode(l, ctx)(opts),
+		}
+		spawnIdx := 0
+		for _, c := range *calls {
+			if c.writerName != npcpkt.NpcSpawnWriter {
+				continue
+			}
+			if got := c.encode(l, ctx)(opts); !bytes.Equal(got, wantSpawns[spawnIdx]) {
+				t.Fatalf("respawn[%d] payload = %v, want %v (event coordinates)", spawnIdx, got, wantSpawns[spawnIdx])
+			}
+			spawnIdx++
+		}
+		if spawnIdx != len(wantSpawns) {
+			t.Fatalf("SpawnNPC payloads asserted = %d, want %d", spawnIdx, len(wantSpawns))
 		}
 	})
 }

@@ -274,6 +274,12 @@ every channel of that world.
 **FR-7.4** Player NPCs are not controlled by any client and never move. They MUST NOT participate in
 NPC controller assignment, controller hand-off on player exit, or NPC movement handling.
 
+> **Amended (bug report §5, `bug-player-npc-no-chat-balloon.md`).** Player NPCs DO participate in
+> controller assignment: the grant is what reaches `CNpc::SetActive`, and without it the canned chat
+> balloon never renders. The exit hand-off and re-election paths are object-id agnostic and cover
+> them unchanged. What FR-7.4 still guarantees is that a Player NPC is never left dangling in the
+> registry after its controller leaves.
+
 **FR-7.5** Player NPC object ids MUST NOT collide with the object ids of WZ-spawned NPCs on the same
 map.
 

@@ -111,6 +111,14 @@ a file you happened to touch.
 
 ## The docker layer
 
+The repo-root `.dockerignore` is an allowlist (`*` then `!libs`, `!services`),
+not a blocklist: only `libs/` and `services/` reach any root-context build.
+Every existing root-context Dockerfile only `COPY`s from those two trees, so
+today nothing is lost. Adding a new root-context Dockerfile (or a `COPY` line
+that reaches outside `libs/`/`services/` in an existing one) means it silently
+loses that content unless the `.dockerignore` gets another `!` line first —
+check this before adding one.
+
 `docker buildx bake atlas-<svc>` for every service whose `go.mod` changed.
 **This is mandatory, not optional.**
 

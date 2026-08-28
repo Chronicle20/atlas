@@ -22,6 +22,7 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	os.Setenv(string(mbmsg.EnvCommandTopic), string(mbmsg.EnvCommandTopic))
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

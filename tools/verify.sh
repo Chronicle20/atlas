@@ -178,21 +178,43 @@ changed_tool_suites() {
 
 # --------------------------------------------------------------- go modules
 
-# go.work's `use` block, resolved to absolute directories. A module directory
-# under services/ or libs/ that is NOT listed here is a tool module,
-# deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen — see
-# plan.md:18 for task-276) and verified by its own explicit GOWORK=off step
-# instead, so all_modules below filters it out rather than folding it into
-# the workspace build/vet sweep, which cannot type-check a non-member.
+# go.work's `use` entries (both the single-line `use ./path` form and the
+# parenthesized `use ( ... )` block form), resolved to absolute directories. A
+# module directory under services/ or libs/ that is NOT listed here is a tool
+# module, deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen —
+# see plan.md:18 for task-276) and verified by its own explicit GOWORK=off
+# step instead, so all_modules below filters it out rather than folding it
+# into the workspace build/vet sweep, which cannot type-check a non-member.
+#
+# Fails loudly (non-zero, naming go.work) rather than returning an empty set:
+# an unreadable go.work or a parse with zero `use` entries must stop the
+# sweep, never silently verify nothing while reporting success.
 workspace_module_dirs() {
-    awk '
+    if [ ! -r "$ROOT/go.work" ]; then
+        echo "verify.sh: ERROR — cannot read $ROOT/go.work" >&2
+        return 1
+    fi
+    local entries
+    entries="$(awk '
         /^use \(/ { inuse=1; next }
         inuse && /^\)/ { inuse=0; next }
         inuse {
             gsub(/^[ \t]+|[ \t]+$/, "")
             if ($0 != "") print
+            next
         }
-    ' "$ROOT/go.work" | while IFS= read -r p; do
+        /^use[ \t]+/ {
+            line = $0
+            sub(/^use[ \t]+/, "", line)
+            gsub(/^[ \t]+|[ \t]+$/, "", line)
+            if (line != "") print line
+        }
+    ' "$ROOT/go.work")"
+    if [ -z "$entries" ]; then
+        echo "verify.sh: ERROR — $ROOT/go.work parsed to zero 'use' entries" >&2
+        return 1
+    fi
+    printf '%s\n' "$entries" | while IFS= read -r p; do
         case "$p" in
             /*) printf '%s\n' "$p" ;;
             *)  printf '%s\n' "$ROOT/${p#./}" ;;
@@ -201,10 +223,17 @@ workspace_module_dirs() {
 }
 
 all_modules() {
-    comm -12 \
-        <(find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
-            | xargs -0 -r -n1 dirname | sort -u) \
-        <(workspace_module_dirs)
+    local found workspace result
+    found="$(find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
+        | xargs -0 -r -n1 dirname | sort -u)"
+    workspace="$(workspace_module_dirs)" || exit 1
+    result="$(comm -12 <(printf '%s\n' "$found") <(printf '%s\n' "$workspace"))"
+    if [ -n "$found" ] && [ -z "$result" ]; then
+        echo "verify.sh: ERROR — workspace filter produced zero modules from a non-empty candidate set;" >&2
+        echo "verify.sh: ERROR — check go.work / workspace_module_dirs() for a parse mismatch" >&2
+        exit 1
+    fi
+    printf '%s\n' "$result"
 }
 
 # The one predicate that decides whether this run fans out to every module.
@@ -248,8 +277,14 @@ changed_modules() {
         all_modules
         return
     fi
-    local mods=() m rel
-    while IFS= read -r m; do mods+=("$m"); done < <(all_modules)
+    # Captured into a variable (not fed straight into a `< <(...)` process
+    # substitution) so an all_modules() failure — an unreadable go.work, or a
+    # filter bug — propagates via `||`. Process substitutions discard their
+    # command's exit status, which is exactly the class of bug fixed here for
+    # workspace_module_dirs() itself.
+    local all mods=() m rel
+    all="$(all_modules)" || exit 1
+    while IFS= read -r m; do [ -n "$m" ] && mods+=("$m"); done <<< "$all"
     for m in "${mods[@]}"; do
         rel="${m#"$ROOT"/}"
         # See touched(): no `-q` under pipefail.
@@ -260,7 +295,13 @@ changed_modules() {
 }
 
 MODULES=()
-while IFS= read -r m; do [ -n "$m" ] && MODULES+=("$m"); done < <(changed_modules | sort -u)
+# Captured into a variable (not fed straight into a `< <(...)` process
+# substitution) so a changed_modules()/all_modules() failure — an unreadable
+# go.work, or a filter bug — propagates via `||`. Process substitutions
+# discard their command's exit status, which is exactly the class of bug
+# fixed here for workspace_module_dirs() itself.
+_changed_modules_out="$(changed_modules | sort -u)" || exit 1
+while IFS= read -r m; do [ -n "$m" ] && MODULES+=("$m"); done <<< "$_changed_modules_out"
 
 go_layer() {
     local mod="$1" rel="${1#"$ROOT"/}"

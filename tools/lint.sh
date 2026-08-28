@@ -147,23 +147,45 @@ resolve_base() {
     return 1
 }
 
-# go.work's `use` block, resolved to absolute directories. A module directory
-# under services/ or libs/ that is NOT listed here is a tool module,
-# deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen — see
-# plan.md:18 for task-276): golangci-lint in workspace mode cannot type-check
-# a non-member ("directory prefix . does not contain modules listed in
-# go.work"). It is verified by its own explicit GOWORK=off step instead, so
-# discover_modules below filters it out rather than this script re-adding it
-# to go.work.
+# go.work's `use` entries (both the single-line `use ./path` form and the
+# parenthesized `use ( ... )` block form), resolved to absolute directories. A
+# module directory under services/ or libs/ that is NOT listed here is a tool
+# module, deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen —
+# see plan.md:18 for task-276): golangci-lint in workspace mode cannot
+# type-check a non-member ("directory prefix . does not contain modules
+# listed in go.work"). It is verified by its own explicit GOWORK=off step
+# instead, so discover_modules below filters it out rather than this script
+# re-adding it to go.work.
+#
+# Fails loudly (non-zero, naming go.work) rather than returning an empty set:
+# an unreadable go.work or a parse with zero `use` entries must stop the
+# sweep, never silently verify nothing while reporting success.
 workspace_module_dirs() {
-    awk '
+    if [ ! -r "$ROOT/go.work" ]; then
+        echo "lint.sh: ERROR — cannot read $ROOT/go.work" >&2
+        return 1
+    fi
+    local entries
+    entries="$(awk '
         /^use \(/ { inuse=1; next }
         inuse && /^\)/ { inuse=0; next }
         inuse {
             gsub(/^[ \t]+|[ \t]+$/, "")
             if ($0 != "") print
+            next
         }
-    ' "$ROOT/go.work" | while IFS= read -r p; do
+        /^use[ \t]+/ {
+            line = $0
+            sub(/^use[ \t]+/, "", line)
+            gsub(/^[ \t]+|[ \t]+$/, "", line)
+            if (line != "") print line
+        }
+    ' "$ROOT/go.work")"
+    if [ -z "$entries" ]; then
+        echo "lint.sh: ERROR — $ROOT/go.work parsed to zero 'use' entries" >&2
+        return 1
+    fi
+    printf '%s\n' "$entries" | while IFS= read -r p; do
         case "$p" in
             /*) printf '%s\n' "$p" ;;
             *)  printf '%s\n' "$ROOT/${p#./}" ;;
@@ -172,7 +194,7 @@ workspace_module_dirs() {
 }
 
 discover_modules() {
-    local found
+    local found workspace result
     if [ "${#PATHS[@]}" -eq 0 ]; then
         found="$(find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
             | xargs -0 -n1 dirname | sort -u)"
@@ -187,7 +209,14 @@ discover_modules() {
                 | xargs -0 -r -n1 dirname
         done | sort -u)"
     fi
-    comm -12 <(printf '%s\n' "$found") <(workspace_module_dirs)
+    workspace="$(workspace_module_dirs)" || exit 1
+    result="$(comm -12 <(printf '%s\n' "$found") <(printf '%s\n' "$workspace"))"
+    if [ -n "$found" ] && [ -z "$result" ]; then
+        echo "lint.sh: ERROR — workspace filter produced zero modules from a non-empty candidate set;" >&2
+        echo "lint.sh: ERROR — check go.work / workspace_module_dirs() for a parse mismatch" >&2
+        exit 1
+    fi
+    printf '%s\n' "$result"
 }
 
 run_go() {
@@ -201,7 +230,14 @@ run_go() {
         fi
     fi
 
-    local moddir rel fmt_out
+    # Captured into a variable (not fed straight into a `< <(...)` process
+    # substitution) so a discover_modules() failure — an unreadable go.work,
+    # or a filter bug — propagates via `||`. Process substitutions discard
+    # their command's exit status, which is exactly the class of bug fixed
+    # here for workspace_module_dirs() itself.
+    local modules moddir rel fmt_out
+    modules="$(discover_modules)" || exit 1
+    [ -z "$modules" ] && return 0
     while IFS= read -r moddir; do
         rel="${moddir#"$ROOT"/}"
 
@@ -241,7 +277,7 @@ run_go() {
                 FAILED+=("lint:$rel")
             fi
         fi
-    done < <(discover_modules)
+    done <<< "$modules"
 }
 
 run_ui() {

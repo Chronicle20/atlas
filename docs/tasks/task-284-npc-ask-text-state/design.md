@@ -297,7 +297,7 @@ template, not a gap this task fills. It is likewise excluded from the seed fan-o
 
 ---
 
-## 8. Decision: `get_quest_progress`
+## 8. Decision: `local:get_quest_progress`
 
 Resolving PRD §9 Q2 and Q3.
 
@@ -307,14 +307,16 @@ Resolving PRD §9 Q2 and Q3.
 through `validation` (the query-aggregator). That path cannot serve this
 operation:
 
-- Conditions are **pass/fail**, not value-returning. `get_quest_progress` must
+- Conditions are **pass/fail**, not value-returning. `local:get_quest_progress` must
   yield a string into context.
 - The evaluator coerces to `int` (`conversation/evaluator.go:66`).
 
 **Chosen:** a new `quest/` package in `services/atlas-npc-conversations/atlas.com/npc/`,
 following the shape already used by `saved_location/`, `map/`, and `pet/` — the
-established pattern for a read that feeds a context-loading operation
-(`get_saved_location`, `fetch_map_player_counts`, `enumerate_evolvable_pets`).
+established pattern for a read that feeds a context-loading local operation
+(`local:get_saved_location`, `local:fetch_map_player_counts`, `local:enumerate_evolvable_pets`).
+The `local:` prefix is required — an un-prefixed operation is dispatched to the saga
+orchestrator and cannot write context.
 
 Endpoint (verified in `services/atlas-quest/atlas.com/quest/quest/resource.go:51`):
 

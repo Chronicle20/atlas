@@ -161,7 +161,7 @@ In the engine's advance switch (the `AskNumberType` arm at `processor.go:372-405
 The stored text remains available to downstream states as `{context.<contextKey>}` for use in dialogue
 text and operation parameters.
 
-### 4.5 `get_quest_progress` operation
+### 4.5 `local:get_quest_progress` operation
 
 The Magatia door compares the typed text to `cm.getQuestProgress(3360)` — the quest's progress *string*,
 which is a read, not a numeric validation. The existing `questProgress` condition in
@@ -169,9 +169,10 @@ which is a read, not a numeric validation. The existing `questProgress` conditio
 step, and the whole condition path coerces values to `int` (`conversation/evaluator.go:66`), so it cannot
 serve here.
 
-A new context-loading operation `get_quest_progress` is added to `operation_executor.go`, following the
-established pattern of read operations that write into conversation context (`get_saved_location`,
-`fetch_map_player_counts`, `enumerate_evolvable_pets`).
+A new context-loading operation `local:get_quest_progress` is added to `operation_executor.go`, following the
+established pattern of local read operations that write into conversation context (`local:get_saved_location`,
+`local:fetch_map_player_counts`, `local:enumerate_evolvable_pets`). The `local:` prefix is required — an
+un-prefixed operation is dispatched to the saga orchestrator and cannot write context.
 
 - Params: `questId` (required), `step`/`infoNumber` (optional — omitted means the quest's default progress
   value), `contextKey` (required, where to store the result).

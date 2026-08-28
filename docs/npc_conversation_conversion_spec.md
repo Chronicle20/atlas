@@ -219,6 +219,88 @@ On success, the transport system warps the character to the transit map automati
 
 ---
 
+## ⌨️ `sendGetText` → `askText` States
+
+Converts the JavaScript pattern `cm.sendGetText(prompt[, defaultText[, minLength, maxLength]])`,
+which prompts the player for free-form keyboard input, into an `askText` state.
+
+```json
+{
+  "id": "askPlayerPassword",
+  "type": "askText",
+  "askText": {
+    "text": "Please enter the password.",
+    "defaultText": "",
+    "minLength": 1,
+    "maxLength": 16,
+    "contextKey": "answer",
+    "matches": [
+      { "value": "opensesame", "nextState": "correctPassword" },
+      { "valueFromContext": "expectedPassword", "nextState": "correctPassword" }
+    ],
+    "nextState": "incorrectPassword"
+  }
+}
+```
+
+A match's `nextState` may be left empty (or omitted) to end the conversation when that
+match applies. The top-level `nextState`, by contrast, is required and non-empty —
+it is the fallback used when no `matches` entry applies.
+
+- `text` (required): Prompt text asking for input. Supports `{context.xxx}` references.
+- `defaultText` (optional): Default text pre-filled for the player.
+- `minLength` / `maxLength` (`maxLength` required): Accepted length range for the trimmed
+  input. Input outside this range is rejected and the player is re-prompted.
+- `contextKey` (required): Context key the trimmed, entered text is stored under. The
+  captured value is then available as `{context.<contextKey>}` in later states.
+- `matches` (optional): An ordered, first-match-wins branch table. Each entry has exactly
+  one of `value` (a literal to compare against) or `valueFromContext` (a context key whose
+  current value is compared against), plus a required `nextState`. **Matching is exact,
+  case-sensitive, and whitespace-trimmed — regex and wildcards are not supported.** An
+  unresolvable `valueFromContext` reference is treated as a non-match, not an error.
+- `nextState` (required): Used when no entry in `matches` applies, or when `matches` is
+  empty.
+
+**Worked example** — the original script's manual comparison:
+
+```javascript
+var input = cm.sendGetText("What is the secret word?");
+if (input == "shazam") {
+    cm.dispose();
+} else {
+    cm.sendOk("That's not correct.");
+    cm.dispose();
+}
+```
+
+converts to:
+
+```json
+{
+  "id": "askSecretWord",
+  "type": "askText",
+  "askText": {
+    "text": "What is the secret word?",
+    "maxLength": 32,
+    "contextKey": "answer",
+    "matches": [
+      { "value": "shazam", "nextState": "" }
+    ],
+    "nextState": "wrongWord"
+  }
+},
+{
+  "id": "wrongWord",
+  "type": "dialogue",
+  "dialogue": {
+    "dialogueType": "sendOk",
+    "text": "That's not correct."
+  }
+}
+```
+
+---
+
 ## 💬 Action Outcome Handling
 
 Always represent outcomes clearly:
@@ -236,7 +318,10 @@ Always represent outcomes clearly:
 ]
 ```
 
-- First matching condition applies.
+- Outcomes are tried in order, first-match-wins. An outcome matches only when ALL of
+  its `conditions` evaluate true (AND semantics), short-circuiting on the first false
+  condition. An outcome with an empty `conditions` array matches unconditionally —
+  use that as a catch-all last outcome, as above.
 - Use `context` values for dynamic transitions.
 
 ---
@@ -478,6 +563,7 @@ Verify in saga-orchestrator, but common operations:
 - `local:fetch_map_player_counts` - Fetch player counts (params: `mapIds`)
 - `local:calculate_lens_coupon` - Calculate one-time lens item ID from face (params: `selectedFaceContextKey`, `outputContextKey`)
 - `local:get_saved_location` - Fetch saved location into context (params: `locationType`, `defaultMapId`, `mapIdContextKey`, `portalIdContextKey`)
+- `local:get_quest_progress` - Fetch a character's quest progress entry into context (params: `questId`, `infoNumber` or its alias `step`, `contextKey`)
 - `local:log` - Log message (params: `message`)
 - `local:debug` - Debug log (params: `message`)
 
@@ -816,6 +902,63 @@ Fetches a saved location for a character and stores the map ID and portal ID in 
 - `ARIANT` - Return from Ariant Coliseum
 - `DOJO` - Return from Mu Lung Dojo
 - `BOATS` - Return from boat transit
+
+#### Detailed: local:get_quest_progress
+
+Fetches a character's progress entry for a quest and stores it in context. Use this
+whenever a script needs to read `cm.getQuestProgress(id)` or
+`cm.getQuestProgressInt(id, info)` — for example to branch on a multi-step quest's
+current step, or to check whether a step has been recorded before proceeding.
+
+**Parameters:**
+- `questId` (string, required) - The quest ID to look up
+- `infoNumber` (string, optional, default `"0"`) - The progress entry's info number
+  (a.k.a. step). `step` is accepted as an alias for author familiarity with the
+  `questProgress` condition; if both are present, `infoNumber` wins.
+- `contextKey` (string, required) - Context key to store the progress value
+
+**Behavior:**
+- Queries atlas-quest for the character's progress entries on `questId`
+- If the character has no progress record for the quest at all (an unstarted quest
+  is a content condition, not a fault), stores `""` in `contextKey` and does not fail
+- If the character has a progress record but no entry matching `infoNumber`, stores
+  `""` in `contextKey` and does not fail
+- Otherwise stores the matching entry's progress value (a string) in `contextKey`
+
+**JavaScript Mapping:**
+- `cm.getQuestProgress(id)` → `local:get_quest_progress` with `infoNumber` defaulted to `"0"`
+- `cm.getQuestProgressInt(id, info)` → `local:get_quest_progress` with `infoNumber` set to `info`
+
+**Example Usage:**
+
+```json
+{
+  "id": "fetchQuestStep",
+  "type": "genericAction",
+  "genericAction": {
+    "operations": [
+      {
+        "type": "local:get_quest_progress",
+        "params": {
+          "questId": "2701",
+          "infoNumber": "0",
+          "contextKey": "questStep"
+        }
+      }
+    ],
+    "outcomes": [
+      {
+        "conditions": [],
+        "nextState": "checkQuestStep"
+      }
+    ]
+  }
+}
+```
+
+The `local:` prefix is not optional. An un-prefixed operation type (`get_quest_progress`)
+is dispatched to the saga orchestrator, not to this local operation, and cannot write
+to conversation context.
 
 ---
 

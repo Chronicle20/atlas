@@ -10,7 +10,7 @@ Shared domain models and processing logic for NPC and quest conversation state m
 
 - **StateContainer** — Interface for state machine containers. Provides `StartState()` and `FindState(stateId)`. Implemented by `npc.Model` and `quest.StateMachine`.
 - **NpcConversation** — Extends `StateContainer` with `NpcId()` and `States()`. Implemented by `npc.Model`.
-- **StateModel** — A state in a conversation. Has `id`, `stateType`, and exactly one type-specific model (dialogue, genericAction, craftAction, transportAction, gachaponAction, rpsAction, partyQuestAction, partyQuestBonusAction, listSelection, askNumber, askStyle, askSlideMenu).
+- **StateModel** — A state in a conversation. Has `id`, `stateType`, and exactly one type-specific model (dialogue, genericAction, craftAction, transportAction, gachaponAction, rpsAction, partyQuestAction, partyQuestBonusAction, listSelection, askNumber, askText, askStyle, askSlideMenu).
 - **DialogueModel** — Dialogue state. Has `dialogueType`, `text`, `speaker`, `endChat`, `secondaryNpcId`, and `choices`. Speaker is `"NPC"` or `"CHARACTER"`. EndChat defaults to true.
 - **ChoiceModel** — A choice in a dialogue or list selection. Has `text`, `nextState`, and `context` (key-value map merged into conversation context on selection).
 - **GenericActionModel** — Executes operations and evaluates outcomes. Has `operations` and `outcomes`.
@@ -22,6 +22,8 @@ Shared domain models and processing logic for NPC and quest conversation state m
 - **PartyQuestBonusActionModel** — Party quest bonus entry via saga. Has `failureState`.
 - **ListSelectionModel** — List selection. Has `title` and `choices`.
 - **AskNumberModel** — Number input. Has `text`, `defaultValue`, `minValue`, `maxValue`, `contextKey` (default `"quantity"`), `nextState`.
+- **AskTextModel** — Free-text input. Has `text`, `defaultText`, `minLength`, `maxLength`, `contextKey` (default `"answer"`), `matches` (ordered, first-match-wins branch table), `nextState`.
+- **AskTextMatchModel** — A single branch in an ask text state's `matches` table. Has `value` (literal) or `valueFromContext` (context key), and `nextState`.
 - **AskStyleModel** — Style selection. Has `text`, `styles` (static) or `stylesContextKey` (dynamic from context), `contextKey` (default `"selectedStyle"`), `nextState`.
 - **AskSlideMenuModel** — Slide menu selection. Has `title`, `menuType`, `contextKey` (default `"selectedOption"`), `choices`.
 - **OperationModel** — An operation in a generic action. Has `operationType` and `params` (string key-value map).
@@ -42,6 +44,7 @@ Shared domain models and processing logic for NPC and quest conversation state m
 - PartyQuestActionModel requires non-empty `questId` and `failureState`.
 - PartyQuestBonusActionModel requires non-empty `failureState`.
 - AskNumberModel requires `minValue <= defaultValue <= maxValue` and `maxValue > 0`.
+- AskTextModel requires non-empty `text`, non-empty `contextKey`, `maxLength > 0`, `minLength <= maxLength`, and a valid `nextState` reference. Each entry in `matches` requires exactly one of `value` / `valueFromContext` and a valid `nextState` reference.
 - AskStyleModel requires either static `styles` or `stylesContextKey` (not both empty), and non-empty `nextState`.
 - AskSlideMenuModel requires at least one choice.
 - OptionSetModel requires a non-empty `id` and at least one option.
@@ -51,12 +54,12 @@ Shared domain models and processing logic for NPC and quest conversation state m
 
 ### State Transitions
 
-State types are: `dialogue`, `genericAction`, `craftAction`, `transportAction`, `gachaponAction`, `rpsAction`, `partyQuestAction`, `partyQuestBonusAction`, `listSelection`, `askNumber`, `askStyle`, `askSlideMenu`.
+State types are: `dialogue`, `genericAction`, `craftAction`, `transportAction`, `gachaponAction`, `rpsAction`, `partyQuestAction`, `partyQuestBonusAction`, `listSelection`, `askNumber`, `askText`, `askStyle`, `askSlideMenu`.
 
 Dialogue types are: `sendOk`, `sendYesNo`, `sendAcceptDecline`, `sendNext`, `sendNextPrev`, `sendPrev`.
 
 - **dialogue** — Sends dialogue to client. Waits for player input. Player action resolves to a choice via `ChoiceFromAction`. Empty `nextState` ends the conversation.
-- **genericAction** — Executes operations sequentially. Evaluates outcomes in order. First outcome whose conditions pass determines the next state. If no outcome matches, conversation ends.
+- **genericAction** — Executes operations sequentially. Evaluates outcomes in order; outcomes are tried first-match-wins. An outcome matches only when ALL of its conditions evaluate true (AND semantics), short-circuiting on the first false condition; an outcome with zero conditions matches unconditionally. The first matching outcome's `nextState` is used. If no outcome matches, conversation ends.
 - **craftAction** — Builds a saga with validation, material destruction, meso deduction, and item award steps. Stores saga ID and state references in context. Waits for saga completion/failure.
 - **transportAction** — Builds a saga with a single `start_instance_transport` step. Stores failure state variants in context. Waits for saga completion/failure. On success, conversation ends (player is warped).
 - **gachaponAction** — Builds a saga to destroy ticket and select reward. Waits for saga completion/failure. On success, conversation ends.
@@ -65,6 +68,7 @@ Dialogue types are: `sendOk`, `sendYesNo`, `sendAcceptDecline`, `sendNext`, `sen
 - **partyQuestBonusAction** — Builds a saga with a single `enter_party_quest_bonus` step. Waits for saga completion/failure.
 - **listSelection** — Sends list to client. Waits for player selection.
 - **askNumber** — Sends number input to client. Waits for player input. Stores result in context using `contextKey`.
+- **askText** — Sends free-text input request to client. Waits for player input. The entered text is trimmed once before validation; input outside `[minLength, maxLength]` is rejected and re-prompted. The trimmed value is stored in context using `contextKey`, then `{context.<contextKey>}` is available for later states. `matches` is then walked in order; the first entry whose `value` (literal) or `valueFromContext` (context lookup) equals the trimmed text exactly — comparison is case-sensitive, no regex or wildcards — wins and its `nextState` is used. An unresolvable `valueFromContext` reference is treated as a non-match, not an error. If no match applies (or `matches` is empty), `nextState` is used.
 - **askStyle** — Sends style selection to client. Resolves styles from static array or context key. Waits for player selection. Stores result in context using `contextKey`.
 - **askSlideMenu** — Sends slide menu to client. Waits for player selection.
 

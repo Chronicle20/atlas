@@ -73,6 +73,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHP(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreditStoredExperience(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMP(db)))); err != nil {
 				return err
 			}
@@ -269,6 +272,17 @@ func handleChangeHP(db *gorm.DB) message.Handler[character2.Command[character2.C
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ChangeHPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
+	}
+}
+
+func handleCreditStoredExperience(db *gorm.DB) message.Handler[character2.Command[character2.CreditStoredExperienceCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.CreditStoredExperienceCommandBody]) {
+		if c.Type != character2.CommandCreditStoredExperience {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).CreditStoredExperienceAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.Amount, c.Body.Reason)
 	}
 }
 

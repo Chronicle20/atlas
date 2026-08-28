@@ -134,6 +134,8 @@ type Processor interface {
 	RequestDistributeSp(transactionId uuid.UUID, characterId uint32, skillId uint32, amount int8) error
 	ChangeHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
 	ChangeHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
+	CreditStoredExperienceAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint32, reason string) error
+	CreditStoredExperience(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint32, reason string) error
 	SetHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error
 	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error
 	ChangeMPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
@@ -1459,6 +1461,49 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 		}
 
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, map[string]interface{}{"hp": adjusted}))
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) CreditStoredExperienceAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint32, reason string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).CreditStoredExperience(buf)(transactionId, channel, characterId, amount, reason)
+		})
+	})
+}
+
+func (p *ProcessorImpl) CreditStoredExperience(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint32, reason string) error {
+	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint32, reason string) error {
+		var adjusted uint32
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			current := c.GachaponExperience()
+			// Saturating add. The counter is a uint32 column; a naive add
+			// wraps a near-full counter back to near-zero and silently eats
+			// the player's banked EXP (FR-17).
+			if amount > math.MaxUint32-current {
+				adjusted = math.MaxUint32
+			} else {
+				adjusted = current + amount
+			}
+			if adjusted == current {
+				return nil
+			}
+			p.l.Debugf("Crediting character [%d] stored experience by [%d] to [%d], reason [%s].", characterId, amount, adjusted, reason)
+			return dynamicUpdate(tx)(SetGachaponExperience(adjusted))(c)
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not credit character [%d] stored experience by [%d].", characterId, amount)
+			return txErr
+		}
+		if amount == 0 {
+			return nil
+		}
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeGachaponExperience}, map[string]interface{}{"gachapon_experience": adjusted}))
 		return nil
 	}
 }

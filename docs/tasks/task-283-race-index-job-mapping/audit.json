@@ -1,0 +1,88 @@
+{
+  "service": "atlas-character-factory + atlas-configurations + libs/atlas-constants",
+  "path": "services/atlas-character-factory, services/atlas-configurations, libs/atlas-constants",
+  "date": "2026-08-28",
+  "build": "pass",
+  "testsPassed": 681,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "factory",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/constructor/impl in processor.go", "status": "pass", "evidence": "services/atlas-character-factory/atlas.com/character-factory/factory/processor.go:46,61"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods in rest.go", "status": "pass", "evidence": "services/atlas-character-factory/atlas.com/character-factory/factory/rest.go:10,36-51"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "n-a", "evidence": "no requests.RootUrl/GetRequest/PostRequest symbols in this package"},
+        {"id": "FILE-04", "name": "Entity struct/Migration/TableName in entity.go", "status": "n-a", "evidence": "no entity.go, no such symbols"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placement", "status": "n-a", "evidence": "no model.go, builder.go, administrator.go, or provider.go in this package"},
+        {"id": "FILE-06", "name": "No catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "processor.go, resource.go, rest.go each carry one responsibility"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "warn", "evidence": "services/atlas-character-factory/atlas.com/character-factory/factory/rest.go has no Transform function and no domain Model type; rest.go unchanged by this diff; package is create-only"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "resource.go registers only Create* POST handlers, no list handler exists"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "factory/processor.go:61"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() to NewProcessor", "status": "pass", "evidence": "factory/resource.go:113,170"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "pass", "evidence": "factory/resource.go:26,32,33"},
+        {"id": "DOM-09", "name": "Every Transform( call checks its error", "status": "n-a", "evidence": "resource.go has zero Transform( call sites"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "factory/resource.go: zero matches"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "factory/resource.go:168 handleCreateCharacter delegates to processor"},
+        {"id": "DOM-14", "name": "Handlers call processor methods only", "status": "pass", "evidence": "factory/resource.go: zero provider call sites"},
+        {"id": "DOM-15", "name": "No db.Create/Save/Delete in handlers", "status": "pass", "evidence": "factory/resource.go: zero matches"},
+        {"id": "DOM-17", "name": "Domain errors map to correct HTTP status", "status": "pass", "evidence": "factory/resource.go:129-141 categorizeError errors.Is switch"},
+        {"id": "DOM-18", "name": "RestModels implement GetName/GetID/SetID", "status": "pass", "evidence": "factory/rest.go:36-51,58-69,78-80"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "factory/rest.go:10-34"},
+        {"id": "DOM-21", "name": "No redeclared shared type/const", "status": "pass", "evidence": "libs/atlas-constants/job/constants.go:183 CitizenId new; job/carousel.go:9-18 Slot/Carousel no collision"},
+        {"id": "DOM-26", "name": "No bare go statements", "status": "pass", "evidence": "grep on changed files: zero matches; tools/goroutine-guard.sh exit 0"},
+        {"id": "DOM-31", "name": "Tenant/trace only via context", "status": "pass", "evidence": "factory/processor.go:101 tenant.MustFromContext(ctx); no TenantId field on RestModel"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "factory/resource.go:26,32,33 rest.RegisterInputHandler[T]"},
+        {"id": "SUB-01", "name": "Business logic in processor, not handler", "status": "pass", "evidence": "factory/processor.go:98-111 Create"},
+        {"id": "SUB-02", "name": "Writes via administrator; no db.Create/Save in resource.go", "status": "pass", "evidence": "service has no database.Connect anywhere; resource.go zero db.* matches"},
+        {"id": "SUB-03", "name": "POST via RegisterInputHandler[T]", "status": "pass", "evidence": "same as DOM-08"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "zero matches for json.NewDecoder/json.Unmarshal/io.ReadAll"},
+        {"id": "DOM-20", "name": "Tests table-driven", "status": "pass", "evidence": "factory/processor_test.go:1686, factory/resource_test.go:149"},
+        {"id": "DOM-24", "name": "Emit-reaching tests stub the producer", "status": "pass", "evidence": "factory/testmain_test.go:10-11 producertest.InstallNoop()"},
+        {"id": "DOM-33", "name": "Interface changes update all mocks", "status": "n-a", "evidence": "Processor interface signatures unchanged by this diff"},
+        {"id": "DOM-10", "name": "Test DB registers tenant callbacks", "status": "n-a", "evidence": "no test in this package opens a GORM DB directly"}
+      ]
+    },
+    {
+      "name": "job (character-factory)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "carousel.go: single responsibility (race-ordinal to job-id mapping)"},
+        {"id": "DOM-21", "name": "No redeclared shared type/const", "status": "pass", "evidence": "job.Slot/job.Carousel do not collide with libs/atlas-constants/inventory/slot.Slot"},
+        {"id": "DOM-26", "name": "No bare go statements", "status": "pass", "evidence": "grep on carousel.go: zero matches"},
+        {"id": "DOM-31", "name": "Tenant only via context/param", "status": "pass", "evidence": "job/carousel.go:113 FromIndex(t tenant.Model, ...) internal parameter"},
+        {"id": "DOM-20", "name": "Tests table-driven", "status": "pass", "evidence": "job/carousel_test.go:22,109"},
+        {"id": "DOM-24", "name": "Emit-reaching tests stub producer", "status": "n-a", "evidence": "no emit path reachable from job package tests"},
+        {"id": "VERSION-PREDICATE", "name": "Version checks use IsRegion/MajorAtLeast/MajorAtMost/MajorInRange, never raw MajorVersion() comparisons", "status": "pass", "evidence": "job/carousel.go:98-105 carouselFor; grep for raw MajorVersion() comparator returns no matches outside a log Errorf at processor.go:107"},
+        {"id": "DOM-34", "name": "No alias/re-export left after mapper move", "status": "pass", "evidence": "character-factory/job/model.go (old JobFromIndex) fully deleted; no delegating wrapper in carousel.go"},
+        {"id": "DOM-35", "name": "No dead references left", "status": "pass", "evidence": "grep -rn FromIndex --include=*.go . shows only the new job.FromIndex and its call sites/tests"}
+      ]
+    },
+    {
+      "name": "libs/atlas-constants/job",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclared shared type/const", "status": "pass", "evidence": "constants.go:183 CitizenId sole declaration, registered in Jobs at :92"},
+        {"id": "DOM-26", "name": "No bare go statements", "status": "pass", "evidence": "grep on constants.go/model.go: zero matches"},
+        {"id": "DOM-20", "name": "Tests table-driven", "status": "pass", "evidence": "advancement_test.go:19-30, TestIsBeginner_CoversEveryBeginnerId"},
+        {"id": "DOM-34", "name": "Twin mapper removed cleanly", "status": "pass", "evidence": "libs/atlas-constants/job/model.go: old FromIndex fully deleted"},
+        {"id": "DOM-35", "name": "No dead references left", "status": "pass", "evidence": "grep -rn FromIndex --include=*.go . confirms zero remaining references to the deleted lib FromIndex"}
+      ]
+    },
+    {
+      "name": "atlas-configurations seed-data",
+      "type": "support",
+      "checks": [
+        {"id": "SEED-JSON-VALID", "name": "Seed template JSON validity (no rule ID)", "status": "pass", "evidence": "python3 json.load succeeded for all four changed template files"},
+        {"id": "SEED-CAROUSEL-CORRESPONDENCE", "name": "Seed templates align with carousel (no rule ID)", "status": "pass", "evidence": "character-factory/job/correspondence_test.go:109 TestCarouselMatchesSeedTemplates passes"},
+        {"id": "SEED-UNREACHABLE-ROWS", "name": "Unreachable jobIndex 0/2 rows removed for gms_48/61/72 (no rule ID)", "status": "pass", "evidence": "git diff removes jobIndex:0/2 entries matching job/carousel.go's noRaceCarousel comment"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-04: services/atlas-character-factory/atlas.com/character-factory/factory/rest.go defines no Transform(Model) (RestModel, error) and the package has no domain Model type at all; pre-existing, unrelated to this diff (rest.go has zero hunks), package is architecturally create-only."
+  ]
+}

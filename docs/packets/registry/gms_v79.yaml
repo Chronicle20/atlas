@@ -3157,6 +3157,14 @@
   ida:
     address: 9821442
   note: 'v79 COutPacket(110) = 0x6E; CWvsContext::SendLotteryItemUseRequest @0x95dd02 (size 0x83), Encode2(nPos)+Encode4(nItemID), distinct from SendBridleItemUseRequest @0x9558e5. IDA-verified task-131.'
+- op: MAKER_SKILL
+  direction: serverbound
+  opcode: 111
+  fname: CUIItemMaker::RequestItemMake
+  provenance: ida-discovered
+  ida:
+    address: 7953859
+  note: 'task-285: v79 COutPacket(111) = 0x6F; ?RequestItemMake@CUIItemMaker@@IAEHXZ @0x795dc3 (GMS_v79_1_DEVM.exe.i64), sent via CClientSocket::SendPacket. Previously absent for the same csv-import reason as v72. Opcode lands in the existing gap between LOTTERY_ITEM_USE_REQUEST (110) and SUE_CHARACTER (112).'
 - op: SUE_CHARACTER
   direction: serverbound
   opcode: 112

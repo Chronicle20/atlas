@@ -18176,12 +18176,14 @@
           "opcode": -1
         },
         "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 112
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 111
         },
         "gms_v83": {
           "state": "incomplete",

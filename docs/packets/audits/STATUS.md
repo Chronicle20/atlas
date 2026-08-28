@@ -650,7 +650,7 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x06E | ✅ | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09C | ❌ | 0x09F | ✅ | 0x08A | ✅ |
 | LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest | inventory/serverbound/InventoryLotteryItemUse (T1) |  | ⬜ |  | ⬜ | 0x06F | ✅ | 0x06E | ✅ | 0x070 | ✅ | 0x070 | ✅ | 0x073 | ✅ | 0x07B | 🟡ᶠ | 0x07C | ✅ | 0x06B | ✅ |
 | RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update | rps/serverbound/RpsOperation | 0x06F | ✅ | 0x07C | ✅ | 0x086 | ✅ | 0x085 | ✅ | 0x088 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x09D | ❌ | 0x0A0 | ✅ | 0x08B | ✅ |
-| MAKER_SKILL | CUIItemMaker::RequestItemMake |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x071 | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x07C | ❌ | 0x07D | ❌ | 0x06C | ❌ |
+| MAKER_SKILL | CUIItemMaker::RequestItemMake |  |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x06F | ❌ | 0x071 | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x07C | ❌ | 0x07D | ❌ | 0x06C | ❌ |
 | MOVE_PET | CVecCtrlPet::EndUpdateActive; sub_6E5BD6 | pet/serverbound/PetMovementRequest (T1) | 0x071 | ✅ | 0x08A | ✅ | 0x0A1 | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0AC | ✅ | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0C7 | ✅ | 0x0AA | ✅ |
 | PET_CHAT | CPet::DoAction | pet/serverbound/PetChatRequest (T1) | 0x072 | ✅ | 0x08B | ✅ | 0x0A2 | ✅ | 0x0A4 | ✅ | 0x0A8 | ✅ | 0x0AD | ✅ | 0x0B4 | ✅ | 0x0C5 | ❌ | 0x0C8 | ✅ | 0x0AB | ✅ |
 | PET_COMMAND | CPet::ParseCommand; sub_58DF8A | pet/serverbound/PetCommand (T1) | 0x073 | ✅ | 0x08C | ✅ | 0x0A3 | ✅ | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0AE | ✅ | 0x0B5 | ✅ | 0x0C6 | 🟡ᶠ | 0x0C9 | ✅ | 0x0AC | ✅ |
@@ -1063,8 +1063,8 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 215 | 0 | 19 | 198 | 593 | 0 | 49.8% |
 | v61 | 284 | 0 | 56 | 229 | 456 | 0 | 49.9% |
-| v72 | 311 | 0 | 69 | 238 | 407 | 0 | 50.3% |
-| v79 | 357 | 0 | 68 | 234 | 366 | 0 | 54.2% |
+| v72 | 311 | 0 | 69 | 239 | 406 | 0 | 50.2% |
+| v79 | 357 | 0 | 68 | 235 | 365 | 0 | 54.1% |
 | v83 | 486 | 0 | 0 | 313 | 226 | 0 | 60.8% |
 | v84 | 461 | 0 | 0 | 319 | 245 | 0 | 59.1% |
 | v87 | 494 | 0 | 0 | 342 | 189 | 0 | 59.1% |

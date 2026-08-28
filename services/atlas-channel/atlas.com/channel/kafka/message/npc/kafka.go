@@ -35,9 +35,10 @@ type StartConversationCommandBody struct {
 }
 
 type ContinueConversationCommandBody struct {
-	Action          byte  `json:"action"`
-	LastMessageType byte  `json:"lastMessageType"`
-	Selection       int32 `json:"selection"`
+	Action          byte   `json:"action"`
+	LastMessageType byte   `json:"lastMessageType"`
+	Selection       int32  `json:"selection"`
+	Text            string `json:"text"`
 }
 
 type EndConversationCommandBody struct{}

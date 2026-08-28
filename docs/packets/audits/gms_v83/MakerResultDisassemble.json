@@ -1,0 +1,75 @@
+{
+  "WriterName": "MakerResultDisassemble",
+  "IDAName": "CUserLocal::OnMakerResult#Disassemble",
+  "Address": "0x95dad3",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/maker_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nResult (read unconditionally; \u003e 1 ends the body)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nMode (arm selector; this arm is nMode == 4)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nDisassembledItemID @0x95dca1",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nNumRewardItem @0x95dd0c (loop length prefix)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "reward[i].nItemID @0x95dd25",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "reward[i].nCount @0x95dd32",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nMesoCost @0x95dddb",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

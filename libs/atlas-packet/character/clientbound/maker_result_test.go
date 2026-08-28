@@ -19,16 +19,21 @@ import (
 // idx pins the pt.Variants slot; the guard on v.Name catches index drift.
 // ida is that version's CUserLocal::OnMakerResult entry address.
 //
-// Marker placement: only the CREATE arm carries `packet-audit:verify` markers,
-// because a registry entry declares exactly ONE `packet:` id per op and
-// MAKER_RESULT declares character/clientbound/MakerResultCreate. The matrix
-// requires a marker to be backed by an evidence record whose packet is either
-// report-backed or registry-declared (cmd/matrix.go registryDeclaresPacket), so
-// markers on the sibling arms would be dangling. This is the same shape as the
-// two-armed CWvsContext::OnClaimResult family, where claim_result_test.go
-// carries markers for ClaimResultSuccess only while ClaimResultNotice is still
-// fully fixture-tested. Every arm below has a byte fixture and an Encode/Decode
-// round-trip regardless of whether it carries a marker.
+// Marker placement: ALL FOUR mode-carrying arms (Create, CreateWithUpgrade,
+// MonsterCrystal, Disassemble) carry packet-audit verify markers on every
+// applicable version, each backed by its own pinned evidence record and its own
+// audit report generated from that version's CUserLocal::OnMakerResult#<Arm>
+// export entry. That is the full-arm coverage a mode-prefix dispatcher needs
+// before its op row may read ✅ (docs/packets/evidence/families.yaml): the op
+// row grades worst-of across every writer sharing the base fname, so an
+// unverified arm would hold the whole row down rather than hide behind a
+// verified sibling.
+//
+// MakerResultFailed is deliberately excluded and has NO marker, NO evidence
+// record and NO export entry: it writes no mode field at all (the client
+// returns at nResult > 1, before the nMode Decode4), so it is not a mode arm.
+// See docs/tasks/task-285-maker-skill-crafting/ruling-failed-arm.md. It keeps
+// its byte fixture and its Encode/Decode round-trip below.
 var makerResultVersions = []struct {
 	idx  int
 	name string
@@ -280,6 +285,15 @@ func TestMakerResultCreateNoCatalyst(t *testing.T) {
 // body (gms_v72/79/83/84/92/95 compile it as one switch arm; v87 and jms_v185
 // render `if ( v2 == 1 || v2 == 2 )`) — wire-derivation.md §3/§4. The addresses
 // are the mode 1/2 row cited on TestMakerResultCreateByteOutput.
+//
+// packet-audit:verify packet=character/clientbound/MakerResultCreateWithUpgrade version=gms_v72 ida=0x86a152
+// packet-audit:verify packet=character/clientbound/MakerResultCreateWithUpgrade version=gms_v79 ida=0x8b5af5
+// packet-audit:verify packet=character/clientbound/MakerResultCreateWithUpgrade version=gms_v83 ida=0x95dad3
+// packet-audit:verify packet=character/clientbound/MakerResultCreateWithUpgrade version=gms_v84 ida=0x99bdbc
+// packet-audit:verify packet=character/clientbound/MakerResultCreateWithUpgrade version=gms_v87 ida=0x9e01b2
+// packet-audit:verify packet=character/clientbound/MakerResultCreateWithUpgrade version=gms_v92 ida=0x8f5d70
+// packet-audit:verify packet=character/clientbound/MakerResultCreateWithUpgrade version=gms_v95 ida=0x9102f0
+// packet-audit:verify packet=character/clientbound/MakerResultCreateWithUpgrade version=jms_v185 ida=0xa29527
 func TestMakerResultCreateWithUpgradeByteOutput(t *testing.T) {
 	for i, c := range makerResultVersions {
 		t.Run(c.name, func(t *testing.T) {
@@ -328,6 +342,15 @@ func TestMakerResultCreateArmsAreWireIdenticalExceptMode(t *testing.T) {
 // local; the callee is ?Decode4@CInPacket@@QAEKXZ in every case, so four bytes
 // are consumed (wire-derivation.md §3 "Note on apparent widths"). There is NO
 // meso field on this arm — the 16-byte length assertion below is what proves it.
+//
+// packet-audit:verify packet=character/clientbound/MakerResultMonsterCrystal version=gms_v72 ida=0x86a152
+// packet-audit:verify packet=character/clientbound/MakerResultMonsterCrystal version=gms_v79 ida=0x8b5af5
+// packet-audit:verify packet=character/clientbound/MakerResultMonsterCrystal version=gms_v83 ida=0x95dad3
+// packet-audit:verify packet=character/clientbound/MakerResultMonsterCrystal version=gms_v84 ida=0x99bdbc
+// packet-audit:verify packet=character/clientbound/MakerResultMonsterCrystal version=gms_v87 ida=0x9e01b2
+// packet-audit:verify packet=character/clientbound/MakerResultMonsterCrystal version=gms_v92 ida=0x8f5d70
+// packet-audit:verify packet=character/clientbound/MakerResultMonsterCrystal version=gms_v95 ida=0x9102f0
+// packet-audit:verify packet=character/clientbound/MakerResultMonsterCrystal version=jms_v185 ida=0xa29527
 func TestMakerResultMonsterCrystalByteOutput(t *testing.T) {
 	for i, c := range makerResultVersions {
 		t.Run(c.name, func(t *testing.T) {
@@ -362,6 +385,15 @@ func TestMakerResultMonsterCrystalByteOutput(t *testing.T) {
 // @0x9e03b2 / @0x9e03cb / @0x9e03d8 / @0x9e0478; gms_v92 @0x8f5f96 / @0x8f600b
 // / @0x8f6029 / @0x8f603c / @0x8f610f; jms_v185 @0xa296c5 / @0xa29726 /
 // @0xa2973f / @0xa2974d / @0xa297ef.
+//
+// packet-audit:verify packet=character/clientbound/MakerResultDisassemble version=gms_v72 ida=0x86a152
+// packet-audit:verify packet=character/clientbound/MakerResultDisassemble version=gms_v79 ida=0x8b5af5
+// packet-audit:verify packet=character/clientbound/MakerResultDisassemble version=gms_v83 ida=0x95dad3
+// packet-audit:verify packet=character/clientbound/MakerResultDisassemble version=gms_v84 ida=0x99bdbc
+// packet-audit:verify packet=character/clientbound/MakerResultDisassemble version=gms_v87 ida=0x9e01b2
+// packet-audit:verify packet=character/clientbound/MakerResultDisassemble version=gms_v92 ida=0x8f5d70
+// packet-audit:verify packet=character/clientbound/MakerResultDisassemble version=gms_v95 ida=0x9102f0
+// packet-audit:verify packet=character/clientbound/MakerResultDisassemble version=jms_v185 ida=0xa29527
 func TestMakerResultDisassembleByteOutput(t *testing.T) {
 	for i, c := range makerResultVersions {
 		t.Run(c.name, func(t *testing.T) {

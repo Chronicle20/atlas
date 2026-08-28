@@ -1166,7 +1166,6 @@
   direction: clientbound
   opcode: 217
   fname: CUserLocal::OnMakerResult
-  packet: character/clientbound/MakerResultCreate
   provenance: csv-import
 - op: KOREAN_EVENT
   direction: clientbound

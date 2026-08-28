@@ -1,0 +1,129 @@
+{
+  "WriterName": "MakerResultCreateWithUpgrade",
+  "IDAName": "CUserLocal::OnMakerResult#CreateWithUpgrade",
+  "Address": "0x8b5af5",
+  "Variant": "GMS/v79",
+  "BranchDepth": 1,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/maker_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nResult (read unconditionally; \u003e 1 ends the body)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nMode (arm selector; this arm is nMode == 2)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bNoItemGain @0x8b5e10 (truthy SUPPRESSES the pair below)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nTargetItemID @0x8b5e29",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nItemCount @0x8b5e3a",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nNumUsedItem @0x8b5ebd (loop length prefix)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "used[i].nItemID @0x8b5edb",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "used[i].nCount @0x8b5ee8",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nNumUsedGem @0x8b5f71 (loop length prefix)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "gem[i].nItemID @0x8b5f82 (id only, no count)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 10,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bUsedCatalyst @0x8b6010",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 11,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nCatalystItemID @0x8b6022",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 12,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nMesoCost @0x8b60ae (rendered as a loss by the client)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

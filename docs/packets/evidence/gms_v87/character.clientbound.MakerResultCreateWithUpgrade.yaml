@@ -1,0 +1,10 @@
+packet: character/clientbound/MakerResultCreateWithUpgrade
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnMakerResult#CreateWithUpgrade
+    address: "0x9e01b2"
+    decompile_sha256: bb4e98135b469ceb2ad19b6c1f43fffb6fbe62ea91c0693b900b6aa44664a1fe
+verifies:
+    - libs/atlas-packet/character/clientbound/maker_result_test.go#TestMakerResultCreateWithUpgradeByteOutput

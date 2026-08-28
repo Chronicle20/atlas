@@ -3,14 +3,14 @@
   "exportHashes": {
     "gms_v48": "b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6",
     "gms_v61": "d50b21b2cfc509dfbcd635503a474ba71bf98f8c333e8c7f45bc46b7f137de85",
-    "gms_v72": "8d5a04486bbbc919084d6db28f677940b3681dc24b2af72481bdc3dc17cdf65f",
-    "gms_v79": "0d3f7e4dc6749467b02dd20d802f41becf408bffb7a41a4072709f8fa8f48ae3",
-    "gms_v83": "990ecddde1337274a253a366e497cd70a5074d3ce688e39268d389079b3b6b44",
-    "gms_v84": "4c1b6a5e4081f511e4f3fa708ca5a0d36c49a25f66e8c0f6eaf5aad99467f18f",
-    "gms_v87": "6c2a037f9935ce6dacffc2886b23ce421b2dcca3352fa576f8e0aeca011b0891",
-    "gms_v92": "b0e6052379ad221dd7a2a0d0e613551424f41b0fe6114789d2c52d0782eb357a",
-    "gms_v95": "4e685a4d5575a226ab734087e6754ea642d7c8ce89a1ad144c18c096a9284bf1",
-    "jms_v185": "f9d9b2c74d94c12bde0cc098317c353d0db13c78572a3f8f292ecaaff3fa4e79"
+    "gms_v72": "deb832745bf39fc3361fc25deb5d98fa0f0837c87ba1c8c20c2331e604ffa072",
+    "gms_v79": "7468e06ce104d507cab830adcb39749d718356ca7ca2bdf98c339c6afc3795f9",
+    "gms_v83": "bb7487e737fd607f34764987b04931271c6c200889d19347d3472aa831b75a01",
+    "gms_v84": "91b6f7f1339b5ffb8e48ff9296f1c2ea7c7b921fa2a3efbb52491e28c1f706ae",
+    "gms_v87": "825fff83cb4a8867bee0c69980e69ab8bfa9f7670739e319d5c35fad99b62435",
+    "gms_v92": "b51b1cb570644791a2534439fc6cd7bb050d3bcf2f223b038f4819eef56b6764",
+    "gms_v95": "b3a86cf9d578c6ca7291b00ed2fc088559c51380002aeaab7dd65dca28ec8566",
+    "jms_v185": "aab530f19bb5fc0ffd75c4e76663ecdb8a516ad9d202536a8d2e20a9c825fc8a"
   },
   "rows": [
     {
@@ -30427,8 +30427,9 @@
     {
       "kind": "op",
       "op": "MAKER_RESULT",
+      "packet": "character/clientbound/MakerResultCreate",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUserLocal::OnMakerResult"
       ],

@@ -730,16 +730,22 @@ func candidatesFromFName(fname string) []candidate {
 	// grading the op as worst-of-all-arms applies instead). Modes 1 and 2 are
 	// wire-identical but are two separately registered arms: INV-1 forbids one
 	// struct behind more than one #-entry.
+	// reportName pins each arm's report/matrix WriterName to the bare struct
+	// name. `pkg: "character"` is needed to restrict locateAtlasFile's walk, but
+	// without the override qualifiedWriterName would render the arms as
+	// CharacterMakerResult* — changing every arm's matrix PacketID and orphaning
+	// the character.clientbound.MakerResult*.yaml evidence records and the
+	// packet-audit:verify markers, which name the struct itself.
 	case "CUserLocal::OnMakerResult#Create":
-		return []candidate{{name: "MakerResultCreate", pkg: "character", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "MakerResultCreate", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultCreate"}}
 	case "CUserLocal::OnMakerResult#CreateWithUpgrade":
-		return []candidate{{name: "MakerResultCreateWithUpgrade", pkg: "character", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "MakerResultCreateWithUpgrade", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultCreateWithUpgrade"}}
 	case "CUserLocal::OnMakerResult#MonsterCrystal":
-		return []candidate{{name: "MakerResultMonsterCrystal", pkg: "character", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "MakerResultMonsterCrystal", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultMonsterCrystal"}}
 	case "CUserLocal::OnMakerResult#Disassemble":
-		return []candidate{{name: "MakerResultDisassemble", pkg: "character", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "MakerResultDisassemble", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultDisassemble"}}
 	case "CUserLocal::OnMakerResult#Failed":
-		return []candidate{{name: "MakerResultFailed", pkg: "character", dir: csvpkg.DirClientbound}}
+		return []candidate{{name: "MakerResultFailed", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultFailed"}}
 
 	// --- merchant bucket (task-069, sub-phase 2f) ---
 	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":

@@ -1,0 +1,48 @@
+{
+  "WriterName": "MakerResultMonsterCrystal",
+  "IDAName": "CUserLocal::OnMakerResult#MonsterCrystal",
+  "Address": "0x9e01b2",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/character/clientbound/maker_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nResult (read unconditionally; \u003e 1 ends the body)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nMode (arm selector; this arm is nMode == 3)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nTargetItemID @0x9e021d (crystal produced)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nSourceItemID @0x9e022e (item consumed; Decode4 despite a byte-width local)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

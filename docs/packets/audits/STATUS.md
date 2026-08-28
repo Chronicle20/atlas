@@ -8,14 +8,14 @@ Tool: `07ab19794b87907f9ebb7355b3898e371a83e331c02243084caa45da2d4db733`
 
 - export gms_v48: `b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6`
 - export gms_v61: `d50b21b2cfc509dfbcd635503a474ba71bf98f8c333e8c7f45bc46b7f137de85`
-- export gms_v72: `8d5a04486bbbc919084d6db28f677940b3681dc24b2af72481bdc3dc17cdf65f`
-- export gms_v79: `0d3f7e4dc6749467b02dd20d802f41becf408bffb7a41a4072709f8fa8f48ae3`
-- export gms_v83: `990ecddde1337274a253a366e497cd70a5074d3ce688e39268d389079b3b6b44`
-- export gms_v84: `4c1b6a5e4081f511e4f3fa708ca5a0d36c49a25f66e8c0f6eaf5aad99467f18f`
-- export gms_v87: `6c2a037f9935ce6dacffc2886b23ce421b2dcca3352fa576f8e0aeca011b0891`
-- export gms_v92: `b0e6052379ad221dd7a2a0d0e613551424f41b0fe6114789d2c52d0782eb357a`
-- export gms_v95: `4e685a4d5575a226ab734087e6754ea642d7c8ce89a1ad144c18c096a9284bf1`
-- export jms_v185: `f9d9b2c74d94c12bde0cc098317c353d0db13c78572a3f8f292ecaaff3fa4e79`
+- export gms_v72: `deb832745bf39fc3361fc25deb5d98fa0f0837c87ba1c8c20c2331e604ffa072`
+- export gms_v79: `7468e06ce104d507cab830adcb39749d718356ca7ca2bdf98c339c6afc3795f9`
+- export gms_v83: `bb7487e737fd607f34764987b04931271c6c200889d19347d3472aa831b75a01`
+- export gms_v84: `91b6f7f1339b5ffb8e48ff9296f1c2ea7c7b921fa2a3efbb52491e28c1f706ae`
+- export gms_v87: `825fff83cb4a8867bee0c69980e69ab8bfa9f7670739e319d5c35fad99b62435`
+- export gms_v92: `b51b1cb570644791a2534439fc6cd7bb050d3bcf2f223b038f4819eef56b6764`
+- export gms_v95: `b3a86cf9d578c6ca7291b00ed2fc088559c51380002aeaab7dd65dca28ec8566`
+- export jms_v185: `aab530f19bb5fc0ffd75c4e76663ecdb8a516ad9d202536a8d2e20a9c825fc8a`
 
 ## Clientbound
 
@@ -329,7 +329,7 @@ Tool: `07ab19794b87907f9ebb7355b3898e371a83e331c02243084caa45da2d4db733`
 | NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) |  | ⬜ | 0x0C5 | ✅ | 0x0E6 | ✅ | 0x0EE | ✅ | 0x104 | ❌ | 0x10B | ❌ | 0x115 | ❌ | 0x132 | ❌ | 0x13A | ✅ | 0x119 | ❌ |
 | SPAWN_KITE | CMessageBoxPool::OnMessageBoxEnterField | field/clientbound/FieldKiteSpawn (T1) | 0x0C6 | ✅ | 0x0D0 | 🟡ᶠ | 0x0F1 | 🟡ᶠ | 0x0F9 | 🟡ᶠ | 0x10F | ✅ | 0x10F | ✅ | 0x120 | ✅ | 0x13E | 🟡ᶠ | 0x146 | ✅ | 0x124 | ✅ |
 | UPDATE_LIMITED_INFO | CNpc::OnUpdateLimitedInfo |  |  | ⬜ | 0x0C6 | ❌ | 0x0E7 | ❌ | 0x0EF | ❌ | 0x105 | ❌ | 0x10C | ❌ | 0x116 | ❌ | 0x133 | ❌ | 0x13B | ❌ |  | ⬜ |
-| MAKER_RESULT | CUserLocal::OnMakerResult |  |  | ⬜ |  | ⬜ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D9 | ✅ | 0x0DD | ✅ | 0x0E6 | ✅ | 0x0FA | ✅ | 0x0F8 | ✅ | 0x0E2 | ✅ |
+| MAKER_RESULT | CUserLocal::OnMakerResult | character/clientbound/MakerResultCreate (T1) |  | ⬜ |  | ⬜ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D9 | ✅ | 0x0DD | ✅ | 0x0E6 | ✅ | 0x0FA | ✅ | 0x0F8 | ✅ | 0x0E2 | ✅ |
 | NPC_SPECIAL_ACTION | CNpc::OnSetSpecialAction |  |  | ⬜ | 0x0C7 | ❌ | 0x0E8 | ❌ | 0x0F0 | ❌ | 0x106 | ❌ | 0x10D | ❌ | 0x117 | ❌ | 0x134 | ❌ | 0x13C | ❌ |  | ⬜ |
 | REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x0C7 | ✅ | 0x0D1 | 🟡ᶠ | 0x0F2 | 🟡ᶠ | 0x0FA | 🟡ᶠ | 0x110 | ✅ | 0x117 | ✅ | 0x121 | ✅ | 0x13F | 🟡ᶠ | 0x147 | ✅ | 0x125 | ✅ |
 | SET_NPC_SCRIPTABLE | CNpcPool::OnSetNpcScript; CNpcTemplate::OnSetNpcScript; sub_5EFDA2; sub_645E9C; sub_668A2D |  |  | ⬜ | 0x0C8 | ❌ | 0x0E9 | ❌ | 0x0F1 | ❌ | 0x107 | ❌ | 0x107 | ❌ | 0x118 | ❌ | 0x135 | ❌ | 0x13D | ❌ | 0x11C | ❌ |

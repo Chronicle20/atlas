@@ -1,0 +1,10 @@
+packet: character/clientbound/MakerResultDisassemble
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnMakerResult#Disassemble
+    address: "0x99bdbc"
+    decompile_sha256: cf5c1d69bd4de7e41d593d9a2ba424ae9945f7bd54ce02212deb1858eb30eee3
+verifies:
+    - libs/atlas-packet/character/clientbound/maker_result_test.go#TestMakerResultDisassembleByteOutput

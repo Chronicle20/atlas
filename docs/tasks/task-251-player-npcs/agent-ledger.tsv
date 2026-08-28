@@ -133,3 +133,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-22T11:50:53Z	agent	Task 23b	atlas-reviewer	sonnet	-	-	-	-	DONE	d92561b85	APPROVED	no	-	-
 2026-08-22T11:50:53Z	handoff	after Task 23	-	-	-	-	-	-	-	-	-	-	-	100000
 2026-08-22T11:53:46Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	9c35b3870	-	-	-	-
+2026-08-28T20:20:44Z	agent	bug-hall-duplicate-and-click-logout	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	e249d96eb	-	-	-	-
+2026-08-28T20:20:46Z	agent	bug-hall-duplicate-and-click-logout	task-reviewer	sonnet	-	-	-	-	DONE	e249d96eb	APPROVED_WITH_FINDINGS	no	-	-

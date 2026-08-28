@@ -54,7 +54,7 @@ func IsFourthJob(jobId Id) bool {
 }
 
 func IsBeginner(jobId Id) bool {
-	return IsA(jobId, BeginnerId, NoblesseId, LegendId, EvanId)
+	return IsA(jobId, BeginnerId, NoblesseId, LegendId, EvanId, CitizenId)
 }
 
 func GetType(jobId Id) Type {

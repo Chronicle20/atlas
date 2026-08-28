@@ -4,6 +4,7 @@ import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/kafka/message/cashshop"
+	itemmsg "atlas-cashshop/kafka/message/item"
 	"atlas-cashshop/surprise/opening"
 	"encoding/json"
 	"fmt"
@@ -29,6 +30,8 @@ import (
 const testBoxTemplateId = uint32(5222000)
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(cashshop.EnvEventTopicStatus), string(cashshop.EnvEventTopicStatus))
+	_ = os.Setenv(string(itemmsg.EnvStatusTopic), string(itemmsg.EnvStatusTopic))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }
@@ -204,7 +207,7 @@ func TestOpenGrantsRewardAndDecrementsBox(t *testing.T) {
 
 	entries := outboxEntries(t, db)
 	require.Len(t, entries, 1)
-	require.Equal(t, cashshop.EnvEventTopicStatus, entries[0].Topic)
+	require.Equal(t, string(cashshop.EnvEventTopicStatus), entries[0].Topic)
 	ev := decodeOpened(t, entries[0].MessageValue)
 	require.Equal(t, cashshop.StatusEventTypeSurpriseOpened, ev.Type)
 	require.EqualValues(t, 2, ev.Body.BoxRemaining)

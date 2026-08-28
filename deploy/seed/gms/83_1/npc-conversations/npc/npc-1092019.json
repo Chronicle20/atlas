@@ -1,0 +1,239 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1092019,
+      "startState": "gate",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "6400",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "branchProgress"
+              },
+              {
+                "conditions": [],
+                "nextState": "notStarted"
+              }
+            ]
+          },
+          "id": "gate",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Who are you talking to me? If you're just bored, go bother somebody else."
+          },
+          "id": "notStarted",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "6400",
+                    "step": "1",
+                    "type": "questProgress",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "questionIntro"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "6400",
+                    "step": "1",
+                    "type": "questProgress",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "finalPraise"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "branchProgress",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "askAnswer",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Ok then! I'll give you the first question now! You better be ready because this one's a hard one. Even the seagulls here think this one's pretty tough. It's a pretty difficult problem."
+          },
+          "id": "questionIntro",
+          "type": "dialogue"
+        },
+        {
+          "askText": {
+            "contextKey": "answer",
+            "defaultText": "",
+            "matches": [
+              {
+                "nextState": "correct",
+                "value": "72"
+              }
+            ],
+            "maxLength": 16,
+            "minLength": 1,
+            "nextState": "incorrect",
+            "text": "One day, I went to the ocean and caught 62 Octopi for dinner. But then some kid came by and gave me 10 Octopi as a gift! How many Octopi do I have then, in total?"
+          },
+          "id": "askAnswer",
+          "type": "askText"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "advanceProgress",
+                "text": "Next"
+              },
+              {
+                "nextState": "advanceProgress",
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "What! I can't believe how incredibly smart you are! Incredible! In the seagull world, that kind of intellingence would give you a Ph.D. and then some. You're really amazing... I can't believe it... I simply can't believe it!"
+          },
+          "id": "correct",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "infoNumber": "1",
+                  "progress": "1",
+                  "questId": "6400"
+                },
+                "type": "set_quest_progress"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "advanceProgress",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hmm, that's not quite how I recall it. Try again!"
+          },
+          "id": "incorrect",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "finalHint",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Ohhhh! Now that was impressive! I considered my test quite difficult, and for you to pass that... you are indeed an integral member of the Pirate family, and a friend of seagulls. We are now bonded by the mutual friendship that will last a lifetime! And, most of all, friends are there to help you out when you are in dire straits. If you are in a state of emergency, call us seagulls."
+          },
+          "id": "finalPraise",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "finalClose",
+                "text": "Next"
+              },
+              {
+                "nextState": "finalPraise",
+                "text": "Prev"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "Notify us using the skill Air Strike, and we will be there to help you out, because that's what friends are for.\r\n\r\n  #s5221003#    #b#q5221003##k"
+          },
+          "id": "finalHint",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": "finalHint",
+                "text": "Prev"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "You have met all my challenges, and passed! Good job!"
+          },
+          "id": "finalClose",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1092019",
+    "type": "npc-conversation"
+  }
+}

@@ -158,6 +158,61 @@ from this file.
   `gms/83_1` and copied to the other nine paths.
 - Validated with `go run ./tools/catalog-lint deploy/seed` — no errors.
 
+## Task 20: `npc-1092019.json` (Nautilus seagull quiz)
+
+- Source: `<cosmic>/scripts/npc/1092019.js` (external Cosmic checkout, not
+  available in this repository). The brief's state table (task-20-brief.md)
+  is a transcription of the script made during planning and was used as the
+  sole authority; no direct read of the Cosmic source was needed or
+  performed.
+- Progress lives on quest `6400`, info number `1`, read via `questProgress`
+  (`referenceId: "6400"`, `step: "1"`) and written via `set_quest_progress`
+  (`questId: "6400"`, `infoNumber: "1"`).
+- **The `seagullProgress == 1` arm is omitted, not stubbed.** That branch
+  routes into `cm.getEventManager("4jaerial").startInstance(…)`, the
+  nine-Barts instance. Atlas has no instance or event-manager capability
+  reachable from a conversation — this is an external blocker, not a
+  prerequisite this task can produce. `branchProgress`'s outcome list
+  therefore only covers progress `0` (→ `questionIntro`) and progress `2`
+  (→ `finalPraise`); the default outcome (`[]`) falls through to `null`
+  (dispose), silently covering the omitted `progress == 1` case with no
+  placeholder dialogue or "coming soon" text. Also flagged for Task 21's
+  research-doc update.
+- The quiz has exactly one question/answer pair (`seagullQuestion[0]` /
+  `seagullAnswer[0]`), so `seagullIdx` is always `0` and no randomisation
+  state was needed — `askAnswer`'s single `matches` entry (`"72"` →
+  `correct`) is sufficient.
+- The three commented-out lines in the script's final branch (`cm.gainExp`,
+  `cm.teachSkill`, `cm.forceCompleteQuest`) are commented out in Cosmic
+  itself and are not converted.
+- Transcribed strings (including the source misspelling `"intellingence"`
+  in `correct` and the `\r\n\r\n` plus leading double-space in `finalHint`)
+  were copied verbatim from the brief's Step 1 table, which is itself the
+  byte-for-byte transcription of `1092019.js`.
+- The ten seed files (`gms/{48,61,72,79,83,84,87,92,95}_1` and `jms/185_1`)
+  are byte-identical (verified via `md5sum`); one file was authored and
+  copied to the other nine paths.
+- Validated with `go run ./tools/catalog-lint deploy/seed` — no errors.
+
+## Quests referenced but not seeded as quest conversations
+
+Tasks 16–20 reference the following quest ids through `questStatus` /
+`questProgress` conditions and `set_quest_progress` / `local:get_quest_progress`
+operations. None of these conversions requires the referenced quest to exist
+as a seeded quest conversation — quest state is read and written entirely
+through the condition/operation types listed, independent of whether a
+`quest-conversation` seed file exists for that id.
+
+- `3360` (Task 16, Magatia lab door)
+- `3339` (Task 17, `gate` state's `questStatus` check)
+- `23339` (Task 17, Magatia lab pipes progress quest)
+- `3925` (Task 18, Thief gate)
+- `20730` (Task 18, Puppeteer gate 1)
+- `21728` (Task 18, Thief/Puppeteer password merge, `puppeteerPreCheck`)
+- `21731` (Task 18, Puppeteer gate 2)
+- `21747` (Task 19, Sealed Shrine entrance)
+- `6400` (Task 20, Nautilus seagull quiz)
+
 ## Engine fix: genericAction outcome conditions now use AND semantics
 
 Task 19's reviewer found that `processGenericActionState` evaluated only

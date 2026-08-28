@@ -1,10 +1,10 @@
 package _map
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sirupsen/logrus/hooks/test"
-	"golang.org/x/net/context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )

@@ -1077,6 +1077,38 @@ type AcceptToParcelPayload struct {
 	Owner         string `json:"owner"`
 }
 
+// AwardCraftedAssetPayload creates an equip with EXPLICIT stats and an explicit
+// upgrade-slot count. It exists because neither AwardAsset (ItemPayload only)
+// nor CreateAndEquipAsset (which adds only UseAverageStats, a toggle into
+// randomized stat rolling) can express "an equip with tuc upgrade slots and
+// reagent-adjusted stats" — FR-3.1 and FR-3.2. The stat block mirrors
+// AcceptToMtsListingPayload's; Slots carries the recipe's `tuc`.
+//
+// Slots deliberately has no omitempty: a zero-slot craft is meaningful and must
+// be distinguishable from an absent field.
+type AwardCraftedAssetPayload struct {
+	CharacterId   uint32 `json:"characterId"`
+	TemplateId    uint32 `json:"templateId"`
+	Quantity      uint32 `json:"quantity"`
+	Slots         uint16 `json:"slots"`
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	HP            uint16 `json:"hp"`
+	MP            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	ShowEffect    bool   `json:"showEffect"`
+}
+
 // ReleaseFromParcelPayload (atomic, dispatched to the atlas-parcel custody
 // consumer). Carries only the parcel row id: the parcel row holds the
 // snapshot, so a release can never disagree with the accept that created it.

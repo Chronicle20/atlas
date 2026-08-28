@@ -254,6 +254,14 @@ const (
 	// not by opening the interface (task-241 FR-26).
 	ShowParcel Action = "show_parcel"
 
+	// AwardCraftedAsset creates an equip with EXPLICIT stats and an explicit
+	// upgrade-slot count (task-285 maker skill crafting, design §4.5.1). It
+	// exists because neither AwardAsset (ItemPayload only) nor
+	// CreateAndEquipAsset (which adds only UseAverageStats, a toggle into
+	// randomized rolling) can express "an equip with tuc upgrade slots and
+	// reagent-adjusted stats".
+	AwardCraftedAsset Action = "award_crafted_asset"
+
 	// Guild actions
 	RequestGuildName             Action = "request_guild_name"
 	RequestGuildEmblem           Action = "request_guild_emblem"

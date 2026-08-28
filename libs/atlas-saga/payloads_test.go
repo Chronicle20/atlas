@@ -83,3 +83,88 @@ func TestCharacterCreatePayloadCarriesApAndSp(t *testing.T) {
 		t.Errorf("expected sp absent from omitempty zero value, got %s", zs)
 	}
 }
+
+func TestAwardCraftedAssetActionConstant(t *testing.T) {
+	if string(AwardCraftedAsset) != "award_crafted_asset" {
+		t.Errorf("AwardCraftedAsset: got %q", string(AwardCraftedAsset))
+	}
+}
+
+func TestAwardCraftedAssetPayloadRoundTrip(t *testing.T) {
+	in := AwardCraftedAssetPayload{
+		CharacterId:   1,
+		TemplateId:    1082002,
+		Quantity:      1,
+		Slots:         7,
+		Strength:      3,
+		Dexterity:     2,
+		Intelligence:  0,
+		Luck:          0,
+		HP:            15,
+		MP:            0,
+		WeaponAttack:  4,
+		MagicAttack:   0,
+		WeaponDefense: 6,
+		MagicDefense:  1,
+		Accuracy:      2,
+		Avoidability:  1,
+		Hands:         0,
+		Speed:         0,
+		Jump:          0,
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var out AwardCraftedAssetPayload
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if out != in {
+		t.Errorf("round-trip mismatch: got %+v, want %+v", out, in)
+	}
+}
+
+func TestAwardCraftedAssetPayloadSlotsSurvivesZero(t *testing.T) {
+	in := AwardCraftedAssetPayload{
+		CharacterId: 1,
+		TemplateId:  1082002,
+		Quantity:    1,
+		Slots:       0,
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(b), `"slots":0`) {
+		t.Errorf("expected \"slots\":0 in %s", string(b))
+	}
+}
+
+func TestAwardCraftedAssetStepUnmarshal(t *testing.T) {
+	raw := `{"stepId":"award","status":"pending","action":"award_crafted_asset","payload":{"characterId":1,"templateId":1082002,"quantity":1,"slots":7,"strength":3,"weaponAttack":4}}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != AwardCraftedAsset {
+		t.Errorf("Action: got %q, want %q", step.Action, AwardCraftedAsset)
+	}
+	payload, ok := step.Payload.(AwardCraftedAssetPayload)
+	if !ok {
+		t.Fatalf("Payload: got %T, want AwardCraftedAssetPayload", step.Payload)
+	}
+	if payload.TemplateId != 1082002 {
+		t.Errorf("TemplateId: got %d, want 1082002", payload.TemplateId)
+	}
+	if payload.Slots != 7 {
+		t.Errorf("Slots: got %d, want 7", payload.Slots)
+	}
+	if payload.Strength != 3 {
+		t.Errorf("Strength: got %d, want 3", payload.Strength)
+	}
+	if payload.WeaponAttack != 4 {
+		t.Errorf("WeaponAttack: got %d, want 4", payload.WeaponAttack)
+	}
+}

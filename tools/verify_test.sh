@@ -102,10 +102,12 @@ probe_ban_dir="$HERE/../services/atlas-ban/zz-verify-probe"
 probe_account_dir="$HERE/../services/atlas-account/zz-verify-probe"
 probe_bake_ban="$probe_ban_dir/go.mod"
 probe_bake_account="$probe_account_dir/go.mod"
+probe_broken_dir="$HERE/../services/zz-verify-probe-broken"
 cleanup() {
   rm -f "$probe_suite" "$probe_deploy" "$probe_bake_ban" "$probe_bake_account" \
     "$HERE/zz-verify-jobs0.err"
   rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
+  rm -rf "$probe_broken_dir"
 }
 trap cleanup EXIT
 cleanup
@@ -226,6 +228,35 @@ assert_true "the Go layer's log dir is created under TMPDIR and cleaned up on ex
   "$(grep -F 'mktemp -d "${TMPDIR:-/tmp}/verify-go.XXXXXX"' "$VERIFY" >/dev/null \
      && grep -F "trap 'rm -rf \"\$GO_LOG_DIR\"' EXIT" "$VERIFY" >/dev/null \
      && echo true)"
+
+# A genuinely failing module driven through launch_go_layers/replay_go_layer.
+# real_selected() strips the ✓/✗ glyph before comparing labels, so a
+# regression in the pool's per-worker .rc propagation that silently turned a
+# FAILED module into a reported PASS would not show up in the label-agreement
+# assertions above — only in the module's own build failing and the overall
+# run's exit status going non-zero. Assert both, on the unstripped output.
+mkdir -p "$probe_broken_dir"
+cat > "$probe_broken_dir/go.mod" <<'EOF'
+module zz.verify.probe.broken
+
+go 1.21
+EOF
+cat > "$probe_broken_dir/main.go" <<'EOF'
+package main
+
+func main() {}
+
+this is not valid Go syntax
+EOF
+
+broken_out="$("$VERIFY" --quick --base HEAD 2>&1)"
+broken_rc=$?
+rm -rf "$probe_broken_dir"
+
+assert_eq "a genuinely broken module makes the run exit non-zero" "1" "$broken_rc"
+assert_true "the broken module is reported FAILED, unstripped" \
+  "$(printf '%s\n' "$broken_out" \
+     | grep 'FAILED' | grep 'zz-verify-probe-broken' >/dev/null && echo true)"
 
 # --- --facts runs nothing --------------------------------------------------
 #

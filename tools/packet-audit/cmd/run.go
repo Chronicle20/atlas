@@ -716,6 +716,31 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::OnSueCharacterResult#Result":
 		return []candidate{{name: "SueCharacterResult", pkg: "report", dir: csvpkg.DirClientbound}}
 
+	// CUserLocal::OnMakerResult (MAKER_RESULT, task-285). Unlike the two entries
+	// above, this IS a genuine multi-arm client dispatcher: the handler reads
+	// i32 nResult, then — only for nResult ∈ {0,1} — i32 nMode and
+	// switch-dispatches to four distinct sub-handler bodies (1/2 create,
+	// 3 monster-crystal, 4 disassemble), each reading a different field set. A
+	// nResult outside {0,1} is the bodyless #Failed shape. Disposition:
+	// discrete-per-mode, authored that way from the start
+	// (DISPATCHER_FAMILY.md), so it belongs in NEITHER
+	// dispatcher-lint-baseline.yaml (legacy-only; it is empty and only shrinks)
+	// NOR families.yaml (a cap is unconditional per-op and would pin the whole
+	// op at 🧩, discarding the per-arm byte fixtures — the FIELD_EFFECT model of
+	// grading the op as worst-of-all-arms applies instead). Modes 1 and 2 are
+	// wire-identical but are two separately registered arms: INV-1 forbids one
+	// struct behind more than one #-entry.
+	case "CUserLocal::OnMakerResult#Create":
+		return []candidate{{name: "MakerResultCreate", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnMakerResult#CreateWithUpgrade":
+		return []candidate{{name: "MakerResultCreateWithUpgrade", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnMakerResult#MonsterCrystal":
+		return []candidate{{name: "MakerResultMonsterCrystal", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnMakerResult#Disassemble":
+		return []candidate{{name: "MakerResultDisassemble", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CUserLocal::OnMakerResult#Failed":
+		return []candidate{{name: "MakerResultFailed", pkg: "character", dir: csvpkg.DirClientbound}}
+
 	// --- merchant bucket (task-069, sub-phase 2f) ---
 	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":
 		return []candidate{{name: "OpenShop", dir: csvpkg.DirClientbound}}

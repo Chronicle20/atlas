@@ -69,7 +69,7 @@ func TestGetBackEffectsInMap_ReturnsEntries(t *testing.T) {
 
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -109,7 +109,7 @@ func TestGetBackEffectsInMap_EmptyIsTwoHundred(t *testing.T) {
 
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 

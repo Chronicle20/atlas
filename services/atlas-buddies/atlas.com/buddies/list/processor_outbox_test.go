@@ -25,8 +25,11 @@ import (
 // TestMain installs a no-op producer writer so any DIRECT-path emits
 // (rejectEmit closures fired outside the outbox-bound buffer, per the D7
 // fix below) succeed instantly instead of retrying against an unreachable
-// broker for ~42s (see producertest package doc).
+// broker for ~42s (see producertest package doc). It also sets every topic
+// token env var to its own name so topic.EnvProvider resolves to the same
+// literal the tests already assert against.
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(list2.EnvStatusEventTopic), string(list2.EnvStatusEventTopic))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

@@ -505,3 +505,118 @@ next step is a memory-write breakpoint on `0x00CD7590`.
 Also worth capturing while stopped: the value of `CWvsContext`'s `CharacterData`
 pointer at each `set_stage`, since that is the flag selecting between the two
 arms.
+
+## Round 6 — ROOT CAUSE MECHANISM: an over-read throws, and the catch handler destroys the pools
+
+User ran the round-5 experiment: **`0x00AE7C9F` (`CWvsContext::OnEnterGame`) IS
+hit.** So the pools *are* constructed. Round 4's "never created" hypothesis is
+**withdrawn**; the pools are created and then destroyed.
+
+The destroyer is now identified, and it is not a stage transition.
+
+### `CInPacket` throws on over-read
+
+`CInPacket::Decode1` @0x406af7:
+
+```
+if ( m_uLength == m_uOffset )            /*0x406b14*/
+{
+  pExceptionObject[0] = 38;              /*0x406b2d*/
+  _CxxThrowException(pExceptionObject, &_TI1_AVZException__);   /*0x406b34*/
+}
+```
+
+Reading one byte past the end of a packet raises a C++ `ZException` with code
+38. (The other `Decode*` entry points follow the same shape.)
+
+### `CWvsApp::WindowProc` catches it and tears down the game
+
+`CWvsApp::WindowProc` @0xae23b3 spans 0xae23b3–0xae26b3. Its tail holds two
+MSVC catch funclets that the decompiler folds out of the pseudocode; in
+disassembly:
+
+```
+0xae2672  mov  eax, [ebp+var_1C]
+0xae2678  mov  eax, [eax+4]
+0xae267b  mov  [ecx+48h], eax                ; stash exception field on CWvsContext
+0xae267e  mov  ecx, TSingleton<CWvsContext>::ms_pInstance
+0xae2686  jz   short loc_AE268D
+0xae2688  call sub_AE8B31                    ; <-- destroys the pools
+0xae268d  mov  eax, offset loc_AE2445
+0xae2692  retn                               ; catch-handler epilogue
+
+0xae2693  ... same shape ...
+0xae26a8  call sub_AE8B31
+0xae26b2  retn
+```
+
+`sub_AE8B31` is the leave-game teardown (`sub_AFB237` → `CNpcPool` dtor
+`sub_71FF65` @0x71ffb8 → `dword_CD7590 = 0`, and the same for every sibling
+pool).
+
+Critically, the handler **does not clear `g_pStage`**. The `CField` stays
+installed as the live stage with `CField::OnPacket` as its packet entry point,
+while every pool global it dereferences is now null.
+
+### The complete chain
+
+1. `OnMigrateCommand` → `CInterStage` → channel connect. `SetField` arrives;
+   `CStage::OnSetField` → `set_stage(field)` → `OnEnterGame` builds all pools
+   (**confirmed by breakpoint**) → `CField::Init` runs, emitting 0xEA @0x561996
+   and 0xDA @0x561a50 (observed 13:20:54.171/.178).
+2. Some packet in the enter-field burst is **shorter than what the JMS 185
+   client reads from it**. Its handler runs off the end; `CInPacket::Decode*`
+   throws `ZException(38)`.
+3. The exception unwinds out of `ProcessPacket` → `ManipulatePacket` → `OnRead`
+   into `CWvsApp::WindowProc`, whose catch funclet calls `sub_AE8B31`. All
+   field pools are destroyed. `g_pStage` remains a live `CField`.
+4. The next pooled packet — NPC 0x116/0x118, mob 0xFD, a drop, a reactor —
+   reaches `CField::OnPacket`, which loads the now-null global and calls into
+   the pool. AV at 0x44F5E2 with `ESI == 4`.
+
+This accounts for every observation that previously did not fit:
+
+- `OnEnterGame` is hit, yet the pool is null at the fault.
+- A map with **no NPCs** still crashes (step 4 is satisfied by any pooled op).
+- Black screen / "sometimes just the map background" — the pools are gone
+  before anything renders.
+- The fault lands on 0x116 in one capture and 0x118 in another: step 4 takes
+  whichever pooled packet is next in the queue.
+- No server packet is needed between the burst and the crash; both steps 2 and
+  4 are inside the same burst, already buffered.
+
+**The NPC packets are collateral. The bug is an under-length packet earlier in
+the burst.** Rounds 1–2 were looking in the right place (a malformed packet in
+the burst) but for the wrong symptom (a desync); the actual signature is an
+over-read *throw*, which is invisible in the packet log because the client
+sends nothing when it happens.
+
+### Next step — one breakpoint names the offending packet
+
+Breakpoint `__CxxThrowException@8` at **`0x00B4E2AB`**, then log in and enter a
+channel. The first hit's call stack names the client handler that ran off the
+end, and therefore the writer that emitted the short packet. The `CInPacket` is
+reachable from the stack (`Decode1` keeps `this` in the exception scope block
+at `v6[5]`), so `m_uLength` / `m_uOffset` will show exactly how many bytes the
+client wanted versus what it got.
+
+Shortlist to check first, from the captured burst (full hex in the pod log for
+session `5ee750c0-6e22-43a5-a814-9080f7d5819d`) — the short, low-entropy ones:
+
+| writer | op | len | body |
+|---|---|---|---|
+| `BuddyOperation` | 0x39 | 4 | `39 00 07 00` — mode 0x07, then a single byte |
+| `CharacterSkillMacro` | 0x7A | 3 | `7a 00 00` — count 0 |
+| `StatChanged` | 0x1D | 8 | `1d 00 01 00 00 00 00 00` — flag 01, all-zero stat mask, one trailing byte |
+| `WorldMessage` | 0x3E | 24 | `3e 00 04 01 12 00` + 18 bytes Shift-JIS |
+| `CharacterBuffGive` | 0x1E | 23 | all zero after the opcode |
+
+`FieldTransportState` 0x92 can be excluded: `CField::OnPacket` has no case for
+0x92 (its switch covers 0x81–0x90, 0x93–0x96, 0x98, 0x9B–0x9D), so the packet
+is dropped without a single `Decode` call.
+
+### Fix
+
+Once the throwing handler is named, the fix is in that writer's JMS 185 branch
+under `libs/atlas-packet/`, plus a byte-fixture test pinning the client's read
+order. Do not dispatch an implementer before the breakpoint identifies it.

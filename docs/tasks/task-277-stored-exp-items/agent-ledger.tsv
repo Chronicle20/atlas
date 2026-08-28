@@ -45,3 +45,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-28T18:08:26Z	agent	Fix round	task-implementer	sonnet	-	-	-	-	done	439e02fdd	-	-	-	-
 2026-08-28T18:08:31Z	agent	Fix round	task-reviewer	sonnet	-	-	-	-	done	439e02fdd	APPROVED	no	-	-
 2026-08-28T20:24:16Z	agent	Task 14	gate	-	-	-	-	-	pass	648b103ca	-	-	-	-
+2026-08-28T20:26:28Z	agent	Pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T20:26:29Z	agent	Pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T20:28:44Z	agent	Pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	done	7ec1cb118	APPROVED	no	-	-
+2026-08-28T20:39:24Z	agent	Pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	done	7ec1cb118	APPROVED_WITH_FINDINGS	no	-	-

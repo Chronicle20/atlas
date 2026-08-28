@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
 	"sync"
 	"testing"
 
@@ -79,6 +80,11 @@ func nullLogger() logrus.FieldLogger {
 	l := logrus.New()
 	l.SetOutput(io.Discard)
 	return l
+}
+
+func TestMain(m *testing.M) {
+	os.Setenv(string(kiteMsg.EnvEventTopicStatus), string(kiteMsg.EnvEventTopicStatus))
+	os.Exit(m.Run())
 }
 
 // A map change must destroy the kite against the OLD field, instance included.

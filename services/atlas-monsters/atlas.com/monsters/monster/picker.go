@@ -82,6 +82,22 @@ func isPickerRelevantStatus(name string) bool {
 	return ok
 }
 
+// skillSuppressingStatus returns the name of the status blocking the monster
+// from using skills, or "" if none. SEAL_SKILL is the reference gate
+// (Cosmic Monster.java:1457); SEAL has no monster-side equivalent in the
+// reference and is retained as a pre-existing, operator-reachable Atlas
+// behavior (task-279 design D7). SEAL_SKILL is checked first so that when
+// both are present the more specific status is the one reported.
+func skillSuppressingStatus(m Model) monster2.TemporaryStatType {
+	if m.HasStatusEffect(string(monster2.TemporaryStatTypeSealSkill)) {
+		return monster2.TemporaryStatTypeSealSkill
+	}
+	if m.HasStatusEffect(string(monster2.TemporaryStatTypeSeal)) {
+		return monster2.TemporaryStatTypeSeal
+	}
+	return ""
+}
+
 // effectTouchesPicker returns true if any status name inside the effect's
 // status map is picker-relevant.
 func effectTouchesPicker(e StatusEffect) bool {
@@ -120,9 +136,9 @@ func pickNextSkill(
 		return Decision{}
 	}
 
-	// Sealed monsters cannot fire any skill; emit sentinel.
-	if m.HasStatusEffect("SEAL") {
-		l.Debugf("Picker: monster [%d] is SEALed; no candidates.", m.UniqueId())
+	// Skill-suppressed monsters cannot fire any skill; emit sentinel.
+	if st := skillSuppressingStatus(m); st != "" {
+		l.Debugf("Picker: monster [%d] has [%s]; no candidates.", m.UniqueId(), st)
 		return Decision{}
 	}
 

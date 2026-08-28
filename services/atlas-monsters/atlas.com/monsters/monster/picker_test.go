@@ -425,3 +425,108 @@ func TestRepickAndEmit_AlwaysEmits(t *testing.T) {
 		t.Fatalf("expected 1 emission (always-emit); got %d", emitted)
 	}
 }
+
+func TestPicker_SealSkillMonster_ReturnsSentinel(t *testing.T) {
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+	m = Clone(m).AddStatusEffect(NewStatusEffect("MONSTER_SKILL", 0, 100, 1,
+		map[string]int32{string(monster2.TemporaryStatTypeSealSkill): 1}, time.Minute, 0)).Build()
+
+	skills := []information.Skill{{Id: 100, Level: 1}}
+	skillTable := map[uint32]mobskill.Model{100*1000 + 1: mskill(t, 100, 1, 100, 0, 0, 0)}
+
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		&fakeCooldown{}, &fakeRand{values: []int{0}}, 1000)
+	if !d.IsSentinel() {
+		t.Fatalf("expected sentinel for SEAL_SKILL monster; got %+v", d)
+	}
+}
+
+func TestPicker_SealMonster_StillReturnsSentinel(t *testing.T) {
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+	m = Clone(m).AddStatusEffect(NewStatusEffect("MONSTER_SKILL", 0, 100, 1,
+		map[string]int32{string(monster2.TemporaryStatTypeSeal): 1}, time.Minute, 0)).Build()
+
+	skills := []information.Skill{{Id: 100, Level: 1}}
+	skillTable := map[uint32]mobskill.Model{100*1000 + 1: mskill(t, 100, 1, 100, 0, 0, 0)}
+
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		&fakeCooldown{}, &fakeRand{values: []int{0}}, 1000)
+	if !d.IsSentinel() {
+		t.Fatalf("expected sentinel for SEAL monster; got %+v", d)
+	}
+}
+
+func TestPicker_SealSkillAndSeal_ReturnsSentinel(t *testing.T) {
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+	m = Clone(m).AddStatusEffect(NewStatusEffect("MONSTER_SKILL", 0, 100, 1,
+		map[string]int32{
+			string(monster2.TemporaryStatTypeSealSkill): 1,
+			string(monster2.TemporaryStatTypeSeal):      1,
+		}, time.Minute, 0)).Build()
+
+	skills := []information.Skill{{Id: 100, Level: 1}}
+	skillTable := map[uint32]mobskill.Model{100*1000 + 1: mskill(t, 100, 1, 100, 0, 0, 0)}
+
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		&fakeCooldown{}, &fakeRand{values: []int{0}}, 1000)
+	if !d.IsSentinel() {
+		t.Fatalf("expected sentinel for SEAL_SKILL+SEAL monster; got %+v", d)
+	}
+}
+
+// TestPicker_HsalfSkill156NoProp_ReturnsSentinel pins the design §1.1
+// regression: mob 9400593 (Hsalf) is the only mob in Mob.wz referencing
+// this skill family, and it declares skill 156 level 1, whose
+// MobSkill.img entry has no prop (prop = 0). It is picker.go's
+// prop <= 0 -> continue gate, not luck, that keeps a level-130 boss from
+// acquiring a permanent +50 speed buff.
+func TestPicker_HsalfSkill156NoProp_ReturnsSentinel(t *testing.T) {
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+
+	skills := []information.Skill{{Id: 156, Level: 1}}
+	skillTable := map[uint32]mobskill.Model{156*1000 + 1: mskill(t, 156, 1, 0, 0, 0, 0)}
+
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		&fakeCooldown{}, &fakeRand{values: []int{0}}, 1000)
+	if !d.IsSentinel() {
+		t.Fatalf("expected sentinel for zero-prop skill 156; got %+v", d)
+	}
+}
+
+func TestSkillSuppressingStatus(t *testing.T) {
+	tests := []struct {
+		name     string
+		statuses map[string]int32
+		want     monster2.TemporaryStatType
+	}{
+		{"none", nil, ""},
+		{"seal skill only", map[string]int32{string(monster2.TemporaryStatTypeSealSkill): 1}, monster2.TemporaryStatTypeSealSkill},
+		{"seal only", map[string]int32{string(monster2.TemporaryStatTypeSeal): 1}, monster2.TemporaryStatTypeSeal},
+		{"both", map[string]int32{
+			string(monster2.TemporaryStatTypeSealSkill): 1,
+			string(monster2.TemporaryStatTypeSeal):      1,
+		}, monster2.TemporaryStatTypeSealSkill},
+		{"power up only", map[string]int32{string(monster2.TemporaryStatTypePowerUp): 1}, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newPickerTestMonster(t, 100, 50)
+			if tt.statuses != nil {
+				m = Clone(m).AddStatusEffect(NewStatusEffect("MONSTER_SKILL", 0, 100, 1, tt.statuses, time.Minute, 0)).Build()
+			}
+			got := skillSuppressingStatus(m)
+			if got != tt.want {
+				t.Fatalf("skillSuppressingStatus() = %q; want %q", got, tt.want)
+			}
+		})
+	}
+}

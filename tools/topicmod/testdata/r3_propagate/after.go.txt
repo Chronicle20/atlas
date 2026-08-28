@@ -1,0 +1,25 @@
+package character
+
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, h handler.Handler) (string, error)) error {
+	return func(rf func(topic string, h handler.Handler) (string, error)) error {
+		var t string
+		var err error
+		t, err = topic.EnvProvider(l)(characterMsg.EnvEventTopicStatus)()
+		if err != nil {
+			return err
+		}
+		if _, err := rf(t, h1); err != nil {
+			return err
+		}
+		t, err = topic.EnvProvider(l)(characterMsg.EnvEventTopicOther)()
+		if err != nil {
+			return err
+		}
+		if _, err := rf(t, h2); err != nil {
+			return err
+		}
+		return nil
+	}
+}

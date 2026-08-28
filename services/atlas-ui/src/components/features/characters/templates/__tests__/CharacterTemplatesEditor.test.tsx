@@ -113,7 +113,7 @@ describe("CharacterTemplatesEditor", () => {
 
   it("restores selection from ?tpl= deep link", () => {
     renderEditor({}, "/edit?tpl=1");
-    expect(screen.getByRole("tab", { name: "Adventurer · F" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Explorer · F" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -121,7 +121,7 @@ describe("CharacterTemplatesEditor", () => {
 
   it("clamps out-of-range ?tpl= to 0 and writes it back", async () => {
     renderEditor({}, "/edit?tpl=99");
-    expect(screen.getByRole("tab", { name: "Adventurer · M" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Explorer · M" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -132,7 +132,7 @@ describe("CharacterTemplatesEditor", () => {
 
   it("selecting a template syncs ?tpl=", async () => {
     renderEditor();
-    await userEvent.click(screen.getByRole("tab", { name: "Adventurer · F" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Explorer · F" }));
     await waitFor(() =>
       expect(screen.getByTestId("tpl-param")).toHaveTextContent("1"),
     );
@@ -165,7 +165,7 @@ describe("CharacterTemplatesEditor", () => {
     renderEditor();
     // Select the last baseline template, then + New (selection -> new last
     // index, dirty). The added template's URL param is the pre-discard index.
-    await userEvent.click(screen.getByRole("tab", { name: "Adventurer · F" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Explorer · F" }));
     await userEvent.click(screen.getByRole("button", { name: /new/i }));
     expect(screen.getAllByRole("tab")).toHaveLength(3);
     await userEvent.click(screen.getByRole("button", { name: /discard/i }));
@@ -176,7 +176,7 @@ describe("CharacterTemplatesEditor", () => {
     expect(tabs).toHaveLength(2);
     // Reducer clamps to baseline.length-1 (the last real tab), NOT tab 0, and
     // the URL param must agree with that selection.
-    expect(screen.getByRole("tab", { name: "Adventurer · F" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Explorer · F" })).toHaveAttribute(
       "aria-selected",
       "true",
     );

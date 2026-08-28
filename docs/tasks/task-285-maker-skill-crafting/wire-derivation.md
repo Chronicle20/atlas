@@ -489,7 +489,7 @@ field-for-field identical, which is the whole of the C-2 verdict.
 
 | version | m3 nTargetItemID | m3 nSourceItemID | m4 nDisassembledItemID | m4 nNumRewardItem | m4 reward[i].id | m4 reward[i].count | m4 nMesoCost |
 |---|---|---|---|---|---|---|---|
-| `gms_v72` | `0x86a1bd` | `0x86a1ce` | `0x86a2f2` | `0x86a35d` | `0x86a376` | `0x86a383` | `0x86a409` |
+| `gms_v72` | `0x86a1bd` | `0x86a1c0` | `0x86a2f2` | `0x86a35d` | `0x86a376` | `0x86a383` | `0x86a409` |
 | `gms_v79` | `0x8b5b60` | `0x8b5b71` | `0x8b5c95` | `0x8b5d00` | `0x8b5d19` | `0x8b5d26` | `0x8b5dac` |
 | `gms_v83` | `0x95db3e` | `0x95db4f` | `0x95dca1` | `0x95dd0c` | `0x95dd25` | `0x95dd32` | `0x95dddb` |
 | `gms_v84` [^unsym] | `0x99be27` | `0x99be38` | `0x99bf8a` | `0x99bff5` | `0x99c00e` | `0x99c01b` | `0x99c0c4` |
@@ -500,7 +500,7 @@ field-for-field identical, which is the whole of the C-2 verdict.
 
 Note on apparent widths: several IDBs assign a `Decode4` result to a
 byte-width local (`char v4; v4 = CInPacket::Decode4(v2);` at `gms_v72`
-`0x86a1ce`, and similarly at `v79 0x8b5b71`, `v83 0x95db4f`, `v84 0x99be38`,
+`0x86a1c0`, and similarly at `v79 0x8b5b71`, `v83 0x95db4f`, `v84 0x99be38`,
 `v87 0x9e022e`, `jms185 0xa295a4`). That is a Hex-Rays register-width
 inference on an unused high byte, not a wire width — the callee is
 `?Decode4@CInPacket@@QAEKXZ` in every case, so **4 bytes are consumed**. Do not

@@ -862,9 +862,12 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 		return
 	}
 
-	// Check seal status - sealed monsters cannot use skills
-	if m.HasStatusEffect("SEAL") {
-		p.l.Debugf("Monster [%d] is sealed and cannot use skill [%d].", uniqueId, skillId)
+	// Skill-suppression gate. Mirrors the picker's gate so a decision that
+	// went stale between pick and cast is rejected at cast time. This runs
+	// before the animation delay, so it deliberately does not observe a
+	// status that lands mid-flight (task-279 design §4).
+	if st := skillSuppressingStatus(m); st != "" {
+		p.l.Debugf("Monster [%d] has [%s] and cannot use skill [%d].", uniqueId, st, skillId)
 		return
 	}
 

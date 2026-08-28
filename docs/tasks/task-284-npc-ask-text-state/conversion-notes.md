@@ -123,3 +123,37 @@ from this file.
   are byte-identical (verified via `md5sum`); one file was authored and
   copied to the other nine paths.
 - Validated with `go run ./tools/catalog-lint deploy/seed` — no errors.
+
+## Task 19: `npc-2091009.json` (Sealed Shrine entrance)
+
+- Source: `<cosmic>/scripts/npc/2091009.js` (external Cosmic checkout, not
+  available in this repository). The brief's state table (task-19-brief.md)
+  was used as the sole authority; no direct read of the Cosmic source was
+  needed or performed.
+- **Deliberate ordering deviation.** `2091009.js` checks map occupancy
+  *before* comparing the entered password. Atlas evaluates `matches` on the
+  `askText` state itself (`askPassword`), so the password comparison
+  necessarily happens first, with the occupancy check (`checkOccupancy`,
+  `mapCapacity` condition on map `925040100`) only reachable after a correct
+  password. The only observable behavioural difference: a player who types
+  the wrong password into an already-occupied shrine now sees `"#rWrong!"`
+  instead of `"Someone is already attending the Sealed Shrine."` — the warp
+  itself is gated identically under both orderings, since no path reaches
+  `warpIn` without both the correct password and an unoccupied,
+  quest-eligible shrine.
+- `mapCapacity` (condition type `MapCapacityCondition` in
+  `libs/atlas-saga/validation.go:33`) takes the target map id in
+  `referenceId` and the capacity threshold in `value`; verified against the
+  brief's cited existing usage shape (`{"operator": ">=", "referenceId":
+  "910220004", "type": "mapCapacity", "value": "5"}`).
+- `questProgress`'s `step` key (`RestConditionModel.Step`,
+  `conversation/rest.go:110`, backed by `ValidationConditionInput.Step` in
+  `libs/atlas-saga/validation.go:67`) is a real, supported field — confirmed
+  before use per the controller's flag on this task.
+- `PINK_TEXT` is a real `messageType` value for `send_message`; confirmed
+  present in already-seeded templates (e.g.
+  `deploy/seed/gms/83_1/npc-conversations/npc/npc-1063011.json`).
+- The ten seed files (`gms/{48,61,72,79,83,84,87,92,95}_1` and `jms/185_1`)
+  are byte-identical (verified via `md5sum`); one file was authored under
+  `gms/83_1` and copied to the other nine paths.
+- Validated with `go run ./tools/catalog-lint deploy/seed` — no errors.

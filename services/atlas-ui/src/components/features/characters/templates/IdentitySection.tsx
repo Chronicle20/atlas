@@ -73,7 +73,7 @@ export function IdentitySection({
             <SelectContent>
               {classes.map((c) => (
                 <SelectItem
-                  key={c.label}
+                  key={`${c.jobIndex}.${c.subJobIndex}`}
                   value={`${c.jobIndex}.${c.subJobIndex}`}
                 >
                   {c.label}

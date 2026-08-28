@@ -118,6 +118,15 @@ export function classesForVersion(
   if (region === "GMS" && majorVersion === 79) {
     return race3V79Classes;
   }
+  if (region === "GMS" && majorVersion >= 79 && majorVersion <= 83) {
+    // gms_v80/81/82: no fixture entries of their own. Go's carouselFor
+    // (character-factory/job/carousel.go:96, MajorInRange(79, 83)) routes them to the same
+    // race3Carousel as 79 and 83, which assigns identical job ids either way -- this is a
+    // label-only choice. race3V83Classes is the anchor column (carousel.go:38, "class
+    // symbols named directly in this IDB"), so the interpolated band inherits its
+    // confirmed labels rather than v79's geometry-only "Aran-family dialog" guess.
+    return race3V83Classes;
+  }
   if (region === "GMS" && majorVersion >= 48 && majorVersion <= 72) {
     return noRaceClasses;
   }

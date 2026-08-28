@@ -4,6 +4,7 @@ import (
 	"atlas-maps/kafka/message"
 	mapKafka "atlas-maps/kafka/message/map"
 	"atlas-maps/map/character"
+	"atlas-maps/map/environment"
 	monster2 "atlas-maps/map/monster"
 	"context"
 	"encoding/json"
@@ -99,7 +100,8 @@ func (m *mockCharacterProcessor) Exit(transactionId uuid.UUID, f field.Model, ch
 	})
 }
 
-func (m *mockCharacterProcessor) ExitAll(_ uint32) {
+func (m *mockCharacterProcessor) ExitAll(_ uint32) []character.MapKey {
+	return nil
 }
 
 func (m *mockCharacterProcessor) GetEnterCalls() []enterCall {
@@ -668,5 +670,127 @@ func TestProcessorImpl_Enter_WithInstance(t *testing.T) {
 
 	if event.Instance != instance {
 		t.Errorf("Expected event instance %v, got %v", instance, event.Instance)
+	}
+}
+
+func TestExit_LastCharacterClearsEnvironment(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	ctx := createTestContext()
+	cp := character.NewProcessor(logger, ctx)
+	mockPp := newMockProducerProvider()
+
+	p := createTestProcessor(logger, ctx, cp, mockPp)
+
+	transactionId := uuid.New()
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(910010000)).Build()
+	characterId := uint32(1)
+
+	cp.Enter(transactionId, f, characterId)
+	if _, err := environment.NewProcessor(logger, ctx).Set(f, field.ObjectKindObstacle, "a", 1); err != nil {
+		t.Fatalf("Set returned error: %v", err)
+	}
+
+	buf := message.NewBuffer()
+	if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
+		t.Fatalf("Exit returned error: %v", err)
+	}
+
+	entries := environment.NewProcessor(logger, ctx).GetAll(f)
+	if len(entries) != 0 {
+		t.Fatalf("Expected environment state to be cleared, got %d entries", len(entries))
+	}
+}
+
+func TestExit_RemainingCharacterKeepsEnvironment(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	ctx := createTestContext()
+	cp := character.NewProcessor(logger, ctx)
+	mockPp := newMockProducerProvider()
+
+	p := createTestProcessor(logger, ctx, cp, mockPp)
+
+	transactionId := uuid.New()
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(910010000)).Build()
+	characterId1 := uint32(1)
+	characterId2 := uint32(2)
+
+	cp.Enter(transactionId, f, characterId1)
+	cp.Enter(transactionId, f, characterId2)
+	if _, err := environment.NewProcessor(logger, ctx).Set(f, field.ObjectKindObstacle, "a", 1); err != nil {
+		t.Fatalf("Set returned error: %v", err)
+	}
+
+	buf := message.NewBuffer()
+	if err := p.Exit(buf)(transactionId, f, characterId1); err != nil {
+		t.Fatalf("Exit returned error: %v", err)
+	}
+
+	entries := environment.NewProcessor(logger, ctx).GetAll(f)
+	if len(entries) != 1 {
+		t.Fatalf("Expected environment state to be kept, got %d entries", len(entries))
+	}
+	if entries[0].State != 1 {
+		t.Errorf("Expected state 1, got %d", entries[0].State)
+	}
+}
+
+func TestExit_OtherFieldUnaffected(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	ctx := createTestContext()
+	cp := character.NewProcessor(logger, ctx)
+	mockPp := newMockProducerProvider()
+
+	p := createTestProcessor(logger, ctx, cp, mockPp)
+
+	transactionId := uuid.New()
+	f1 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(910010000)).Build()
+	f2 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(910010100)).Build()
+	characterId := uint32(1)
+
+	cp.Enter(transactionId, f1, characterId)
+	cp.Enter(transactionId, f2, characterId)
+	ep := environment.NewProcessor(logger, ctx)
+	if _, err := ep.Set(f1, field.ObjectKindObstacle, "a", 1); err != nil {
+		t.Fatalf("Set returned error: %v", err)
+	}
+	if _, err := ep.Set(f2, field.ObjectKindObstacle, "a", 1); err != nil {
+		t.Fatalf("Set returned error: %v", err)
+	}
+
+	buf := message.NewBuffer()
+	if err := p.Exit(buf)(transactionId, f1, characterId); err != nil {
+		t.Fatalf("Exit returned error: %v", err)
+	}
+
+	if entries := ep.GetAll(f1); len(entries) != 0 {
+		t.Fatalf("Expected f1 environment state to be cleared, got %d entries", len(entries))
+	}
+	if entries := ep.GetAll(f2); len(entries) != 1 {
+		t.Fatalf("Expected f2 environment state to remain, got %d entries", len(entries))
+	}
+}
+
+func TestExit_NoEnvironmentTrackedIsNoop(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	ctx := createTestContext()
+	cp := character.NewProcessor(logger, ctx)
+	mockPp := newMockProducerProvider()
+
+	p := createTestProcessor(logger, ctx, cp, mockPp)
+
+	transactionId := uuid.New()
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(910010000)).Build()
+	characterId := uint32(1)
+
+	cp.Enter(transactionId, f, characterId)
+
+	buf := message.NewBuffer()
+	if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
+		t.Fatalf("Exit returned error: %v", err)
+	}
+
+	entries := environment.NewProcessor(logger, ctx).GetAll(f)
+	if len(entries) != 0 {
+		t.Fatalf("Expected no environment state, got %d entries", len(entries))
 	}
 }

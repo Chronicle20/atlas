@@ -6,6 +6,7 @@ import (
 	characterKafka "atlas-maps/kafka/message/character"
 	_map "atlas-maps/map"
 	mapcharacter "atlas-maps/map/character"
+	"atlas-maps/map/environment"
 	"atlas-maps/map/timer"
 	"atlas-maps/visit"
 	"context"
@@ -191,8 +192,16 @@ func handleStatusEventDeletedFunc(l logrus.FieldLogger, db *gorm.DB) func(logrus
 				}
 			}
 
-			mapcharacter.NewProcessor(fl, ctx).ExitAll(event.CharacterId)
-			fl.Debugf("Removed character [%d] from all in-memory map registry entries.", event.CharacterId)
+			affected := mapcharacter.NewProcessor(fl, ctx).ExitAll(event.CharacterId)
+			fl.Debugf("Removed character [%d] from [%d] in-memory map registry entries.", event.CharacterId, len(affected))
+
+			ep := environment.NewProcessor(fl, ctx)
+			cp := mapcharacter.NewProcessor(fl, ctx)
+			for _, mk := range affected {
+				if remaining, err := cp.GetCharactersInMap(uuid.New(), mk.Field); err == nil && len(remaining) == 0 {
+					ep.Reset(mk.Field)
+				}
+			}
 		}
 	}
 }

@@ -8,21 +8,29 @@ import (
 )
 
 const (
-	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_PARTY"
-	CommandPartyCreate                    = "CREATE"
-	CommandPartyJoin                      = "JOIN"
-	CommandPartyLeave                     = "LEAVE"
-	CommandPartyChangeLeader              = "CHANGE_LEADER"
-	CommandPartyRequestInvite             = "REQUEST_INVITE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY"
+)
 
-	EnvEventStatusTopic              topic.Token = "EVENT_TOPIC_PARTY_STATUS"
-	EventPartyStatusTypeCreated                  = "CREATED"
-	EventPartyStatusTypeJoined                   = "JOINED"
-	EventPartyStatusTypeLeft                     = "LEFT"
-	EventPartyStatusTypeExpel                    = "EXPEL"
-	EventPartyStatusTypeDisband                  = "DISBAND"
-	EventPartyStatusTypeChangeLeader             = "CHANGE_LEADER"
-	EventPartyStatusTypeError                    = "ERROR"
+const (
+	CommandPartyCreate        = "CREATE"
+	CommandPartyJoin          = "JOIN"
+	CommandPartyLeave         = "LEAVE"
+	CommandPartyChangeLeader  = "CHANGE_LEADER"
+	CommandPartyRequestInvite = "REQUEST_INVITE"
+)
+
+const (
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_STATUS"
+)
+
+const (
+	EventPartyStatusTypeCreated      = "CREATED"
+	EventPartyStatusTypeJoined       = "JOINED"
+	EventPartyStatusTypeLeft         = "LEFT"
+	EventPartyStatusTypeExpel        = "EXPEL"
+	EventPartyStatusTypeDisband      = "DISBAND"
+	EventPartyStatusTypeChangeLeader = "CHANGE_LEADER"
+	EventPartyStatusTypeError        = "ERROR"
 
 	EventPartyStatusErrorUnexpected                 = "ERROR_UNEXPECTED"
 	EventPartyStatusErrorTypeAlreadyJoined1         = "ALREADY_HAVE_JOINED_A_PARTY_1"

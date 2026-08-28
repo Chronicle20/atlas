@@ -8,17 +8,25 @@ import (
 )
 
 const (
-	EnvCommandTopic               topic.Token = "COMMAND_TOPIC_MESSENGER"
-	CommandMessengerCreate                    = "CREATE"
-	CommandMessengerJoin                      = "JOIN"
-	CommandMessengerLeave                     = "LEAVE"
-	CommandMessengerRequestInvite             = "REQUEST_INVITE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MESSENGER"
+)
 
-	EnvEventStatusTopic             topic.Token = "EVENT_TOPIC_MESSENGER_STATUS"
-	EventMessengerStatusTypeCreated             = "CREATED"
-	EventMessengerStatusTypeJoined              = "JOINED"
-	EventMessengerStatusTypeLeft                = "LEFT"
-	EventMessengerStatusTypeError               = "ERROR"
+const (
+	CommandMessengerCreate        = "CREATE"
+	CommandMessengerJoin          = "JOIN"
+	CommandMessengerLeave         = "LEAVE"
+	CommandMessengerRequestInvite = "REQUEST_INVITE"
+)
+
+const (
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_MESSENGER_STATUS"
+)
+
+const (
+	EventMessengerStatusTypeCreated = "CREATED"
+	EventMessengerStatusTypeJoined  = "JOINED"
+	EventMessengerStatusTypeLeft    = "LEFT"
+	EventMessengerStatusTypeError   = "ERROR"
 
 	EventMessengerStatusErrorUnexpected                 = "ERROR_UNEXPECTED"
 	EventMessengerStatusErrorTypeAlreadyJoined1         = "ALREADY_HAVE_JOINED_A_MESSENGER_1"

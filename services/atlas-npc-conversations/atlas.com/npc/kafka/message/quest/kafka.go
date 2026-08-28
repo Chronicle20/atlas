@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic                   topic.Token = "COMMAND_TOPIC_QUEST_CONVERSATION"
-	CommandTypeStartQuestConversation             = "START_QUEST_CONVERSATION"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_QUEST_CONVERSATION"
+)
+
+const (
+	CommandTypeStartQuestConversation = "START_QUEST_CONVERSATION"
 )
 
 type Command[E any] struct {

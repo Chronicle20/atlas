@@ -11,8 +11,11 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandChangeHP             = "CHANGE_HP"
-	CommandChangeMP             = "CHANGE_MP"
+)
+
+const (
+	CommandChangeHP = "CHANGE_HP"
+	CommandChangeMP = "CHANGE_MP"
 )
 
 type Command[E any] struct {
@@ -33,11 +36,14 @@ type ChangeMPCommandBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus           topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeLogin                      = "LOGIN"
-	EventCharacterStatusTypeLogout                     = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged             = "CHANNEL_CHANGED"
-	EventCharacterStatusTypeMapChanged                 = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	EventCharacterStatusTypeLogin          = "LOGIN"
+	EventCharacterStatusTypeLogout         = "LOGOUT"
+	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
 )
 
 type StatusEvent[E any] struct {

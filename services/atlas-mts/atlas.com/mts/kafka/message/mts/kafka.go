@@ -1,8 +1,9 @@
 package mts
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // FailReason* are SEMANTIC failure keys carried in the BUY_FAILED/BID_FAILED
@@ -41,6 +42,9 @@ const (
 	// handled directly here; the saga/ticker-driven ones are routed in their own
 	// phases.
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MTS"
+)
+
+const (
 
 	// --- locally-handled command types (Phase 3) ---
 
@@ -223,6 +227,9 @@ const (
 	// EnvStatusEventTopic names the high-level MTS status/event topic. Every event
 	// body carries transactionId + worldId.
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MTS_STATUS"
+)
+
+const (
 
 	// StatusEventTypeListingCreated reports a listing was created.
 	StatusEventTypeListingCreated = "LISTING_CREATED"

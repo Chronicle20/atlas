@@ -12,17 +12,23 @@ import (
 )
 
 const (
-	EnvCommandTopic                   topic.Token = "COMMAND_TOPIC_QUEST_CONVERSATION"
-	CommandTypeStartQuestConversation             = "START_QUEST_CONVERSATION"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_QUEST_CONVERSATION"
+)
+
+const (
+	CommandTypeStartQuestConversation = "START_QUEST_CONVERSATION"
 )
 
 // Quest service command topic and types (for atlas-quest)
 const (
-	EnvQuestCommandTopic        topic.Token = "COMMAND_TOPIC_QUEST"
-	QuestCommandTypeStart                   = "START"
-	QuestCommandTypeComplete                = "COMPLETE"
-	QuestCommandTypeForfeit                 = "FORFEIT"
-	QuestCommandTypeRestoreItem             = "RESTORE_ITEM"
+	EnvQuestCommandTopic topic.Token = "COMMAND_TOPIC_QUEST"
+)
+
+const (
+	QuestCommandTypeStart       = "START"
+	QuestCommandTypeComplete    = "COMPLETE"
+	QuestCommandTypeForfeit     = "FORFEIT"
+	QuestCommandTypeRestoreItem = "RESTORE_ITEM"
 )
 
 type Command[E any] struct {
@@ -79,11 +85,14 @@ type RestoreItemCommandBody struct {
 
 // Status event types for quest status changes from atlas-quest service
 const (
-	EnvStatusEventTopic            topic.Token = "EVENT_TOPIC_QUEST_STATUS"
-	StatusEventTypeStarted                     = "STARTED"
-	StatusEventTypeCompleted                   = "COMPLETED"
-	StatusEventTypeForfeited                   = "FORFEITED"
-	StatusEventTypeProgressUpdated             = "PROGRESS_UPDATED"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_QUEST_STATUS"
+)
+
+const (
+	StatusEventTypeStarted         = "STARTED"
+	StatusEventTypeCompleted       = "COMPLETED"
+	StatusEventTypeForfeited       = "FORFEITED"
+	StatusEventTypeProgressUpdated = "PROGRESS_UPDATED"
 )
 
 type StatusEvent[E any] struct {

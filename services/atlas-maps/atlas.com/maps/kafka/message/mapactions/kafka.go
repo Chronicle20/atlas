@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_MAP_ACTIONS"
-	CommandTypeEnter             = "ENTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MAP_ACTIONS"
+)
+
+const (
+	CommandTypeEnter = "ENTER"
 )
 
 type Command[E any] struct {

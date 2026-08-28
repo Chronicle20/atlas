@@ -11,13 +11,16 @@ import (
 )
 
 const (
-	EnvCommandTopic         topic.Token = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
-	EnvEventTopicStatus     topic.Token = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
-	CommandAccept                       = "ACCEPT"
-	CommandRelease                      = "RELEASE"
-	StatusEventTypeAccepted             = "ACCEPTED"
-	StatusEventTypeReleased             = "RELEASED"
-	StatusEventTypeError                = "ERROR"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
+)
+
+const (
+	CommandAccept           = "ACCEPT"
+	CommandRelease          = "RELEASE"
+	StatusEventTypeAccepted = "ACCEPTED"
+	StatusEventTypeReleased = "RELEASED"
+	StatusEventTypeError    = "ERROR"
 )
 
 // Command represents a storage compartment command (ACCEPT/RELEASE)

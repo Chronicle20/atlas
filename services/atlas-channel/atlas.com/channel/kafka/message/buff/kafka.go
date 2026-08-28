@@ -12,11 +12,14 @@ import (
 )
 
 const (
-	EnvCommandTopic            topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply                       = "APPLY"
-	CommandTypeCancel                      = "CANCEL"
-	CommandTypeCancelByTypes               = "CANCEL_BY_TYPES"
-	CommandTypeUpdateStatValue             = "UPDATE_STAT_VALUE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+)
+
+const (
+	CommandTypeApply           = "APPLY"
+	CommandTypeCancel          = "CANCEL"
+	CommandTypeCancelByTypes   = "CANCEL_BY_TYPES"
+	CommandTypeUpdateStatValue = "UPDATE_STAT_VALUE"
 	// CommandTypeExpire asks atlas-buffs to re-evaluate ONE character's buffs
 	// and announce whatever has genuinely lapsed. Emitted by the CANCEL_DEBUFF
 	// handler. Named EXPIRE rather than RECONCILE because the server does not
@@ -92,10 +95,13 @@ type UpdateStatValueCommandBody struct {
 }
 
 const (
-	EnvEventStatusTopic        topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
-	EventStatusTypeBuffApplied             = "APPLIED"
-	EventStatusTypeBuffExpired             = "EXPIRED"
-	EventStatusTypeStatUpdated             = "STAT_UPDATED"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+)
+
+const (
+	EventStatusTypeBuffApplied = "APPLIED"
+	EventStatusTypeBuffExpired = "EXPIRED"
+	EventStatusTypeStatUpdated = "STAT_UPDATED"
 )
 
 type StatusEvent[E any] struct {

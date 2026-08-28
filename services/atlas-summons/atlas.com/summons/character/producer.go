@@ -24,6 +24,9 @@ import (
 const (
 	// EnvCommandTopic names the env var holding the atlas-character command topic.
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
 
 	// CommandChangeHP applies a signed HP delta to a character. Mirrors
 	// atlas-character CommandChangeHP.

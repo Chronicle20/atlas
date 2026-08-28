@@ -7,9 +7,12 @@ import (
 
 const (
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MOUNT_STATUS"
-	StatusEventTypeSet              = "SET"
-	StatusEventTypeTick             = "TICK"
-	StatusEventTypeFeed             = "FEED"
+)
+
+const (
+	StatusEventTypeSet  = "SET"
+	StatusEventTypeTick = "TICK"
+	StatusEventTypeFeed = "FEED"
 )
 
 type StatusEvent[E any] struct {

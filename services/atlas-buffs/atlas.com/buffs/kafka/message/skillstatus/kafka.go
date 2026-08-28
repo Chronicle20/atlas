@@ -13,9 +13,12 @@ import (
 )
 
 const (
-	EnvStatusEventTopic    topic.Token = "EVENT_TOPIC_SKILL_STATUS"
-	StatusEventTypeUpdated             = "UPDATED"
-	StatusEventTypeDeleted             = "DELETED"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_SKILL_STATUS"
+)
+
+const (
+	StatusEventTypeUpdated = "UPDATED"
+	StatusEventTypeDeleted = "DELETED"
 )
 
 type StatusEvent[E any] struct {

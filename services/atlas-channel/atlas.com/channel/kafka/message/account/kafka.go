@@ -3,9 +3,12 @@ package account
 import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 const (
-	EnvEventTopicAccountStatus  topic.Token = "EVENT_TOPIC_ACCOUNT_STATUS"
-	EventAccountStatusLoggedIn              = "LOGGED_IN"
-	EventAccountStatusLoggedOut             = "LOGGED_OUT"
+	EnvEventTopicAccountStatus topic.Token = "EVENT_TOPIC_ACCOUNT_STATUS"
+)
+
+const (
+	EventAccountStatusLoggedIn  = "LOGGED_IN"
+	EventAccountStatusLoggedOut = "LOGGED_OUT"
 )
 
 type StatusEvent struct {

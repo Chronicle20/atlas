@@ -18,6 +18,9 @@ import (
 
 const (
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRANSPORT_STATUS"
+)
+
+const (
 
 	// EventStatusVoyageDeparted names a concrete trip in a concrete channel
 	// and carries its whole scope (FR-V3, FR-V4).

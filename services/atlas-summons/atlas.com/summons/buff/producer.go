@@ -26,6 +26,9 @@ import (
 const (
 	// EnvCommandTopic names the env var holding the atlas-buffs command topic.
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+)
+
+const (
 
 	// CommandTypeApply applies a buff to a character. Mirrors atlas-buffs
 	// CommandTypeApply.

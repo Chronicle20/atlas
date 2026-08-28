@@ -8,9 +8,12 @@ import (
 )
 
 const (
-	EnvEventTopicStatus    topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeCreated             = "CREATED"
-	StatusEventTypeDeleted             = "DELETED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	StatusEventTypeCreated = "CREATED"
+	StatusEventTypeDeleted = "DELETED"
 )
 
 // StatusEvent represents a character status event

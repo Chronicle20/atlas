@@ -9,12 +9,20 @@ import (
 )
 
 const (
-	EnvCommandTopic   topic.Token = "COMMAND_TOPIC_REPORT"
-	CommandTypeCreate             = "CREATE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REPORT"
+)
 
+const (
+	CommandTypeCreate = "CREATE"
+)
+
+const (
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_REPORT_STATUS"
-	EventStatusCreated              = "CREATED"
-	EventStatusError                = "ERROR"
+)
+
+const (
+	EventStatusCreated = "CREATED"
+	EventStatusError   = "ERROR"
 
 	ErrorCodeNotFound      = "NOT_FOUND"
 	ErrorCodeInternal      = "INTERNAL"

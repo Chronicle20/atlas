@@ -11,7 +11,9 @@ import (
 
 const (
 	EnvCommandTopicChat topic.Token = "COMMAND_TOPIC_CHARACTER_CHAT"
+)
 
+const (
 	ChatTypeGeneral   = "GENERAL"
 	ChatTypeBuddy     = "BUDDY"
 	ChatTypeParty     = "PARTY"

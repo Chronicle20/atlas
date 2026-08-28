@@ -14,7 +14,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
+)
 
+const (
 	CommandRequestItemConsume     = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll          = "REQUEST_SCROLL"
 	CommandRequestVegaScroll      = "REQUEST_VEGA_SCROLL"
@@ -105,16 +107,19 @@ type CancelConsumableEffectBody struct {
 }
 
 const (
-	EnvEventTopic            topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError                       = "ERROR"
-	EventTypeScroll                      = "SCROLL"
-	EventTypeVegaScroll                  = "VEGA_SCROLL"
-	EventTypeEffectApplied               = "EFFECT_APPLIED"
-	EventTypeRewardEffect                = "REWARD_EFFECT"
-	EventTypeRewardWon                   = "REWARD_WON"
-	EventTypeViciousHammer               = "VICIOUS_HAMMER"
-	EventTypeSkillBookResult             = "SKILL_BOOK_RESULT"
-	EventTypeCatchFailed                 = "CATCH_FAILED"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
+)
+
+const (
+	EventTypeError           = "ERROR"
+	EventTypeScroll          = "SCROLL"
+	EventTypeVegaScroll      = "VEGA_SCROLL"
+	EventTypeEffectApplied   = "EFFECT_APPLIED"
+	EventTypeRewardEffect    = "REWARD_EFFECT"
+	EventTypeRewardWon       = "REWARD_WON"
+	EventTypeViciousHammer   = "VICIOUS_HAMMER"
+	EventTypeSkillBookResult = "SKILL_BOOK_RESULT"
+	EventTypeCatchFailed     = "CATCH_FAILED"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypePetCannotLearn   = "PET_CANNOT_LEARN"

@@ -7,9 +7,12 @@ import (
 )
 
 const (
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_BUDDY_LIST"
-	CommandTypeRequestAdd                = "REQUEST_ADD"
-	CommandTypeRequestDelete             = "REQUEST_DELETE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_BUDDY_LIST"
+)
+
+const (
+	CommandTypeRequestAdd    = "REQUEST_ADD"
+	CommandTypeRequestDelete = "REQUEST_DELETE"
 )
 
 type Command[E any] struct {
@@ -29,13 +32,16 @@ type RequestDeleteBuddyCommandBody struct {
 }
 
 const (
-	EnvStatusEventTopic                topic.Token = "EVENT_TOPIC_BUDDY_LIST_STATUS"
-	StatusEventTypeBuddyAdded                      = "BUDDY_ADDED"
-	StatusEventTypeBuddyRemoved                    = "BUDDY_REMOVED"
-	StatusEventTypeBuddyUpdated                    = "BUDDY_UPDATED"
-	StatusEventTypeBuddyChannelChange              = "BUDDY_CHANNEL_CHANGE"
-	StatusEventTypeBuddyCapacityUpdate             = "CAPACITY_CHANGE"
-	StatusEventTypeError                           = "ERROR"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_BUDDY_LIST_STATUS"
+)
+
+const (
+	StatusEventTypeBuddyAdded          = "BUDDY_ADDED"
+	StatusEventTypeBuddyRemoved        = "BUDDY_REMOVED"
+	StatusEventTypeBuddyUpdated        = "BUDDY_UPDATED"
+	StatusEventTypeBuddyChannelChange  = "BUDDY_CHANNEL_CHANGE"
+	StatusEventTypeBuddyCapacityUpdate = "CAPACITY_CHANGE"
+	StatusEventTypeError               = "ERROR"
 
 	StatusEventErrorListFull          = "BUDDY_LIST_FULL"
 	StatusEventErrorOtherListFull     = "OTHER_BUDDY_LIST_FULL"

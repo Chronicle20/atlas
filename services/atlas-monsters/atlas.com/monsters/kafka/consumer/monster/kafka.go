@@ -10,30 +10,35 @@ import (
 )
 
 const (
-	EnvCommandTopic              topic.Token = "COMMAND_TOPIC_MONSTER"
-	CommandTypeDamage                        = "DAMAGE"
-	CommandTypeDamageFriendly                = "DAMAGE_FRIENDLY"
-	CommandTypeApplyStatus                   = "APPLY_STATUS"
-	CommandTypeCancelStatus                  = "CANCEL_STATUS"
-	CommandTypeUseSkill                      = "USE_SKILL"
-	CommandTypeUseBasicAttack                = "USE_BASIC_ATTACK"
-	CommandTypeApplyStatusField              = "APPLY_STATUS_FIELD"
-	CommandTypeCancelStatusField             = "CANCEL_STATUS_FIELD"
-	CommandTypeUseSkillField                 = "USE_SKILL_FIELD"
-	CommandTypeDestroyField                  = "DESTROY_FIELD"
-	CommandTypeDestroyBySource               = "DESTROY_BY_SOURCE"
-	CommandTypeSpawnField                    = "SPAWN_FIELD"
-	CommandTypeDrainMp                       = "DRAIN_MP"
-	CommandTypeAddPuppet                     = "ADD_PUPPET"
-	CommandTypeRemovePuppet                  = "REMOVE_PUPPET"
-	CommandTypeKill                          = "KILL"
-	CommandTypeCatch                         = "CATCH"
-	CommandTypeClearAggro                    = "CLEAR_AGGRO"
-	CommandTypeForceControl                  = "FORCE_CONTROL"
-	CommandTypeSelfDestruct                  = "SELF_DESTRUCT"
-	CommandTypeSetAggro                      = "SET_AGGRO"
-	CommandTypeBanish                        = "BANISH"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
+)
 
+const (
+	CommandTypeDamage            = "DAMAGE"
+	CommandTypeDamageFriendly    = "DAMAGE_FRIENDLY"
+	CommandTypeApplyStatus       = "APPLY_STATUS"
+	CommandTypeCancelStatus      = "CANCEL_STATUS"
+	CommandTypeUseSkill          = "USE_SKILL"
+	CommandTypeUseBasicAttack    = "USE_BASIC_ATTACK"
+	CommandTypeApplyStatusField  = "APPLY_STATUS_FIELD"
+	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
+	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
+	CommandTypeDestroyField      = "DESTROY_FIELD"
+	CommandTypeDestroyBySource   = "DESTROY_BY_SOURCE"
+	CommandTypeSpawnField        = "SPAWN_FIELD"
+	CommandTypeDrainMp           = "DRAIN_MP"
+	CommandTypeAddPuppet         = "ADD_PUPPET"
+	CommandTypeRemovePuppet      = "REMOVE_PUPPET"
+	CommandTypeKill              = "KILL"
+	CommandTypeCatch             = "CATCH"
+	CommandTypeClearAggro        = "CLEAR_AGGRO"
+	CommandTypeForceControl      = "FORCE_CONTROL"
+	CommandTypeSelfDestruct      = "SELF_DESTRUCT"
+	CommandTypeSetAggro          = "SET_AGGRO"
+	CommandTypeBanish            = "BANISH"
+)
+
+const (
 	EnvCommandTopicMovement topic.Token = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
 

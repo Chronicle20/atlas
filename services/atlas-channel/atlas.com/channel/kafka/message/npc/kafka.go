@@ -10,10 +10,13 @@ import (
 )
 
 const (
-	EnvCommandTopic                 topic.Token = "COMMAND_TOPIC_NPC"
-	CommandTypeStartConversation                = "START_CONVERSATION"
-	CommandTypeContinueConversation             = "CONTINUE_CONVERSATION"
-	CommandTypeEndConversation                  = "END_CONVERSATION"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_NPC"
+)
+
+const (
+	CommandTypeStartConversation    = "START_CONVERSATION"
+	CommandTypeContinueConversation = "CONTINUE_CONVERSATION"
+	CommandTypeEndConversation      = "END_CONVERSATION"
 )
 
 type Command[E any] struct {

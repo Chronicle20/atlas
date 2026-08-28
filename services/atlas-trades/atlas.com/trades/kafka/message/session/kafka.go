@@ -17,8 +17,11 @@ import (
 )
 
 const (
-	EnvEventTopicSessionStatus      topic.Token = "EVENT_TOPIC_SESSION_STATUS"
-	EventSessionStatusTypeDestroyed             = "DESTROYED"
+	EnvEventTopicSessionStatus topic.Token = "EVENT_TOPIC_SESSION_STATUS"
+)
+
+const (
+	EventSessionStatusTypeDestroyed = "DESTROYED"
 )
 
 type StatusEvent struct {

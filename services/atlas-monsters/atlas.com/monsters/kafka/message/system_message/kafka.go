@@ -15,8 +15,11 @@ import (
 )
 
 const (
-	EnvCommandTopic    topic.Token = "COMMAND_TOPIC_SYSTEM_MESSAGE"
-	CommandSendMessage             = "SEND_MESSAGE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SYSTEM_MESSAGE"
+)
+
+const (
+	CommandSendMessage = "SEND_MESSAGE"
 )
 
 type Command[E any] struct {

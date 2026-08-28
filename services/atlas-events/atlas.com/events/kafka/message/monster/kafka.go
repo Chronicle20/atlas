@@ -22,7 +22,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
+)
 
+const (
 	CommandTypeSpawnField      = "SPAWN_FIELD"
 	CommandTypeDestroyBySource = "DESTROY_BY_SOURCE"
 )

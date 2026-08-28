@@ -13,12 +13,15 @@ import (
 )
 
 const (
-	EnvCommandTopic              topic.Token = "COMMAND_TOPIC_MONSTER"
-	CommandTypeApplyStatusField              = "APPLY_STATUS_FIELD"
-	CommandTypeCancelStatusField             = "CANCEL_STATUS_FIELD"
-	CommandTypeUseSkillField                 = "USE_SKILL_FIELD"
-	CommandTypeDestroyField                  = "DESTROY_FIELD"
-	CommandTypeSpawnField                    = "SPAWN_FIELD"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
+)
+
+const (
+	CommandTypeApplyStatusField  = "APPLY_STATUS_FIELD"
+	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
+	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
+	CommandTypeDestroyField      = "DESTROY_FIELD"
+	CommandTypeSpawnField        = "SPAWN_FIELD"
 )
 
 type FieldCommand[E any] struct {

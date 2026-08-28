@@ -11,7 +11,9 @@ import (
 
 const (
 	EnvEventTopic topic.Token = "EVENT_TOPIC_CHARACTER_PENDING_CHANGE"
+)
 
+const (
 	EventTypeCreated  = "PENDING_CHANGE_CREATED"
 	EventTypeResolved = "PENDING_CHANGE_RESOLVED"
 )

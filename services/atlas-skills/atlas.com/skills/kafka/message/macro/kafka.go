@@ -10,7 +10,9 @@ import (
 const (
 	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_SKILL_MACRO"
 	EnvStatusEventTopic topic.Token = "STATUS_EVENT_TOPIC_SKILL_MACRO"
+)
 
+const (
 	CommandTypeUpdate = "UPDATE"
 
 	StatusEventTypeUpdated = "UPDATED"

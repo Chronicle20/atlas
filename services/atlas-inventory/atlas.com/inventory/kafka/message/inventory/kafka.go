@@ -1,15 +1,19 @@
 package inventory
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicStatus           topic.Token = "EVENT_TOPIC_INVENTORY_STATUS"
-	StatusEventTypeCreated                    = "CREATED"
-	StatusEventTypeCreationFailed             = "CREATION_FAILED"
-	StatusEventTypeDeleted                    = "DELETED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_INVENTORY_STATUS"
+)
+
+const (
+	StatusEventTypeCreated        = "CREATED"
+	StatusEventTypeCreationFailed = "CREATION_FAILED"
+	StatusEventTypeDeleted        = "DELETED"
 )
 
 // StatusEvent is the on-wire shape of an inventory status event. TransactionId

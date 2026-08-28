@@ -8,8 +8,11 @@ import (
 )
 
 const (
-	EnvEventTopicCharacterStatus    topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeDeleted             = "DELETED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	EventCharacterStatusTypeDeleted = "DELETED"
 )
 
 type StatusEvent[E any] struct {

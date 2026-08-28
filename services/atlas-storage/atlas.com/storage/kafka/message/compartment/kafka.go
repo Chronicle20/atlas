@@ -12,8 +12,11 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
-	CommandAccept               = "ACCEPT"
-	CommandRelease              = "RELEASE"
+)
+
+const (
+	CommandAccept  = "ACCEPT"
+	CommandRelease = "RELEASE"
 )
 
 // Command represents a storage compartment command (ACCEPT/RELEASE)
@@ -40,10 +43,13 @@ type ReleaseCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus     topic.Token = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
-	StatusEventTypeAccepted             = "ACCEPTED"
-	StatusEventTypeReleased             = "RELEASED"
-	StatusEventTypeError                = "ERROR"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
+)
+
+const (
+	StatusEventTypeAccepted = "ACCEPTED"
+	StatusEventTypeReleased = "RELEASED"
+	StatusEventTypeError    = "ERROR"
 )
 
 // StatusEvent represents a storage compartment status event

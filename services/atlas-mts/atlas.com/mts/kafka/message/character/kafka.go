@@ -20,6 +20,9 @@ const (
 	// ("EVENT_TOPIC_CHARACTER_STATUS") — this service's own message packages name
 	// the const EnvStatusEventTopic (see kafka/message/mts, kafka/message/custody).
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
 
 	// StatusEventTypeNameChanged is the only status type atlas-mts currently
 	// consumes from this topic: it keeps listing.seller_name current for display.

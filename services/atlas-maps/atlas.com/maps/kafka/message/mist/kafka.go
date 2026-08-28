@@ -12,7 +12,9 @@ import (
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MIST"
 	EnvEventTopic   topic.Token = "EVENT_TOPIC_MIST"
+)
 
+const (
 	CommandTypeCreate = "CREATE"
 	CommandTypeCancel = "CANCEL"
 

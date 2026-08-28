@@ -27,6 +27,9 @@ import (
 const (
 	// EnvCommandTopic names the env var holding the atlas-monsters command topic.
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
+)
+
+const (
 
 	// CommandTypeDamage credits a character with damage to a monster (XP / drops /
 	// kill credit). Mirrors atlas-monsters CommandTypeDamage.

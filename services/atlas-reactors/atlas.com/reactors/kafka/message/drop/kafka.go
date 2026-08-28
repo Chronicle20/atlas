@@ -11,12 +11,18 @@ import (
 
 const (
 	EnvEventTopicDropStatus topic.Token = "EVENT_TOPIC_DROP_STATUS"
-	StatusEventTypeCreated              = "CREATED"
+)
+
+const (
+	StatusEventTypeCreated = "CREATED"
 )
 
 const (
 	EnvCommandTopicDrop topic.Token = "COMMAND_TOPIC_DROP"
-	CommandTypeConsume              = "CONSUME"
+)
+
+const (
+	CommandTypeConsume = "CONSUME"
 )
 
 type StatusEvent[E any] struct {

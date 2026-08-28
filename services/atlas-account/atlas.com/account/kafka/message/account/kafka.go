@@ -3,18 +3,25 @@ package account
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_ACCOUNT"
+)
 
+const (
 	CommandTypeCreate = "CREATE"
 	CommandTypeDelete = "DELETE"
+)
 
+const (
 	EnvCommandSessionTopic topic.Token = "COMMAND_TOPIC_ACCOUNT_SESSION"
+)
 
+const (
 	SessionCommandIssuerInternal = "INTERNAL"
 	SessionCommandIssuerLogin    = "LOGIN"
 	SessionCommandIssuerChannel  = "CHANNEL"
@@ -61,17 +68,25 @@ type ProgressStateSessionCommandBody struct {
 type LogoutSessionCommandBody struct{}
 
 const (
-	EnvEventTopicStatus  topic.Token = "EVENT_TOPIC_ACCOUNT_STATUS"
-	EventStatusCreated               = "CREATED"
-	EventStatusLoggedIn              = "LOGGED_IN"
-	EventStatusLoggedOut             = "LOGGED_OUT"
-	EventStatusDeleted               = "DELETED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_ACCOUNT_STATUS"
+)
 
-	EnvEventSessionStatusTopic                    topic.Token = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
-	SessionEventStatusTypeCreated                             = "CREATED"
-	SessionEventStatusTypeStateChanged                        = "STATE_CHANGED"
-	SessionEventStatusTypeRequestLicenseAgreement             = "REQUEST_LICENSE_AGREEMENT"
-	SessionEventStatusTypeError                               = "ERROR"
+const (
+	EventStatusCreated   = "CREATED"
+	EventStatusLoggedIn  = "LOGGED_IN"
+	EventStatusLoggedOut = "LOGGED_OUT"
+	EventStatusDeleted   = "DELETED"
+)
+
+const (
+	EnvEventSessionStatusTopic topic.Token = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
+)
+
+const (
+	SessionEventStatusTypeCreated                 = "CREATED"
+	SessionEventStatusTypeStateChanged            = "STATE_CHANGED"
+	SessionEventStatusTypeRequestLicenseAgreement = "REQUEST_LICENSE_AGREEMENT"
+	SessionEventStatusTypeError                   = "ERROR"
 )
 
 type StatusEvent struct {

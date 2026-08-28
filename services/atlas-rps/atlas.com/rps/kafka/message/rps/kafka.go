@@ -10,6 +10,9 @@ import (
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_RPS"
 	EnvEventTopic   topic.Token = "EVENT_TOPIC_RPS"
+)
+
+const (
 
 	// CommandTypeBegin opens the first round of an already-created (StatusOpen)
 	// session: the player clicked "Start" on the board (serverbound RPS_ACTION

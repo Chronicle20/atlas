@@ -11,12 +11,15 @@ import (
 )
 
 const (
-	EnvEventTopicCharacterStatus  topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogin                      = "LOGIN"
-	StatusEventTypeLogout                     = "LOGOUT"
-	StatusEventTypeMapChanged                 = "MAP_CHANGED"
-	StatusEventTypeChannelChanged             = "CHANNEL_CHANGED"
-	StatusEventTypeJobChanged                 = "JOB_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	StatusEventTypeLogin          = "LOGIN"
+	StatusEventTypeLogout         = "LOGOUT"
+	StatusEventTypeMapChanged     = "MAP_CHANGED"
+	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
+	StatusEventTypeJobChanged     = "JOB_CHANGED"
 )
 
 // StatusEvent mirrors the EVENT_TOPIC_CHARACTER_STATUS envelope, whose types

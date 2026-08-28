@@ -7,8 +7,11 @@ import (
 )
 
 const (
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_CHANNEL_STATUS"
-	CommandTypeStatusRequest             = "STATUS_REQUEST"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHANNEL_STATUS"
+)
+
+const (
+	CommandTypeStatusRequest = "STATUS_REQUEST"
 )
 
 type StatusCommand struct {

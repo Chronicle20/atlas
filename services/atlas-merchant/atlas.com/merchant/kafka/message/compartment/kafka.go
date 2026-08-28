@@ -3,14 +3,17 @@ package compartment
 import (
 	asset2 "atlas-merchant/kafka/message/asset"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_COMPARTMENT"
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
+)
 
+const (
 	CommandAccept  = "ACCEPT"
 	CommandRelease = "RELEASE"
 

@@ -7,8 +7,11 @@ import (
 )
 
 const (
-	EnvCommandTopic        topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandAwardExperience             = "AWARD_EXPERIENCE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandAwardExperience = "AWARD_EXPERIENCE"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"

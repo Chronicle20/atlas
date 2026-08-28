@@ -10,13 +10,16 @@ import (
 )
 
 const (
-	EnvEventTopicCharacterStatus           topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeCreated                    = "CREATED"
-	EventCharacterStatusTypeLogin                      = "LOGIN"
-	EventCharacterStatusTypeLogout                     = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged             = "CHANNEL_CHANGED"
-	EventCharacterStatusTypeMapChanged                 = "MAP_CHANGED"
-	EventCharacterStatusTypeDeleted                    = "DELETED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	EventCharacterStatusTypeCreated        = "CREATED"
+	EventCharacterStatusTypeLogin          = "LOGIN"
+	EventCharacterStatusTypeLogout         = "LOGOUT"
+	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
+	EventCharacterStatusTypeDeleted        = "DELETED"
 )
 
 type StatusEvent[E any] struct {
@@ -71,8 +74,11 @@ type ChangeChannelEventLoginBody struct {
 type StatusEventDeletedBody struct{}
 
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandChangeMap             = "CHANGE_MAP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandChangeMap = "CHANGE_MAP"
 )
 
 type Command[E any] struct {

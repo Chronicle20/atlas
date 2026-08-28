@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic   topic.Token = "COMMAND_TOPIC_REACTOR"
-	CommandTypeCreate             = "CREATE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REACTOR"
+)
+
+const (
+	CommandTypeCreate = "CREATE"
 )
 
 type Command[E any] struct {

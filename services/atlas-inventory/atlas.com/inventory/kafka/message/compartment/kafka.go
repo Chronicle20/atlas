@@ -13,30 +13,33 @@ import (
 )
 
 const (
-	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_COMPARTMENT"
-	CommandEquip                          = "EQUIP"
-	CommandUnequip                        = "UNEQUIP"
-	CommandMove                           = "MOVE"
-	CommandDrop                           = "DROP"
-	CommandRequestReserve                 = "REQUEST_RESERVE"
-	CommandConsume                        = "CONSUME"
-	CommandDestroy                        = "DESTROY"
-	CommandCancelReservation              = "CANCEL_RESERVATION"
-	CommandIncreaseCapacity               = "INCREASE_CAPACITY"
-	CommandCreateAsset                    = "CREATE_ASSET"
-	CommandRecharge                       = "RECHARGE"
-	CommandMerge                          = "MERGE"
-	CommandSort                           = "SORT"
-	CommandAccept                         = "ACCEPT"
-	CommandRelease                        = "RELEASE"
-	CommandExpire                         = "EXPIRE"
-	CommandModifyEquipment                = "MODIFY_EQUIPMENT"
-	CommandChangeTemplate                 = "CHANGE_TEMPLATE"
-	CommandSetOwner                       = "SET_OWNER"
-	CommandApplyLock                      = "APPLY_LOCK"
-	CommandApplyKarma                     = "APPLY_KARMA"
-	CommandExtendExpiration               = "EXTEND_EXPIRATION"
-	CommandResetPetExpiration             = "RESET_PET_EXPIRATION"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+)
+
+const (
+	CommandEquip              = "EQUIP"
+	CommandUnequip            = "UNEQUIP"
+	CommandMove               = "MOVE"
+	CommandDrop               = "DROP"
+	CommandRequestReserve     = "REQUEST_RESERVE"
+	CommandConsume            = "CONSUME"
+	CommandDestroy            = "DESTROY"
+	CommandCancelReservation  = "CANCEL_RESERVATION"
+	CommandIncreaseCapacity   = "INCREASE_CAPACITY"
+	CommandCreateAsset        = "CREATE_ASSET"
+	CommandRecharge           = "RECHARGE"
+	CommandMerge              = "MERGE"
+	CommandSort               = "SORT"
+	CommandAccept             = "ACCEPT"
+	CommandRelease            = "RELEASE"
+	CommandExpire             = "EXPIRE"
+	CommandModifyEquipment    = "MODIFY_EQUIPMENT"
+	CommandChangeTemplate     = "CHANGE_TEMPLATE"
+	CommandSetOwner           = "SET_OWNER"
+	CommandApplyLock          = "APPLY_LOCK"
+	CommandApplyKarma         = "APPLY_KARMA"
+	CommandExtendExpiration   = "EXTEND_EXPIRATION"
+	CommandResetPetExpiration = "RESET_PET_EXPIRATION"
 )
 
 type Command[E any] struct {
@@ -241,18 +244,21 @@ type ResetPetExpirationCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                 topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
-	StatusEventTypeCreated                          = "CREATED"
-	StatusEventTypeDeleted                          = "DELETED"
-	StatusEventTypeCapacityChanged                  = "CAPACITY_CHANGED"
-	StatusEventTypeReserved                         = "RESERVED"
-	StatusEventTypeReservationCancelled             = "RESERVATION_CANCELLED"
-	StatusEventTypeMergeComplete                    = "MERGE_COMPLETE"
-	StatusEventTypeSortComplete                     = "SORT_COMPLETE"
-	StatusEventTypeAccepted                         = "ACCEPTED"
-	StatusEventTypeReleased                         = "RELEASED"
-	StatusEventTypeCreationFailed                   = "CREATION_FAILED"
-	StatusEventTypeError                            = "ERROR"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
+)
+
+const (
+	StatusEventTypeCreated              = "CREATED"
+	StatusEventTypeDeleted              = "DELETED"
+	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
+	StatusEventTypeReserved             = "RESERVED"
+	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
+	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
+	StatusEventTypeSortComplete         = "SORT_COMPLETE"
+	StatusEventTypeAccepted             = "ACCEPTED"
+	StatusEventTypeReleased             = "RELEASED"
+	StatusEventTypeCreationFailed       = "CREATION_FAILED"
+	StatusEventTypeError                = "ERROR"
 
 	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
 	ReleaseCommandFailed = "RELEASE_COMMAND_FAILED"

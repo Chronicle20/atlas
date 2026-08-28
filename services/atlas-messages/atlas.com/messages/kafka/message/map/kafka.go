@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopicMap      topic.Token = "COMMAND_TOPIC_MAP"
-	CommandTypeWeatherStart             = "WEATHER_START"
+	EnvCommandTopicMap topic.Token = "COMMAND_TOPIC_MAP"
+)
+
+const (
+	CommandTypeWeatherStart = "WEATHER_START"
 )
 
 type Command[E any] struct {

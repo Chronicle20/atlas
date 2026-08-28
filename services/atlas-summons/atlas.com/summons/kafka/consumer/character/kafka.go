@@ -10,10 +10,13 @@ import (
 )
 
 const (
-	EnvEventTopicCharacterStatus  topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogout                     = "LOGOUT"
-	StatusEventTypeChannelChanged             = "CHANNEL_CHANGED"
-	StatusEventTypeMapChanged                 = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	StatusEventTypeLogout         = "LOGOUT"
+	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged     = "MAP_CHANGED"
 )
 
 // StatusEvent mirrors the atlas-character EVENT_TOPIC_CHARACTER_STATUS envelope

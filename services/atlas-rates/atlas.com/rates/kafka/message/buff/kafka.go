@@ -10,9 +10,12 @@ import (
 )
 
 const (
-	EnvEventStatusTopic        topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
-	EventStatusTypeBuffApplied             = "APPLIED"
-	EventStatusTypeBuffExpired             = "EXPIRED"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+)
+
+const (
+	EventStatusTypeBuffApplied = "APPLIED"
+	EventStatusTypeBuffExpired = "EXPIRED"
 )
 
 type StatusEvent[E any] struct {

@@ -10,9 +10,12 @@ import (
 )
 
 const (
-	EnvCommandTopic        topic.Token = "COMMAND_TOPIC_CHALKBOARD"
-	CommandChalkboardSet               = "SET"
-	CommandChalkboardClear             = "CLEAR"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHALKBOARD"
+)
+
+const (
+	CommandChalkboardSet   = "SET"
+	CommandChalkboardClear = "CLEAR"
 )
 
 type Command[E any] struct {
@@ -33,9 +36,12 @@ type SetCommandBody struct {
 type ClearCommandBody struct{}
 
 const (
-	EnvEventTopicStatus       topic.Token = "EVENT_TOPIC_CHALKBOARD_STATUS"
-	EventTopicStatusTypeSet               = "SET"
-	EventTopicStatusTypeClear             = "CLEAR"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CHALKBOARD_STATUS"
+)
+
+const (
+	EventTopicStatusTypeSet   = "SET"
+	EventTopicStatusTypeClear = "CLEAR"
 )
 
 type StatusEvent[E any] struct {

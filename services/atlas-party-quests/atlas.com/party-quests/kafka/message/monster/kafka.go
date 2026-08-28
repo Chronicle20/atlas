@@ -12,7 +12,9 @@ import (
 
 const (
 	EnvEventTopicMonsterStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
+)
 
+const (
 	EventStatusDamaged      = "DAMAGED"
 	EventStatusKilled       = "KILLED"
 	EventStatusFriendlyDrop = "FRIENDLY_DROP"

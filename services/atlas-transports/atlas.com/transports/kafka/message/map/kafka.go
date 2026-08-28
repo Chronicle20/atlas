@@ -10,9 +10,12 @@ import (
 )
 
 const (
-	EnvEventTopicMapStatus                topic.Token = "EVENT_TOPIC_MAP_STATUS"
-	EventTopicMapStatusTypeCharacterEnter             = "CHARACTER_ENTER"
-	EventTopicMapStatusTypeCharacterExit              = "CHARACTER_EXIT"
+	EnvEventTopicMapStatus topic.Token = "EVENT_TOPIC_MAP_STATUS"
+)
+
+const (
+	EventTopicMapStatusTypeCharacterEnter = "CHARACTER_ENTER"
+	EventTopicMapStatusTypeCharacterExit  = "CHARACTER_EXIT"
 )
 
 type StatusEvent[E any] struct {

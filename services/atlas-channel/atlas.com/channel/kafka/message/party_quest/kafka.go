@@ -10,7 +10,9 @@ import (
 
 const (
 	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_QUEST_STATUS"
+)
 
+const (
 	EventTypeStageCleared  = "STAGE_CLEARED"
 	EventTypeCharacterLeft = "CHARACTER_LEFT"
 )

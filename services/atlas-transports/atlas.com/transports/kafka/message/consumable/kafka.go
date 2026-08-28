@@ -13,7 +13,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
+)
 
+const (
 	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
 )

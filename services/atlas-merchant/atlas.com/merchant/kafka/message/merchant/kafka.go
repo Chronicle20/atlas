@@ -12,7 +12,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MERCHANT"
+)
 
+const (
 	CommandPlaceShop         = "PLACE_SHOP"
 	CommandOpenShop          = "OPEN_SHOP"
 	CommandCloseShop         = "CLOSE_SHOP"
@@ -138,7 +140,9 @@ type CommandBlacklistBody struct {
 
 const (
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MERCHANT_STATUS"
+)
 
+const (
 	StatusEventShopOpened            = "SHOP_OPENED"
 	StatusEventShopSetup             = "SHOP_SETUP"
 	StatusEventShopClosed            = "SHOP_CLOSED"
@@ -257,7 +261,9 @@ type StatusEventBlacklistUpdatedBody struct {
 
 const (
 	EnvListingEventTopic topic.Token = "EVENT_TOPIC_MERCHANT_LISTING"
+)
 
+const (
 	ListingEventPurchased = "LISTING_PURCHASED"
 )
 

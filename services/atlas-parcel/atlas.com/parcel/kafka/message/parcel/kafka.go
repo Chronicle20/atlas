@@ -1,8 +1,9 @@
 package parcel
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvStatusEventTopic names the parcel status event topic — the arrival

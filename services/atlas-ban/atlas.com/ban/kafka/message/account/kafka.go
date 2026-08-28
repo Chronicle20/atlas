@@ -3,13 +3,16 @@ package account
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	EnvEventSessionStatusTopic topic.Token = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
+)
 
+const (
 	SessionEventStatusTypeCreated      = "CREATED"
 	SessionEventStatusTypeStateChanged = "STATE_CHANGED"
 	SessionEventStatusTypeError        = "ERROR"

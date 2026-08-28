@@ -3,9 +3,12 @@ package seed
 import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 const (
-	EnvEventTopicStatus    topic.Token = "EVENT_TOPIC_SEED_STATUS"
-	StatusEventTypeCreated             = "CREATED"
-	StatusEventTypeFailed              = "FAILED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_SEED_STATUS"
+)
+
+const (
+	StatusEventTypeCreated = "CREATED"
+	StatusEventTypeFailed  = "FAILED"
 )
 
 type StatusEvent[E any] struct {

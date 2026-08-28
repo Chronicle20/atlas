@@ -1,16 +1,20 @@
 package wallet
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicStatus    topic.Token = "EVENT_TOPIC_WALLET_STATUS"
-	EnvCommandTopicWallet  topic.Token = "COMMAND_TOPIC_WALLET"
-	StatusEventTypeCreated             = "CREATED"
-	StatusEventTypeUpdated             = "UPDATED"
-	StatusEventTypeDeleted             = "DELETED"
+	EnvEventTopicStatus   topic.Token = "EVENT_TOPIC_WALLET_STATUS"
+	EnvCommandTopicWallet topic.Token = "COMMAND_TOPIC_WALLET"
+)
+
+const (
+	StatusEventTypeCreated = "CREATED"
+	StatusEventTypeUpdated = "UPDATED"
+	StatusEventTypeDeleted = "DELETED"
 	// StatusEventTypeError reports a failed transactional wallet adjust (missing
 	// wallet, insufficient balance) so a saga waiting on the ADJUST_CURRENCY command
 	// fails fast instead of waiting out its timeout. Only emitted when the command

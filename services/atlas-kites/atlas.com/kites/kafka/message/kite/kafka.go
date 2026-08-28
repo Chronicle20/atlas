@@ -10,9 +10,12 @@ import (
 )
 
 const (
-	EnvCommandTopic    topic.Token = "COMMAND_TOPIC_KITE"
-	CommandKiteCreate              = "CREATE"
-	CommandKiteDestroy             = "DESTROY"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_KITE"
+)
+
+const (
+	CommandKiteCreate  = "CREATE"
+	CommandKiteDestroy = "DESTROY"
 )
 
 // Command is produced by atlas-channel and keyed on characterId, so one
@@ -48,10 +51,13 @@ type DestroyCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                topic.Token = "EVENT_TOPIC_KITE_STATUS"
-	EventTopicStatusTypeCreated                    = "CREATED"
-	EventTopicStatusTypeDestroyed                  = "DESTROYED"
-	EventTopicStatusTypeCreationFailed             = "CREATION_FAILED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_KITE_STATUS"
+)
+
+const (
+	EventTopicStatusTypeCreated        = "CREATED"
+	EventTopicStatusTypeDestroyed      = "DESTROYED"
+	EventTopicStatusTypeCreationFailed = "CREATION_FAILED"
 )
 
 // Destroy reasons.

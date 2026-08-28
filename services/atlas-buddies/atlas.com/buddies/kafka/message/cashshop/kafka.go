@@ -6,9 +6,12 @@ import (
 )
 
 const (
-	EnvEventTopicStatus           topic.Token = "EVENT_TOPIC_CASH_SHOP_STATUS"
-	EventStatusTypeCharacterEnter             = "CHARACTER_ENTER"
-	EventStatusTypeCharacterExit              = "CHARACTER_EXIT"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CASH_SHOP_STATUS"
+)
+
+const (
+	EventStatusTypeCharacterEnter = "CHARACTER_ENTER"
+	EventStatusTypeCharacterExit  = "CHARACTER_EXIT"
 )
 
 type StatusEvent[E any] struct {

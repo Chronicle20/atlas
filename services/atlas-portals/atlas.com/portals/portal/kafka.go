@@ -11,10 +11,13 @@ import (
 
 const (
 	EnvPortalCommandTopic topic.Token = "COMMAND_TOPIC_PORTAL"
-	CommandTypeEnter                  = "ENTER"
-	CommandTypeWarp                   = "WARP"
-	CommandTypeBlock                  = "BLOCK"
-	CommandTypeUnblock                = "UNBLOCK"
+)
+
+const (
+	CommandTypeEnter   = "ENTER"
+	CommandTypeWarp    = "WARP"
+	CommandTypeBlock   = "BLOCK"
+	CommandTypeUnblock = "UNBLOCK"
 )
 
 type commandEvent[E any] struct {

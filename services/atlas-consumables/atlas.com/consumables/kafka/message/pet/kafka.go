@@ -3,9 +3,12 @@ package pet
 import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 const (
-	EnvCommandTopic      topic.Token = "COMMAND_TOPIC_PET"
-	CommandAwardFullness             = "AWARD_FULLNESS"
-	CommandSetSkill                  = "SET_SKILL"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PET"
+)
+
+const (
+	CommandAwardFullness = "AWARD_FULLNESS"
+	CommandSetSkill      = "SET_SKILL"
 )
 
 type Command[E any] struct {

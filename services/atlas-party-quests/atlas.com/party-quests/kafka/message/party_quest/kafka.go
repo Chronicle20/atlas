@@ -10,7 +10,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY_QUEST"
+)
 
+const (
 	CommandTypeRegister          = "REGISTER"
 	CommandTypeStart             = "START"
 	CommandTypeStageClearAttempt = "STAGE_CLEAR_ATTEMPT"
@@ -21,9 +23,13 @@ const (
 	CommandTypeUpdateCustomData  = "UPDATE_CUSTOM_DATA"
 	CommandTypeBroadcastMessage  = "BROADCAST_MESSAGE"
 	CommandTypeEnterBonus        = "ENTER_BONUS"
+)
 
+const (
 	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_QUEST_STATUS"
+)
 
+const (
 	EventTypeInstanceCreated     = "INSTANCE_CREATED"
 	EventTypeRegistrationOpened  = "REGISTRATION_OPENED"
 	EventTypeStarted             = "STARTED"

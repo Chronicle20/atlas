@@ -14,8 +14,11 @@ import (
 )
 
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply             = "APPLY"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+)
+
+const (
+	CommandTypeApply = "APPLY"
 )
 
 type Command[E any] struct {

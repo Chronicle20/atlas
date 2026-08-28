@@ -1,15 +1,19 @@
 package compartment
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic    topic.Token = "COMMAND_TOPIC_COMPARTMENT"
-	CommandDestroy                 = "DESTROY"
-	CommandCreateAsset             = "CREATE_ASSET"
-	CommandRecharge                = "RECHARGE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+)
+
+const (
+	CommandDestroy     = "DESTROY"
+	CommandCreateAsset = "CREATE_ASSET"
+	CommandRecharge    = "RECHARGE"
 )
 
 type Command[E any] struct {

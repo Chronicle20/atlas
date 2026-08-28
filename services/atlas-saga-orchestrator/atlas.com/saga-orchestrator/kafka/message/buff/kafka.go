@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic      topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeCancelAll             = "CANCEL_ALL"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+)
+
+const (
+	CommandTypeCancelAll = "CANCEL_ALL"
 )
 
 type Command[E any] struct {

@@ -16,7 +16,9 @@ import (
 // the JSON decode silently yields zero values.
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_TAMING_MOB_FOOD"
+)
 
+const (
 	CommandRequestFeed = "REQUEST_FEED"
 )
 

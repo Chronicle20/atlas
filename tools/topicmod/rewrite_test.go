@@ -11,7 +11,7 @@ import (
 )
 
 func TestRewrite(t *testing.T) {
-	cases := []string{"r1_decl", "r2_buffer", "r3_propagate", "r3_propagate_decl", "r3_propagate_multi", "r4_newconfig", "r4_newconfig_delegate"}
+	cases := []string{"r1_decl", "r2_buffer", "r3_propagate", "r3_propagate_decl", "r3_propagate_multi", "r4_newconfig", "r4_newconfig_delegate", "r5_split"}
 
 	for _, name := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -109,6 +109,38 @@ func InitHandlers(l logrus.FieldLogger) (t string, err error) {
 	const wantReason = "assignment-form EnvProvider discard has no preceding `var <name> string` declaration in the same block to hoist `var err error` after"
 	if residue[0].Rule != "R3" || residue[0].Reason != wantReason {
 		t.Fatalf("Rewrite() residue = %+v, want {Rule: R3, Reason: %s}", residue[0], wantReason)
+	}
+}
+
+// TestRewriteR5PreservesIota pins R5's guard against splitting an implicit-
+// repetition const spec (empty Values, relying on the preceding spec's
+// value/type) away from what it repeats from — doing so would change the
+// repeated spec's value, not just its grouping.
+func TestRewriteR5PreservesIota(t *testing.T) {
+	const src = `package character
+
+const (
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	StateFirst StatusState = iota
+	StateSecond
+	StateThird
+)
+`
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "kafka.go", src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	changed, residue := Rewrite(fset, f, "kafka.go")
+	if changed {
+		t.Fatalf("Rewrite() reported a change; want none since neither const group mixes a topic.Token head with untyped explicit-value siblings")
+	}
+	if len(residue) != 0 {
+		t.Fatalf("Rewrite() residue = %+v, want none", residue)
 	}
 }
 

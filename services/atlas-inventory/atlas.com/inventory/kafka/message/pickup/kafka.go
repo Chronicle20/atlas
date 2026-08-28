@@ -11,7 +11,10 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP"
-	CommandType                 = "ITEM_CONSUMED_ON_PICKUP"
+)
+
+const (
+	CommandType = "ITEM_CONSUMED_ON_PICKUP"
 )
 
 type Command struct {

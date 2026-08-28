@@ -11,8 +11,11 @@ import (
 
 const (
 	EnvPortalCommandTopic topic.Token = "COMMAND_TOPIC_PORTAL"
-	CommandTypeEnter                  = "ENTER"
-	CommandTypeWarp                   = "WARP"
+)
+
+const (
+	CommandTypeEnter = "ENTER"
+	CommandTypeWarp  = "WARP"
 )
 
 type Command[E any] struct {

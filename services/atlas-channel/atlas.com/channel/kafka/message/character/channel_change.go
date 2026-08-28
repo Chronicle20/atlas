@@ -10,7 +10,10 @@ import (
 
 const (
 	EnvCommandTopicChannelChangeRequest topic.Token = "COMMAND_TOPIC_CHARACTER_CHANNEL_CHANGE_REQUEST"
-	CommandChannelChangeRequest                     = "CHANNEL_CHANGE_REQUEST"
+)
+
+const (
+	CommandChannelChangeRequest = "CHANNEL_CHANGE_REQUEST"
 )
 
 type ChannelChangeRequestCommand struct {

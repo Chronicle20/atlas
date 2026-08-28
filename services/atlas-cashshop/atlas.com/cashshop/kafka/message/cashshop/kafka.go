@@ -8,23 +8,26 @@ import (
 )
 
 const (
-	EnvCommandTopic                               topic.Token = "COMMAND_TOPIC_CASH_SHOP"
-	CommandTypeRequestPurchase                                = "REQUEST_PURCHASE"
-	CommandTypeRequestInventoryIncreaseByType                 = "REQUEST_INVENTORY_INCREASE_BY_TYPE"
-	CommandTypeRequestInventoryIncreaseByItem                 = "REQUEST_INVENTORY_INCREASE_BY_ITEM"
-	CommandTypeRequestStorageIncrease                         = "REQUEST_STORAGE_INCREASE"
-	CommandTypeRequestStorageIncreaseByItem                   = "REQUEST_STORAGE_INCREASE_BY_ITEM"
-	CommandTypeRequestCharacterSlotIncreaseByItem             = "REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM"
-	CommandTypeExpire                                         = "EXPIRE"
-	CommandTypeOpenSurprise                                   = "OPEN_SURPRISE"
-	CommandTypeRequestCouponRedemption                        = "REQUEST_COUPON_REDEMPTION"
-	CommandTypeRequestLockerRebate                            = "REQUEST_LOCKER_REBATE"
-	CommandTypeRequestGiftPurchase                            = "REQUEST_GIFT_PURCHASE"
-	CommandTypeRequestPackagePurchase                         = "REQUEST_PACKAGE_PURCHASE"
-	CommandTypeRequestRingPurchase                            = "REQUEST_RING_PURCHASE"
-	CommandTypeRequestEquipSlotIncrease                       = "REQUEST_EQUIP_SLOT_INCREASE"
-	CommandTypeAcknowledgeGifts                               = "ACKNOWLEDGE_GIFTS"
-	CommandTypeMarkGiftNoteSent                               = "MARK_GIFT_NOTE_SENT"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CASH_SHOP"
+)
+
+const (
+	CommandTypeRequestPurchase                    = "REQUEST_PURCHASE"
+	CommandTypeRequestInventoryIncreaseByType     = "REQUEST_INVENTORY_INCREASE_BY_TYPE"
+	CommandTypeRequestInventoryIncreaseByItem     = "REQUEST_INVENTORY_INCREASE_BY_ITEM"
+	CommandTypeRequestStorageIncrease             = "REQUEST_STORAGE_INCREASE"
+	CommandTypeRequestStorageIncreaseByItem       = "REQUEST_STORAGE_INCREASE_BY_ITEM"
+	CommandTypeRequestCharacterSlotIncreaseByItem = "REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM"
+	CommandTypeExpire                             = "EXPIRE"
+	CommandTypeOpenSurprise                       = "OPEN_SURPRISE"
+	CommandTypeRequestCouponRedemption            = "REQUEST_COUPON_REDEMPTION"
+	CommandTypeRequestLockerRebate                = "REQUEST_LOCKER_REBATE"
+	CommandTypeRequestGiftPurchase                = "REQUEST_GIFT_PURCHASE"
+	CommandTypeRequestPackagePurchase             = "REQUEST_PACKAGE_PURCHASE"
+	CommandTypeRequestRingPurchase                = "REQUEST_RING_PURCHASE"
+	CommandTypeRequestEquipSlotIncrease           = "REQUEST_EQUIP_SLOT_INCREASE"
+	CommandTypeAcknowledgeGifts                   = "ACKNOWLEDGE_GIFTS"
+	CommandTypeMarkGiftNoteSent                   = "MARK_GIFT_NOTE_SENT"
 
 	// CommandTypeExtendEquipSlot is an INTERNAL follow-up command, never sent
 	// by atlas-channel: PurchaseEquipSlotAndEmit (cashshop/equipslot.go)
@@ -234,19 +237,22 @@ type ExtendEquipSlotCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                       topic.Token = "EVENT_TOPIC_CASH_SHOP_STATUS"
-	StatusEventTypeInventoryCapacityIncreased             = "INVENTORY_CAPACITY_INCREASED"
-	StatusEventTypePurchase                               = "PURCHASE"
-	StatusEventTypeError                                  = "ERROR"
-	StatusEventTypeSurpriseOpened                         = "SURPRISE_OPENED"
-	StatusEventTypeSurpriseFailed                         = "SURPRISE_FAILED"
-	StatusEventTypeCouponRedeemed                         = "COUPON_REDEEMED"
-	StatusEventTypeCouponFailed                           = "COUPON_FAILED"
-	StatusEventTypeLockerRebated                          = "LOCKER_REBATED"
-	StatusEventTypeGiftPurchased                          = "GIFT_PURCHASED"
-	StatusEventTypePackagePurchased                       = "PACKAGE_PURCHASED"
-	StatusEventTypeRingPurchased                          = "RING_PURCHASED"
-	StatusEventTypeEquipSlotIncreased                     = "EQUIP_SLOT_INCREASED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CASH_SHOP_STATUS"
+)
+
+const (
+	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
+	StatusEventTypePurchase                   = "PURCHASE"
+	StatusEventTypeError                      = "ERROR"
+	StatusEventTypeSurpriseOpened             = "SURPRISE_OPENED"
+	StatusEventTypeSurpriseFailed             = "SURPRISE_FAILED"
+	StatusEventTypeCouponRedeemed             = "COUPON_REDEEMED"
+	StatusEventTypeCouponFailed               = "COUPON_FAILED"
+	StatusEventTypeLockerRebated              = "LOCKER_REBATED"
+	StatusEventTypeGiftPurchased              = "GIFT_PURCHASED"
+	StatusEventTypePackagePurchased           = "PACKAGE_PURCHASED"
+	StatusEventTypeRingPurchased              = "RING_PURCHASED"
+	StatusEventTypeEquipSlotIncreased         = "EQUIP_SLOT_INCREASED"
 )
 
 type StatusEvent[E any] struct {

@@ -11,7 +11,10 @@ import (
 
 const (
 	EnvEventTopicMonsterStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
-	EventMonsterStatusKilled               = "KILLED"
+)
+
+const (
+	EventMonsterStatusKilled = "KILLED"
 )
 
 type StatusEvent[E any] struct {

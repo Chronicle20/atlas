@@ -17,6 +17,12 @@
 //   - R4: retypes the `NewConfig` curried token wrapper's `token string`
 //     parameter to `topic.Token` and turns its discarded EnvProvider error
 //     into a fatal log.
+//   - R5: splits a const group in which a `topic.Token`-typed constant sits
+//     directly beside untyped sibling constants (e.g. event/command type
+//     strings) into separate const declarations, so no group is left with
+//     an explicitly typed head followed by an implicitly-typed tail
+//     (staticcheck SA9004). The siblings are not topic tokens, so they are
+//     never retyped to `topic.Token` — only regrouped.
 //
 // Sites the rules cannot safely rewrite are reported as residue
 // findings rather than silently skipped.
@@ -47,17 +53,19 @@ type Finding struct {
 	Reason string
 }
 
-// Rewrite applies R4, R3, R1, and R2 (in that order) to f in place,
+// Rewrite applies R4, R3, R1, R2, and R5 (in that order) to f in place,
 // returning whether it changed anything and any residue findings it could
 // not safely rewrite. R4 runs before R3 so that R3 does not re-handle the
-// discarded-error assignment R4 already turned into a fatal log.
+// discarded-error assignment R4 already turned into a fatal log. R5 runs
+// last, after R1 has assigned any `topic.Token` types R5 splits groups on.
 func Rewrite(fset *token.FileSet, f *ast.File, path string) (changed bool, residue []Finding) {
 	c4, r4 := rewriteNewConfig(fset, f)
 	c3, r3 := rewriteEnvProviderErrors(fset, f)
 	c1, r1 := rewriteDecls(fset, f)
 	c2, r2 := rewriteBuffer(fset, f)
+	c5 := rewriteMixedConstGroups(f)
 
-	changed = c4 || c3 || c1 || c2
+	changed = c4 || c3 || c1 || c2 || c5
 	residue = append(residue, r4...)
 	residue = append(residue, r3...)
 	residue = append(residue, r1...)
@@ -170,6 +178,103 @@ func isTopicTokenLiteral(expr ast.Expr) bool {
 		return false
 	}
 	return topicTokenShape.MatchString(value)
+}
+
+// isTopicTokenTyped reports whether vs's explicit type is `topic.Token`,
+// the type R1 assigns to a topic-token constant declaration.
+func isTopicTokenTyped(vs *ast.ValueSpec) bool {
+	sel, ok := vs.Type.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	x, ok := sel.X.(*ast.Ident)
+	return ok && x.Name == "topic" && sel.Sel.Name == "Token"
+}
+
+// groupConstSpecs partitions specs into the runs rewriteMixedConstGroups
+// should emit as separate const declarations: a boundary is placed before
+// specs[i] whenever exactly one of specs[i] and specs[i-1] is
+// `topic.Token`-typed and both carry their own explicit value (never
+// between a spec and an implicit-repetition sibling with no Values, which
+// would change that sibling's value). Two adjacent `topic.Token`-typed
+// specs are left together — SA9004 never fires on an all-typed run, so
+// there is nothing to split there. It reports whether any boundary was
+// found.
+func groupConstSpecs(specs []ast.Spec) (groups [][]ast.Spec, needsSplit bool) {
+	var cur []ast.Spec
+	for i, spec := range specs {
+		vs := spec.(*ast.ValueSpec)
+		if i > 0 {
+			prev := specs[i-1].(*ast.ValueSpec)
+			boundary := len(vs.Values) > 0 && len(prev.Values) > 0 &&
+				isTopicTokenTyped(vs) != isTopicTokenTyped(prev)
+			if boundary {
+				groups = append(groups, cur)
+				cur = nil
+				needsSplit = true
+			}
+		}
+		cur = append(cur, spec)
+	}
+	groups = append(groups, cur)
+	return groups, needsSplit
+}
+
+// rewriteMixedConstGroups implements R5: split every const declaration
+// whose specs mix a `topic.Token`-typed constant with untyped siblings into
+// separate const declarations, one per run groupConstSpecs identifies. This
+// is a pure regrouping — no spec's type or value changes — so it is safe
+// regardless of what the siblings mean; it exists solely so the split
+// groups no longer present staticcheck SA9004's "only the first constant in
+// this group has an explicit type" shape.
+func rewriteMixedConstGroups(f *ast.File) (changed bool) {
+	out := make([]ast.Decl, 0, len(f.Decls))
+	for _, decl := range f.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.CONST || !gd.Lparen.IsValid() || len(gd.Specs) < 2 {
+			out = append(out, decl)
+			continue
+		}
+		groups, needsSplit := groupConstSpecs(gd.Specs)
+		if !needsSplit {
+			out = append(out, decl)
+			continue
+		}
+		changed = true
+		origRparen := gd.Rparen
+		// The first group keeps mutating gd itself, rather than a freshly
+		// built GenDecl, so gd's real TokPos/Doc association — which the
+		// printer's file-wide comment interleaving keys off, not just the
+		// Doc field — stays correct. Only groups[1:] become new decls.
+		gd.Specs = groups[0]
+		lparen := origRparen
+		if len(groups) > 1 {
+			lparen = groups[0][len(groups[0])-1].End()
+			gd.Rparen = lparen
+		}
+		out = append(out, gd)
+		for i := 1; i < len(groups); i++ {
+			specs := groups[i]
+			rparen := origRparen
+			if i != len(groups)-1 {
+				// Not the final group: close right after this group's own
+				// last spec rather than at the original closing paren,
+				// which sits after every later group's specs too.
+				rparen = specs[len(specs)-1].End()
+			}
+			out = append(out, &ast.GenDecl{
+				Tok:    token.CONST,
+				Lparen: lparen,
+				Specs:  specs,
+				Rparen: rparen,
+			})
+			lparen = rparen
+		}
+	}
+	if changed {
+		f.Decls = out
+	}
+	return changed
 }
 
 // stringSliceMapType reports whether t is `map[string][]<expr>` for any

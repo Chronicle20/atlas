@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_MONSTER"
-	CommandTypeCatch             = "CATCH"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
+)
+
+const (
+	CommandTypeCatch = "CATCH"
 )
 
 // Command mirrors atlas-monsters' shared command envelope. MonsterId carries
@@ -35,8 +38,11 @@ type CatchCommandBody struct {
 }
 
 const (
-	EnvEventTopicCatch        topic.Token = "EVENT_TOPIC_MONSTER_CATCH"
-	EventMonsterCatchResolved             = "CATCH_RESOLVED"
+	EnvEventTopicCatch topic.Token = "EVENT_TOPIC_MONSTER_CATCH"
+)
+
+const (
+	EventMonsterCatchResolved = "CATCH_RESOLVED"
 )
 
 // Event mirrors atlas-monsters' status-event envelope on the dedicated catch

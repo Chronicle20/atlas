@@ -15,10 +15,13 @@ import (
 // with the producer. Only the LOGOUT/CHANNEL_CHANGED/MAP_CHANGED subset
 // relevant to door cleanup is mirrored here.
 const (
-	EnvEventTopicCharacterStatus  topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogout                     = "LOGOUT"
-	StatusEventTypeChannelChanged             = "CHANNEL_CHANGED"
-	StatusEventTypeMapChanged                 = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	StatusEventTypeLogout         = "LOGOUT"
+	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged     = "MAP_CHANGED"
 )
 
 type StatusEvent[E any] struct {

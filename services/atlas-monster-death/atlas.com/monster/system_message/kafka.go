@@ -10,7 +10,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SYSTEM_MESSAGE"
+)
 
+const (
 	CommandShowHint = "SHOW_HINT"
 )
 

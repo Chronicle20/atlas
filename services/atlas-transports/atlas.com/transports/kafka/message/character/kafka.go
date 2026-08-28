@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap             = "CHANGE_MAP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandCharacterChangeMap = "CHANGE_MAP"
 )
 
 type Command[E any] struct {
@@ -29,9 +32,12 @@ type ChangeMapBody struct {
 }
 
 const (
-	EnvEventTopicStatus   topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogin              = "LOGIN"
-	StatusEventTypeLogout             = "LOGOUT"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	StatusEventTypeLogin  = "LOGIN"
+	StatusEventTypeLogout = "LOGOUT"
 )
 
 type StatusEvent[E any] struct {

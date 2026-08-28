@@ -11,7 +11,9 @@ import (
 
 const (
 	EnvCommandTopicMap topic.Token = "COMMAND_TOPIC_MAP"
+)
 
+const (
 	CommandTypeWeatherStart = "WEATHER_START"
 
 	CommandTypePlayJukebox = "PLAY_JUKEBOX"

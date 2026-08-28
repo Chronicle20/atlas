@@ -8,13 +8,21 @@ import (
 )
 
 const (
-	EnvEventTopicCharacterStatus       topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeLogin                  = "LOGIN"
-	EventCharacterStatusTypeLogout                 = "LOGOUT"
-	EventCharacterStatusTypeMapChanged             = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
 
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandRequestChangeMeso             = "REQUEST_CHANGE_MESO"
+const (
+	EventCharacterStatusTypeLogin      = "LOGIN"
+	EventCharacterStatusTypeLogout     = "LOGOUT"
+	EventCharacterStatusTypeMapChanged = "MAP_CHANGED"
+)
+
+const (
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
 
 	StatusEventTypeMesoChanged        = "MESO_CHANGED"
 	StatusEventTypeError              = "ERROR"

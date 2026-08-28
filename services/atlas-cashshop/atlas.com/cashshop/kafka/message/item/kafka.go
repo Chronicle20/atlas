@@ -5,7 +5,9 @@ import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CASH_ITEM"
 	EnvStatusTopic  topic.Token = "STATUS_TOPIC_CASH_ITEM"
+)
 
+const (
 	CommandCreate = "CREATE"
 
 	StatusCreated = "CREATED"

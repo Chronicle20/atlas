@@ -3,8 +3,9 @@ package custody
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
@@ -12,6 +13,9 @@ const (
 	// saga orchestrator dispatches AcceptToMtsListing / ReleaseFromMtsHolding
 	// commands here, mirroring COMMAND_TOPIC_CASH_COMPARTMENT.
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MTS_CUSTODY"
+)
+
+const (
 
 	// CommandAcceptToMtsListing creates the listing row in active state from the
 	// carried item snapshot (the item has already left the seller inventory).
@@ -153,6 +157,9 @@ type RestoreListingFromHoldingCommandBody struct {
 const (
 	// EnvStatusEventTopic names the custody status (ack) topic.
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MTS_CUSTODY_STATUS"
+)
+
+const (
 
 	// StatusEventTypeAccepted acks an AcceptToMtsListing command (row created or
 	// already present — both are success).

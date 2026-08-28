@@ -10,11 +10,19 @@ import (
 )
 
 const (
-	EnvEventTopicCharacterStatus        topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeStatChanged             = "STAT_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
 
-	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap             = "CHANGE_MAP"
+const (
+	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
+)
+
+const (
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandCharacterChangeMap = "CHANGE_MAP"
 )
 
 type statusEvent[E any] struct {

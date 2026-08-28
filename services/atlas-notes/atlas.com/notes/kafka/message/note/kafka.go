@@ -13,7 +13,9 @@ import (
 const (
 	EnvCommandTopic         topic.Token = "COMMAND_TOPIC_NOTE"
 	EnvEventTopicNoteStatus topic.Token = "EVENT_TOPIC_NOTE_STATUS"
+)
 
+const (
 	CommandTypeCreate  = "CREATE"
 	CommandTypeDiscard = "DISCARD"
 

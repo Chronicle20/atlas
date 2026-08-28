@@ -21,7 +21,9 @@ import (
 const (
 	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_TRADE"
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRADE_STATUS"
+)
 
+const (
 	CommandTypeCreateRoom    = "CREATE_ROOM"
 	CommandTypeInvite        = "INVITE"
 	CommandTypeDeclineInvite = "DECLINE_INVITE"

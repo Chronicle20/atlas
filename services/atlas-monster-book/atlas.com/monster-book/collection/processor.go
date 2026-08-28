@@ -39,9 +39,12 @@ var (
 // only the fields the consumer actually reads (CharacterId, Type,
 // Body.Distributions[].ExperienceType, Body.Distributions[].Amount) are populated.
 const (
-	envExperienceTopic                    topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	experienceStatusEventTypeChanged                  = "EXPERIENCE_CHANGED"
-	experienceDistributionTypeMonsterBook             = "MONSTER_BOOK"
+	envExperienceTopic topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	experienceStatusEventTypeChanged      = "EXPERIENCE_CHANGED"
+	experienceDistributionTypeMonsterBook = "MONSTER_BOOK"
 )
 
 type experienceDistribution struct {

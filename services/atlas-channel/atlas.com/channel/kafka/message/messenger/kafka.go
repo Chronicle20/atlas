@@ -6,10 +6,13 @@ import (
 )
 
 const (
-	EnvCommandTopic               topic.Token = "COMMAND_TOPIC_MESSENGER"
-	CommandMessengerCreate                    = "CREATE"
-	CommandMessengerLeave                     = "LEAVE"
-	CommandMessengerRequestInvite             = "REQUEST_INVITE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MESSENGER"
+)
+
+const (
+	CommandMessengerCreate        = "CREATE"
+	CommandMessengerLeave         = "LEAVE"
+	CommandMessengerRequestInvite = "REQUEST_INVITE"
 )
 
 type Command[E any] struct {
@@ -29,11 +32,14 @@ type RequestInviteBody struct {
 }
 
 const (
-	EnvEventStatusTopic             topic.Token = "EVENT_TOPIC_MESSENGER_STATUS"
-	EventMessengerStatusTypeCreated             = "CREATED"
-	EventMessengerStatusTypeJoined              = "JOINED"
-	EventMessengerStatusTypeLeft                = "LEFT"
-	EventMessengerStatusTypeError               = "ERROR"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_MESSENGER_STATUS"
+)
+
+const (
+	EventMessengerStatusTypeCreated = "CREATED"
+	EventMessengerStatusTypeJoined  = "JOINED"
+	EventMessengerStatusTypeLeft    = "LEFT"
+	EventMessengerStatusTypeError   = "ERROR"
 )
 
 type StatusEvent[E any] struct {

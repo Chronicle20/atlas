@@ -11,8 +11,11 @@ import (
 
 // Command topic and type constants
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_DROP"
-	CommandTypeSpawn             = "SPAWN"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_DROP"
+)
+
+const (
+	CommandTypeSpawn = "SPAWN"
 )
 
 // Command is the generic command structure for drop commands

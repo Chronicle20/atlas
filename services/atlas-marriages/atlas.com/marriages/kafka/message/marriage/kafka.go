@@ -1,8 +1,9 @@
 package marriage
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Topic environment variable names

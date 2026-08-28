@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandRequestChangeMeso             = "REQUEST_CHANGE_MESO"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
 )
 
 type Command[E any] struct {
@@ -29,10 +32,13 @@ type RequestChangeMesoBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus  topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogout                     = "LOGOUT"
-	StatusEventTypeChannelChanged             = "CHANNEL_CHANGED"
-	StatusEventTypeMapChanged                 = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	StatusEventTypeLogout         = "LOGOUT"
+	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged     = "MAP_CHANGED"
 )
 
 type StatusEvent[E any] struct {

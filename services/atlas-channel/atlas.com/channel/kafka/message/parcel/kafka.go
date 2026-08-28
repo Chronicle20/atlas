@@ -13,8 +13,11 @@ import (
 // services/atlas-saga-orchestrator/.../kafka/message/parcel/kafka.go —
 // ShowParcelCommand there is this same shape).
 const (
-	EnvCommandTopic       topic.Token = "COMMAND_TOPIC_PARCEL"
-	CommandTypeShowParcel             = "SHOW_PARCEL"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARCEL"
+)
+
+const (
+	CommandTypeShowParcel = "SHOW_PARCEL"
 )
 
 // ShowParcelCommand is received from the saga-orchestrator to display the

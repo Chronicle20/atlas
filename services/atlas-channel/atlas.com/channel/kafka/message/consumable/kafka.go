@@ -14,7 +14,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
+)
 
+const (
 	CommandRequestItemConsume   = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll        = "REQUEST_SCROLL"
 	CommandRequestItemReward    = "REQUEST_ITEM_REWARD"
@@ -77,12 +79,15 @@ type RequestCatchMonsterBody struct {
 }
 
 const (
-	EnvEventTopic            topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError                       = "ERROR"
-	EventTypeScroll                      = "SCROLL"
-	EventTypeSkillBookResult             = "SKILL_BOOK_RESULT"
-	EventTypeVegaScroll                  = "VEGA_SCROLL"
-	EventTypeViciousHammer               = "VICIOUS_HAMMER"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
+)
+
+const (
+	EventTypeError           = "ERROR"
+	EventTypeScroll          = "SCROLL"
+	EventTypeSkillBookResult = "SKILL_BOOK_RESULT"
+	EventTypeVegaScroll      = "VEGA_SCROLL"
+	EventTypeViciousHammer   = "VICIOUS_HAMMER"
 
 	EventTypeRewardEffect = "REWARD_EFFECT"
 	EventTypeRewardWon    = "REWARD_WON"

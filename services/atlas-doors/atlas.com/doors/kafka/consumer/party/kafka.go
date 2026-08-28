@@ -10,14 +10,17 @@ import (
 // The field names and json tags must stay byte-compatible with the producer.
 // Source of truth: services/atlas-parties/atlas.com/parties/party/kafka.go
 const (
-	EnvEventStatusTopic              topic.Token = "EVENT_TOPIC_PARTY_STATUS"
-	EventPartyStatusTypeCreated                  = "CREATED"
-	EventPartyStatusTypeJoined                   = "JOINED"
-	EventPartyStatusTypeLeft                     = "LEFT"
-	EventPartyStatusTypeExpel                    = "EXPEL"
-	EventPartyStatusTypeDisband                  = "DISBAND"
-	EventPartyStatusTypeChangeLeader             = "CHANGE_LEADER"
-	EventPartyStatusTypeError                    = "ERROR"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_STATUS"
+)
+
+const (
+	EventPartyStatusTypeCreated      = "CREATED"
+	EventPartyStatusTypeJoined       = "JOINED"
+	EventPartyStatusTypeLeft         = "LEFT"
+	EventPartyStatusTypeExpel        = "EXPEL"
+	EventPartyStatusTypeDisband      = "DISBAND"
+	EventPartyStatusTypeChangeLeader = "CHANGE_LEADER"
+	EventPartyStatusTypeError        = "ERROR"
 )
 
 type StatusEvent[E any] struct {

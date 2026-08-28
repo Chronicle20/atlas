@@ -14,7 +14,9 @@ import (
 // (mount) food. Task 32's consumables consumer MUST decode this Command shape.
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_TAMING_MOB_FOOD"
+)
 
+const (
 	CommandRequestFeed = "REQUEST_FEED"
 )
 

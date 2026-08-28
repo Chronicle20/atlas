@@ -13,8 +13,11 @@ import (
 
 const (
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRANSPORT_STATUS"
-	EventStatusArrived              = "ARRIVED"
-	EventStatusDeparted             = "DEPARTED"
+)
+
+const (
+	EventStatusArrived  = "ARRIVED"
+	EventStatusDeparted = "DEPARTED"
 
 	// Voyage lifecycle, distinct from the observation-deck visuals above.
 	// ARRIVED/DEPARTED tell a watcher on the pier what the docked ship looks

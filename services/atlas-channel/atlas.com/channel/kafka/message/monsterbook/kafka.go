@@ -1,20 +1,28 @@
 package monsterbook
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	// Inbound (commands)
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER_BOOK"
+)
 
+const (
 	CommandTypeCardPickedUp = "CARD_PICKED_UP"
 	CommandTypeSetCover     = "SET_COVER"
+)
+
+const (
 
 	// Outbound (statuses)
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_MONSTER_BOOK_STATUS"
+)
 
+const (
 	StatusEventTypeCardAdded    = "CARD_ADDED"
 	StatusEventTypeCoverChanged = "COVER_CHANGED"
 	StatusEventTypeStatsChanged = "STATS_CHANGED"

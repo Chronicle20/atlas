@@ -7,12 +7,15 @@ import (
 )
 
 const (
-	EnvEventMemberStatusTopic              topic.Token = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
-	EventPartyMemberStatusTypeLogin                    = "LOGIN"
-	EventPartyMemberStatusTypeLogout                   = "LOGOUT"
-	EventPartyMemberStatusTypeLevelChanged             = "LEVEL_CHANGED"
-	EventPartyMemberStatusTypeJobChanged               = "JOB_CHANGED"
-	EventPartyMemberStatusTypeNameChanged              = "NAME_CHANGED"
+	EnvEventMemberStatusTopic topic.Token = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
+)
+
+const (
+	EventPartyMemberStatusTypeLogin        = "LOGIN"
+	EventPartyMemberStatusTypeLogout       = "LOGOUT"
+	EventPartyMemberStatusTypeLevelChanged = "LEVEL_CHANGED"
+	EventPartyMemberStatusTypeJobChanged   = "JOB_CHANGED"
+	EventPartyMemberStatusTypeNameChanged  = "NAME_CHANGED"
 )
 
 type memberStatusEvent[E any] struct {

@@ -12,12 +12,15 @@ import (
 )
 
 const (
-	EnvCommandTopic            topic.Token = "COMMAND_TOPIC_STORAGE"
-	CommandTypeDeposit                     = "DEPOSIT"
-	CommandTypeWithdraw                    = "WITHDRAW"
-	CommandTypeUpdateMesos                 = "UPDATE_MESOS"
-	CommandTypeDepositRollback             = "DEPOSIT_ROLLBACK"
-	CommandTypeShowStorage                 = "SHOW_STORAGE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_STORAGE"
+)
+
+const (
+	CommandTypeDeposit         = "DEPOSIT"
+	CommandTypeWithdraw        = "WITHDRAW"
+	CommandTypeUpdateMesos     = "UPDATE_MESOS"
+	CommandTypeDepositRollback = "DEPOSIT_ROLLBACK"
+	CommandTypeShowStorage     = "SHOW_STORAGE"
 )
 
 type Command[E any] struct {
@@ -63,11 +66,14 @@ type DepositRollbackBody struct {
 }
 
 const (
-	EnvStatusEventTopic        topic.Token = "EVENT_TOPIC_STORAGE_STATUS"
-	StatusEventTypeDeposited               = "DEPOSITED"
-	StatusEventTypeWithdrawn               = "WITHDRAWN"
-	StatusEventTypeMesosUpdate             = "MESOS_UPDATED"
-	StatusEventTypeError                   = "ERROR"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_STORAGE_STATUS"
+)
+
+const (
+	StatusEventTypeDeposited   = "DEPOSITED"
+	StatusEventTypeWithdrawn   = "WITHDRAWN"
+	StatusEventTypeMesosUpdate = "MESOS_UPDATED"
+	StatusEventTypeError       = "ERROR"
 )
 
 type StatusEvent[E any] struct {

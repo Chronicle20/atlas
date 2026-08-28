@@ -1,18 +1,22 @@
 package inventory
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Mirrors services/atlas-inventory/atlas.com/inventory/kafka/message/inventory/kafka.go
 // so the orchestrator can deserialise events produced by atlas-inventory.
 
 const (
-	EnvEventTopicInventoryStatus  topic.Token = "EVENT_TOPIC_INVENTORY_STATUS"
-	StatusEventTypeCreated                    = "CREATED"
-	StatusEventTypeCreationFailed             = "CREATION_FAILED"
-	StatusEventTypeDeleted                    = "DELETED"
+	EnvEventTopicInventoryStatus topic.Token = "EVENT_TOPIC_INVENTORY_STATUS"
+)
+
+const (
+	StatusEventTypeCreated        = "CREATED"
+	StatusEventTypeCreationFailed = "CREATION_FAILED"
+	StatusEventTypeDeleted        = "DELETED"
 )
 
 type StatusEvent[E any] struct {

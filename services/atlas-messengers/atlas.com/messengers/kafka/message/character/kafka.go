@@ -10,16 +10,24 @@ import (
 )
 
 const (
-	EnvEventMemberStatusTopic            topic.Token = "EVENT_TOPIC_MESSENGER_MEMBER_STATUS"
-	EventMessengerMemberStatusTypeLogin              = "LOGIN"
-	EventMessengerMemberStatusTypeLogout             = "LOGOUT"
+	EnvEventMemberStatusTopic topic.Token = "EVENT_TOPIC_MESSENGER_MEMBER_STATUS"
+)
 
-	EnvEventTopicCharacterStatus           topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeDeleted                    = "DELETED"
-	EventCharacterStatusTypeLogin                      = "LOGIN"
-	EventCharacterStatusTypeLogout                     = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged             = "CHANNEL_CHANGED"
-	EventCharacterStatusTypeMapChanged                 = "MAP_CHANGED"
+const (
+	EventMessengerMemberStatusTypeLogin  = "LOGIN"
+	EventMessengerMemberStatusTypeLogout = "LOGOUT"
+)
+
+const (
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	EventCharacterStatusTypeDeleted        = "DELETED"
+	EventCharacterStatusTypeLogin          = "LOGIN"
+	EventCharacterStatusTypeLogout         = "LOGOUT"
+	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
 )
 
 type MemberStatusEvent[E any] struct {

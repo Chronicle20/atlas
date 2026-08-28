@@ -3,8 +3,9 @@ package custody
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // This is the orchestrator's own copy of the atlas-mts custody wire contract.
@@ -16,7 +17,9 @@ import (
 const (
 	// EnvCommandTopic is the env var naming the MTS custody command topic.
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MTS_CUSTODY"
+)
 
+const (
 	CommandAcceptToMtsListing      = "ACCEPT_TO_MTS_LISTING"
 	CommandReleaseFromMtsHolding   = "RELEASE_FROM_MTS_HOLDING"
 	CommandMtsMoveListingToHolding = "MTS_MOVE_LISTING_TO_HOLDING"
@@ -131,7 +134,9 @@ type RestoreListingFromHoldingCommandBody struct {
 const (
 	// EnvStatusEventTopic names the custody status (ack) topic.
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MTS_CUSTODY_STATUS"
+)
 
+const (
 	StatusEventTypeAccepted = "ACCEPTED"
 	StatusEventTypeReleased = "RELEASED"
 	StatusEventTypeMoved    = "MOVED"

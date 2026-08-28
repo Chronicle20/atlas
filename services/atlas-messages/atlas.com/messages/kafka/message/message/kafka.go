@@ -11,7 +11,9 @@ import (
 
 const (
 	EnvEventTopicChat topic.Token = "EVENT_TOPIC_CHARACTER_CHAT"
+)
 
+const (
 	ChatTypeGeneral   = "GENERAL"
 	ChatTypeBuddy     = "BUDDY"
 	ChatTypeParty     = "PARTY"

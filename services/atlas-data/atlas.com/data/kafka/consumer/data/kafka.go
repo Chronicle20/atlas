@@ -3,8 +3,11 @@ package data
 import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 const (
-	EnvCommandTopic    topic.Token = "COMMAND_TOPIC_DATA"
-	CommandStartWorker             = "START_WORKER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_DATA"
+)
+
+const (
+	CommandStartWorker = "START_WORKER"
 )
 
 type command[E any] struct {

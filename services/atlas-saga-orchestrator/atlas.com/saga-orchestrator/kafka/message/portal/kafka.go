@@ -10,9 +10,12 @@ import (
 )
 
 const (
-	EnvCommandTopic    topic.Token = "COMMAND_TOPIC_PORTAL"
-	CommandTypeBlock               = "BLOCK"
-	CommandTypeUnblock             = "UNBLOCK"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PORTAL"
+)
+
+const (
+	CommandTypeBlock   = "BLOCK"
+	CommandTypeUnblock = "UNBLOCK"
 )
 
 type Command[E any] struct {

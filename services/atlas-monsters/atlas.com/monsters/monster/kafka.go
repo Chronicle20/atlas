@@ -15,7 +15,9 @@ import (
 const (
 	EnvEventTopicMonsterStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
 	EnvEventTopicMonsterCatch  topic.Token = "EVENT_TOPIC_MONSTER_CATCH"
+)
 
+const (
 	EventMonsterStatusCreated          = "CREATED"
 	EventMonsterStatusDestroyed        = "DESTROYED"
 	EventMonsterStatusStartControl     = "START_CONTROL"

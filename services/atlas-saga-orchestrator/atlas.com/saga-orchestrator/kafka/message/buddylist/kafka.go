@@ -11,6 +11,9 @@ import (
 const (
 	// EnvCommandTopic defines the environment variable for the buddy list command topic
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_BUDDY_LIST"
+)
+
+const (
 	// CommandTypeIncreaseCapacity is the command type for increasing buddy list capacity
 	CommandTypeIncreaseCapacity = "INCREASE_CAPACITY"
 	// CommandTypeRequestDelete is the command type for requesting to delete a buddy
@@ -23,12 +26,18 @@ const (
 	// (task-227 FR-4.8), matching the 2N REQUEST_DELETEs the severance step
 	// sent.
 	CommandTypeRestore = "RESTORE"
+)
+
+const (
 
 	// Buddy list status event constants
-	EnvEventTopicBuddyListStatus       topic.Token = "EVENT_TOPIC_BUDDY_LIST_STATUS"
-	StatusEventTypeBuddyCapacityUpdate             = "CAPACITY_CHANGE"
-	StatusEventTypeBuddyRemoved                    = "BUDDY_REMOVED"
-	StatusEventTypeError                           = "ERROR"
+	EnvEventTopicBuddyListStatus topic.Token = "EVENT_TOPIC_BUDDY_LIST_STATUS"
+)
+
+const (
+	StatusEventTypeBuddyCapacityUpdate = "CAPACITY_CHANGE"
+	StatusEventTypeBuddyRemoved        = "BUDDY_REMOVED"
+	StatusEventTypeError               = "ERROR"
 )
 
 type Command[E any] struct {

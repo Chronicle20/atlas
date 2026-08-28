@@ -10,16 +10,24 @@ import (
 )
 
 const (
-	EnvEventTopicFameStatus             topic.Token = "EVENT_TOPIC_FAME_STATUS"
-	StatusEventTypeError                            = "ERROR"
-	StatusEventErrorTypeNotToday                    = "NOT_TODAY"
-	StatusEventErrorTypeNotThisMonth                = "NOT_THIS_MONTH"
-	StatusEventErrorInvalidName                     = "INVALID_NAME"
-	StatusEventErrorTypeNotMinimumLevel             = "NOT_MINIMUM_LEVEL"
-	StatusEventErrorTypeUnexpected                  = "UNEXPECTED"
+	EnvEventTopicFameStatus topic.Token = "EVENT_TOPIC_FAME_STATUS"
+)
 
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_FAME"
-	CommandTypeRequestChange             = "REQUEST_CHANGE"
+const (
+	StatusEventTypeError                = "ERROR"
+	StatusEventErrorTypeNotToday        = "NOT_TODAY"
+	StatusEventErrorTypeNotThisMonth    = "NOT_THIS_MONTH"
+	StatusEventErrorInvalidName         = "INVALID_NAME"
+	StatusEventErrorTypeNotMinimumLevel = "NOT_MINIMUM_LEVEL"
+	StatusEventErrorTypeUnexpected      = "UNEXPECTED"
+)
+
+const (
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_FAME"
+)
+
+const (
+	CommandTypeRequestChange = "REQUEST_CHANGE"
 )
 
 type StatusEvent[E any] struct {

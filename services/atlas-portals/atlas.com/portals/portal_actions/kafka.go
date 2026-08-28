@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_PORTAL_ACTIONS"
-	CommandTypeEnter             = "ENTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PORTAL_ACTIONS"
+)
+
+const (
+	CommandTypeEnter = "ENTER"
 )
 
 type commandEvent[E any] struct {

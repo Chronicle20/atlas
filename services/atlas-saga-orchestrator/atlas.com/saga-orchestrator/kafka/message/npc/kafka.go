@@ -16,22 +16,30 @@ import (
 )
 
 const (
-	EnvCommandTopic                 topic.Token = "COMMAND_TOPIC_NPC"
-	CommandTypeStartConversation                = "START_CONVERSATION"
-	CommandTypeContinueConversation             = "CONTINUE_CONVERSATION"
-	CommandTypeEndConversation                  = "END_CONVERSATION"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_NPC"
+)
+
+const (
+	CommandTypeStartConversation    = "START_CONVERSATION"
+	CommandTypeContinueConversation = "CONTINUE_CONVERSATION"
+	CommandTypeEndConversation      = "END_CONVERSATION"
 
 	// CommandTypeStartItemConversation opens a scripted item's own dialogue
 	// (the 243xxxx family). Unlike START_CONVERSATION the conversation is keyed
 	// by item id, not by NPC — NpcId carries only the avatar it renders with.
 	CommandTypeStartItemConversation = "START_ITEM_CONVERSATION"
+)
 
+const (
 	EnvConversationCommandTopic topic.Token = "COMMAND_TOPIC_NPC_CONVERSATION"
-	CommandTypeSimple                       = "SIMPLE"
-	CommandTypeText                         = "TEXT"
-	CommandTypeStyle                        = "STYLE"
-	CommandTypeNumber                       = "NUMBER"
-	CommandTypeSlideMenu                    = "SLIDE_MENU"
+)
+
+const (
+	CommandTypeSimple    = "SIMPLE"
+	CommandTypeText      = "TEXT"
+	CommandTypeStyle     = "STYLE"
+	CommandTypeNumber    = "NUMBER"
+	CommandTypeSlideMenu = "SLIDE_MENU"
 )
 
 type Command[E any] struct {
@@ -109,8 +117,11 @@ type CommandSlideMenuBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus        topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeStatChanged             = "STAT_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
 )
 
 type StatusEvent[E any] struct {
@@ -133,7 +144,9 @@ const (
 	// it only consumed EVENT_TOPIC_SAGA_STATUS for sagas a conversation
 	// initiates. The awaited-step saga needs the opposite direction.
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_NPC_CONVERSATION_STATUS"
+)
 
+const (
 	StatusEventTypeStarted = "STARTED"
 
 	// StatusEventTypeStartError is deliberately a distinct type rather than a

@@ -13,8 +13,11 @@ import (
 )
 
 const (
-	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_REACTOR"
-	CommandTypeDestroyInField             = "DESTROY_IN_FIELD"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REACTOR"
+)
+
+const (
+	CommandTypeDestroyInField = "DESTROY_IN_FIELD"
 )
 
 type Command[E any] struct {

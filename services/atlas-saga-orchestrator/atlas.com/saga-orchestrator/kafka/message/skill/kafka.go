@@ -11,11 +11,14 @@ import (
 )
 
 const (
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_SKILL"
-	CommandTypeRequestCreate             = "REQUEST_CREATE"
-	CommandTypeRequestUpdate             = "REQUEST_UPDATE"
-	CommandTypeRequestDelete             = "REQUEST_DELETE"
-	CommandTypeTransferSp                = "TRANSFER_SP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SKILL"
+)
+
+const (
+	CommandTypeRequestCreate = "REQUEST_CREATE"
+	CommandTypeRequestUpdate = "REQUEST_UPDATE"
+	CommandTypeRequestDelete = "REQUEST_DELETE"
+	CommandTypeTransferSp    = "TRANSFER_SP"
 )
 
 // TransferSpBody moves one skill point FromSkillId -> ToSkillId (SP Reset
@@ -59,12 +62,15 @@ type RequestDeleteBody struct {
 }
 
 const (
-	EnvStatusEventTopic          topic.Token = "EVENT_TOPIC_SKILL_STATUS"
-	StatusEventTypeCreated                   = "CREATED"
-	StatusEventTypeUpdated                   = "UPDATED"
-	StatusEventTypeDeleted                   = "DELETED"
-	StatusEventTypeSpTransferred             = "SP_TRANSFERRED"
-	StatusEventTypeError                     = "ERROR"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_SKILL_STATUS"
+)
+
+const (
+	StatusEventTypeCreated       = "CREATED"
+	StatusEventTypeUpdated       = "UPDATED"
+	StatusEventTypeDeleted       = "DELETED"
+	StatusEventTypeSpTransferred = "SP_TRANSFERRED"
+	StatusEventTypeError         = "ERROR"
 
 	StatusEventErrorTypeSkillAtZero   = "SKILL_AT_ZERO"
 	StatusEventErrorTypeSkillAtCap    = "SKILL_AT_CAP"

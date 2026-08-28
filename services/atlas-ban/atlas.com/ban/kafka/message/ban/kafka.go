@@ -1,20 +1,28 @@
 package ban
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_BAN"
+)
 
+const (
 	CommandTypeCreate = "CREATE"
 	CommandTypeDelete = "DELETE"
+)
 
+const (
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_BAN_STATUS"
-	EventStatusCreated              = "CREATED"
-	EventStatusDeleted              = "DELETED"
-	EventStatusExpired              = "EXPIRED"
+)
+
+const (
+	EventStatusCreated = "CREATED"
+	EventStatusDeleted = "DELETED"
+	EventStatusExpired = "EXPIRED"
 )
 
 type Command[E any] struct {

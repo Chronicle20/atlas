@@ -9,12 +9,15 @@ import (
 )
 
 const (
-	EnvCommandTopic                    topic.Token = "COMMAND_TOPIC_GUILD"
-	CommandTypeRequestName                         = "REQUEST_NAME"
-	CommandTypeRequestEmblem                       = "REQUEST_EMBLEM"
-	CommandTypeRequestDisband                      = "REQUEST_DISBAND"
-	CommandTypeRequestCapacityIncrease             = "REQUEST_CAPACITY_INCREASE"
-	CommandTypeLeave                               = "LEAVE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_GUILD"
+)
+
+const (
+	CommandTypeRequestName             = "REQUEST_NAME"
+	CommandTypeRequestEmblem           = "REQUEST_EMBLEM"
+	CommandTypeRequestDisband          = "REQUEST_DISBAND"
+	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
+	CommandTypeLeave                   = "LEAVE"
 	// CommandTypeRejoin re-adds a character to a guild at an explicitly
 	// supplied title. Mirrors atlas-guilds' CommandTypeRejoin. It is the
 	// inverse of CommandTypeLeave for the world-transfer saga's compensation
@@ -65,19 +68,22 @@ type RejoinBody struct {
 }
 
 const (
-	EnvStatusEventTopic                topic.Token = "EVENT_TOPIC_GUILD_STATUS"
-	StatusEventTypeCreated                         = "CREATED"
-	StatusEventTypeDisbanded                       = "DISBANDED"
-	StatusEventTypeEmblemUpdated                   = "EMBLEM_UPDATED"
-	StatusEventTypeRequestAgreement                = "REQUEST_AGREEMENT"
-	StatusEventTypeMemberStatusUpdated             = "MEMBER_STATUS_UPDATED"
-	StatusEventTypeMemberTitleUpdated              = "MEMBER_TITLE_UPDATED"
-	StatusEventTypeMemberLeft                      = "MEMBER_LEFT"
-	StatusEventTypeMemberJoined                    = "MEMBER_JOINED"
-	StatusEventTypeNoticeUpdated                   = "NOTICE_UPDATED"
-	StatusEventTypeCapacityUpdated                 = "CAPACITY_UPDATED"
-	StatusEventTypeTitlesUpdated                   = "TITLES_UPDATED"
-	StatusEventTypeError                           = "ERROR"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_GUILD_STATUS"
+)
+
+const (
+	StatusEventTypeCreated             = "CREATED"
+	StatusEventTypeDisbanded           = "DISBANDED"
+	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
+	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
+	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
+	StatusEventTypeMemberTitleUpdated  = "MEMBER_TITLE_UPDATED"
+	StatusEventTypeMemberLeft          = "MEMBER_LEFT"
+	StatusEventTypeMemberJoined        = "MEMBER_JOINED"
+	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
+	StatusEventTypeCapacityUpdated     = "CAPACITY_UPDATED"
+	StatusEventTypeTitlesUpdated       = "TITLES_UPDATED"
+	StatusEventTypeError               = "ERROR"
 )
 
 type StatusEvent[E any] struct {

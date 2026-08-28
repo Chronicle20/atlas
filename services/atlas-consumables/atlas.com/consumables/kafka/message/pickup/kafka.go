@@ -1,13 +1,17 @@
 package pickup
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP"
-	CommandType                 = "ITEM_CONSUMED_ON_PICKUP"
+)
+
+const (
+	CommandType = "ITEM_CONSUMED_ON_PICKUP"
 )
 
 type Command struct {

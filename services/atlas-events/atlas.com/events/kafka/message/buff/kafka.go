@@ -25,6 +25,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+)
+
+const (
 
 	// CommandTypeApply grants a buff to a single character (FR-A7). Anniversary
 	// sends this at login for whichever occurrence(s) are active.

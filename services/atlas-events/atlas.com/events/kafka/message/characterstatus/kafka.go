@@ -16,7 +16,10 @@ import (
 
 const (
 	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogin                     = "LOGIN"
+)
+
+const (
+	StatusEventTypeLogin = "LOGIN"
 )
 
 type StatusEvent[E any] struct {

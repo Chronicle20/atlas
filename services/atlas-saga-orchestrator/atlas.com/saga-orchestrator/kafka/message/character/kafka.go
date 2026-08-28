@@ -12,28 +12,31 @@ import (
 )
 
 const (
-	EnvCommandTopic            topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandCreateCharacter                 = "CREATE_CHARACTER"
-	CommandChangeMap                       = "CHANGE_MAP"
-	CommandChangeJob                       = "CHANGE_JOB"
-	CommandChangeHair                      = "CHANGE_HAIR"
-	CommandChangeFace                      = "CHANGE_FACE"
-	CommandChangeSkin                      = "CHANGE_SKIN"
-	CommandAwardExperience                 = "AWARD_EXPERIENCE"
-	CommandDeductExperience                = "DEDUCT_EXPERIENCE"
-	CommandAwardLevel                      = "AWARD_LEVEL"
-	CommandRequestChangeMeso               = "REQUEST_CHANGE_MESO"
-	CommandRequestDropMeso                 = "REQUEST_DROP_MESO"
-	CommandRequestChangeFame               = "REQUEST_CHANGE_FAME"
-	CommandRequestDistributeAp             = "REQUEST_DISTRIBUTE_AP"
-	CommandRequestDistributeSp             = "REQUEST_DISTRIBUTE_SP"
-	CommandChangeHP                        = "CHANGE_HP"
-	CommandChangeMP                        = "CHANGE_MP"
-	CommandSetHP                           = "SET_HP"
-	CommandResetStats                      = "RESET_STATS"
-	CommandRebalanceAP                     = "REBALANCE_AP"
-	CommandTransferAP                      = "TRANSFER_AP"
-	CommandDeleteCharacter                 = "DELETE_CHARACTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandCreateCharacter     = "CREATE_CHARACTER"
+	CommandChangeMap           = "CHANGE_MAP"
+	CommandChangeJob           = "CHANGE_JOB"
+	CommandChangeHair          = "CHANGE_HAIR"
+	CommandChangeFace          = "CHANGE_FACE"
+	CommandChangeSkin          = "CHANGE_SKIN"
+	CommandAwardExperience     = "AWARD_EXPERIENCE"
+	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
+	CommandAwardLevel          = "AWARD_LEVEL"
+	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
+	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
+	CommandRequestChangeFame   = "REQUEST_CHANGE_FAME"
+	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
+	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
+	CommandChangeHP            = "CHANGE_HP"
+	CommandChangeMP            = "CHANGE_MP"
+	CommandSetHP               = "SET_HP"
+	CommandResetStats          = "RESET_STATS"
+	CommandRebalanceAP         = "REBALANCE_AP"
+	CommandTransferAP          = "TRANSFER_AP"
+	CommandDeleteCharacter     = "DELETE_CHARACTER"
 )
 
 // TransferAPCommandBody moves one already-spent AP From -> To (AP Reset item
@@ -209,21 +212,24 @@ type CreateCharacterCommandBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus     topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeCreated                       = "CREATED"
-	StatusEventTypeLogin                         = "LOGIN"
-	StatusEventTypeLogout                        = "LOGOUT"
-	StatusEventTypeChannelChanged                = "CHANNEL_CHANGED"
-	StatusEventTypeMapChanged                    = "MAP_CHANGED"
-	StatusEventTypeJobChanged                    = "JOB_CHANGED"
-	StatusEventTypeExperienceChanged             = "EXPERIENCE_CHANGED"
-	StatusEventTypeLevelChanged                  = "LEVEL_CHANGED"
-	StatusEventTypeMesoChanged                   = "MESO_CHANGED"
-	StatusEventTypeFameChanged                   = "FAME_CHANGED"
-	StatusEventTypeStatChanged                   = "STAT_CHANGED"
-	StatusEventTypeDeleted                       = "DELETED"
-	StatusEventTypeCreationFailed                = "CREATION_FAILED"
-	StatusEventTypeWorldChanged                  = "WORLD_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	StatusEventTypeCreated           = "CREATED"
+	StatusEventTypeLogin             = "LOGIN"
+	StatusEventTypeLogout            = "LOGOUT"
+	StatusEventTypeChannelChanged    = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged        = "MAP_CHANGED"
+	StatusEventTypeJobChanged        = "JOB_CHANGED"
+	StatusEventTypeExperienceChanged = "EXPERIENCE_CHANGED"
+	StatusEventTypeLevelChanged      = "LEVEL_CHANGED"
+	StatusEventTypeMesoChanged       = "MESO_CHANGED"
+	StatusEventTypeFameChanged       = "FAME_CHANGED"
+	StatusEventTypeStatChanged       = "STAT_CHANGED"
+	StatusEventTypeDeleted           = "DELETED"
+	StatusEventTypeCreationFailed    = "CREATION_FAILED"
+	StatusEventTypeWorldChanged      = "WORLD_CHANGED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"

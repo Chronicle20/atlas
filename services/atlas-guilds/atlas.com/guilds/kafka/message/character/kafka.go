@@ -10,12 +10,15 @@ import (
 )
 
 const (
-	EnvEventTopicCharacterStatus           topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeDeleted                    = "DELETED"
-	EventCharacterStatusTypeLogin                      = "LOGIN"
-	EventCharacterStatusTypeLogout                     = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged             = "CHANNEL_CHANGED"
-	EventCharacterStatusTypeNameChanged                = "NAME_CHANGED"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	EventCharacterStatusTypeDeleted        = "DELETED"
+	EventCharacterStatusTypeLogin          = "LOGIN"
+	EventCharacterStatusTypeLogout         = "LOGOUT"
+	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeNameChanged    = "NAME_CHANGED"
 )
 
 type StatusEvent[E any] struct {

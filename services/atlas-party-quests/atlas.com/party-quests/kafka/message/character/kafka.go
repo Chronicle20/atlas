@@ -10,12 +10,20 @@ import (
 )
 
 const (
-	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap             = "CHANGE_MAP"
-	CommandAwardExperience                = "AWARD_EXPERIENCE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
 
+const (
+	CommandCharacterChangeMap = "CHANGE_MAP"
+	CommandAwardExperience    = "AWARD_EXPERIENCE"
+)
+
+const (
 	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogout                    = "LOGOUT"
+)
+
+const (
+	StatusEventTypeLogout = "LOGOUT"
 
 	ExperienceDistributionTypeChat = "CHAT"
 )

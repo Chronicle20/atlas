@@ -15,8 +15,11 @@ import (
 
 const (
 	EnvEventTopicEventVisual topic.Token = "EVENT_TOPIC_EVENT_VISUAL"
-	VisualTypeShow                       = "SHOW"
-	VisualTypeHide                       = "HIDE"
+)
+
+const (
+	VisualTypeShow = "SHOW"
+	VisualTypeHide = "HIDE"
 
 	// VisualContiMove is the enemy-ship visual. The name selects the writer on
 	// the channel side, which resolves the client wire state/subState bytes

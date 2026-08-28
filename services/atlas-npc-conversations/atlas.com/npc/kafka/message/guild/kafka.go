@@ -7,11 +7,14 @@ import (
 )
 
 const (
-	EnvCommandTopic                    topic.Token = "COMMAND_TOPIC_GUILD"
-	CommandTypeRequestName                         = "REQUEST_NAME"
-	CommandTypeRequestEmblem                       = "REQUEST_EMBLEM"
-	CommandTypeRequestDisband                      = "REQUEST_DISBAND"
-	CommandTypeRequestCapacityIncrease             = "REQUEST_CAPACITY_INCREASE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_GUILD"
+)
+
+const (
+	CommandTypeRequestName             = "REQUEST_NAME"
+	CommandTypeRequestEmblem           = "REQUEST_EMBLEM"
+	CommandTypeRequestDisband          = "REQUEST_DISBAND"
+	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
 )
 
 type Command[E any] struct {

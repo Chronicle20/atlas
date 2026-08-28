@@ -17,7 +17,9 @@ import (
 const (
 	// EnvCommandTopic is the env var naming the parcel custody command topic.
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARCEL_CUSTODY"
+)
 
+const (
 	CommandAcceptToParcel    = "ACCEPT_TO_PARCEL"
 	CommandReleaseFromParcel = "RELEASE_FROM_PARCEL"
 	// CommandRestoreParcel un-resolves a parcel released by a
@@ -117,7 +119,9 @@ type RemoveParcelCommandBody struct {
 const (
 	// EnvStatusTopic names the parcel custody status (ack) topic.
 	EnvStatusTopic topic.Token = "EVENT_TOPIC_PARCEL_CUSTODY_STATUS"
+)
 
+const (
 	StatusEventAccepted = "ACCEPTED"
 	StatusEventReleased = "RELEASED"
 	StatusEventError    = "ERROR"

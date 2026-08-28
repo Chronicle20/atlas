@@ -16,8 +16,11 @@ import (
 // LOGIN/LOGOUT subset relevant to FR-4.4 is mirrored here.
 const (
 	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogin                     = "LOGIN"
-	StatusEventTypeLogout                    = "LOGOUT"
+)
+
+const (
+	StatusEventTypeLogin  = "LOGIN"
+	StatusEventTypeLogout = "LOGOUT"
 )
 
 type StatusEvent[E any] struct {

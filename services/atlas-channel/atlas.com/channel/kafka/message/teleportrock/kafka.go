@@ -9,13 +9,21 @@ import (
 )
 
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_TELEPORT_ROCK"
-	CommandAddMap                = "ADD_MAP"
-	CommandRemoveMap             = "REMOVE_MAP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_TELEPORT_ROCK"
+)
 
-	EnvEventTopicStatus        topic.Token = "EVENT_TOPIC_TELEPORT_ROCK_STATUS"
-	StatusEventTypeListUpdated             = "LIST_UPDATED"
-	StatusEventTypeError                   = "ERROR"
+const (
+	CommandAddMap    = "ADD_MAP"
+	CommandRemoveMap = "REMOVE_MAP"
+)
+
+const (
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TELEPORT_ROCK_STATUS"
+)
+
+const (
+	StatusEventTypeListUpdated = "LIST_UPDATED"
+	StatusEventTypeError       = "ERROR"
 
 	ErrorReasonListFull      = "LIST_FULL"
 	ErrorReasonDuplicate     = "DUPLICATE"

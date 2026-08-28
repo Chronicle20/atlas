@@ -3,18 +3,22 @@ package compartment
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_COMPARTMENT"
-	CommandRequestReserve                = "REQUEST_RESERVE"
-	CommandConsume                       = "CONSUME"
-	CommandDestroy                       = "DESTROY"
-	CommandCancelReservation             = "CANCEL_RESERVATION"
-	CommandModifyEquipment               = "MODIFY_EQUIPMENT"
-	CommandCreateAsset                   = "CREATE_ASSET"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+)
+
+const (
+	CommandRequestReserve    = "REQUEST_RESERVE"
+	CommandConsume           = "CONSUME"
+	CommandDestroy           = "DESTROY"
+	CommandCancelReservation = "CANCEL_RESERVATION"
+	CommandModifyEquipment   = "MODIFY_EQUIPMENT"
+	CommandCreateAsset       = "CREATE_ASSET"
 )
 
 type Command[E any] struct {
@@ -64,9 +68,12 @@ type CreateAssetCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                 topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
-	StatusEventTypeReserved                         = "RESERVED"
-	StatusEventTypeReservationCancelled             = "RESERVATION_CANCELLED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
+)
+
+const (
+	StatusEventTypeReserved             = "RESERVED"
+	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
 
 	StatusEventTypeCreated        = "CREATED"
 	StatusEventTypeCreationFailed = "CREATION_FAILED"

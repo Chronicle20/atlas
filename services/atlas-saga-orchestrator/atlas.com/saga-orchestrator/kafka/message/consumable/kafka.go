@@ -12,13 +12,21 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
+)
 
+const (
 	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
+)
+
+const (
 
 	// Consumable status event constants
-	EnvEventTopicStatus          topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	StatusEventTypeEffectApplied             = "EFFECT_APPLIED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
+)
+
+const (
+	StatusEventTypeEffectApplied = "EFFECT_APPLIED"
 )
 
 // Command represents a Kafka command for consumable operations

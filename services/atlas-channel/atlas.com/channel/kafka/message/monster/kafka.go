@@ -10,20 +10,23 @@ import (
 )
 
 const (
-	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_MONSTER"
-	CommandTypeDamage                     = "DAMAGE"
-	CommandTypeDamageFriendly             = "DAMAGE_FRIENDLY"
-	CommandTypeApplyStatus                = "APPLY_STATUS"
-	CommandTypeCancelStatus               = "CANCEL_STATUS"
-	CommandTypeUseSkill                   = "USE_SKILL"
-	CommandTypeUseBasicAttack             = "USE_BASIC_ATTACK"
-	CommandTypeDrainMp                    = "DRAIN_MP"
-	CommandTypeKill                       = "KILL"
-	CommandTypeClearAggro                 = "CLEAR_AGGRO"
-	CommandTypeForceControl               = "FORCE_CONTROL"
-	CommandTypeSelfDestruct               = "SELF_DESTRUCT"
-	CommandTypeSetAggro                   = "SET_AGGRO"
-	CommandTypeBanish                     = "BANISH"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
+)
+
+const (
+	CommandTypeDamage         = "DAMAGE"
+	CommandTypeDamageFriendly = "DAMAGE_FRIENDLY"
+	CommandTypeApplyStatus    = "APPLY_STATUS"
+	CommandTypeCancelStatus   = "CANCEL_STATUS"
+	CommandTypeUseSkill       = "USE_SKILL"
+	CommandTypeUseBasicAttack = "USE_BASIC_ATTACK"
+	CommandTypeDrainMp        = "DRAIN_MP"
+	CommandTypeKill           = "KILL"
+	CommandTypeClearAggro     = "CLEAR_AGGRO"
+	CommandTypeForceControl   = "FORCE_CONTROL"
+	CommandTypeSelfDestruct   = "SELF_DESTRUCT"
+	CommandTypeSetAggro       = "SET_AGGRO"
+	CommandTypeBanish         = "BANISH"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -162,7 +165,9 @@ type BanishCommandBody struct {
 
 const (
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
+)
 
+const (
 	EventStatusCreated          = "CREATED"
 	EventStatusDestroyed        = "DESTROYED"
 	EventStatusStartControl     = "START_CONTROL"

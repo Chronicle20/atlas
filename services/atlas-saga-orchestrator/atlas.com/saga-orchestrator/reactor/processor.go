@@ -21,7 +21,10 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REACTOR"
-	CommandTypeHit              = "HIT"
+)
+
+const (
+	CommandTypeHit = "HIT"
 )
 
 // Processor is the interface for reactor operations from the saga-orchestrator

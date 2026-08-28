@@ -7,7 +7,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_GUILD_THREAD"
+)
 
+const (
 	CommandTypeCreate      = "CREATE"
 	CommandTypeUpdate      = "UPDATE"
 	CommandTypeDelete      = "DELETE"
@@ -53,7 +55,9 @@ type DeleteReplyCommandBody struct {
 
 const (
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_GUILD_THREAD_STATUS"
+)
 
+const (
 	StatusEventTypeCreated      = "CREATED"
 	StatusEventTypeUpdated      = "UPDATED"
 	StatusEventTypeDeleted      = "DELETED"

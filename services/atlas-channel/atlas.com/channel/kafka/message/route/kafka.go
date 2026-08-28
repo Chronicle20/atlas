@@ -9,8 +9,11 @@ import (
 
 const (
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRANSPORT_STATUS"
-	EventStatusArrived              = "ARRIVED"
-	EventStatusDeparted             = "DEPARTED"
+)
+
+const (
+	EventStatusArrived  = "ARRIVED"
+	EventStatusDeparted = "DEPARTED"
 )
 
 // StatusEvent is a generic event for transport route status changes

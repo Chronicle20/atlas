@@ -15,13 +15,16 @@ import (
 )
 
 const (
-	EnvCommandTopic              topic.Token = "COMMAND_TOPIC_PARTY_QUEST"
-	CommandTypeRegister                      = "REGISTER"
-	CommandTypeLeave                         = "LEAVE"
-	CommandTypeUpdateCustomData              = "UPDATE_CUSTOM_DATA"
-	CommandTypeBroadcastMessage              = "BROADCAST_MESSAGE"
-	CommandTypeStageClearAttempt             = "STAGE_CLEAR_ATTEMPT"
-	CommandTypeEnterBonus                    = "ENTER_BONUS"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY_QUEST"
+)
+
+const (
+	CommandTypeRegister          = "REGISTER"
+	CommandTypeLeave             = "LEAVE"
+	CommandTypeUpdateCustomData  = "UPDATE_CUSTOM_DATA"
+	CommandTypeBroadcastMessage  = "BROADCAST_MESSAGE"
+	CommandTypeStageClearAttempt = "STAGE_CLEAR_ATTEMPT"
+	CommandTypeEnterBonus        = "ENTER_BONUS"
 )
 
 func getBaseRequest(ctx context.Context) (string, error) {

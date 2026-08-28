@@ -10,7 +10,10 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_INSTANCE_TRANSPORT"
-	CommandStart                = "START"
+)
+
+const (
+	CommandStart = "START"
 )
 
 type Command[E any] struct {
@@ -27,11 +30,14 @@ type StartCommandBody struct {
 }
 
 const (
-	EnvEventTopic           topic.Token = "EVENT_TOPIC_INSTANCE_TRANSPORT"
-	EventTypeStarted                    = "STARTED"
-	EventTypeTransitEntered             = "TRANSIT_ENTERED"
-	EventTypeCompleted                  = "COMPLETED"
-	EventTypeCancelled                  = "CANCELLED"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_INSTANCE_TRANSPORT"
+)
+
+const (
+	EventTypeStarted        = "STARTED"
+	EventTypeTransitEntered = "TRANSIT_ENTERED"
+	EventTypeCompleted      = "COMPLETED"
+	EventTypeCancelled      = "CANCELLED"
 
 	CancelReasonMapExit = "MAP_EXIT"
 	CancelReasonLogout  = "LOGOUT"

@@ -1,13 +1,17 @@
 package wallet
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicStatus    topic.Token = "EVENT_TOPIC_WALLET_STATUS"
-	StatusEventTypeUpdated             = "UPDATED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_WALLET_STATUS"
+)
+
+const (
+	StatusEventTypeUpdated = "UPDATED"
 )
 
 type StatusEvent[E any] struct {

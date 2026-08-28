@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // TestStatusEventSerialization tests serialization and deserialization of compartment status events

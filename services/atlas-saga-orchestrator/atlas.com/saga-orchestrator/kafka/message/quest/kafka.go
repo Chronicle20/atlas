@@ -10,6 +10,9 @@ import (
 const (
 	// EnvCommandTopic defines the environment variable for the quest command topic
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_QUEST"
+)
+
+const (
 
 	// Command types
 	CommandTypeStart          = "START"
@@ -58,6 +61,9 @@ type UpdateProgressCommandBody struct {
 const (
 	// EnvStatusEventTopic defines the environment variable for the quest status event topic
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_QUEST_STATUS"
+)
+
+const (
 
 	// Status event types
 	StatusEventTypeStarted         = "STARTED"

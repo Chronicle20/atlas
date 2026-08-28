@@ -15,8 +15,11 @@ import (
 // (kafka/message/parcel/custody/kafka.go), which carries the atomic custody
 // commands dispatched to atlas-parcel.
 const (
-	EnvCommandTopic       topic.Token = "COMMAND_TOPIC_PARCEL"
-	CommandTypeShowParcel             = "SHOW_PARCEL"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARCEL"
+)
+
+const (
+	CommandTypeShowParcel = "SHOW_PARCEL"
 )
 
 // ShowParcelCommand is sent to atlas-channel to display the Duey parcel

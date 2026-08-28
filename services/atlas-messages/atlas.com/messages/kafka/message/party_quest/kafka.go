@@ -13,7 +13,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY_QUEST"
+)
 
+const (
 	CommandTypeRegister     = "REGISTER"
 	CommandTypeStageAdvance = "STAGE_ADVANCE"
 )

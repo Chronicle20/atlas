@@ -1,14 +1,18 @@
 package compartment
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicStatus     topic.Token = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
-	StatusEventTypeAccepted             = "ACCEPTED"
-	StatusEventTypeReleased             = "RELEASED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
+)
+
+const (
+	StatusEventTypeAccepted = "ACCEPTED"
+	StatusEventTypeReleased = "RELEASED"
 )
 
 // StatusEvent represents a cash compartment status event

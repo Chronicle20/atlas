@@ -774,13 +774,14 @@ func TestCreate_DoesNotInvokeSpawnPickerWhenNoAggro(t *testing.T) {
 		t.Logf("Create returned error (expected in unit test without atlas-data): %v", err)
 	}
 
-	for _, topic := range emitted {
-		if topic == string(EnvEventTopicMonsterStatus) {
-			// Picker emits NEXT_SKILL_DECIDED on this topic. We can't tell from
-			// topic alone, but if we guard correctly, no picker call happens.
-			// This assertion is intentionally weak; tighten once an injection
-			// seam exists. The stronger assertion is the existence of the guard
-			// in code review.
+	// Picker emits NEXT_SKILL_DECIDED on the monster-status topic. We can't
+	// tell from the topic alone whether the picker ran, but if we guard
+	// correctly, no picker call happens. This assertion is intentionally weak;
+	// tighten once an injection seam exists. The stronger assertion is the
+	// existence of the guard in code review.
+	for _, emittedTopic := range emitted {
+		if emittedTopic == string(EnvEventTopicMonsterStatus) {
+			t.Logf("observed emit on monster-status topic [%s]", emittedTopic)
 		}
 	}
 }

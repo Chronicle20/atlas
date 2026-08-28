@@ -10,10 +10,13 @@ import (
 )
 
 const (
-	EnvCommandTopic               topic.Token = "COMMAND_TOPIC_DROP"
-	CommandTypeSpawnFromCharacter             = "SPAWN_FROM_CHARACTER"
-	CommandTypeCancelReservation              = "CANCEL_RESERVATION"
-	CommandTypeRequestPickUp                  = "REQUEST_PICK_UP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_DROP"
+)
+
+const (
+	CommandTypeSpawnFromCharacter = "SPAWN_FROM_CHARACTER"
+	CommandTypeCancelReservation  = "CANCEL_RESERVATION"
+	CommandTypeRequestPickUp      = "REQUEST_PICK_UP"
 )
 
 type Command[E any] struct {
@@ -72,7 +75,10 @@ type RequestPickUpCommandBody struct {
 
 const (
 	EnvEventTopicDropStatus topic.Token = "EVENT_TOPIC_DROP_STATUS"
-	StatusEventTypeReserved             = "RESERVED"
+)
+
+const (
+	StatusEventTypeReserved = "RESERVED"
 )
 
 type StatusEvent[E any] struct {

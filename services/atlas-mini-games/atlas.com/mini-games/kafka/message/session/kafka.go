@@ -9,11 +9,14 @@ import (
 )
 
 const (
-	EnvEventTopicSessionStatus      topic.Token = "EVENT_TOPIC_SESSION_STATUS"
-	EventSessionStatusIssuerLogin               = "LOGIN"
-	EventSessionStatusIssuerChannel             = "CHANNEL"
-	EventSessionStatusTypeCreated               = "CREATED"
-	EventSessionStatusTypeDestroyed             = "DESTROYED"
+	EnvEventTopicSessionStatus topic.Token = "EVENT_TOPIC_SESSION_STATUS"
+)
+
+const (
+	EventSessionStatusIssuerLogin   = "LOGIN"
+	EventSessionStatusIssuerChannel = "CHANNEL"
+	EventSessionStatusTypeCreated   = "CREATED"
+	EventSessionStatusTypeDestroyed = "DESTROYED"
 )
 
 type StatusEvent struct {

@@ -7,7 +7,9 @@ import (
 
 const (
 	EnvEventTopicWorldRate topic.Token = "EVENT_TOPIC_WORLD_RATE"
+)
 
+const (
 	TypeRateChanged = "RATE_CHANGED"
 )
 

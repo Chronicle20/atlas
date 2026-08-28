@@ -6,8 +6,11 @@ import (
 )
 
 const (
-	EnvEventStatusTopic           topic.Token = "EVENT_TOPIC_INVITE_STATUS"
-	EventInviteStatusTypeAccepted             = "ACCEPTED"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_INVITE_STATUS"
+)
+
+const (
+	EventInviteStatusTypeAccepted = "ACCEPTED"
 
 	InviteTypeParty = "PARTY"
 )

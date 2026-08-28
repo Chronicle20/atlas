@@ -11,7 +11,10 @@ import (
 
 const (
 	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeMapChanged                = "MAP_CHANGED"
+)
+
+const (
+	StatusEventTypeMapChanged = "MAP_CHANGED"
 )
 
 type StatusEvent[E any] struct {

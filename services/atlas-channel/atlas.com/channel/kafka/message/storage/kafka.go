@@ -10,11 +10,14 @@ import (
 
 const (
 	// Storage command topic for operations
-	EnvCommandTopic         topic.Token = "COMMAND_TOPIC_STORAGE"
-	CommandTypeShowStorage              = "SHOW_STORAGE"
-	CommandTypeCloseStorage             = "CLOSE_STORAGE"
-	CommandTypeArrange                  = "ARRANGE"
-	CommandTypeUpdateMesos              = "UPDATE_MESOS"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_STORAGE"
+)
+
+const (
+	CommandTypeShowStorage  = "SHOW_STORAGE"
+	CommandTypeCloseStorage = "CLOSE_STORAGE"
+	CommandTypeArrange      = "ARRANGE"
+	CommandTypeUpdateMesos  = "UPDATE_MESOS"
 
 	// Mesos operations
 	MesosOperationSet      = "SET"
@@ -61,13 +64,16 @@ const (
 	// Storage status event topic
 	EnvEventTopicStatus                   topic.Token = "EVENT_TOPIC_STORAGE_STATUS"
 	EnvEventTopicStorageCompartmentStatus topic.Token = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
-	StatusEventTypeDeposited                          = "DEPOSITED"
-	StatusEventTypeWithdrawn                          = "WITHDRAWN"
-	StatusEventTypeMesosUpdated                       = "MESOS_UPDATED"
-	StatusEventTypeArranged                           = "ARRANGED"
-	StatusEventTypeError                              = "ERROR"
-	StatusEventTypeProjectionCreated                  = "PROJECTION_CREATED"
-	StatusEventTypeProjectionDestroyed                = "PROJECTION_DESTROYED"
+)
+
+const (
+	StatusEventTypeDeposited           = "DEPOSITED"
+	StatusEventTypeWithdrawn           = "WITHDRAWN"
+	StatusEventTypeMesosUpdated        = "MESOS_UPDATED"
+	StatusEventTypeArranged            = "ARRANGED"
+	StatusEventTypeError               = "ERROR"
+	StatusEventTypeProjectionCreated   = "PROJECTION_CREATED"
+	StatusEventTypeProjectionDestroyed = "PROJECTION_DESTROYED"
 
 	// Storage compartment event types
 	StatusEventTypeCompartmentAccepted = "ACCEPTED"

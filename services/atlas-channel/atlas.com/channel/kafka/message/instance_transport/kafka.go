@@ -9,8 +9,11 @@ import (
 )
 
 const (
-	EnvEventTopic           topic.Token = "EVENT_TOPIC_INSTANCE_TRANSPORT"
-	EventTypeTransitEntered             = "TRANSIT_ENTERED"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_INSTANCE_TRANSPORT"
+)
+
+const (
+	EventTypeTransitEntered = "TRANSIT_ENTERED"
 )
 
 type Event[E any] struct {

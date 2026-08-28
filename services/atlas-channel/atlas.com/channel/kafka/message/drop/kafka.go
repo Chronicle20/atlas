@@ -12,10 +12,13 @@ import (
 )
 
 const (
-	EnvCommandTopic               topic.Token = "COMMAND_TOPIC_DROP"
-	CommandTypeRequestReservation             = "REQUEST_RESERVATION"
-	CommandTypeSpawn                          = "SPAWN"
-	CommandTypeConsume                        = "CONSUME"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_DROP"
+)
+
+const (
+	CommandTypeRequestReservation = "REQUEST_RESERVATION"
+	CommandTypeSpawn              = "SPAWN"
+	CommandTypeConsume            = "CONSUME"
 )
 
 type Command[E any] struct {
@@ -64,12 +67,15 @@ type SpawnCommandBody struct {
 }
 
 const (
-	EnvEventTopicDropStatus    topic.Token = "EVENT_TOPIC_DROP_STATUS"
-	StatusEventTypeCreated                 = "CREATED"
-	StatusEventTypeExpired                 = "EXPIRED"
-	StatusEventTypePickedUp                = "PICKED_UP"
-	StatusEventTypeConsumed                = "CONSUMED"
-	StatusEventTypeMesoAwarded             = "MESO_AWARDED"
+	EnvEventTopicDropStatus topic.Token = "EVENT_TOPIC_DROP_STATUS"
+)
+
+const (
+	StatusEventTypeCreated     = "CREATED"
+	StatusEventTypeExpired     = "EXPIRED"
+	StatusEventTypePickedUp    = "PICKED_UP"
+	StatusEventTypeConsumed    = "CONSUMED"
+	StatusEventTypeMesoAwarded = "MESO_AWARDED"
 )
 
 type StatusEvent[E any] struct {

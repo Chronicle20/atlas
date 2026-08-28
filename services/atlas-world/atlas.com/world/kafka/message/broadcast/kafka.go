@@ -8,7 +8,9 @@ import (
 const (
 	EnvCommandTopicWorldBroadcast     topic.Token = "COMMAND_TOPIC_WORLD_BROADCAST"
 	EnvEventTopicWorldBroadcastStatus topic.Token = "EVENT_TOPIC_WORLD_BROADCAST_STATUS"
+)
 
+const (
 	StatusTypeQueued  = "QUEUED"
 	StatusTypeStarted = "STARTED"
 	StatusTypeEnded   = "ENDED"

@@ -4,7 +4,9 @@ import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 const (
 	EnvEventTopic topic.Token = "EVENT_TOPIC_CONVERSATION_REWARD_NOTICE"
+)
 
+const (
 	KindItemGain = "item_gain"
 	KindItemLoss = "item_loss"
 )

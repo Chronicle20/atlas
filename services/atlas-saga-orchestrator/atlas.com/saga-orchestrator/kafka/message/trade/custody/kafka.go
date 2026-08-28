@@ -22,7 +22,9 @@ import (
 const (
 	// EnvCommandTopic is the env var naming the trade custody command topic.
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_TRADE_CUSTODY"
+)
 
+const (
 	CommandAcceptToTrade    = "ACCEPT_TO_TRADE"
 	CommandReleaseFromTrade = "RELEASE_FROM_TRADE"
 	// CommandRestoreTradeEscrow un-soft-deletes an escrow row (the late-comp
@@ -88,7 +90,9 @@ type RemoveTradeEscrowCommandBody struct {
 const (
 	// EnvStatusEventTopic names the trade custody status (ack) topic.
 	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_TRADE_CUSTODY_STATUS"
+)
 
+const (
 	StatusEventTypeAccepted = "ACCEPTED"
 	StatusEventTypeReleased = "RELEASED"
 	StatusEventTypeRestored = "RESTORED"

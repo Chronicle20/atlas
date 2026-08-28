@@ -11,11 +11,19 @@ import (
 
 const (
 	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeStatChanged               = "STAT_CHANGED"
+)
 
+const (
+	StatusEventTypeStatChanged = "STAT_CHANGED"
+)
+
+const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandClampHP              = "CLAMP_HP"
-	CommandClampMP              = "CLAMP_MP"
+)
+
+const (
+	CommandClampHP = "CLAMP_HP"
+	CommandClampMP = "CLAMP_MP"
 )
 
 type StatusEvent[E any] struct {

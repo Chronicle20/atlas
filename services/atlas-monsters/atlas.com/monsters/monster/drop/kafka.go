@@ -12,7 +12,10 @@ import (
 
 const (
 	EnvCommandTopicDrop topic.Token = "COMMAND_TOPIC_DROP"
-	CommandTypeSpawn                = "SPAWN"
+)
+
+const (
+	CommandTypeSpawn = "SPAWN"
 )
 
 type spawnCommand struct {

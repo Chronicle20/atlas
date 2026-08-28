@@ -12,9 +12,12 @@ import (
 )
 
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_REACTOR"
-	CommandTypeHit               = "HIT"
-	CommandTypeTouch             = "TOUCH"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REACTOR"
+)
+
+const (
+	CommandTypeHit   = "HIT"
+	CommandTypeTouch = "TOUCH"
 )
 
 type Command[E any] struct {
@@ -40,10 +43,13 @@ type TouchCommandBody struct {
 }
 
 const (
-	EnvEventStatusTopic      topic.Token = "EVENT_TOPIC_REACTOR_STATUS"
-	EventStatusTypeCreated               = "CREATED"
-	EventStatusTypeDestroyed             = "DESTROYED"
-	EventStatusTypeHit                   = "HIT"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_REACTOR_STATUS"
+)
+
+const (
+	EventStatusTypeCreated   = "CREATED"
+	EventStatusTypeDestroyed = "DESTROYED"
+	EventStatusTypeHit       = "HIT"
 )
 
 type StatusEvent[E any] struct {

@@ -7,12 +7,15 @@ import (
 )
 
 const (
-	EnvCommandTopic      topic.Token = "COMMAND_TOPIC_NPC_CONVERSATION"
-	CommandTypeSimple                = "SIMPLE"
-	CommandTypeText                  = "TEXT"
-	CommandTypeStyle                 = "STYLE"
-	CommandTypeNumber                = "NUMBER"
-	CommandTypeSlideMenu             = "SLIDE_MENU"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_NPC_CONVERSATION"
+)
+
+const (
+	CommandTypeSimple    = "SIMPLE"
+	CommandTypeText      = "TEXT"
+	CommandTypeStyle     = "STYLE"
+	CommandTypeNumber    = "NUMBER"
+	CommandTypeSlideMenu = "SLIDE_MENU"
 )
 
 type CommandEvent[E any] struct {

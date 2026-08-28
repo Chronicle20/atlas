@@ -6,10 +6,13 @@ import (
 )
 
 const (
-	EnvEventStatusTopic             topic.Token = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
-	EventPartyStatusTypeLogin                   = "LOGIN"
-	EventPartyStatusTypeLogout                  = "LOGOUT"
-	EventPartyStatusTypeNameChanged             = "NAME_CHANGED"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
+)
+
+const (
+	EventPartyStatusTypeLogin       = "LOGIN"
+	EventPartyStatusTypeLogout      = "LOGOUT"
+	EventPartyStatusTypeNameChanged = "NAME_CHANGED"
 )
 
 type StatusEvent[E any] struct {

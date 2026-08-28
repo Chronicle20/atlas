@@ -11,6 +11,9 @@ import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 const (
 	EnvEventTopicMonsterStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
+)
+
+const (
 
 	// EventMonsterStatusCreated/Killed/Destroyed are the only status types
 	// FR-B18's elimination tracking consumes (monsters.go).

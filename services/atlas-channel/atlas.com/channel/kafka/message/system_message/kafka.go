@@ -10,7 +10,9 @@ import (
 
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SYSTEM_MESSAGE"
+)
 
+const (
 	CommandSendMessage     = "SEND_MESSAGE"
 	CommandPlayPortalSound = "PLAY_PORTAL_SOUND"
 	CommandShowInfo        = "SHOW_INFO"

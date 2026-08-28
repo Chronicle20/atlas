@@ -14,12 +14,20 @@ import (
 )
 
 const (
-	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_PARTY"
-	CommandTypeLeave             = "LEAVE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY"
+)
 
-	EnvStatusEventTopic    topic.Token = "EVENT_TOPIC_PARTY_STATUS"
-	StatusEventTypeLeft                = "LEFT"
-	StatusEventTypeDisband             = "DISBAND"
+const (
+	CommandTypeLeave = "LEAVE"
+)
+
+const (
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_PARTY_STATUS"
+)
+
+const (
+	StatusEventTypeLeft    = "LEFT"
+	StatusEventTypeDisband = "DISBAND"
 )
 
 type Command[E any] struct {

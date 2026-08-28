@@ -8,13 +8,21 @@ import (
 )
 
 const (
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandRequestChangeFame             = "REQUEST_CHANGE_FAME"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandRequestChangeFame = "REQUEST_CHANGE_FAME"
 
 	CommandActorTypeCharacter = "CHARACTER"
+)
 
-	EnvEventTopicCharacterStatus    topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeDeleted             = "DELETED"
+const (
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
+	EventCharacterStatusTypeDeleted = "DELETED"
 )
 
 type CommandEvent[E any] struct {

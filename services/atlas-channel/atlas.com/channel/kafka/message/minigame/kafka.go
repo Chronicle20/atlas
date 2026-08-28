@@ -13,7 +13,9 @@ import (
 // names, field names and json tags must match this file exactly.
 const (
 	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MINI_GAME"
+)
 
+const (
 	CommandTypeCreate              = "CREATE"
 	CommandTypeVisit               = "VISIT"
 	CommandTypeLeave               = "LEAVE"
@@ -84,7 +86,9 @@ type EmptyCommandBody struct{}
 // CharacterId is the acting character.
 const (
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_MINI_GAME_STATUS"
+)
 
+const (
 	EventTypeCreated          = "CREATED"
 	EventTypeCreateError      = "CREATE_ERROR"
 	EventTypeEntered          = "ENTERED"

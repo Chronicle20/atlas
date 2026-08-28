@@ -12,11 +12,14 @@ import (
 )
 
 const (
-	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply                     = "APPLY"
-	CommandTypeCancel                    = "CANCEL"
-	CommandTypeCancelAll                 = "CANCEL_ALL"
-	CommandTypeCancelByTypes             = "CANCEL_BY_TYPES"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+)
+
+const (
+	CommandTypeApply         = "APPLY"
+	CommandTypeCancel        = "CANCEL"
+	CommandTypeCancelAll     = "CANCEL_ALL"
+	CommandTypeCancelByTypes = "CANCEL_BY_TYPES"
 	// CommandTypeCancelByCorrelation sweeps the WHOLE TENANT and cancels every
 	// buff carrying a given CorrelationId, regardless of which character or
 	// world holds it. ONE command rather than one per affected character, so
@@ -128,10 +131,13 @@ type UpdateStatValueCommandBody struct {
 }
 
 const (
-	EnvEventStatusTopic        topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
-	EventStatusTypeBuffApplied             = "APPLIED"
-	EventStatusTypeBuffExpired             = "EXPIRED"
-	EventStatusTypeStatUpdated             = "STAT_UPDATED"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+)
+
+const (
+	EventStatusTypeBuffApplied = "APPLIED"
+	EventStatusTypeBuffExpired = "EXPIRED"
+	EventStatusTypeStatUpdated = "STAT_UPDATED"
 )
 
 type StatusEvent[E any] struct {
@@ -215,7 +221,10 @@ type PeriodicEffectStatusEventBody struct {
 
 const (
 	EnvCommandTopicCharacter topic.Token = "COMMAND_TOPIC_CHARACTER"
-	CommandChangeHP                      = "CHANGE_HP"
+)
+
+const (
+	CommandChangeHP = "CHANGE_HP"
 )
 
 type CharacterCommand[E any] struct {

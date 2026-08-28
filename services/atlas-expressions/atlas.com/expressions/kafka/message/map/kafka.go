@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	EnvEventTopicMapStatus               topic.Token = "EVENT_TOPIC_MAP_STATUS"
-	EventTopicMapStatusTypeCharacterExit             = "CHARACTER_EXIT"
+	EnvEventTopicMapStatus topic.Token = "EVENT_TOPIC_MAP_STATUS"
+)
+
+const (
+	EventTopicMapStatusTypeCharacterExit = "CHARACTER_EXIT"
 )
 
 // StatusEvent represents a map status event with a generic body

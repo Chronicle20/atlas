@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -45,7 +46,7 @@ func TestCatch_ClaimError(t *testing.T) {
 		l:   logrus.New(),
 		ctx: cancelledCtx,
 		t:   ten,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(tok topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
 				t.Fatalf("provider error: %v", err)
@@ -58,7 +59,7 @@ func TestCatch_ClaimError(t *testing.T) {
 				if err := json.Unmarshal(m.Value, &env); err != nil {
 					t.Fatalf("decode emitted: %v", err)
 				}
-				events = append(events, emittedBody{Topic: topic, Type: env.Type, Body: env.Body})
+				events = append(events, emittedBody{Topic: tok, Type: env.Type, Body: env.Body})
 			}
 			return nil
 		},

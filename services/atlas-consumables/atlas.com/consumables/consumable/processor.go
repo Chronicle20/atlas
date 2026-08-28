@@ -358,7 +358,7 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 
 	handler := compartment.Consume(itemConsumer)
 
-	_, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
+	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
 	err = p.cpp.RequestReserve(transactionId, characterId, it, 30*time.Second, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
 	if err != nil {

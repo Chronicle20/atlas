@@ -23,6 +23,7 @@ import (
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -30,7 +31,7 @@ import (
 
 // emittedEvent captures a single Kafka message emitted during a test.
 type emittedEvent struct {
-	Topic string
+	Topic topic.Token
 	Type  string
 }
 
@@ -43,7 +44,7 @@ func newRecordingProcessor(t *testing.T, ten tenant.Model) (*ProcessorImpl, *[]e
 		l:   logrus.New(),
 		ctx: context.Background(),
 		t:   ten,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(tok topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
 				t.Fatalf("provider error: %v", err)
@@ -55,7 +56,7 @@ func newRecordingProcessor(t *testing.T, ten tenant.Model) (*ProcessorImpl, *[]e
 				if err := json.Unmarshal(m.Value, &env); err != nil {
 					t.Fatalf("decode emitted message: %v", err)
 				}
-				events = append(events, emittedEvent{Topic: topic, Type: env.Type})
+				events = append(events, emittedEvent{Topic: tok, Type: env.Type})
 			}
 			return nil
 		},
@@ -228,7 +229,7 @@ func TestDamageAlreadyDeadMonster(t *testing.T) {
 
 // helpers used by the new tests
 type emittedBody struct {
-	Topic string
+	Topic topic.Token
 	Type  string
 	Body  json.RawMessage
 }
@@ -240,7 +241,7 @@ func newRecordingProcessorWithBodies(t *testing.T, ten tenant.Model) (*Processor
 		l:   logrus.New(),
 		ctx: context.Background(),
 		t:   ten,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(tok topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
 				t.Fatalf("provider error: %v", err)
@@ -253,7 +254,7 @@ func newRecordingProcessorWithBodies(t *testing.T, ten tenant.Model) (*Processor
 				if err := json.Unmarshal(m.Value, &env); err != nil {
 					t.Fatalf("decode emitted: %v", err)
 				}
-				events = append(events, emittedBody{Topic: topic, Type: env.Type, Body: env.Body})
+				events = append(events, emittedBody{Topic: tok, Type: env.Type, Body: env.Body})
 			}
 			return nil
 		},

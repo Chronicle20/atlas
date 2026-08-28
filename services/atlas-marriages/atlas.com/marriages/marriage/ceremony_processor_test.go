@@ -14,6 +14,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -42,7 +43,7 @@ func TestCeremonyStateTransitions(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil
@@ -117,7 +118,7 @@ func TestCeremonyInviteeManagement(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil
@@ -190,7 +191,7 @@ func TestCeremonyQueries(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil
@@ -273,7 +274,7 @@ func TestCeremonyTimeoutScenarios(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil
@@ -481,7 +482,7 @@ func TestProposalTimeoutScenarios(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil
@@ -640,7 +641,7 @@ func TestCeremonyAndEmitMethods(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil

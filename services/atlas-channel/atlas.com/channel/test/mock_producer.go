@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/segmentio/kafka-go"
 
@@ -33,7 +34,7 @@ func NewMockProducer() *MockProducer {
 
 // Provider returns a producer.Provider that captures messages instead of sending them
 func (m *MockProducer) Provider() producer.Provider {
-	return func(token string) producer.MessageProducer {
+	return func(token topic.Token) producer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			if m.Error != nil {
 				return m.Error
@@ -47,7 +48,7 @@ func (m *MockProducer) Provider() producer.Provider {
 			m.mu.Lock()
 			defer m.mu.Unlock()
 			m.messages = append(m.messages, MockMessage{
-				Topic:    token,
+				Topic:    string(token),
 				Messages: msgs,
 			})
 			return nil

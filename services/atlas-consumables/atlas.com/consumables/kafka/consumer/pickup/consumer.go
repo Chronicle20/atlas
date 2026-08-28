@@ -58,7 +58,7 @@ func handlePickup(l logrus.FieldLogger, ctx context.Context, cmd pickupmsg.Comma
 		return
 	}
 
-	if err := producer.ProviderImpl(l)(ctx)(t)(cardPickedUpProvider(cmd)); err != nil {
+	if err := producer.ProviderImpl(l)(ctx)(topic.Token(t))(cardPickedUpProvider(cmd)); err != nil {
 		l.WithError(err).Errorf("Failed to emit MONSTER_BOOK.CARD_PICKED_UP for character %d card %d.", cmd.CharacterId, cmd.ItemId)
 	}
 }

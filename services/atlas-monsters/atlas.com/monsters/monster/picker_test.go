@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -411,8 +412,8 @@ func TestRepickAndEmit_AlwaysEmits(t *testing.T) {
 		l:   newPickerLogger(),
 		ctx: ctx,
 		t:   tm,
-		emit: func(topic string, _ model.Provider[[]kafka.Message]) error {
-			if topic == EnvEventTopicMonsterStatus {
+		emit: func(t topic.Token, _ model.Provider[[]kafka.Message]) error {
+			if t == EnvEventTopicMonsterStatus {
 				emitted++
 			}
 			return nil

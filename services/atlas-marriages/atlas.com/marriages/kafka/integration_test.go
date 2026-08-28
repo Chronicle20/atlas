@@ -23,6 +23,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -614,7 +615,7 @@ func TestKafkaMessageValidation(t *testing.T) {
 func testEventEmissionOnStateChanges(t *testing.T, logger logrus.FieldLogger, ctx context.Context, db *gorm.DB) {
 	// Create a mock producer to capture emitted events
 	var capturedMessages []kafka.Message
-	mockProducer := func(token string) producer.MessageProducer {
+	mockProducer := func(token topic.Token) producer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			messages, err := provider()
 			if err != nil {
@@ -961,7 +962,7 @@ func TestMessageHandlerIntegration(t *testing.T) {
 
 	// Create mock producer to capture emitted events
 	var capturedMessages []kafka.Message
-	mockProducer := func(token string) producer.MessageProducer {
+	mockProducer := func(token topic.Token) producer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			messages, err := provider()
 			if err != nil {

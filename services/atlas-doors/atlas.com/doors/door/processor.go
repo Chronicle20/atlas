@@ -5,6 +5,7 @@ import (
 	"time"
 
 	doorproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -56,7 +57,7 @@ type allocator interface {
 	Release(ctx context.Context, t tenant.Model, id uint32)
 }
 
-type emitter func(topic string, p model.Provider[[]kafka.Message]) error
+type emitter func(t topic.Token, p model.Provider[[]kafka.Message]) error
 
 type ProcessorImpl struct {
 	l     logrus.FieldLogger
@@ -70,8 +71,8 @@ type ProcessorImpl struct {
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l: l, ctx: ctx, t: tenant.MustFromContext(ctx),
-		emit: func(topic string, p model.Provider[[]kafka.Message]) error {
-			return doorproducer.ProviderImpl(l)(ctx)(topic)(p)
+		emit: func(t topic.Token, p model.Provider[[]kafka.Message]) error {
+			return doorproducer.ProviderImpl(l)(ctx)(t)(p)
 		},
 		res:   newRestResolver(l, ctx),
 		alloc: GetIdAllocator(),

@@ -31,7 +31,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if err != nil {
 				return err
 			}
-			_, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLogout(db))))
+			_, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleLogout(db))))
 			return err
 		}
 	}

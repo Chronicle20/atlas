@@ -70,6 +70,8 @@ func installCapturingProducer() (*map[string][]kafka.Message, func()) {
 }
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(messageFame.EnvEventTopicFameStatus), string(messageFame.EnvEventTopicFameStatus))
+	_ = os.Setenv(string(messageCharacter.EnvCommandTopic), string(messageCharacter.EnvCommandTopic))
 	// RequestChange's rejectEmit closures fire via the DIRECT producer path
 	// (D7 fix). Swap in a no-op writer by default so those real-Kafka calls
 	// succeed instantly instead of dialing an unreachable broker; individual
@@ -394,6 +396,6 @@ func TestProcessor_RequestChangeAndEmit_SuccessEnqueuesOutbox(t *testing.T) {
 	var entries []outbox.Entity
 	assert.NoError(t, db.Find(&entries).Error)
 	if assert.Len(t, entries, 1) {
-		assert.Equal(t, messageCharacter.EnvCommandTopic, entries[0].Topic)
+		assert.Equal(t, string(messageCharacter.EnvCommandTopic), entries[0].Topic)
 	}
 }

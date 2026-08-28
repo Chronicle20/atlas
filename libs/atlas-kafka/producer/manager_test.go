@@ -7,9 +7,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // fakeWriter is a Writer implementation used by manager tests. Tracks how many

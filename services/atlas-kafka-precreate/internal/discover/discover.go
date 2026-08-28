@@ -6,9 +6,10 @@
 package discover
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"sort"
 	"strings"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (

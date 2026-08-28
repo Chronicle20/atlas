@@ -25,7 +25,7 @@ import (
 // defined range 430..434 (0,0,1,1,2) and diverge only at job >= 435, which no
 // client defines. Modelled as the GMS form; do not branch on region here.
 func ClientJobLevel(jobId Id) int {
-	if jobId%100 == 0 || jobId == 2001 {
+	if jobId%100 == 0 || jobId == EvanId {
 		return 1
 	}
 	v := int(jobId % 10)
@@ -49,7 +49,7 @@ func ClientJobLevel(jobId Id) int {
 // band plus the Evan beginner. JMS 185 inlines only job/100 == 22, which is
 // equivalent at its call sites because job == 2001 has already returned.
 func isEvanJob(jobId Id) bool {
-	return jobId/100 == 22 || jobId == 2001
+	return jobId/100 == 22 || jobId == EvanId
 }
 
 // dualBladeShape is which of the three forms a client's 430-434 arm takes.
@@ -152,7 +152,7 @@ func NeedsMasterLevel(skillId skill.Id, region string, major uint16) bool {
 		if !hasEvanExceptions(region, major) {
 			return false
 		}
-		return skill.Is(skillId, skill.Id(22111001), skill.Id(22141002), skill.Id(22140000))
+		return skill.Is(skillId, skill.EvanStage3MagicGuardId, skill.EvanStage6MagicBoosterId, skill.EvanStage6CriticalMagicId)
 	}
 
 	if jobId/10 == 43 {

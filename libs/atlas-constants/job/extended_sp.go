@@ -34,8 +34,8 @@ func UsesExtendedSP(jobId Id, region string, major uint16) bool {
 			return false
 		}
 		if major < 92 {
-			return jobId/100 == 22 || jobId == 2001
+			return jobId/100 == 22 || jobId == EvanId
 		}
 	}
-	return jobId/1000 == 3 || jobId/100 == 22 || jobId == 2001
+	return jobId/1000 == 3 || jobId/100 == 22 || jobId == EvanId
 }

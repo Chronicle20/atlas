@@ -710,3 +710,15 @@ our codec does not match.
   0x1D were never cleared — they were only shown to be too late to be *this*
   crash). Re-test after the fix; if the client survives to the field, they were
   fine.
+
+### Resolution (round 7)
+
+Fixed in **`550ec76d0`** — `keyMapEntryCount` returns 94 for the JMS region;
+both GMS arms unchanged (existing GMS fixtures still pass byte-identically).
+Added `TestCharacterKeyMapJMS185ByteLength` pinning the encoded body at
+`1 + 94*5 = 471` bytes with an Encode/Decode round-trip.
+
+Module-local `go build ./...` / `go test ./...` in `libs/atlas-packet` pass.
+Repo gate: `tools/verify.sh --quick --base a7c8768be` — see the verdict recorded
+below. **Live re-test on the JMS 185 client is still outstanding**; the crash is
+not confirmed gone until a channel enter completes without the AV at 0x44F5E2.

@@ -1,0 +1,40 @@
+# coverage-manifest
+#
+# Written retroactively at the pre-PR gate: this task was scoped as a feature
+# task (player NPCs) whose plan Tasks 5-7 happen to carry a packet surface, so
+# no manifest was declared up front. The declaration below is derived from the
+# branch's actual delta, not from intent recalled after the fact:
+#
+#   - git delta over libs/atlas-packet: exactly two codec files changed,
+#     npc/clientbound/imitated_npc_data.go and npc/clientbound/remove.go.
+#   - matrix delta over docs/packets/audits/status.json (5f299e4bb..HEAD):
+#     exactly two rows moved, IMITATED_NPC_DATA and REMOVE_NPC, both
+#     clientbound, every cell incomplete -> verified.
+#
+# The two sets agree 1:1, which is why this manifest is a record rather than a
+# claim. It is honest about being late; it is not a guess.
+
+ops:
+  - IMITATED_NPC_DATA   # npc/clientbound — the player-NPC render packet
+  - REMOVE_NPC          # npc/clientbound — despawn
+
+versions:
+  # Every version key each op resolves to. IMITATED_NPC_DATA is n-a on gms_v48
+  # (the op does not exist in that client), so its verified set is the other
+  # nine; REMOVE_NPC covers all ten.
+  - gms_v48             # REMOVE_NPC only (IMITATED_NPC_DATA is n-a here)
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+
+fields:
+  - "npc/clientbound/ImitatedNpcData: the imitated-character look block written for a deployed player NPC"
+  - "npc/clientbound/RemoveNpc: object-id despawn, used by the undeploy path"
+
+out_of_scope: []

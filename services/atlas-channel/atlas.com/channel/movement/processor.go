@@ -2,8 +2,8 @@ package movement
 
 import (
 	"atlas-channel/character/snapshot"
-	"atlas-channel/data/npc"
 	"atlas-channel/monster"
+	"atlas-channel/npc"
 	"atlas-channel/pet"
 	"atlas-channel/position"
 	"atlas-channel/session"
@@ -125,7 +125,7 @@ func (p *ProcessorImpl) TeleportCharacter(f field.Model, characterId uint32, x i
 
 func (p *ProcessorImpl) ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
-		n, err := npc.NewProcessor(p.l, p.ctx).GetInMapByObjectId(f.MapId(), objectId)
+		templateId, err := npc.ResolveTemplate(p.l, p.ctx, f, objectId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
@@ -139,7 +139,7 @@ func (p *ProcessorImpl) ForNPC(f field.Model, characterId uint32, objectId uint3
 		op := session.Announce(p.l)(p.ctx)(p.wp)(npcpkt.NpcActionWriter)(npcpkt.NewNpcActionMove(objectId, unk, unk2, movement).Encode)
 		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), characterId)
+			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", templateId, characterId)
 		}
 		// Relay to every other session (task-176): non-controllers no
 		// longer run NPC AI locally, so the controller's actions are their

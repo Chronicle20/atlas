@@ -1,0 +1,11 @@
+meta {
+  name: Redeploy Player NPC
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/player-npcs/{{playerNpcId}}
+  body: none
+  auth: inherit
+}

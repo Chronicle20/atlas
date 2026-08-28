@@ -63,6 +63,7 @@ Represents a validation condition.
 | pqCustomData | Party quest custom data value by key |
 | monsterBookCount | Total unique monster cards collected |
 | petTameness | Highest closeness among spawned pets matching a set of template IDs |
+| canSpawnPlayerNpc | Character's eligibility to deploy a player NPC on a map |
 
 ### Operator
 
@@ -147,7 +148,7 @@ Per-pet detail retained on the ValidationContext for pet-based conditions.
 - ExcessSP conditions require a referenceId (base level for job tier)
 - PQ custom data conditions require a step (custom data key)
 - PetTameness conditions require values (pet template IDs)
-- Context-dependent conditions (questStatus, questProgress, marriageGifts, buddyCapacity, petCount, petTameness, mapCapacity, transportAvailable, skillLevel, buff, inventorySpace, partyId, partyLeader, partySize, pqCustomData, monsterBookCount) return failure when evaluated without a ValidationContext
+- Context-dependent conditions (questStatus, questProgress, marriageGifts, buddyCapacity, petCount, petTameness, mapCapacity, transportAvailable, skillLevel, buff, inventorySpace, partyId, partyLeader, partySize, pqCustomData, monsterBookCount, canSpawnPlayerNpc) return failure when evaluated without a ValidationContext
 - A single failing condition causes the entire ValidationResult to fail
 
 ## State Transitions

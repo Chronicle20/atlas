@@ -83,6 +83,8 @@
   value: $(POD_NAMESPACE)
 - name: NS_ATLAS_PETS
   value: $(POD_NAMESPACE)
+- name: NS_ATLAS_PLAYER_NPCS
+  value: $(POD_NAMESPACE)
 - name: NS_ATLAS_PORTAL_ACTIONS
   value: $(POD_NAMESPACE)
 - name: NS_ATLAS_PORTALS

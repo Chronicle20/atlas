@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcRemove
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CNpcPool::OnNpcLeaveField
+    address: "0x56d5b9"
+    decompile_sha256: 618aac7499a9d98a780ef678296c7a65d712b86e263785cec0cf31ad0e8788e8
+verifies:
+    - libs/atlas-packet/npc/clientbound/remove_test.go#TestNpcRemove

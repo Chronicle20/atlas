@@ -405,6 +405,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-player-npcs",
+      "type": "go-service",
+      "path": "services/atlas-player-npcs",
+      "module_path": "services/atlas-player-npcs/atlas.com/player-npcs",
+      "docker_image": "ghcr.io/chronicle20/atlas-player-npcs/atlas-player-npcs",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-portal-actions",
       "type": "go-service",
       "path": "services/atlas-portal-actions",

@@ -2883,6 +2883,11 @@
         ]
       },
       {
+        "opCode": "0xB2",
+        "writer": "RemoveNPC",
+        "fname": "CNpcPool::OnNpcLeaveField"
+      },
+      {
         "opCode": "0xB3",
         "writer": "SpawnNPCRequestController",
         "fname": "CNpcPool::OnNpcChangeController",

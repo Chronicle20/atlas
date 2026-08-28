@@ -14,8 +14,10 @@ import (
 	"atlas-messages/command/monster"
 	party_quest "atlas-messages/command/party_quest"
 	commandpet "atlas-messages/command/pet"
+	commandplayernpc "atlas-messages/command/playernpc"
 	"atlas-messages/command/reactor"
 	message2 "atlas-messages/kafka/consumer/message"
+	consumerplayernpc "atlas-messages/kafka/consumer/playernpc"
 	"os"
 
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -91,10 +93,16 @@ func main() {
 	command.Registry().Add(party_quest.PQRegisterCommandProducer)
 	command.Registry().Add(party_quest.PQStageCommandProducer)
 	command.Registry().Add(_map.WeatherCommandProducer)
+	command.Registry().Add(commandplayernpc.DeployCommandProducer)
+	command.Registry().Add(commandplayernpc.RemoveCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := message2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	consumerplayernpc.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := consumerplayernpc.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 

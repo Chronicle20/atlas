@@ -116,6 +116,7 @@ configMapGenerator:
       - COMMAND_TOPIC_PARTY_QUEST=COMMAND_TOPIC_PARTY_QUEST-main
       - COMMAND_TOPIC_PET=COMMAND_TOPIC_PET-main
       - COMMAND_TOPIC_PET_MOVEMENT=COMMAND_TOPIC_PET_MOVEMENT-main
+      - COMMAND_TOPIC_PLAYER_NPC=COMMAND_TOPIC_PLAYER_NPC-main
       - COMMAND_TOPIC_PORTAL=COMMAND_TOPIC_PORTAL-main
       - COMMAND_TOPIC_PORTAL_ACTIONS=COMMAND_TOPIC_PORTAL_ACTIONS-main
       - COMMAND_TOPIC_QUEST=COMMAND_TOPIC_QUEST-main
@@ -210,6 +211,7 @@ configMapGenerator:
       - EVENT_TOPIC_PARTY_STATUS=EVENT_TOPIC_PARTY_STATUS-main
       - EVENT_TOPIC_PET_MOVEMENT=EVENT_TOPIC_PET_MOVEMENT-main
       - EVENT_TOPIC_PET_STATUS=EVENT_TOPIC_PET_STATUS-main
+      - EVENT_TOPIC_PLAYER_NPC_STATUS=EVENT_TOPIC_PLAYER_NPC_STATUS-main
       - EVENT_TOPIC_QUEST_STATUS=EVENT_TOPIC_QUEST_STATUS-main
       - EVENT_TOPIC_REACTOR_STATUS=EVENT_TOPIC_REACTOR_STATUS-main
       - EVENT_TOPIC_REPORT_STATUS=EVENT_TOPIC_REPORT_STATUS-main
@@ -332,6 +334,8 @@ images:
     newTag: main-10f26b0
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
     newTag: main-10f26b0
+  - name: ghcr.io/chronicle20/atlas-player-npcs/atlas-player-npcs
+    newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
     newTag: main-10f26b0
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals

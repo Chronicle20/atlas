@@ -2724,6 +2724,11 @@
         ]
       },
       {
+        "opCode": "0x4E",
+        "writer": "ImitatedNPCData",
+        "fname": "sub_902E83"
+      },
+      {
         "opCode": "0x4F",
         "writer": "MonsterBookSetCard",
         "fname": "CWvsContext::OnMonsterBookSetCard",
@@ -3878,6 +3883,11 @@
         "services": [
           "channel"
         ]
+      },
+      {
+        "opCode": "0xE4",
+        "writer": "RemoveNPC",
+        "fname": "CNpcPool::OnNpcLeaveField"
       },
       {
         "opCode": "0xE5",

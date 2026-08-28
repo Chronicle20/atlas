@@ -459,6 +459,7 @@
   fname: CWvsContext::OnImitatedNPCData
   fname_alts:
     - CNpcPool::OnNpcImitateData
+  packet: npc/clientbound/ImitatedNpcData
   provenance: manual
   note: 'CSV v92 column had this at 0x055 (85), matching the dead CNpcPool::OnPacket case name but not the live dispatcher. IDA v92: opcode 0x56 is routed by CClientSocket::ProcessPacket (0x1E-0x8B range) to CWvsContext::OnPacket (0x9BA740) case 0x56 -> CWvsContext::OnImitatedNPCData (0x9A2130). CNpcPool::OnPacket (0x66C220) also has a dead 0x56 case (unreachable — CField only routes NPC-pool ops 0x12F-0x135 to CNpcPool::OnPacket) — kept as alt. Opcode corrected (swapped with LIMITED_NPC_DISABLE_INFO; same dead-code family as v83/v87).'
 - op: MONSTER_BOOK_SET_CARD
@@ -1617,6 +1618,7 @@
   direction: clientbound
   opcode: 304
   fname: CNpcPool::OnNpcLeaveField
+  packet: npc/clientbound/NpcRemove
   provenance: csv-import
   note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_NPC_REQUEST_CONTROLLER

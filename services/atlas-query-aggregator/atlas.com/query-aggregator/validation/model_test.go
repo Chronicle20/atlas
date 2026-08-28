@@ -10,6 +10,7 @@ import (
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/monsterbook"
+	"atlas-query-aggregator/playernpc"
 	"atlas-query-aggregator/quest"
 	"context"
 	"errors"
@@ -26,6 +27,8 @@ import (
 
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	inventory_type "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
@@ -82,6 +85,22 @@ func (f *fakeMonsterBookProcessor) GetTotalUniqueCards(characterId charactercons
 		return 0, f.err
 	}
 	return f.total, nil
+}
+
+// fakePlayerNpcProcessor satisfies the playernpc.Processor interface for
+// tests. Tests set eligible/reason/err to simulate atlas-player-npcs'
+// eligibility endpoint responses, including an unreachable endpoint.
+type fakePlayerNpcProcessor struct {
+	eligible bool
+	reason   string
+	err      error
+}
+
+func (f *fakePlayerNpcProcessor) GetEligibility(characterId uint32, mapId _map.Id, worldId world.Id) (playernpc.EligibilityModel, error) {
+	if f.err != nil {
+		return playernpc.EligibilityModel{}, f.err
+	}
+	return playernpc.NewEligibilityModel(f.eligible, f.reason), nil
 }
 
 func TestCondition_Evaluate(t *testing.T) {
@@ -2271,4 +2290,96 @@ func TestEvaluate_PetTameness(t *testing.T) {
 	if fail.EvaluateWithContext(ctx).Passed {
 		t.Fatal("expected petTameness to fail when no spawned pet matches the id set")
 	}
+}
+
+// TestCanSpawnPlayerNpcCondition exercises the canSpawnPlayerNpc condition
+// (FR-6.1) against the validation evaluator using a fake playernpc.Processor.
+// The condition delegates to the single eligibility predicate
+// atlas-player-npcs exposes (design §9.1), so it can never disagree with
+// FR-1.1's automatic deploy check.
+func TestCanSpawnPlayerNpcCondition(t *testing.T) {
+	char, err := character.NewBuilder().SetId(123).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
+
+	t.Run("eligible", func(t *testing.T) {
+		ctx := NewValidationContextBuilder(char).
+			SetPlayerNpcProcessor(&fakePlayerNpcProcessor{eligible: true}).
+			Build()
+
+		cond := Condition{
+			conditionType: CanSpawnPlayerNpcCondition,
+			operator:      Equals,
+			value:         1,
+			referenceId:   100000000,
+		}
+
+		result := cond.EvaluateWithContext(ctx)
+		if !result.Passed {
+			t.Errorf("expected condition to pass when eligible, got Passed=false (%s)", result.Description)
+		}
+		if result.ActualValue != 1 {
+			t.Errorf("ActualValue = %d, want 1", result.ActualValue)
+		}
+	})
+
+	t.Run("not eligible", func(t *testing.T) {
+		ctx := NewValidationContextBuilder(char).
+			SetPlayerNpcProcessor(&fakePlayerNpcProcessor{eligible: false, reason: "ineligible"}).
+			Build()
+
+		cond := Condition{
+			conditionType: CanSpawnPlayerNpcCondition,
+			operator:      Equals,
+			value:         1,
+			referenceId:   100000000,
+		}
+
+		result := cond.EvaluateWithContext(ctx)
+		if result.Passed {
+			t.Errorf("expected condition to fail when not eligible")
+		}
+		if result.ActualValue != 0 {
+			t.Errorf("ActualValue = %d, want 0", result.ActualValue)
+		}
+		if !strings.Contains(result.Description, "ineligible") {
+			t.Errorf("Description = %q, want it to name the reason", result.Description)
+		}
+	})
+
+	t.Run("endpoint unreachable degrades to not eligible", func(t *testing.T) {
+		ctx := NewValidationContextBuilder(char).
+			SetPlayerNpcProcessor(&fakePlayerNpcProcessor{err: errors.New("connection refused")}).
+			Build()
+
+		cond := Condition{
+			conditionType: CanSpawnPlayerNpcCondition,
+			operator:      Equals,
+			value:         1,
+			referenceId:   100000000,
+		}
+
+		result := cond.EvaluateWithContext(ctx)
+		if result.Passed {
+			t.Errorf("expected condition to fail closed when the endpoint is unreachable")
+		}
+		if result.ActualValue != 0 {
+			t.Errorf("ActualValue = %d, want 0", result.ActualValue)
+		}
+	})
+
+	t.Run("missing referenceId is a builder error", func(t *testing.T) {
+		_, err := NewConditionBuilder().FromInput(ConditionInput{
+			Type:     string(CanSpawnPlayerNpcCondition),
+			Operator: "=",
+			Value:    1,
+		}).Build()
+		if err == nil {
+			t.Fatal("expected an error when referenceId is missing")
+		}
+		if err.Error() != "referenceId (mapId) is required for canSpawnPlayerNpc conditions" {
+			t.Errorf("err = %q, want the referenceId-required message", err.Error())
+		}
+	})
 }

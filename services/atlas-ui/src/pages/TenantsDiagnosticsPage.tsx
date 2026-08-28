@@ -2,13 +2,17 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLayout";
 import {
   useTenantConfiguration,
   useUpdateTenantConfiguration,
 } from "@/lib/hooks/api/useTenants";
+import {
+  diagnosticsFormSchema,
+  type DiagnosticsFormValues,
+} from "@/lib/schemas/tenant.schema";
+import { createErrorFromUnknown } from "@/types/api/errors";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,12 +23,6 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-
-const diagnosticsFormSchema = z.object({
-  tracePackets: z.boolean(),
-});
-
-type DiagnosticsFormValues = z.infer<typeof diagnosticsFormSchema>;
 
 export function TenantsDiagnosticsPage() {
   const { id } = useParams();
@@ -57,7 +55,10 @@ export function TenantsDiagnosticsPage() {
           toast.success("Successfully saved diagnostics configuration."),
         onError: (error) =>
           toast.error(
-            `Failed to update diagnostics configuration: ${error.message}`,
+            createErrorFromUnknown(
+              error,
+              "Failed to update diagnostics configuration",
+            ).message,
           ),
       },
     );
@@ -86,7 +87,8 @@ export function TenantsDiagnosticsPage() {
               </p>
               <p>
                 Nothing is emitted unless the serving pod also runs at
-                LOG_LEVEL=Debug. Turning this on alone produces no output.
+                LOG_LEVEL=Debug or Trace. Turning this on alone produces no
+                output.
               </p>
             </AlertDescription>
           </Alert>

@@ -90,7 +90,7 @@ describe("TenantsDiagnosticsPage", () => {
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("account passwords");
     expect(alert.textContent).toContain("very large volumes of log output");
-    expect(alert.textContent).toMatch(/LOG_LEVEL=Debug/);
+    expect(alert.textContent).toMatch(/LOG_LEVEL=Debug or Trace/);
   });
 
   it("submits only the diagnostics object", async () => {

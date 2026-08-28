@@ -458,3 +458,50 @@ Outcomes:
 
 Still not determinable; do not dispatch an implementer. The breakpoint result
 above is the gate.
+
+## Round 5 — a map with no NPCs still crashes
+
+User report: entering a map that contains no NPCs crashes the same way.
+
+This is consistent with, and strengthens, round 4. `CWvsContext::OnEnterGame`
+does not create the `CNpcPool` alone — 0xae7ceb–0xae7d4e is an unbroken run of
+~12 pool constructions (`sub_AFAADA`, `sub_AFA8DC`, `sub_AFA90F`,
+`sub_AFA942` = NpcPool, `sub_AFA975`, `sub_AFA9A8`, `sub_AFA9DB`,
+`sub_AFAA0E`, `sub_AFAA41`, `sub_AFAA74`, `sub_AFAAA7`, `sub_AFA893`), none of
+them guarded. If `OnEnterGame` is skipped, **every** field pool is null.
+
+Spot-checked two siblings; both follow the identical shape — a global written
+in exactly two places (ctor and dtor), read by `CField::OnPacket` as a bare
+pointer with no null check:
+
+| global | pool | ctor / dtor | read by `CField::OnPacket` |
+|---|---|---|---|
+| `dword_CD7590` | `CNpcPool` | `sub_71FED9` / `sub_71FF65` | @0x56e979 (0x116–0x11D) |
+| `dword_CD7468` | `CDropPool` | `sub_535393` / `sub_53555A` | @0x56e9bd (0x121–0x122) |
+| `dword_CD749C` | `CEmployeePool` | `sub_542833` / `sub_5428A5` | @0x56e99b (0x11E–0x120) |
+
+So the NPC packets were never the cause — they were simply the first pooled
+packet in the burst for map 10000. On a map without NPCs the crash moves to
+whichever pooled op arrives first (`SpawnMonster` 0xFD → `CMobPool`
+`dword_CD5698` @0x56e957, a drop, or a reactor 0x12D–0x130). The single defect
+is that **`OnEnterGame` never runs on a channel enter**, and everything
+downstream is collateral.
+
+This also retires the whole "which packet in the enter-field burst is
+malformed" line of investigation from rounds 1–2. No packet body is implicated;
+the client is missing its pools before the first one is read.
+
+### Revised experiment
+
+Breakpoint the two pool-creation entry points rather than a single pool's ctor:
+
+- `0x00AE7C9F` — `CWvsContext::OnEnterGame`
+- `0x00AE8325` — `sub_AE8325` (the `CInterStage` arm of `set_stage`)
+
+Log in and enter a channel. Expected under the round-4 hypothesis: **neither is
+hit.** If one *is* hit, the pools are being created and then destroyed, and the
+next step is a memory-write breakpoint on `0x00CD7590`.
+
+Also worth capturing while stopped: the value of `CWvsContext`'s `CharacterData`
+pointer at each `set_stage`, since that is the flag selecting between the two
+arms.

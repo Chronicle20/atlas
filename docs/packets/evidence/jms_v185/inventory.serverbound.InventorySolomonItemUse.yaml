@@ -1,0 +1,8 @@
+packet: inventory/serverbound/InventorySolomonItemUse
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendExpUpItemUseRequest
+    address: "0xaf883d"
+    decompile_sha256: c667958abd1712e7a735abefd233c2766a1651fd7f14ea678378911b2218bf5a

@@ -8,14 +8,14 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 
 - export gms_v48: `b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6`
 - export gms_v61: `e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48`
-- export gms_v72: `0d3e12b8d5d6945bedf48664207eb78fabe45152f35aff3b2715de0173d31c1c`
-- export gms_v79: `67a49a67b9945e1eb2e4b473a4c7115a9cec7952588705b0ec91a10486759a99`
-- export gms_v83: `dd8bace2c2f0a1c106fbbdbd95c22491341d7fd34b6ce5ac07dfbd74ef8da439`
-- export gms_v84: `636dad10e1c43a2c7357cb7313ee3d3a6c740e3ca2d4274d2b06b0ce9f73a228`
-- export gms_v87: `d887ec26b877e52c3f1c8336bd596495e96272ece8ec6ad311eb145c30570021`
-- export gms_v92: `393f8c0d7ff6b37ab8b5e2e58b89544163862d9713d31561adcb3af175d36b92`
-- export gms_v95: `240cffdcba013ddf3663ba73733fd8ea0d98743c2a9068a909640ff2d9ced983`
-- export jms_v185: `82e11208d9a6c11f0b0ee14a518758f8e13821d4576f7fe62ac6de0fb7933252`
+- export gms_v72: `bf371cc0c6896d61bf01f767c3eb8c26351c70a9dd62561104aa1967a2a0b0e5`
+- export gms_v79: `c5adec87c72b6995833a95ce4175c4ea1ab5804afba44f4f2a7993aa44669347`
+- export gms_v83: `8557037f0813858ff95c4b380c6bf17f82f917f1bb4d3f8ee35bf8ce83723e6e`
+- export gms_v84: `2d7a918f650c58e43109edfd324de895526f50f9325bf0a56fca1d8fd79c93f3`
+- export gms_v87: `0f647c9b868a3b2fa9e5c240e89e19f8bffc5ed089b2eac80cfb39e929ed2c44`
+- export gms_v92: `b213d7733adf546170ad8612012757ebbc8a0330246ac5193130c409ff7f2cb1`
+- export gms_v95: `2321024784fa2724ae02b126e6973ff82c11ef0cc96a7ce6f946242ad8c55a31`
+- export jms_v185: `106f986d99d4e46de449bffa6504cb245bce107cd2b0ccf3e762c8da594a2ea0`
 
 ## Clientbound
 
@@ -712,9 +712,9 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | GUILD_BOSS | CField_GuildBoss::BasicActionAttack | field/serverbound/FieldGuildBoss (T1) | 0x099 | ✅ | 0x0B4 | ✅ | 0x0CD | ✅ | 0x0CF | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0E4 | ✅ | 0x0FC | ❌ | 0x103 | ✅ | 0x0E2 | ✅ |
 | UNNAMED_R245 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09A | ❌ |  | ⬜ | 0x0A2 | ❌ | 0x0AF | ❌ | 0x0B2 | ❌ |  | ⬜ |
 | SLIDE_REQUEST | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09B | ❌ | 0x09E | ✅ | 0x089 | ✅ |
-| USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0A5 | ❌ | 0x0B2 | ❌ | 0x0B5 | ❌ | 0x071 | ❌ |
+| USE_SOLOMON_ITEM | CWvsContext::SendExpUpItemUseRequest |  |  | ⬜ |  | ⬜ | 0x09C | ✅ | 0x09B | ✅ | 0x09D | ✅ | 0x0A1 | ✅ | 0x0A5 | ✅ | 0x0B2 | ✅ | 0x0B5 | ✅ | 0x071 | ✅ |
+| USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  |  | ⬜ |  | ⬜ | 0x09D | ✅ | 0x09C | ✅ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0A6 | ✅ | 0x0B3 | ✅ | 0x0B6 | ✅ | 0x072 | ✅ |
 | FIELD_DAMAGE_MOB | CMob::Update; sub_6361DF | character/serverbound/CharacterMonsterDamageFriendly (T1) |  | ⬜ | 0x09E | ✅ | 0x0B5 | ✅ | 0x0B7 | ✅ | 0x0BF | ✅ | 0x0C4 | ✅ | 0x0CB | ✅ | 0x0DF | ❌ | 0x0E6 | ✅ | 0x0C5 | ✅ |
-| USE_GACHA_EXP | CWvsContext::SendTempExpUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ❌ | 0x0A2 | ❌ | 0x0A6 | ❌ | 0x0B3 | ❌ | 0x0B6 | ❌ | 0x072 | ❌ |
 | CASH_ITEM_GACHAPON_BUTTON | CUICashItemGachapon::OnButtonClicked | cash/serverbound/CashItemGachaponButton (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ✅ | 0x0A1 | ✅ | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B6 | ✅ | 0x0B9 | ✅ | 0x0A7 | ✅ |
 | MOB_DAMAGE_MOB_FRIENDLY | CMob::Update; sub_6361DF | character/serverbound/CharacterMonsterDamageFriendly (T1) |  | ⬜ | 0x09F | ✅ | 0x0B6 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x0C5 | ✅ | 0x0CC | ✅ | 0x0E0 | ❌ | 0x0E7 | ✅ | 0x0C6 | ✅ |
 | NEW_YEAR_CARD_REQUEST | CUIFadeYesNo::OnButtonClicked; CUINewYearCardSenderDlg::_SendNewYearCard | guild/serverbound/GuildJoin (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0B4 | ❌ | 0x0B7 | ✅ |  | ⬜ |
@@ -1065,14 +1065,14 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 214 | 0 | 19 | 199 | 595 | 0 | 49.5% |
 | v61 | 280 | 0 | 56 | 233 | 458 | 0 | 49.2% |
-| v72 | 305 | 0 | 69 | 242 | 411 | 0 | 49.5% |
-| v79 | 351 | 0 | 68 | 238 | 370 | 0 | 53.4% |
-| v83 | 480 | 0 | 0 | 319 | 228 | 0 | 60.1% |
-| v84 | 454 | 0 | 0 | 326 | 247 | 0 | 58.2% |
-| v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
-| v92 | 67 | 0 | 147 | 672 | 141 | 0 | 7.6% |
-| v95 | 524 | 0 | 0 | 395 | 108 | 0 | 57.0% |
-| JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
+| v72 | 307 | 0 | 69 | 242 | 409 | 0 | 49.7% |
+| v79 | 353 | 0 | 68 | 238 | 368 | 0 | 53.6% |
+| v83 | 482 | 0 | 0 | 317 | 228 | 0 | 60.3% |
+| v84 | 456 | 0 | 0 | 324 | 247 | 0 | 58.5% |
+| v87 | 490 | 0 | 0 | 346 | 191 | 0 | 58.6% |
+| v92 | 69 | 0 | 147 | 670 | 141 | 0 | 7.8% |
+| v95 | 526 | 0 | 0 | 393 | 108 | 0 | 57.2% |
+| JMS185 | 453 | 0 | 0 | 376 | 198 | 0 | 54.6% |
 
 ## Conflicts
 

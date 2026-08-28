@@ -16585,6 +16585,36 @@
           "comment": "sCharName; MAPLELIFE_CHECK_NAME opcode 270 (0x10E)"
         }
       ]
+    },
+    "CWvsContext::SendExpUpItemUseRequest": {
+      "address": "0xaa80ac",
+      "direction": "serverbound",
+      "notes": "task-277 (stored-EXP items), gms_v87 anchor (session c0829805, GMSv87_4GB.exe.i64). Atlas struct: inventory/serverbound/solomon_item_use.go SolomonItemUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time(); tick)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source/slot (nPOS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        }
+      ]
+    },
+    "CWvsContext::SendTempExpUseRequest": {
+      "address": "0xaa82b6",
+      "direction": "serverbound",
+      "notes": "task-277 (stored-EXP items), gms_v87 anchor (session c0829805, GMSv87_4GB.exe.i64). Atlas struct: character/serverbound/stored_experience_use.go StoredExperienceUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time(); tick)"
+        }
+      ]
     }
   }
 }

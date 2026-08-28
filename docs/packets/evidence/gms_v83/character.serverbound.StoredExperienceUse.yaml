@@ -1,0 +1,8 @@
+packet: character/serverbound/StoredExperienceUse
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendTempExpUseRequest
+    address: "0xa1288f"
+    decompile_sha256: daec71b61abd8e97b982ff4d6f57a81310b641d5f2b5cec6a43962709d455cee

@@ -15571,6 +15571,36 @@
           "guard": "sTargetPortalName && v12 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v13, v14, 0, 0x7FFFFFFF, 1) && sPortalName"
         }
       ]
+    },
+    "CWvsContext::SendExpUpItemUseRequest": {
+      "address": "0xaf883d",
+      "direction": "serverbound",
+      "notes": "task-277 (stored-EXP items), jms_v185 anchor (session a977912e, MapleStory_dump_SCY.exe.i64). Atlas struct: inventory/serverbound/solomon_item_use.go SolomonItemUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time(); tick)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source/slot (nPOS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        }
+      ]
+    },
+    "CWvsContext::SendTempExpUseRequest": {
+      "address": "0xaf8a40",
+      "direction": "serverbound",
+      "notes": "task-277 (stored-EXP items), jms_v185 anchor (session a977912e, MapleStory_dump_SCY.exe.i64). Atlas struct: character/serverbound/stored_experience_use.go StoredExperienceUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time(); tick)"
+        }
+      ]
     }
   }
 }

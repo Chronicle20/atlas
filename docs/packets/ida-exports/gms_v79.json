@@ -22080,6 +22080,36 @@
           "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v68, v62, v12, 0, 0x7FFFFFFF, 1) && Src"
         }
       ]
+    },
+    "CWvsContext::SendExpUpItemUseRequest": {
+      "address": "0x95dee8",
+      "direction": "serverbound",
+      "notes": "task-277 (stored-EXP items), gms_v79 anchor (session 5a1cd4f3, GMS_v79_1_DEVM.exe.i64). Atlas struct: inventory/serverbound/solomon_item_use.go SolomonItemUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time(); tick)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source/slot (nPOS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        }
+      ]
+    },
+    "CWvsContext::SendTempExpUseRequest": {
+      "address": "0x95e0f0",
+      "direction": "serverbound",
+      "notes": "task-277 (stored-EXP items), gms_v79 anchor (session 5a1cd4f3, GMS_v79_1_DEVM.exe.i64). Atlas struct: character/serverbound/stored_experience_use.go StoredExperienceUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time(); tick)"
+        }
+      ]
     }
   }
 }

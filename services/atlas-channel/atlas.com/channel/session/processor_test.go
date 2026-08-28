@@ -1,11 +1,17 @@
 package session_test
 
 import (
+	"atlas-channel/configuration"
+	"atlas-channel/configuration/tenant"
+	"atlas-channel/configuration/tenant/diagnostics"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"atlas-channel/test"
 	"context"
 	"errors"
+	"io"
+	"net"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -957,5 +963,95 @@ func TestInMapAllInstancesModelProvider_ExcludesCashSceneSessions(t *testing.T) 
 	set := characterIdSet(got)
 	if len(got) != 1 || !set[100] {
 		t.Errorf("InMapAllInstancesModelProvider = chars %v, want exactly {100} (cash-scene 200/300 excluded)", set)
+	}
+}
+
+// TestAnnounce_TracesOutboundPacket exercises the trace gate end to end
+// through Announce: flag off emits nothing (FR-2.1), flag on emits exactly
+// one [PKT OUT] entry rendering the writer's plaintext bytes before
+// encryption (FR-4.2, FR-4.4), and a writer-resolution failure still
+// returns the original error with no trace emitted (FR-4.5).
+func TestAnnounce_TracesOutboundPacket(t *testing.T) {
+	_, cleanup := testSetup()
+	defer cleanup()
+
+	ctx := test.CreateTestContext()
+	sessionId := uuid.New()
+	tenantId := test.DefaultTenantId
+
+	serverConn, clientConn := net.Pipe()
+	t.Cleanup(func() {
+		_ = serverConn.Close()
+		_ = clientConn.Close()
+	})
+	go func() { _, _ = io.Copy(io.Discard, clientConn) }()
+
+	s := session.NewSession(sessionId, test.CreateDefaultMockTenant(), 0, serverConn)
+	session.AddSessionToRegistry(tenantId, s)
+
+	l, h := logtest.NewNullLogger()
+	l.SetLevel(logrus.DebugLevel)
+
+	body := []byte{0x7d, 0x00, 0xaa, 0xbb}
+	encoder := packet.Encode(func(_ logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+		return func(_ map[string]interface{}) []byte { return nil }
+	})
+
+	// Phase 1: flag off -- no trace entry.
+	wp := writer.Producer(func(_ string) (socketwriter.BodyFunc, error) {
+		return func(_ logrus.FieldLogger, _ context.Context) func(encoder packet.Encode) []byte {
+			return func(_ packet.Encode) []byte { return body }
+		}, nil
+	})
+	op := session.Announce(l)(ctx)(wp)("CHARACTER_DATA")(encoder)
+	if err := op(s); err != nil {
+		t.Fatalf("phase 1 (flag off): unexpected error: %v", err)
+	}
+	for _, e := range h.AllEntries() {
+		if strings.HasPrefix(e.Message, "[PKT OUT]") {
+			t.Fatalf("phase 1 (flag off): unexpected [PKT OUT] entry: %q", e.Message)
+		}
+	}
+	h.Reset()
+
+	// Phase 2: flag on -- exactly one [PKT OUT] entry with the writer's
+	// plaintext bytes.
+	configuration.PublishSnapshot(&configuration.RestModel{Id: uuid.New()}, map[uuid.UUID]tenant.RestModel{
+		tenantId: {Diagnostics: diagnostics.RestModel{TracePackets: true}},
+	})
+	if err := op(s); err != nil {
+		t.Fatalf("phase 2 (flag on): unexpected error: %v", err)
+	}
+	entries := h.AllEntries()
+	if len(entries) != 1 {
+		t.Fatalf("phase 2 (flag on): expected 1 entry, got %d", len(entries))
+	}
+	if entries[0].Level != logrus.DebugLevel {
+		t.Fatalf("phase 2 (flag on): expected DebugLevel, got %v", entries[0].Level)
+	}
+	wantPrefix := "[PKT OUT] writer=CHARACTER_DATA op=0x007d len=4 session=" + sessionId.String()
+	if !strings.HasPrefix(entries[0].Message, wantPrefix) {
+		t.Fatalf("phase 2 (flag on): message = %q, want prefix %q", entries[0].Message, wantPrefix)
+	}
+	wantBody := "0000  7d 00 aa bb                                       |}...|"
+	if !strings.Contains(entries[0].Message, wantBody) {
+		t.Fatalf("phase 2 (flag on): message = %q, want it to contain %q", entries[0].Message, wantBody)
+	}
+	h.Reset()
+
+	// Phase 3: writer resolution fails -- Announce returns the error
+	// unchanged and no trace entry is emitted (FR-4.5).
+	wantErr := errors.New("writer not found")
+	failingWp := writer.Producer(func(_ string) (socketwriter.BodyFunc, error) {
+		return nil, wantErr
+	})
+	failingOp := session.Announce(l)(ctx)(failingWp)("CHARACTER_DATA")(encoder)
+	if err := failingOp(s); !errors.Is(err, wantErr) {
+		t.Fatalf("phase 3 (writer resolution fails): err = %v, want %v", err, wantErr)
+	}
+	for _, e := range h.AllEntries() {
+		if strings.HasPrefix(e.Message, "[PKT OUT]") {
+			t.Fatalf("phase 3 (writer resolution fails): unexpected [PKT OUT] entry: %q", e.Message)
+		}
 	}
 }

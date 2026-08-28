@@ -94,6 +94,7 @@ type config struct {
 	handlers      map[uint16]request.Handler
 	idleNotifier  IdleNotifier
 	idleThreshold time.Duration
+	tracer        PacketTracer
 }
 
 // WaitGrouper is the minimal surface Serve/Run needs from a waitgroup. A
@@ -326,6 +327,9 @@ func handle(l logrus.FieldLogger) func(config *config, sessionId uuid.UUID, p re
 	return func(config *config, sessionId uuid.UUID, p request.Request) {
 		reader := request.NewRequestReader(&p, time.Now().Unix())
 		op := config.rw.Read(&reader)
+		if config.tracer != nil {
+			config.tracer(sessionId, op, p)
+		}
 		if h, ok := config.handlers[op]; ok {
 			h(sessionId, reader)
 		} else {

@@ -2,21 +2,23 @@ package tenant
 
 import (
 	"atlas-login/configuration/tenant/characters"
+	"atlas-login/configuration/tenant/diagnostics"
 	"atlas-login/configuration/tenant/npcs"
 	"atlas-login/configuration/tenant/socket"
 	"atlas-login/configuration/tenant/worlds"
 )
 
 type RestModel struct {
-	Id           string               `json:"-"`
-	Region       string               `json:"region"`
-	MajorVersion uint16               `json:"majorVersion"`
-	MinorVersion uint16               `json:"minorVersion"`
-	UsesPin      bool                 `json:"usesPin"`
-	Socket       socket.RestModel     `json:"socket"`
-	Characters   characters.RestModel `json:"characters"`
-	NPCs         []npcs.RestModel     `json:"npcs"`
-	Worlds       []worlds.RestModel   `json:"worlds"`
+	Id           string                `json:"-"`
+	Region       string                `json:"region"`
+	MajorVersion uint16                `json:"majorVersion"`
+	MinorVersion uint16                `json:"minorVersion"`
+	UsesPin      bool                  `json:"usesPin"`
+	Socket       socket.RestModel      `json:"socket"`
+	Characters   characters.RestModel  `json:"characters"`
+	NPCs         []npcs.RestModel      `json:"npcs"`
+	Worlds       []worlds.RestModel    `json:"worlds"`
+	Diagnostics  diagnostics.RestModel `json:"diagnostics"`
 }
 
 func (r RestModel) GetName() string {

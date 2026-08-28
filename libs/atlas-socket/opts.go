@@ -58,6 +58,19 @@ func SetHandlers(producer HandlerProducer) Configurator {
 	}
 }
 
+// PacketTracer receives every inbound frame after decryption and after the
+// opcode is parsed, but before dispatch. Optional: nil means no tracing,
+// and the nil check is the entire cost when tracing is off (FR-2.1). The
+// library deliberately knows nothing about tenants -- the closure the
+// service installs owns the tenant, the handler-name map, and the flag.
+type PacketTracer func(sessionId uuid.UUID, op uint16, payload []byte)
+
+func SetPacketTracer(tracer PacketTracer) Configurator {
+	return func(s *config) {
+		s.tracer = tracer
+	}
+}
+
 //goland:noinspection GoUnusedExportedFunction
 func SetIdleNotifier(notifier IdleNotifier, threshold time.Duration) Configurator {
 	return func(s *config) {

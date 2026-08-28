@@ -271,6 +271,11 @@ const TenantsMapleLifePage = lazyWithReload(() =>
     default: m.TenantsMapleLifePage,
   })),
 );
+const TenantsDiagnosticsPage = lazyWithReload(() =>
+  import("@/pages/TenantsDiagnosticsPage").then((m) => ({
+    default: m.TenantsDiagnosticsPage,
+  })),
+);
 const TenantsMtsConfigPage = lazyWithReload(() =>
   import("@/pages/TenantsMtsConfigPage").then((m) => ({
     default: m.TenantsMtsConfigPage,
@@ -470,6 +475,10 @@ export function App() {
                     <Route
                       path="/tenants/:id/mts-config"
                       element={<TenantsMtsConfigPage />}
+                    />
+                    <Route
+                      path="/tenants/:id/diagnostics"
+                      element={<TenantsDiagnosticsPage />}
                     />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />

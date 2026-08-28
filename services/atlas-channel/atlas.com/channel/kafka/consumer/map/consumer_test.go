@@ -2,6 +2,7 @@ package _map
 
 import (
 	"atlas-channel/door"
+	"atlas-channel/environment"
 	_map3 "atlas-channel/kafka/message/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -1057,4 +1058,125 @@ func TestHandleStatusEventEnvironmentReset_EmptyCleared(t *testing.T) {
 	if len(*captured) != 1 || (*captured)[0] != fieldcb.FieldObstacleAllResetWriter {
 		t.Fatalf("captured writer names = %v, want [%s]", *captured, fieldcb.FieldObstacleAllResetWriter)
 	}
+}
+
+// assertWriterNames fails the test unless got exactly equals want, in order.
+func assertWriterNames(t *testing.T, got, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("captured writer names = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("captured writer names = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestAnnounceEnvironmentState_ObstaclesThenEnvironment(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.RestModel{
+		{Kind: "OBSTACLE", Name: "a", State: 1},
+		{Kind: "ENVIRONMENT", Name: "b", State: 2},
+		{Kind: "OBSTACLE", Name: "c", State: 3},
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.FieldObstacleOnOffListWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_ListWriterUnrouted(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.RestModel{
+		{Kind: "OBSTACLE", Name: "a", State: 1},
+		{Kind: "ENVIRONMENT", Name: "b", State: 2},
+		{Kind: "OBSTACLE", Name: "c", State: 3},
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_NoObstacleWritersAtAll(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.RestModel{
+		{Kind: "OBSTACLE", Name: "a", State: 1},
+		{Kind: "ENVIRONMENT", Name: "b", State: 2},
+		{Kind: "OBSTACLE", Name: "c", State: 3},
+	}
+	wp := routed(fieldcb.SetObjectStateWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter, fieldcb.SetObjectStateWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_Empty(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, []environment.RestModel{}, session.Model{})
+
+	if len(*captured) != 0 {
+		t.Fatalf("captured writer names = %v, want none", *captured)
+	}
+}
+
+func TestAnnounceEnvironmentState_OnlyEnvironment(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.RestModel{
+		{Kind: "ENVIRONMENT", Name: "b", State: 2},
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_BadKindSkipped(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.RestModel{
+		{Kind: "GATE", Name: "x", State: 1},
+		{Kind: "ENVIRONMENT", Name: "b", State: 2},
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter})
 }

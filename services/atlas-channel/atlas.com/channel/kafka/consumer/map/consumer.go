@@ -11,6 +11,7 @@ import (
 	"atlas-channel/door"
 	dragoncmd "atlas-channel/dragon"
 	"atlas-channel/drop"
+	"atlas-channel/environment"
 	"atlas-channel/events"
 	"atlas-channel/guild"
 	"atlas-channel/jukebox"
@@ -390,6 +391,20 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 
 		routine.Go(l, ctx, func(_ context.Context) {
 			announceActiveJukebox(l, ctx, wp, f, s)
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			entries, eerr := environment.NewProcessor(l, ctx).GetAll(f)
+			if eerr != nil {
+				// Fails open: an unreachable atlas-maps costs the replayed
+				// object state, not the map entry.
+				l.WithError(eerr).Errorf("Unable to retrieve environment state for map [%d] instance [%s].", f.MapId(), f.Instance())
+				return
+			}
+			if len(entries) == 0 {
+				return
+			}
+			announceEnvironmentState(l, ctx, wp, entries, s)
 		})
 
 		return nil
@@ -1179,6 +1194,45 @@ func announceObjectState(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		return err
 	}
 	return doorAnnounce(l, ctx, wp, fieldcb.SetObjectStateWriter, writer.SetObjectStateBody(name, state), s)
+}
+
+// announceEnvironmentState replays the field's tracked object state to a single
+// entering session: obstacles first as one FieldObstacleOnOffList when that
+// writer is routed, then one SetObjectState per environment object, in the
+// insertion order atlas-maps preserved. Replay order is observable to the
+// client. gms_48_1 routes no obstacle list writer, so the obstacle branch falls
+// back to one announceObjectState per obstacle.
+func announceEnvironmentState(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, entries []environment.RestModel, s session.Model) {
+	obstacles := make([]fieldcb.ObstacleState, 0, len(entries))
+	obstacleNames := make([]environment.RestModel, 0, len(entries))
+	others := make([]environment.RestModel, 0, len(entries))
+	for _, e := range entries {
+		kind, err := field.ParseObjectKind(e.Kind)
+		if err != nil {
+			l.WithError(err).Errorf("Skipping environment object [%s] on enter replay.", e.Name)
+			continue
+		}
+		if kind == field.ObjectKindObstacle {
+			obstacles = append(obstacles, fieldcb.NewObstacleState(e.Name, e.State))
+			obstacleNames = append(obstacleNames, e)
+			continue
+		}
+		others = append(others, e)
+	}
+
+	if len(obstacles) > 0 {
+		if _, err := wp(fieldcb.FieldObstacleOnOffListWriter); err == nil {
+			_ = doorAnnounce(l, ctx, wp, fieldcb.FieldObstacleOnOffListWriter, writer.FieldObstacleOnOffListBody(obstacles), s)
+		} else {
+			for _, e := range obstacleNames {
+				_ = announceObjectState(l, ctx, wp, field.ObjectKindObstacle, e.Name, e.State, s)
+			}
+		}
+	}
+
+	for _, e := range others {
+		_ = announceObjectState(l, ctx, wp, field.ObjectKindEnvironment, e.Name, e.State, s)
+	}
 }
 
 func handleStatusEventEnvironmentStateChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.EnvironmentStateChanged]) {

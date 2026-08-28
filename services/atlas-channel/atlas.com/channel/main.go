@@ -426,10 +426,7 @@ func buildListener(
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}
 
-		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
-		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
-			rw = socket2.ByteReadWriter{}
-		}
+		rw := opcodes.OpReadWriterFor(t.Region(), t.MajorVersion())
 
 		sc := h.ServerModel
 
@@ -648,7 +645,8 @@ func buildListener(
 		// shutdown bookkeeping, unchanged); h.Wg additionally sees every
 		// accepted connection, which is what makes drain phase 3 a real
 		// bounded wait (task-244 design.md §4.3).
-		lis, err := socket.CreateSocketService(fl, tctx, tdm.WaitGroup(), h.Wg)(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
+		handlerNames := opcodes.BuildHandlerNames(fl, opcodes.ServiceChannel, tenantCfg.Socket.Handlers)
+		lis, err := socket.CreateSocketService(fl, tctx, tdm.WaitGroup(), h.Wg)(hp, rw, wp, sc, cfg.IPAddress, cfg.Port, handlerNames)
 		if err != nil {
 			// A non-nil error here is what fires Registry.Add's rollback:
 			// no entry is left for a channel that never bound. Return the

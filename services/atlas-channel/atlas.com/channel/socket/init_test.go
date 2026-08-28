@@ -63,7 +63,7 @@ func TestCreateSocketServiceReturnsErrorWhenPortIsAlreadyBound(t *testing.T) {
 	hp := func() map[uint16]request.Handler { return nil }
 	rw := socket.ShortReadWriter{}
 
-	lis, err := CreateSocketService(logrus.New(), ctx, wg, sessionWg)(hp, rw, nil, sc, "127.0.0.1", port)
+	lis, err := CreateSocketService(logrus.New(), ctx, wg, sessionWg)(hp, rw, nil, sc, "127.0.0.1", port, nil)
 	if lis != nil {
 		t.Fatal("CreateSocketService returned a non-nil listener on a bind failure")
 	}
@@ -95,7 +95,7 @@ func TestCreateSocketServiceReturnsTheBoundListener(t *testing.T) {
 	hp := func() map[uint16]request.Handler { return nil }
 	rw := socket.ShortReadWriter{}
 
-	lis, err := CreateSocketService(logrus.New(), ctx, wg, sessionWg)(hp, rw, nil, sc, "127.0.0.1", 0)
+	lis, err := CreateSocketService(logrus.New(), ctx, wg, sessionWg)(hp, rw, nil, sc, "127.0.0.1", 0, nil)
 	if err != nil {
 		t.Fatalf("CreateSocketService returned an error: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestCreateSocketServiceBindsTheWildcardAddressNotTheAdvertisedAddress(t *te
 	hp := func() map[uint16]request.Handler { return nil }
 	rw := socket.ShortReadWriter{}
 
-	lis, err := CreateSocketService(logrus.New(), ctx, wg, sessionWg)(hp, rw, nil, sc, advertisedIpAddress, 0)
+	lis, err := CreateSocketService(logrus.New(), ctx, wg, sessionWg)(hp, rw, nil, sc, advertisedIpAddress, 0, nil)
 	if err != nil {
 		t.Fatalf("CreateSocketService returned an error binding the advertised address: %v", err)
 	}

@@ -3,12 +3,13 @@ package buddylist
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_BUDDY_LIST"
-	CommandTypeRequestAdd    = "REQUEST_ADD"
-	CommandTypeRequestDelete = "REQUEST_DELETE"
+	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_BUDDY_LIST"
+	CommandTypeRequestAdd                = "REQUEST_ADD"
+	CommandTypeRequestDelete             = "REQUEST_DELETE"
 )
 
 type Command[E any] struct {
@@ -28,13 +29,13 @@ type RequestDeleteBuddyCommandBody struct {
 }
 
 const (
-	EnvStatusEventTopic                = "EVENT_TOPIC_BUDDY_LIST_STATUS"
-	StatusEventTypeBuddyAdded          = "BUDDY_ADDED"
-	StatusEventTypeBuddyRemoved        = "BUDDY_REMOVED"
-	StatusEventTypeBuddyUpdated        = "BUDDY_UPDATED"
-	StatusEventTypeBuddyChannelChange  = "BUDDY_CHANNEL_CHANGE"
-	StatusEventTypeBuddyCapacityUpdate = "CAPACITY_CHANGE"
-	StatusEventTypeError               = "ERROR"
+	EnvStatusEventTopic                topic.Token = "EVENT_TOPIC_BUDDY_LIST_STATUS"
+	StatusEventTypeBuddyAdded                      = "BUDDY_ADDED"
+	StatusEventTypeBuddyRemoved                    = "BUDDY_REMOVED"
+	StatusEventTypeBuddyUpdated                    = "BUDDY_UPDATED"
+	StatusEventTypeBuddyChannelChange              = "BUDDY_CHANNEL_CHANGE"
+	StatusEventTypeBuddyCapacityUpdate             = "CAPACITY_CHANGE"
+	StatusEventTypeError                           = "ERROR"
 
 	StatusEventErrorListFull          = "BUDDY_LIST_FULL"
 	StatusEventErrorOtherListFull     = "OTHER_BUDDY_LIST_FULL"

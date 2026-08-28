@@ -1,14 +1,17 @@
 package pet
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/google/uuid"
+)
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_PET"
-	CommandPetSpawn          = "SPAWN"
-	CommandPetDespawn        = "DESPAWN"
-	CommandPetAttemptCommand = "ATTEMPT_COMMAND"
-	CommandPetSetExclude     = "EXCLUDE"
-	CommandPetRename         = "RENAME"
+	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_PET"
+	CommandPetSpawn                      = "SPAWN"
+	CommandPetDespawn                    = "DESPAWN"
+	CommandPetAttemptCommand             = "ATTEMPT_COMMAND"
+	CommandPetSetExclude                 = "EXCLUDE"
+	CommandPetRename                     = "RENAME"
 )
 
 type Command[E any] struct {
@@ -42,20 +45,20 @@ type RenameCommandBody struct {
 }
 
 const (
-	EnvStatusEventTopic             = "EVENT_TOPIC_PET_STATUS"
-	StatusEventTypeCreated          = "CREATED"
-	StatusEventTypeDeleted          = "DELETED"
-	StatusEventTypeSpawned          = "SPAWNED"
-	StatusEventTypeDespawned        = "DESPAWNED"
-	StatusEventTypeCommandResponse  = "COMMAND_RESPONSE"
-	StatusEventTypeClosenessChanged = "CLOSENESS_CHANGED"
-	StatusEventTypeFullnessChanged  = "FULLNESS_CHANGED"
-	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
-	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
-	StatusEventTypeExcludeChanged   = "EXCLUDE_CHANGED"
-	StatusEventTypeFlagChanged      = "FLAG_CHANGED"
-	StatusEventTypeReviveFailed     = "REVIVE_FAILED"
-	StatusEventTypeNameChanged      = "NAME_CHANGED"
+	EnvStatusEventTopic             topic.Token = "EVENT_TOPIC_PET_STATUS"
+	StatusEventTypeCreated                      = "CREATED"
+	StatusEventTypeDeleted                      = "DELETED"
+	StatusEventTypeSpawned                      = "SPAWNED"
+	StatusEventTypeDespawned                    = "DESPAWNED"
+	StatusEventTypeCommandResponse              = "COMMAND_RESPONSE"
+	StatusEventTypeClosenessChanged             = "CLOSENESS_CHANGED"
+	StatusEventTypeFullnessChanged              = "FULLNESS_CHANGED"
+	StatusEventTypeLevelChanged                 = "LEVEL_CHANGED"
+	StatusEventTypeSlotChanged                  = "SLOT_CHANGED"
+	StatusEventTypeExcludeChanged               = "EXCLUDE_CHANGED"
+	StatusEventTypeFlagChanged                  = "FLAG_CHANGED"
+	StatusEventTypeReviveFailed                 = "REVIVE_FAILED"
+	StatusEventTypeNameChanged                  = "NAME_CHANGED"
 )
 
 type StatusEvent[E any] struct {

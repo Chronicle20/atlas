@@ -7,16 +7,17 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_SKILL"
-	CommandTypeRequestCreate  = "REQUEST_CREATE"
-	CommandTypeRequestUpdate  = "REQUEST_UPDATE"
-	CommandTypeRequestDelete  = "REQUEST_DELETE"
-	CommandTypeSetCooldown    = "SET_COOLDOWN"
-	CommandTypeTransferSp     = "TRANSFER_SP"
-	CommandTypeResetCooldowns = "RESET_COOLDOWNS"
+	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_SKILL"
+	CommandTypeRequestCreate              = "REQUEST_CREATE"
+	CommandTypeRequestUpdate              = "REQUEST_UPDATE"
+	CommandTypeRequestDelete              = "REQUEST_DELETE"
+	CommandTypeSetCooldown                = "SET_COOLDOWN"
+	CommandTypeTransferSp                 = "TRANSFER_SP"
+	CommandTypeResetCooldowns             = "RESET_COOLDOWNS"
 )
 
 type Command[E any] struct {
@@ -75,14 +76,14 @@ type TransferSpBody struct {
 }
 
 const (
-	EnvStatusEventTopic            = "EVENT_TOPIC_SKILL_STATUS"
-	StatusEventTypeCreated         = "CREATED"
-	StatusEventTypeUpdated         = "UPDATED"
-	StatusEventTypeDeleted         = "DELETED"
-	StatusEventTypeCooldownApplied = "COOLDOWN_APPLIED"
-	StatusEventTypeCooldownExpired = "COOLDOWN_EXPIRED"
-	StatusEventTypeSpTransferred   = "SP_TRANSFERRED"
-	StatusEventTypeError           = "ERROR"
+	EnvStatusEventTopic            topic.Token = "EVENT_TOPIC_SKILL_STATUS"
+	StatusEventTypeCreated                     = "CREATED"
+	StatusEventTypeUpdated                     = "UPDATED"
+	StatusEventTypeDeleted                     = "DELETED"
+	StatusEventTypeCooldownApplied             = "COOLDOWN_APPLIED"
+	StatusEventTypeCooldownExpired             = "COOLDOWN_EXPIRED"
+	StatusEventTypeSpTransferred               = "SP_TRANSFERRED"
+	StatusEventTypeError                       = "ERROR"
 
 	StatusEventErrorTypeSkillAtZero   = "SKILL_AT_ZERO"
 	StatusEventErrorTypeSkillAtCap    = "SKILL_AT_CAP"

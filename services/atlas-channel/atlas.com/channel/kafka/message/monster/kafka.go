@@ -6,23 +6,24 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_MONSTER"
-	CommandTypeDamage         = "DAMAGE"
-	CommandTypeDamageFriendly = "DAMAGE_FRIENDLY"
-	CommandTypeApplyStatus    = "APPLY_STATUS"
-	CommandTypeCancelStatus   = "CANCEL_STATUS"
-	CommandTypeUseSkill       = "USE_SKILL"
-	CommandTypeUseBasicAttack = "USE_BASIC_ATTACK"
-	CommandTypeDrainMp        = "DRAIN_MP"
-	CommandTypeKill           = "KILL"
-	CommandTypeClearAggro     = "CLEAR_AGGRO"
-	CommandTypeForceControl   = "FORCE_CONTROL"
-	CommandTypeSelfDestruct   = "SELF_DESTRUCT"
-	CommandTypeSetAggro       = "SET_AGGRO"
-	CommandTypeBanish         = "BANISH"
+	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_MONSTER"
+	CommandTypeDamage                     = "DAMAGE"
+	CommandTypeDamageFriendly             = "DAMAGE_FRIENDLY"
+	CommandTypeApplyStatus                = "APPLY_STATUS"
+	CommandTypeCancelStatus               = "CANCEL_STATUS"
+	CommandTypeUseSkill                   = "USE_SKILL"
+	CommandTypeUseBasicAttack             = "USE_BASIC_ATTACK"
+	CommandTypeDrainMp                    = "DRAIN_MP"
+	CommandTypeKill                       = "KILL"
+	CommandTypeClearAggro                 = "CLEAR_AGGRO"
+	CommandTypeForceControl               = "FORCE_CONTROL"
+	CommandTypeSelfDestruct               = "SELF_DESTRUCT"
+	CommandTypeSetAggro                   = "SET_AGGRO"
+	CommandTypeBanish                     = "BANISH"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -160,7 +161,7 @@ type BanishCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus = "EVENT_TOPIC_MONSTER_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
 
 	EventStatusCreated          = "CREATED"
 	EventStatusDestroyed        = "DESTROYED"

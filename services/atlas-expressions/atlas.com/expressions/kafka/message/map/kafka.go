@@ -6,11 +6,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicMapStatus               = "EVENT_TOPIC_MAP_STATUS"
-	EventTopicMapStatusTypeCharacterExit = "CHARACTER_EXIT"
+	EnvEventTopicMapStatus               topic.Token = "EVENT_TOPIC_MAP_STATUS"
+	EventTopicMapStatusTypeCharacterExit             = "CHARACTER_EXIT"
 )
 
 // StatusEvent represents a map status event with a generic body

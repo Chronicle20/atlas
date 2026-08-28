@@ -6,11 +6,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_MONSTER"
-	CommandTypeCatch = "CATCH"
+	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_MONSTER"
+	CommandTypeCatch             = "CATCH"
 )
 
 // Command mirrors atlas-monsters' shared command envelope. MonsterId carries
@@ -34,8 +35,8 @@ type CatchCommandBody struct {
 }
 
 const (
-	EnvEventTopicCatch        = "EVENT_TOPIC_MONSTER_CATCH"
-	EventMonsterCatchResolved = "CATCH_RESOLVED"
+	EnvEventTopicCatch        topic.Token = "EVENT_TOPIC_MONSTER_CATCH"
+	EventMonsterCatchResolved             = "CATCH_RESOLVED"
 )
 
 // Event mirrors atlas-monsters' status-event envelope on the dedicated catch

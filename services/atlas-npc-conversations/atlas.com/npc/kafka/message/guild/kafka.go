@@ -3,14 +3,15 @@ package guild
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic                    = "COMMAND_TOPIC_GUILD"
-	CommandTypeRequestName             = "REQUEST_NAME"
-	CommandTypeRequestEmblem           = "REQUEST_EMBLEM"
-	CommandTypeRequestDisband          = "REQUEST_DISBAND"
-	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
+	EnvCommandTopic                    topic.Token = "COMMAND_TOPIC_GUILD"
+	CommandTypeRequestName                         = "REQUEST_NAME"
+	CommandTypeRequestEmblem                       = "REQUEST_EMBLEM"
+	CommandTypeRequestDisband                      = "REQUEST_DISBAND"
+	CommandTypeRequestCapacityIncrease             = "REQUEST_CAPACITY_INCREASE"
 )
 
 type Command[E any] struct {

@@ -3,15 +3,16 @@ package conversation
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic      = "COMMAND_TOPIC_NPC_CONVERSATION"
-	CommandTypeSimple    = "SIMPLE"
-	CommandTypeText      = "TEXT"
-	CommandTypeStyle     = "STYLE"
-	CommandTypeNumber    = "NUMBER"
-	CommandTypeSlideMenu = "SLIDE_MENU"
+	EnvCommandTopic      topic.Token = "COMMAND_TOPIC_NPC_CONVERSATION"
+	CommandTypeSimple                = "SIMPLE"
+	CommandTypeText                  = "TEXT"
+	CommandTypeStyle                 = "STYLE"
+	CommandTypeNumber                = "NUMBER"
+	CommandTypeSlideMenu             = "SLIDE_MENU"
 )
 
 type CommandEvent[E any] struct {

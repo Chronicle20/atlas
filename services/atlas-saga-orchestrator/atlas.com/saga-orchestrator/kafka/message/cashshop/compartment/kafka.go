@@ -1,17 +1,18 @@
 package compartment
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic         = "COMMAND_TOPIC_CASH_COMPARTMENT"
-	EnvEventTopicStatus     = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
-	CommandAccept           = "ACCEPT"
-	CommandRelease          = "RELEASE"
-	StatusEventTypeAccepted = "ACCEPTED"
-	StatusEventTypeReleased = "RELEASED"
-	StatusEventTypeError    = "ERROR"
+	EnvCommandTopic         topic.Token = "COMMAND_TOPIC_CASH_COMPARTMENT"
+	EnvEventTopicStatus     topic.Token = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
+	CommandAccept                       = "ACCEPT"
+	CommandRelease                      = "RELEASE"
+	StatusEventTypeAccepted             = "ACCEPTED"
+	StatusEventTypeReleased             = "RELEASED"
+	StatusEventTypeError                = "ERROR"
 )
 
 // Command represents a cash shop compartment command (ACCEPT/RELEASE)

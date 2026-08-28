@@ -10,17 +10,18 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 const (
-	EnvCommandTopic              = "COMMAND_TOPIC_PARTY_QUEST"
-	CommandTypeRegister          = "REGISTER"
-	CommandTypeLeave             = "LEAVE"
-	CommandTypeUpdateCustomData  = "UPDATE_CUSTOM_DATA"
-	CommandTypeBroadcastMessage  = "BROADCAST_MESSAGE"
-	CommandTypeStageClearAttempt = "STAGE_CLEAR_ATTEMPT"
-	CommandTypeEnterBonus        = "ENTER_BONUS"
+	EnvCommandTopic              topic.Token = "COMMAND_TOPIC_PARTY_QUEST"
+	CommandTypeRegister                      = "REGISTER"
+	CommandTypeLeave                         = "LEAVE"
+	CommandTypeUpdateCustomData              = "UPDATE_CUSTOM_DATA"
+	CommandTypeBroadcastMessage              = "BROADCAST_MESSAGE"
+	CommandTypeStageClearAttempt             = "STAGE_CLEAR_ATTEMPT"
+	CommandTypeEnterBonus                    = "ENTER_BONUS"
 )
 
 func getBaseRequest(ctx context.Context) (string, error) {

@@ -5,11 +5,12 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic         = "COMMAND_TOPIC_NOTE"
-	EnvEventTopicNoteStatus = "EVENT_TOPIC_NOTE_STATUS"
+	EnvCommandTopic         topic.Token = "COMMAND_TOPIC_NOTE"
+	EnvEventTopicNoteStatus topic.Token = "EVENT_TOPIC_NOTE_STATUS"
 
 	CommandTypeCreate  = "CREATE"
 	CommandTypeDiscard = "DISCARD"

@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // These structs mirror the character status event shapes emitted by
@@ -14,10 +15,10 @@ import (
 // with the producer. Only the LOGOUT/CHANNEL_CHANGED/MAP_CHANGED subset
 // relevant to door cleanup is mirrored here.
 const (
-	EnvEventTopicCharacterStatus  = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogout         = "LOGOUT"
-	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
-	StatusEventTypeMapChanged     = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus  topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeLogout                     = "LOGOUT"
+	StatusEventTypeChannelChanged             = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged                 = "MAP_CHANGED"
 )
 
 type StatusEvent[E any] struct {

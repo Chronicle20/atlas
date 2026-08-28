@@ -6,11 +6,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopicMap      = "COMMAND_TOPIC_MAP"
-	CommandTypeWeatherStart = "WEATHER_START"
+	EnvCommandTopicMap      topic.Token = "COMMAND_TOPIC_MAP"
+	CommandTypeWeatherStart             = "WEATHER_START"
 )
 
 type Command[E any] struct {

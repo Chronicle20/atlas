@@ -3,11 +3,12 @@ package session
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_ACCOUNT_SESSION"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_ACCOUNT_SESSION"
 
 	CommandIssuerLogin = "LOGIN"
 
@@ -39,7 +40,7 @@ type ProgressStateCommandBody struct {
 type LogoutCommandBody struct{}
 
 const (
-	EnvEventStatusTopic = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
 
 	EventStatusTypeCreated                 = "CREATED"
 	EventStatusTypeStateChanged            = "STATE_CHANGED"

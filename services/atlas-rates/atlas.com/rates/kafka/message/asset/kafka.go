@@ -3,17 +3,18 @@ package asset
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
 const (
-	EnvEventTopicStatus            = "EVENT_TOPIC_ASSET_STATUS"
-	StatusEventTypeCreated         = "CREATED"
-	StatusEventTypeAccepted        = "ACCEPTED"
-	StatusEventTypeDeleted         = "DELETED"
-	StatusEventTypeReleased        = "RELEASED"
-	StatusEventTypeMoved           = "MOVED"
-	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
+	EnvEventTopicStatus            topic.Token = "EVENT_TOPIC_ASSET_STATUS"
+	StatusEventTypeCreated                     = "CREATED"
+	StatusEventTypeAccepted                    = "ACCEPTED"
+	StatusEventTypeDeleted                     = "DELETED"
+	StatusEventTypeReleased                    = "RELEASED"
+	StatusEventTypeMoved                       = "MOVED"
+	StatusEventTypeQuantityChanged             = "QUANTITY_CHANGED"
 )
 
 // StatusEvent represents an asset status change event from atlas-inventory

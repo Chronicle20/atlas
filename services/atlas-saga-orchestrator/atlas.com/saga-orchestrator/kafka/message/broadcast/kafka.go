@@ -1,11 +1,12 @@
 package broadcast
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (
-	EnvCommandTopicWorldBroadcast = "COMMAND_TOPIC_WORLD_BROADCAST"
+	EnvCommandTopicWorldBroadcast topic.Token = "COMMAND_TOPIC_WORLD_BROADCAST"
 )
 
 // EnqueueCommand requests that a megaphone/Maple TV broadcast be appended to

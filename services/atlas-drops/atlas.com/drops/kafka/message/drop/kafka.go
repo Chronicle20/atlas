@@ -8,29 +8,30 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Event topic and type constants
 const (
-	EnvEventTopicDropStatus           = "EVENT_TOPIC_DROP_STATUS"
-	StatusEventTypeCreated            = "CREATED"
-	StatusEventTypeExpired            = "EXPIRED"
-	StatusEventTypePickedUp           = "PICKED_UP"
-	StatusEventTypeReserved           = "RESERVED"
-	StatusEventTypeReservationFailure = "RESERVATION_FAILURE"
-	StatusEventTypeConsumed           = "CONSUMED"
-	StatusEventTypeMesoAwarded        = "MESO_AWARDED"
+	EnvEventTopicDropStatus           topic.Token = "EVENT_TOPIC_DROP_STATUS"
+	StatusEventTypeCreated                        = "CREATED"
+	StatusEventTypeExpired                        = "EXPIRED"
+	StatusEventTypePickedUp                       = "PICKED_UP"
+	StatusEventTypeReserved                       = "RESERVED"
+	StatusEventTypeReservationFailure             = "RESERVATION_FAILURE"
+	StatusEventTypeConsumed                       = "CONSUMED"
+	StatusEventTypeMesoAwarded                    = "MESO_AWARDED"
 )
 
 // Command topic and type constants
 const (
-	EnvCommandTopic               = "COMMAND_TOPIC_DROP"
-	CommandTypeSpawn              = "SPAWN"
-	CommandTypeSpawnFromCharacter = "SPAWN_FROM_CHARACTER"
-	CommandTypeRequestReservation = "REQUEST_RESERVATION"
-	CommandTypeCancelReservation  = "CANCEL_RESERVATION"
-	CommandTypeRequestPickUp      = "REQUEST_PICK_UP"
-	CommandTypeConsume            = "CONSUME"
+	EnvCommandTopic               topic.Token = "COMMAND_TOPIC_DROP"
+	CommandTypeSpawn                          = "SPAWN"
+	CommandTypeSpawnFromCharacter             = "SPAWN_FROM_CHARACTER"
+	CommandTypeRequestReservation             = "REQUEST_RESERVATION"
+	CommandTypeCancelReservation              = "CANCEL_RESERVATION"
+	CommandTypeRequestPickUp                  = "REQUEST_PICK_UP"
+	CommandTypeConsume                        = "CONSUME"
 )
 
 // EquipmentData carries inline equipment statistics for drops

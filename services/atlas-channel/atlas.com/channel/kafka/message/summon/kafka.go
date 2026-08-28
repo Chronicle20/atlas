@@ -6,13 +6,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvCommandTopic is the COMMAND_TOPIC_SUMMON env var (channel -> summons).
 // The envelope and body below are re-declared channel-side; their JSON tags
 // MUST stay byte-for-byte identical to the atlas-summons consumer definition
 // at services/atlas-summons/atlas.com/summons/kafka/consumer/summon/kafka.go.
-const EnvCommandTopic = "COMMAND_TOPIC_SUMMON"
+const EnvCommandTopic topic.Token = "COMMAND_TOPIC_SUMMON"
 
 const (
 	CommandTypeSpawn  = "SPAWN"
@@ -84,7 +85,7 @@ type DamageCommandBody struct {
 // channel-side; their JSON tags MUST stay byte-for-byte identical to the
 // atlas-summons producer definition at
 // services/atlas-summons/atlas.com/summons/summon/kafka.go.
-const EnvEventTopicSummonStatus = "EVENT_TOPIC_SUMMON_STATUS"
+const EnvEventTopicSummonStatus topic.Token = "EVENT_TOPIC_SUMMON_STATUS"
 
 const (
 	EventSummonStatusCreated   = "CREATED"

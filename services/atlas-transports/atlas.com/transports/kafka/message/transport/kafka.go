@@ -8,12 +8,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicStatus = "EVENT_TOPIC_TRANSPORT_STATUS"
-	EventStatusArrived  = "ARRIVED"
-	EventStatusDeparted = "DEPARTED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRANSPORT_STATUS"
+	EventStatusArrived              = "ARRIVED"
+	EventStatusDeparted             = "DEPARTED"
 
 	// Voyage lifecycle, distinct from the observation-deck visuals above.
 	// ARRIVED/DEPARTED tell a watcher on the pier what the docked ship looks

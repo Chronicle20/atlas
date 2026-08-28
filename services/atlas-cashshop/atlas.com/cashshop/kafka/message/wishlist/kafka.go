@@ -1,14 +1,15 @@
 package wishlist
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
 const (
-	EnvEventTopicStatus       = "EVENT_TOPIC_WISHLIST_STATUS"
-	StatusEventTypeAdded      = "ADDED"
-	StatusEventTypeDeleted    = "DELETED"
-	StatusEventTypeDeletedAll = "DELETED_ALL"
+	EnvEventTopicStatus       topic.Token = "EVENT_TOPIC_WISHLIST_STATUS"
+	StatusEventTypeAdded                  = "ADDED"
+	StatusEventTypeDeleted                = "DELETED"
+	StatusEventTypeDeletedAll             = "DELETED_ALL"
 )
 
 type StatusEvent[E any] struct {

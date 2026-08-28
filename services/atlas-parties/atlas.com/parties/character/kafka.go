@@ -3,15 +3,16 @@ package character
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventMemberStatusTopic              = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
-	EventPartyMemberStatusTypeLogin        = "LOGIN"
-	EventPartyMemberStatusTypeLogout       = "LOGOUT"
-	EventPartyMemberStatusTypeLevelChanged = "LEVEL_CHANGED"
-	EventPartyMemberStatusTypeJobChanged   = "JOB_CHANGED"
-	EventPartyMemberStatusTypeNameChanged  = "NAME_CHANGED"
+	EnvEventMemberStatusTopic              topic.Token = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
+	EventPartyMemberStatusTypeLogin                    = "LOGIN"
+	EventPartyMemberStatusTypeLogout                   = "LOGOUT"
+	EventPartyMemberStatusTypeLevelChanged             = "LEVEL_CHANGED"
+	EventPartyMemberStatusTypeJobChanged               = "JOB_CHANGED"
+	EventPartyMemberStatusTypeNameChanged              = "NAME_CHANGED"
 )
 
 type memberStatusEvent[E any] struct {

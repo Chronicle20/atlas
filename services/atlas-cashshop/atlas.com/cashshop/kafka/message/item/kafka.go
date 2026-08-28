@@ -1,8 +1,10 @@
 package item
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CASH_ITEM"
-	EnvStatusTopic  = "STATUS_TOPIC_CASH_ITEM"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CASH_ITEM"
+	EnvStatusTopic  topic.Token = "STATUS_TOPIC_CASH_ITEM"
 
 	CommandCreate = "CREATE"
 

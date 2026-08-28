@@ -6,20 +6,21 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic              = "COMMAND_TOPIC_GUILD"
-	CommandTypeRequestName       = "REQUEST_NAME"
-	CommandTypeRequestEmblem     = "REQUEST_EMBLEM"
-	CommandTypeRequestCreate     = "REQUEST_CREATE"
-	CommandTypeRequestInvite     = "REQUEST_INVITE"
-	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
-	CommandTypeChangeEmblem      = "CHANGE_EMBLEM"
-	CommandTypeChangeNotice      = "CHANGE_NOTICE"
-	CommandTypeChangeTitles      = "CHANGE_TITLES"
-	CommandTypeChangeMemberTitle = "CHANGE_MEMBER_TITLE"
-	CommandTypeLeave             = "LEAVE"
+	EnvCommandTopic              topic.Token = "COMMAND_TOPIC_GUILD"
+	CommandTypeRequestName                   = "REQUEST_NAME"
+	CommandTypeRequestEmblem                 = "REQUEST_EMBLEM"
+	CommandTypeRequestCreate                 = "REQUEST_CREATE"
+	CommandTypeRequestInvite                 = "REQUEST_INVITE"
+	CommandTypeCreationAgreement             = "CREATION_AGREEMENT"
+	CommandTypeChangeEmblem                  = "CHANGE_EMBLEM"
+	CommandTypeChangeNotice                  = "CHANGE_NOTICE"
+	CommandTypeChangeTitles                  = "CHANGE_TITLES"
+	CommandTypeChangeMemberTitle             = "CHANGE_MEMBER_TITLE"
+	CommandTypeLeave                         = "LEAVE"
 )
 
 type Command[E any] struct {
@@ -85,19 +86,19 @@ type ChangeMemberTitleBody struct {
 }
 
 const (
-	EnvStatusEventTopic                = "EVENT_TOPIC_GUILD_STATUS"
-	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
-	StatusEventTypeCreated             = "CREATED"
-	StatusEventTypeDisbanded           = "DISBANDED"
-	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
-	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
-	StatusEventTypeMemberTitleUpdated  = "MEMBER_TITLE_UPDATED"
-	StatusEventTypeMemberLeft          = "MEMBER_LEFT"
-	StatusEventTypeMemberJoined        = "MEMBER_JOINED"
-	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
-	StatusEventTypeCapacityUpdated     = "CAPACITY_UPDATED"
-	StatusEventTypeTitlesUpdated       = "TITLES_UPDATED"
-	StatusEventTypeError               = "ERROR"
+	EnvStatusEventTopic                topic.Token = "EVENT_TOPIC_GUILD_STATUS"
+	StatusEventTypeRequestAgreement                = "REQUEST_AGREEMENT"
+	StatusEventTypeCreated                         = "CREATED"
+	StatusEventTypeDisbanded                       = "DISBANDED"
+	StatusEventTypeEmblemUpdated                   = "EMBLEM_UPDATED"
+	StatusEventTypeMemberStatusUpdated             = "MEMBER_STATUS_UPDATED"
+	StatusEventTypeMemberTitleUpdated              = "MEMBER_TITLE_UPDATED"
+	StatusEventTypeMemberLeft                      = "MEMBER_LEFT"
+	StatusEventTypeMemberJoined                    = "MEMBER_JOINED"
+	StatusEventTypeNoticeUpdated                   = "NOTICE_UPDATED"
+	StatusEventTypeCapacityUpdated                 = "CAPACITY_UPDATED"
+	StatusEventTypeTitlesUpdated                   = "TITLES_UPDATED"
+	StatusEventTypeError                           = "ERROR"
 )
 
 type StatusEvent[E any] struct {

@@ -1,11 +1,13 @@
 package data
 
-const (
-	EnvCommandTopic    = "COMMAND_TOPIC_DATA"
-	CommandStartWorker = "START_WORKER"
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
-	EnvEventTopic        = "EVENT_TOPIC_DATA"
-	EventTypeDataUpdated = "DATA_UPDATED"
+const (
+	EnvCommandTopic    topic.Token = "COMMAND_TOPIC_DATA"
+	CommandStartWorker             = "START_WORKER"
+
+	EnvEventTopic        topic.Token = "EVENT_TOPIC_DATA"
+	EventTypeDataUpdated             = "DATA_UPDATED"
 )
 
 type command[E any] struct {

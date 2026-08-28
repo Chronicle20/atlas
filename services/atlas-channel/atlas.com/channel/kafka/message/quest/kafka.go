@@ -8,20 +8,21 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic                   = "COMMAND_TOPIC_QUEST_CONVERSATION"
-	CommandTypeStartQuestConversation = "START_QUEST_CONVERSATION"
+	EnvCommandTopic                   topic.Token = "COMMAND_TOPIC_QUEST_CONVERSATION"
+	CommandTypeStartQuestConversation             = "START_QUEST_CONVERSATION"
 )
 
 // Quest service command topic and types (for atlas-quest)
 const (
-	EnvQuestCommandTopic        = "COMMAND_TOPIC_QUEST"
-	QuestCommandTypeStart       = "START"
-	QuestCommandTypeComplete    = "COMPLETE"
-	QuestCommandTypeForfeit     = "FORFEIT"
-	QuestCommandTypeRestoreItem = "RESTORE_ITEM"
+	EnvQuestCommandTopic        topic.Token = "COMMAND_TOPIC_QUEST"
+	QuestCommandTypeStart                   = "START"
+	QuestCommandTypeComplete                = "COMPLETE"
+	QuestCommandTypeForfeit                 = "FORFEIT"
+	QuestCommandTypeRestoreItem             = "RESTORE_ITEM"
 )
 
 type Command[E any] struct {
@@ -78,11 +79,11 @@ type RestoreItemCommandBody struct {
 
 // Status event types for quest status changes from atlas-quest service
 const (
-	EnvStatusEventTopic            = "EVENT_TOPIC_QUEST_STATUS"
-	StatusEventTypeStarted         = "STARTED"
-	StatusEventTypeCompleted       = "COMPLETED"
-	StatusEventTypeForfeited       = "FORFEITED"
-	StatusEventTypeProgressUpdated = "PROGRESS_UPDATED"
+	EnvStatusEventTopic            topic.Token = "EVENT_TOPIC_QUEST_STATUS"
+	StatusEventTypeStarted                     = "STARTED"
+	StatusEventTypeCompleted                   = "COMPLETED"
+	StatusEventTypeForfeited                   = "FORFEITED"
+	StatusEventTypeProgressUpdated             = "PROGRESS_UPDATED"
 )
 
 type StatusEvent[E any] struct {

@@ -6,12 +6,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Command topic and type constants
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_DROP"
-	CommandTypeSpawn = "SPAWN"
+	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_DROP"
+	CommandTypeSpawn             = "SPAWN"
 )
 
 // Command is the generic command structure for drop commands

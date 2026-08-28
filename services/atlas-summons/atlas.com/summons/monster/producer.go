@@ -20,12 +20,13 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const (
 	// EnvCommandTopic names the env var holding the atlas-monsters command topic.
-	EnvCommandTopic = "COMMAND_TOPIC_MONSTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
 
 	// CommandTypeDamage credits a character with damage to a monster (XP / drops /
 	// kill credit). Mirrors atlas-monsters CommandTypeDamage.

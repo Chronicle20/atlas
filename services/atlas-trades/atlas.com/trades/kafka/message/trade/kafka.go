@@ -14,12 +14,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (
-	EnvCommandTopic     = "COMMAND_TOPIC_TRADE"
-	EnvEventTopicStatus = "EVENT_TOPIC_TRADE_STATUS"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_TRADE"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRADE_STATUS"
 
 	CommandTypeCreateRoom    = "CREATE_ROOM"
 	CommandTypeInvite        = "INVITE"

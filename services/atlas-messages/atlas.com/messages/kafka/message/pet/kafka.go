@@ -1,12 +1,13 @@
 package pet
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic       = "COMMAND_TOPIC_PET"
-	CommandAwardCloseness = "AWARD_CLOSENESS"
+	EnvCommandTopic       topic.Token = "COMMAND_TOPIC_PET"
+	CommandAwardCloseness             = "AWARD_CLOSENESS"
 )
 
 // Command is the pet command envelope consumed by atlas-pets.

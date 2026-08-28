@@ -5,16 +5,17 @@ import (
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_TELEPORT_ROCK"
-	CommandAddMap    = "ADD_MAP"
-	CommandRemoveMap = "REMOVE_MAP"
+	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_TELEPORT_ROCK"
+	CommandAddMap                = "ADD_MAP"
+	CommandRemoveMap             = "REMOVE_MAP"
 
-	EnvEventTopicStatus        = "EVENT_TOPIC_TELEPORT_ROCK_STATUS"
-	StatusEventTypeListUpdated = "LIST_UPDATED"
-	StatusEventTypeError       = "ERROR"
+	EnvEventTopicStatus        topic.Token = "EVENT_TOPIC_TELEPORT_ROCK_STATUS"
+	StatusEventTypeListUpdated             = "LIST_UPDATED"
+	StatusEventTypeError                   = "ERROR"
 
 	ErrorReasonListFull      = "LIST_FULL"
 	ErrorReasonDuplicate     = "DUPLICATE"

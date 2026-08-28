@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // COMMAND_TOPIC_PARCEL carries commands dispatched to atlas-channel that open
@@ -12,8 +13,8 @@ import (
 // services/atlas-saga-orchestrator/.../kafka/message/parcel/kafka.go —
 // ShowParcelCommand there is this same shape).
 const (
-	EnvCommandTopic       = "COMMAND_TOPIC_PARCEL"
-	CommandTypeShowParcel = "SHOW_PARCEL"
+	EnvCommandTopic       topic.Token = "COMMAND_TOPIC_PARCEL"
+	CommandTypeShowParcel             = "SHOW_PARCEL"
 )
 
 // ShowParcelCommand is received from the saga-orchestrator to display the
@@ -36,7 +37,7 @@ type ShowParcelCommand struct {
 // this one notifies players. Mirrors atlas-parcel's producer-side
 // kafka/message/parcel/kafka.go (task-241 Task 24) — field names must match
 // exactly since these are separate Go modules.
-const EnvStatusEventTopic = "EVENT_TOPIC_PARCEL_STATUS"
+const EnvStatusEventTopic topic.Token = "EVENT_TOPIC_PARCEL_STATUS"
 
 // StatusEventParcelArrived notifies a parcel's RECIPIENT that a parcel has
 // become receivable (design §7.1 — no notification tier ladder, one arrival

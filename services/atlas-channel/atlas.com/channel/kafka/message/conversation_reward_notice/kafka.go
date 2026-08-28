@@ -1,7 +1,9 @@
 package conversation_reward_notice
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvEventTopic = "EVENT_TOPIC_CONVERSATION_REWARD_NOTICE"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_CONVERSATION_REWARD_NOTICE"
 
 	KindItemGain = "item_gain"
 	KindItemLoss = "item_loss"

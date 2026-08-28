@@ -300,7 +300,10 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16, petId uint64) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
 
 	it, ok := inventory2.TypeFromItemId(itemId)
@@ -377,7 +380,10 @@ func (p *ProcessorImpl) RequestFeed(worldId world.Id, characterId uint32, slot i
 
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await taming-mob feed transaction [%s] completion or cancellation.", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
 
 	it, ok := inventory2.TypeFromItemId(itemId)
@@ -806,7 +812,10 @@ func (p *ProcessorImpl) RequestScroll(characterId uint32, scrollSlot int16, equi
 	})
 
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, scrollItem.TemplateId())
 	handler := compartment.Consume(ConsumeScroll(transactionId, characterId, scrollItem, equipSlot, whiteScrollItem, legendarySpirit))
 	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
@@ -1169,7 +1178,10 @@ func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, s
 	}
 
 	p.l.Debugf("Creating OneTime consumer for reward transaction [%s].", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
 	handler := compartment.Consume(ConsumeReward(transactionId, characterId, source, itemId, ci.Rewards()))
 	if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
@@ -1239,8 +1251,14 @@ func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxI
 
 			// Register both once-handlers BEFORE emitting CREATE_ASSET so neither
 			// terminal event can race ahead of its handler.
-			assetTopic, _ := topic.EnvProvider(l)(assetMsg.EnvEventTopicStatus)()
-			compTopic, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
+			assetTopic, err := topic.EnvProvider(l)(assetMsg.EnvEventTopicStatus)()
+			if err != nil {
+				return err
+			}
+			compTopic, err := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
+			if err != nil {
+				return err
+			}
 			handles := &rewardHandles{assetTopic: assetTopic, compTopic: compTopic}
 
 			assetId, err := consumer.GetManager().RegisterHandler(assetTopic, message.AdaptHandler(message.OneTimeConfig(assetOnce.GrantConfirmedValidator(transactionId, won.ItemId()), grantRewardOnConfirmed(transactionId, characterId, slot, boxItemId, won, handles))))
@@ -1451,7 +1469,10 @@ func (p *ProcessorImpl) RequestViciousHammer(characterId uint32, hammerSlot int1
 	}
 
 	p.l.Debugf("Creating OneTime topic consumer to await hammer transaction [%s] completion.", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, hammer.TemplateId())
 	handler := compartment.Consume(ConsumeViciousHammer(transactionId, characterId, hammer, equipSlot))
 	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
@@ -1587,7 +1608,10 @@ func (p *ProcessorImpl) RequestSkillBookUse(f field.Model, characterId uint32, s
 
 	bookMasterLevel := ci.MasterLevel()
 	p.l.Debugf("Creating OneTime saga-status consumer to await skill book transaction [%s].", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(sagamsg.EnvStatusEventTopic)()
+	t, err := topic.EnvProvider(p.l)(sagamsg.EnvStatusEventTopic)()
+	if err != nil {
+		return err
+	}
 	validator := sagaonce.TransactionValidator(transactionId)
 	handler := func(l logrus.FieldLogger, hctx context.Context, e sagamsg.StatusEvent[json.RawMessage]) {
 		completed := e.Type == sagamsg.StatusEventTypeCompleted

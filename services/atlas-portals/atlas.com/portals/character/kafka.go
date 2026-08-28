@@ -6,14 +6,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
+	EnvEventTopicCharacterStatus        topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeStatChanged             = "STAT_CHANGED"
 
-	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap = "CHANGE_MAP"
+	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_CHARACTER"
+	CommandCharacterChangeMap             = "CHANGE_MAP"
 )
 
 type statusEvent[E any] struct {

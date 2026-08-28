@@ -9,14 +9,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_REACTOR"
-	CommandTypeCreate         = "CREATE"
-	CommandTypeHit            = "HIT"
-	CommandTypeTouch          = "TOUCH"
-	CommandTypeDestroyInField = "DESTROY_IN_FIELD"
+	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_REACTOR"
+	CommandTypeCreate                     = "CREATE"
+	CommandTypeHit                        = "HIT"
+	CommandTypeTouch                      = "TOUCH"
+	CommandTypeDestroyInField             = "DESTROY_IN_FIELD"
 )
 
 type Command[E any] struct {
@@ -55,10 +56,10 @@ type DestroyInFieldCommandBody struct{}
 
 // Reactor Actions topic and commands
 const (
-	EnvCommandReactorActionsTopic = "COMMAND_TOPIC_REACTOR_ACTIONS"
-	CommandTypeActionsHit         = "HIT"
-	CommandTypeActionsTrigger     = "TRIGGER"
-	CommandTypeActionsTouch       = "TOUCH"
+	EnvCommandReactorActionsTopic topic.Token = "COMMAND_TOPIC_REACTOR_ACTIONS"
+	CommandTypeActionsHit                     = "HIT"
+	CommandTypeActionsTrigger                 = "TRIGGER"
+	CommandTypeActionsTouch                   = "TOUCH"
 )
 
 // reactorActionsCommand represents a command sent to atlas-reactor-actions
@@ -95,10 +96,10 @@ type touchActionsBody struct {
 }
 
 const (
-	EnvEventStatusTopic      = "EVENT_TOPIC_REACTOR_STATUS"
-	EventStatusTypeCreated   = "CREATED"
-	EventStatusTypeDestroyed = "DESTROYED"
-	EventStatusTypeHit       = "HIT"
+	EnvEventStatusTopic      topic.Token = "EVENT_TOPIC_REACTOR_STATUS"
+	EventStatusTypeCreated               = "CREATED"
+	EventStatusTypeDestroyed             = "DESTROYED"
+	EventStatusTypeHit                   = "HIT"
 )
 
 type statusEvent[E any] struct {

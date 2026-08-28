@@ -10,12 +10,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicEventVisual = "EVENT_TOPIC_EVENT_VISUAL"
-	VisualTypeShow           = "SHOW"
-	VisualTypeHide           = "HIDE"
+	EnvEventTopicEventVisual topic.Token = "EVENT_TOPIC_EVENT_VISUAL"
+	VisualTypeShow                       = "SHOW"
+	VisualTypeHide                       = "HIDE"
 
 	// VisualContiMove is the enemy-ship visual. The name selects the writer on
 	// the channel side, which resolves the client wire state/subState bytes

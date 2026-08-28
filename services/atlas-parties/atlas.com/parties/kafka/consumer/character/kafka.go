@@ -8,21 +8,22 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
-	CommandChangeMap           = "CHANGE_MAP"
-	CommandChangeJob           = "CHANGE_JOB"
-	CommandAwardExperience     = "AWARD_EXPERIENCE"
-	CommandAwardLevel          = "AWARD_LEVEL"
-	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
-	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
-	CommandRequestChangeFame   = "REQUEST_CHANGE_FAME"
-	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
-	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
-	CommandChangeHP            = "CHANGE_HP"
-	CommandChangeMP            = "CHANGE_MP"
+	EnvCommandTopic            topic.Token = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeMap                       = "CHANGE_MAP"
+	CommandChangeJob                       = "CHANGE_JOB"
+	CommandAwardExperience                 = "AWARD_EXPERIENCE"
+	CommandAwardLevel                      = "AWARD_LEVEL"
+	CommandRequestChangeMeso               = "REQUEST_CHANGE_MESO"
+	CommandRequestDropMeso                 = "REQUEST_DROP_MESO"
+	CommandRequestChangeFame               = "REQUEST_CHANGE_FAME"
+	CommandRequestDistributeAp             = "REQUEST_DISTRIBUTE_AP"
+	CommandRequestDistributeSp             = "REQUEST_DISTRIBUTE_SP"
+	CommandChangeHP                        = "CHANGE_HP"
+	CommandChangeMP                        = "CHANGE_MP"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -119,21 +120,21 @@ type ChangeMPBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus     = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeCreated           = "CREATED"
-	StatusEventTypeLogin             = "LOGIN"
-	StatusEventTypeLogout            = "LOGOUT"
-	StatusEventTypeChannelChanged    = "CHANNEL_CHANGED"
-	StatusEventTypeMapChanged        = "MAP_CHANGED"
-	StatusEventTypeJobChanged        = "JOB_CHANGED"
-	StatusEventTypeExperienceChanged = "EXPERIENCE_CHANGED"
-	StatusEventTypeLevelChanged      = "LEVEL_CHANGED"
-	StatusEventTypeMesoChanged       = "MESO_CHANGED"
-	StatusEventTypeFameChanged       = "FAME_CHANGED"
-	StatusEventTypeStatChanged       = "STAT_CHANGED"
-	StatusEventTypeDeleted           = "DELETED"
-	StatusEventTypeGmChanged         = "GM_CHANGED"
-	StatusEventTypeNameChanged       = "NAME_CHANGED"
+	EnvEventTopicCharacterStatus     topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeCreated                       = "CREATED"
+	StatusEventTypeLogin                         = "LOGIN"
+	StatusEventTypeLogout                        = "LOGOUT"
+	StatusEventTypeChannelChanged                = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged                    = "MAP_CHANGED"
+	StatusEventTypeJobChanged                    = "JOB_CHANGED"
+	StatusEventTypeExperienceChanged             = "EXPERIENCE_CHANGED"
+	StatusEventTypeLevelChanged                  = "LEVEL_CHANGED"
+	StatusEventTypeMesoChanged                   = "MESO_CHANGED"
+	StatusEventTypeFameChanged                   = "FAME_CHANGED"
+	StatusEventTypeStatChanged                   = "STAT_CHANGED"
+	StatusEventTypeDeleted                       = "DELETED"
+	StatusEventTypeGmChanged                     = "GM_CHANGED"
+	StatusEventTypeNameChanged                   = "NAME_CHANGED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -240,7 +241,7 @@ type StatusEventStatChangedBody struct {
 }
 
 const (
-	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
+	EnvCommandTopicMovement topic.Token = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 )
 
 type MovementCommand struct {

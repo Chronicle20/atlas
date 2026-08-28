@@ -6,16 +6,17 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeCreated        = "CREATED"
-	EventCharacterStatusTypeLogin          = "LOGIN"
-	EventCharacterStatusTypeLogout         = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
-	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
-	EventCharacterStatusTypeDeleted        = "DELETED"
+	EnvEventTopicCharacterStatus           topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeCreated                    = "CREATED"
+	EventCharacterStatusTypeLogin                      = "LOGIN"
+	EventCharacterStatusTypeLogout                     = "LOGOUT"
+	EventCharacterStatusTypeChannelChanged             = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeMapChanged                 = "MAP_CHANGED"
+	EventCharacterStatusTypeDeleted                    = "DELETED"
 )
 
 type StatusEvent[E any] struct {
@@ -70,8 +71,8 @@ type ChangeChannelEventLoginBody struct {
 type StatusEventDeletedBody struct{}
 
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_CHARACTER"
-	CommandChangeMap = "CHANGE_MAP"
+	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeMap             = "CHANGE_MAP"
 )
 
 type Command[E any] struct {

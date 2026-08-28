@@ -4,20 +4,21 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic               = "COMMAND_TOPIC_MESSENGER"
-	CommandMessengerCreate        = "CREATE"
-	CommandMessengerJoin          = "JOIN"
-	CommandMessengerLeave         = "LEAVE"
-	CommandMessengerRequestInvite = "REQUEST_INVITE"
+	EnvCommandTopic               topic.Token = "COMMAND_TOPIC_MESSENGER"
+	CommandMessengerCreate                    = "CREATE"
+	CommandMessengerJoin                      = "JOIN"
+	CommandMessengerLeave                     = "LEAVE"
+	CommandMessengerRequestInvite             = "REQUEST_INVITE"
 
-	EnvEventStatusTopic             = "EVENT_TOPIC_MESSENGER_STATUS"
-	EventMessengerStatusTypeCreated = "CREATED"
-	EventMessengerStatusTypeJoined  = "JOINED"
-	EventMessengerStatusTypeLeft    = "LEFT"
-	EventMessengerStatusTypeError   = "ERROR"
+	EnvEventStatusTopic             topic.Token = "EVENT_TOPIC_MESSENGER_STATUS"
+	EventMessengerStatusTypeCreated             = "CREATED"
+	EventMessengerStatusTypeJoined              = "JOINED"
+	EventMessengerStatusTypeLeft                = "LEFT"
+	EventMessengerStatusTypeError               = "ERROR"
 
 	EventMessengerStatusErrorUnexpected                 = "ERROR_UNEXPECTED"
 	EventMessengerStatusErrorTypeAlreadyJoined1         = "ALREADY_HAVE_JOINED_A_MESSENGER_1"

@@ -6,12 +6,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Command envelope. Mirrored byte-for-byte by atlas-channel (task-17); struct
 // names, field names and json tags must match this file exactly.
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_MINI_GAME"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MINI_GAME"
 
 	CommandTypeCreate              = "CREATE"
 	CommandTypeVisit               = "VISIT"
@@ -82,7 +83,7 @@ type EmptyCommandBody struct{}
 // StatusEvent envelope. Every event populates RoomId/OwnerId/VisitorId;
 // CharacterId is the acting character.
 const (
-	EnvEventTopicStatus = "EVENT_TOPIC_MINI_GAME_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_MINI_GAME_STATUS"
 
 	EventTypeCreated          = "CREATED"
 	EventTypeCreateError      = "CREATE_ERROR"

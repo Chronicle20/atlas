@@ -1,11 +1,14 @@
 package cashshop
 
-import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvEventTopicStatus           = "EVENT_TOPIC_CASH_SHOP_STATUS"
-	EventStatusTypeCharacterEnter = "CHARACTER_ENTER"
-	EventStatusTypeCharacterExit  = "CHARACTER_EXIT"
+	EnvEventTopicStatus           topic.Token = "EVENT_TOPIC_CASH_SHOP_STATUS"
+	EventStatusTypeCharacterEnter             = "CHARACTER_ENTER"
+	EventStatusTypeCharacterExit              = "CHARACTER_EXIT"
 )
 
 type StatusEvent[E any] struct {

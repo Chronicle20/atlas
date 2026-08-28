@@ -32,7 +32,10 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, de
 
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		t, _ := topic.EnvProvider(l)(pickupmsg.EnvCommandTopic)()
+		t, err := topic.EnvProvider(l)(pickupmsg.EnvCommandTopic)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, kmessage.AdaptHandler(kmessage.PersistentConfig(handlePickup))); err != nil {
 			return err
 		}

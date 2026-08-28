@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // These structs mirror the character status event shapes emitted by
@@ -14,9 +15,9 @@ import (
 // names and json tags must stay byte-compatible with the producer. Only the
 // LOGIN/LOGOUT subset relevant to FR-4.4 is mirrored here.
 const (
-	EnvEventTopicCharacterStatus = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogin         = "LOGIN"
-	StatusEventTypeLogout        = "LOGOUT"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeLogin                     = "LOGIN"
+	StatusEventTypeLogout                    = "LOGOUT"
 )
 
 type StatusEvent[E any] struct {

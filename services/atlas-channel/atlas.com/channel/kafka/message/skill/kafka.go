@@ -6,12 +6,13 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_SKILL"
-	CommandTypeSetCooldown    = "SET_COOLDOWN"
-	CommandTypeResetCooldowns = "RESET_COOLDOWNS"
+	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_SKILL"
+	CommandTypeSetCooldown                = "SET_COOLDOWN"
+	CommandTypeResetCooldowns             = "RESET_COOLDOWNS"
 )
 
 // Command mirrors atlas-skills' command envelope field-for-field.
@@ -40,11 +41,11 @@ type ResetCooldownsBody struct {
 }
 
 const (
-	EnvStatusEventTopic            = "EVENT_TOPIC_SKILL_STATUS"
-	StatusEventTypeCreated         = "CREATED"
-	StatusEventTypeUpdated         = "UPDATED"
-	StatusEventTypeCooldownApplied = "COOLDOWN_APPLIED"
-	StatusEventTypeCooldownExpired = "COOLDOWN_EXPIRED"
+	EnvStatusEventTopic            topic.Token = "EVENT_TOPIC_SKILL_STATUS"
+	StatusEventTypeCreated                     = "CREATED"
+	StatusEventTypeUpdated                     = "UPDATED"
+	StatusEventTypeCooldownApplied             = "COOLDOWN_APPLIED"
+	StatusEventTypeCooldownExpired             = "COOLDOWN_EXPIRED"
 )
 
 type StatusEvent[E any] struct {

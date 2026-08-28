@@ -6,12 +6,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic        = "COMMAND_TOPIC_CHALKBOARD"
-	CommandChalkboardSet   = "SET"
-	CommandChalkboardClear = "CLEAR"
+	EnvCommandTopic        topic.Token = "COMMAND_TOPIC_CHALKBOARD"
+	CommandChalkboardSet               = "SET"
+	CommandChalkboardClear             = "CLEAR"
 )
 
 type Command[E any] struct {
@@ -32,9 +33,9 @@ type SetCommandBody struct {
 type ClearCommandBody struct{}
 
 const (
-	EnvEventTopicStatus       = "EVENT_TOPIC_CHALKBOARD_STATUS"
-	EventTopicStatusTypeSet   = "SET"
-	EventTopicStatusTypeClear = "CLEAR"
+	EnvEventTopicStatus       topic.Token = "EVENT_TOPIC_CHALKBOARD_STATUS"
+	EventTopicStatusTypeSet               = "SET"
+	EventTopicStatusTypeClear             = "CLEAR"
 )
 
 type StatusEvent[E any] struct {

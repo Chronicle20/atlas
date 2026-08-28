@@ -8,16 +8,17 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const (
-	EnvCommandTopic              = "COMMAND_TOPIC_MONSTER"
-	CommandTypeApplyStatusField  = "APPLY_STATUS_FIELD"
-	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
-	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
-	CommandTypeDestroyField      = "DESTROY_FIELD"
-	CommandTypeSpawnField        = "SPAWN_FIELD"
+	EnvCommandTopic              topic.Token = "COMMAND_TOPIC_MONSTER"
+	CommandTypeApplyStatusField              = "APPLY_STATUS_FIELD"
+	CommandTypeCancelStatusField             = "CANCEL_STATUS_FIELD"
+	CommandTypeUseSkillField                 = "USE_SKILL_FIELD"
+	CommandTypeDestroyField                  = "DESTROY_FIELD"
+	CommandTypeSpawnField                    = "SPAWN_FIELD"
 )
 
 type FieldCommand[E any] struct {

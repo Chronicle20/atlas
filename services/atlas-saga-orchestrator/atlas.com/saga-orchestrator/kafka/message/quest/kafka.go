@@ -4,11 +4,12 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	// EnvCommandTopic defines the environment variable for the quest command topic
-	EnvCommandTopic = "COMMAND_TOPIC_QUEST"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_QUEST"
 
 	// Command types
 	CommandTypeStart          = "START"
@@ -56,7 +57,7 @@ type UpdateProgressCommandBody struct {
 
 const (
 	// EnvStatusEventTopic defines the environment variable for the quest status event topic
-	EnvStatusEventTopic = "EVENT_TOPIC_QUEST_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_QUEST_STATUS"
 
 	// Status event types
 	StatusEventTypeStarted         = "STARTED"

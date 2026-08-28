@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // COMMAND_TOPIC_PARCEL carries commands dispatched to atlas-channel that open
@@ -14,8 +15,8 @@ import (
 // (kafka/message/parcel/custody/kafka.go), which carries the atomic custody
 // commands dispatched to atlas-parcel.
 const (
-	EnvCommandTopic       = "COMMAND_TOPIC_PARCEL"
-	CommandTypeShowParcel = "SHOW_PARCEL"
+	EnvCommandTopic       topic.Token = "COMMAND_TOPIC_PARCEL"
+	CommandTypeShowParcel             = "SHOW_PARCEL"
 )
 
 // ShowParcelCommand is sent to atlas-channel to display the Duey parcel

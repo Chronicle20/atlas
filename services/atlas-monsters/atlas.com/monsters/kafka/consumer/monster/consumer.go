@@ -29,7 +29,11 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
-		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+		var err error
+		t, err = topic.EnvProvider(l)(EnvCommandTopic)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageCommand))); err != nil {
 			return err
 		}
@@ -96,7 +100,10 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRemovePuppetCommand))); err != nil {
 			return err
 		}
-		t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
+		t, err = topic.EnvProvider(l)(EnvCommandTopicMovement)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand))); err != nil {
 			return err
 		}

@@ -7,10 +7,11 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_MERCHANT"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MERCHANT"
 
 	CommandPlaceShop        = "PLACE_SHOP"
 	CommandOpenShop         = "OPEN_SHOP"
@@ -132,7 +133,7 @@ type CommandRecordItemSearchBody struct {
 }
 
 const (
-	EnvStatusEventTopic = "EVENT_TOPIC_MERCHANT_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MERCHANT_STATUS"
 
 	StatusEventShopOpened            = "SHOP_OPENED"
 	StatusEventShopSetup             = "SHOP_SETUP"
@@ -161,7 +162,7 @@ const (
 	ShopCreateFailReasonNotFreeMarket    = "NOT_FREE_MARKET"
 	ShopCreateFailReasonUnable           = "UNABLE"
 
-	EnvListingEventTopic = "EVENT_TOPIC_MERCHANT_LISTING"
+	EnvListingEventTopic topic.Token = "EVENT_TOPIC_MERCHANT_LISTING"
 
 	ListingEventPurchased = "LISTING_PURCHASED"
 )

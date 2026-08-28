@@ -39,14 +39,20 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
-				t, _ := topic.EnvProvider(l)(parcelmsg.EnvCommandTopic)()
+				t, err := topic.EnvProvider(l)(parcelmsg.EnvCommandTopic)()
+				if err != nil {
+					return nil, err
+				}
 				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowParcelCommand(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
 				handles := []listener.HandlerHandle{{Topic: t, Id: id}}
 
-				t, _ = topic.EnvProvider(l)(parcelmsg.EnvStatusEventTopic)()
+				t, err = topic.EnvProvider(l)(parcelmsg.EnvStatusEventTopic)()
+				if err != nil {
+					return nil, err
+				}
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleParcelArrivedEvent(sc, wp))))
 				if err != nil {
 					return nil, err

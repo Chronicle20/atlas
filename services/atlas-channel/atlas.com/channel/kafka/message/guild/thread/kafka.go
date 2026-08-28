@@ -1,9 +1,12 @@
 package thread
 
-import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_GUILD_THREAD"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_GUILD_THREAD"
 
 	CommandTypeCreate      = "CREATE"
 	CommandTypeUpdate      = "UPDATE"
@@ -49,7 +52,7 @@ type DeleteReplyCommandBody struct {
 }
 
 const (
-	EnvStatusEventTopic = "EVENT_TOPIC_GUILD_THREAD_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_GUILD_THREAD_STATUS"
 
 	StatusEventTypeCreated      = "CREATED"
 	StatusEventTypeUpdated      = "UPDATED"

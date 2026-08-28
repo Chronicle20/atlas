@@ -3,6 +3,7 @@ package custody
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
@@ -14,7 +15,7 @@ import (
 // cash-compartment command structs).
 const (
 	// EnvCommandTopic is the env var naming the MTS custody command topic.
-	EnvCommandTopic = "COMMAND_TOPIC_MTS_CUSTODY"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MTS_CUSTODY"
 
 	CommandAcceptToMtsListing      = "ACCEPT_TO_MTS_LISTING"
 	CommandReleaseFromMtsHolding   = "RELEASE_FROM_MTS_HOLDING"
@@ -129,7 +130,7 @@ type RestoreListingFromHoldingCommandBody struct {
 
 const (
 	// EnvStatusEventTopic names the custody status (ack) topic.
-	EnvStatusEventTopic = "EVENT_TOPIC_MTS_CUSTODY_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MTS_CUSTODY_STATUS"
 
 	StatusEventTypeAccepted = "ACCEPTED"
 	StatusEventTypeReleased = "RELEASED"

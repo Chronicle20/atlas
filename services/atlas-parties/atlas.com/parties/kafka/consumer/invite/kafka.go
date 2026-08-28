@@ -1,10 +1,13 @@
 package invite
 
-import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvEventStatusTopic           = "EVENT_TOPIC_INVITE_STATUS"
-	EventInviteStatusTypeAccepted = "ACCEPTED"
+	EnvEventStatusTopic           topic.Token = "EVENT_TOPIC_INVITE_STATUS"
+	EventInviteStatusTypeAccepted             = "ACCEPTED"
 
 	InviteTypeParty = "PARTY"
 )

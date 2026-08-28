@@ -2,14 +2,15 @@ package party
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_PARTY"
-	CommandPartyCreate        = "CREATE"
-	CommandPartyLeave         = "LEAVE"
-	CommandPartyChangeLeader  = "CHANGE_LEADER"
-	CommandPartyRequestInvite = "REQUEST_INVITE"
+	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_PARTY"
+	CommandPartyCreate                    = "CREATE"
+	CommandPartyLeave                     = "LEAVE"
+	CommandPartyChangeLeader              = "CHANGE_LEADER"
+	CommandPartyRequestInvite             = "REQUEST_INVITE"
 )
 
 type Command[E any] struct {
@@ -38,14 +39,14 @@ type RequestInviteBody struct {
 }
 
 const (
-	EnvEventStatusTopic              = "EVENT_TOPIC_PARTY_STATUS"
-	EventPartyStatusTypeCreated      = "CREATED"
-	EventPartyStatusTypeJoined       = "JOINED"
-	EventPartyStatusTypeLeft         = "LEFT"
-	EventPartyStatusTypeExpel        = "EXPEL"
-	EventPartyStatusTypeDisband      = "DISBAND"
-	EventPartyStatusTypeChangeLeader = "CHANGE_LEADER"
-	EventPartyStatusTypeError        = "ERROR"
+	EnvEventStatusTopic              topic.Token = "EVENT_TOPIC_PARTY_STATUS"
+	EventPartyStatusTypeCreated                  = "CREATED"
+	EventPartyStatusTypeJoined                   = "JOINED"
+	EventPartyStatusTypeLeft                     = "LEFT"
+	EventPartyStatusTypeExpel                    = "EXPEL"
+	EventPartyStatusTypeDisband                  = "DISBAND"
+	EventPartyStatusTypeChangeLeader             = "CHANGE_LEADER"
+	EventPartyStatusTypeError                    = "ERROR"
 )
 
 type StatusEvent[E any] struct {

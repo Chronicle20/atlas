@@ -4,11 +4,12 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicCharacterStatus    = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeDeleted = "DELETED"
+	EnvEventTopicCharacterStatus    topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeDeleted             = "DELETED"
 )
 
 type StatusEvent[E any] struct {

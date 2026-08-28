@@ -6,12 +6,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicCashShopStatus           = "EVENT_TOPIC_CASH_SHOP_STATUS"
-	EventCashShopStatusTypeCharacterEnter = "CHARACTER_ENTER"
-	EventCashShopStatusTypeCharacterExit  = "CHARACTER_EXIT"
+	EnvEventTopicCashShopStatus           topic.Token = "EVENT_TOPIC_CASH_SHOP_STATUS"
+	EventCashShopStatusTypeCharacterEnter             = "CHARACTER_ENTER"
+	EventCashShopStatusTypeCharacterExit              = "CHARACTER_EXIT"
 )
 
 type StatusEvent[E any] struct {

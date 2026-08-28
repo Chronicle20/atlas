@@ -8,14 +8,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply         = "APPLY"
-	CommandTypeCancel        = "CANCEL"
-	CommandTypeCancelAll     = "CANCEL_ALL"
-	CommandTypeCancelByTypes = "CANCEL_BY_TYPES"
+	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply                     = "APPLY"
+	CommandTypeCancel                    = "CANCEL"
+	CommandTypeCancelAll                 = "CANCEL_ALL"
+	CommandTypeCancelByTypes             = "CANCEL_BY_TYPES"
 	// CommandTypeCancelByCorrelation sweeps the WHOLE TENANT and cancels every
 	// buff carrying a given CorrelationId, regardless of which character or
 	// world holds it. ONE command rather than one per affected character, so
@@ -127,10 +128,10 @@ type UpdateStatValueCommandBody struct {
 }
 
 const (
-	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
-	EventStatusTypeBuffApplied = "APPLIED"
-	EventStatusTypeBuffExpired = "EXPIRED"
-	EventStatusTypeStatUpdated = "STAT_UPDATED"
+	EnvEventStatusTopic        topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+	EventStatusTypeBuffApplied             = "APPLIED"
+	EventStatusTypeBuffExpired             = "EXPIRED"
+	EventStatusTypeStatUpdated             = "STAT_UPDATED"
 )
 
 type StatusEvent[E any] struct {
@@ -213,8 +214,8 @@ type PeriodicEffectStatusEventBody struct {
 }
 
 const (
-	EnvCommandTopicCharacter = "COMMAND_TOPIC_CHARACTER"
-	CommandChangeHP          = "CHANGE_HP"
+	EnvCommandTopicCharacter topic.Token = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeHP                      = "CHANGE_HP"
 )
 
 type CharacterCommand[E any] struct {

@@ -6,13 +6,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvCommandTopic is the COMMAND_TOPIC_DRAGON env var (channel -> dragons).
 // The channel-side mirror at
 // services/atlas-channel/.../kafka/message/dragon/kafka.go must keep every json
 // tag byte-for-byte identical to these definitions.
-const EnvCommandTopic = "COMMAND_TOPIC_DRAGON"
+const EnvCommandTopic topic.Token = "COMMAND_TOPIC_DRAGON"
 
 const (
 	CommandTypeCreate  = "CREATE"

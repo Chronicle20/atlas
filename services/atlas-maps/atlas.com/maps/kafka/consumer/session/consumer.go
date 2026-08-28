@@ -44,7 +44,11 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
-		t, _ = topic.EnvProvider(l)(sessionKafka.EnvEventTopicSessionStatus)()
+		var err error
+		t, err = topic.EnvProvider(l)(sessionKafka.EnvEventTopicSessionStatus)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(newHandleSessionDestroyed(defaultForceReturnerProvider(l))))); err != nil {
 			return err
 		}

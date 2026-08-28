@@ -18,7 +18,7 @@ import (
 // derived from ctx exactly as the direct producer path derives them at
 // emit time. Message key and value bytes pass through unchanged. Any
 // failure returns an error, failing the enclosing transaction.
-func EnqueueBuffer(l logrus.FieldLogger, ctx context.Context, tx *gorm.DB, contents map[string][]kafka.Message) error {
+func EnqueueBuffer(l logrus.FieldLogger, ctx context.Context, tx *gorm.DB, contents map[topic.Token][]kafka.Message) error {
 	headers, err := headerMap(ctx)
 	if err != nil {
 		return err

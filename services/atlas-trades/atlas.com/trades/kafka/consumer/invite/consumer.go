@@ -38,7 +38,11 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
-			t, _ = topic.EnvProvider(l)(invitemsg.EnvEventStatusTopic)()
+			var err error
+			t, err = topic.EnvProvider(l)(invitemsg.EnvEventStatusTopic)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAccepted(db)))); err != nil {
 				return err
 			}

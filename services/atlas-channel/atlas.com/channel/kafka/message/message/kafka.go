@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 )
 
 const (
-	EnvCommandTopicChat = "COMMAND_TOPIC_CHARACTER_CHAT"
+	EnvCommandTopicChat topic.Token = "COMMAND_TOPIC_CHARACTER_CHAT"
 )
 
 type Command[E any] struct {
@@ -37,7 +38,7 @@ type Command[E any] struct {
 }
 
 const (
-	EnvEventTopicChat = "EVENT_TOPIC_CHARACTER_CHAT"
+	EnvEventTopicChat topic.Token = "EVENT_TOPIC_CHARACTER_CHAT"
 )
 
 type ChatEvent[E any] struct {

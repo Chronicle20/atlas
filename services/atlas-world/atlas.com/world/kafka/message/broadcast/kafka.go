@@ -1,12 +1,13 @@
 package broadcast
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (
-	EnvCommandTopicWorldBroadcast     = "COMMAND_TOPIC_WORLD_BROADCAST"
-	EnvEventTopicWorldBroadcastStatus = "EVENT_TOPIC_WORLD_BROADCAST_STATUS"
+	EnvCommandTopicWorldBroadcast     topic.Token = "COMMAND_TOPIC_WORLD_BROADCAST"
+	EnvEventTopicWorldBroadcastStatus topic.Token = "EVENT_TOPIC_WORLD_BROADCAST_STATUS"
 
 	StatusTypeQueued  = "QUEUED"
 	StatusTypeStarted = "STARTED"

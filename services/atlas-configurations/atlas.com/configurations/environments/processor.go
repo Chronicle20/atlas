@@ -14,6 +14,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	envlib "github.com/Chronicle20/atlas/libs/atlas-env"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -22,7 +23,7 @@ import (
 // environment CRUD events (and heartbeats) are enqueued onto. When unset
 // (unit tests), Enqueue is skipped - matches EnvServiceStatusTopic /
 // EnvTenantStatusTopic.
-const EnvEnvironmentStatusTopic = "EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS"
+const EnvEnvironmentStatusTopic topic.Token = "EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS"
 
 // ErrNameRequired is returned when Create/Update is called with an empty
 // environment name. The empty env.Id is the legacy "not environment-aware"
@@ -106,7 +107,7 @@ func toRecord(rm RestModel) envlib.Record {
 }
 
 func enqueueEnvironmentStatus(tx *gorm.DB, name string, config any) error {
-	topic := os.Getenv(EnvEnvironmentStatusTopic)
+	topic := os.Getenv(string(EnvEnvironmentStatusTopic))
 	if topic == "" {
 		return nil
 	}

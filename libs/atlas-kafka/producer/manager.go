@@ -63,7 +63,7 @@ var ErrManagerClosed = errors.New("producer manager is closed")
 // Writer returns the long-lived Writer for the topic resolved from token,
 // constructing it on first request. Concurrent first-touches return the
 // same instance.
-func (m *Manager) Writer(l logrus.FieldLogger, token string) (Writer, error) {
+func (m *Manager) Writer(l logrus.FieldLogger, token topic.Token) (Writer, error) {
 	t, err := topic.EnvProvider(l)(token)()
 	if err != nil {
 		return nil, err
@@ -130,8 +130,8 @@ func defaultWriterFactory(topicName string) Writer {
 // process-wide manager. Replaces the deleted WriterProvider helper.
 //
 //goland:noinspection GoUnusedExportedFunction
-func ManagerWriterProvider(l logrus.FieldLogger) func(token string) model.Provider[Writer] {
-	return func(token string) model.Provider[Writer] {
+func ManagerWriterProvider(l logrus.FieldLogger) func(token topic.Token) model.Provider[Writer] {
+	return func(token topic.Token) model.Provider[Writer] {
 		return func() (Writer, error) {
 			return GetManager().Writer(l, token)
 		}

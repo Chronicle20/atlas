@@ -19,12 +19,13 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const (
 	// EnvCommandTopic names the env var holding the atlas-buffs command topic.
-	EnvCommandTopic = "COMMAND_TOPIC_CHARACTER_BUFF"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
 
 	// CommandTypeApply applies a buff to a character. Mirrors atlas-buffs
 	// CommandTypeApply.

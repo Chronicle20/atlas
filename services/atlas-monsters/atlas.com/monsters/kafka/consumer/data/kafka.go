@@ -1,8 +1,10 @@
 package data
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvEventTopic        = "EVENT_TOPIC_DATA"
-	EventTypeDataUpdated = "DATA_UPDATED"
+	EnvEventTopic        topic.Token = "EVENT_TOPIC_DATA"
+	EventTypeDataUpdated             = "DATA_UPDATED"
 
 	WorkerMonster = "MONSTER"
 )

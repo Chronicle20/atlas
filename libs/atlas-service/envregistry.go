@@ -49,14 +49,14 @@ func WithEnvironmentRegistry(serviceName string) Option {
 // prevent the environment topic from starting (R21-3) — mirroring this same
 // function's own unset-topic path for the environment topic one branch up.
 func (r *Runtime) startEnvironmentRegistry(c *envRegistryConfig) {
-	topic := os.Getenv("EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS")
+	topic := os.Getenv(string(EnvEventTopicConfigurationEnvironmentStatus))
 	reg := env.NewMapRegistry(env.Self(), time.Now)
 	env.SetRegistry(reg)
 	if topic == "" {
 		r.logger.Warn("environment registry: EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS unset; running in legacy single-environment mode")
 		return
 	}
-	tenantTopic := os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS")
+	tenantTopic := os.Getenv(string(EnvEventTopicConfigurationTenantStatus))
 	if tenantTopic == "" {
 		r.logger.Warn("environment registry: EVENT_TOPIC_CONFIGURATION_TENANT_STATUS unset; tenant→environment derivation (FR-7.3) disabled")
 	}

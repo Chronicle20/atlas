@@ -5,11 +5,12 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	// EnvCommandTopic defines the environment variable for the buddy list command topic
-	EnvCommandTopic = "COMMAND_TOPIC_BUDDY_LIST"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_BUDDY_LIST"
 	// CommandTypeIncreaseCapacity is the command type for increasing buddy list capacity
 	CommandTypeIncreaseCapacity = "INCREASE_CAPACITY"
 	// CommandTypeRequestDelete is the command type for requesting to delete a buddy
@@ -24,10 +25,10 @@ const (
 	CommandTypeRestore = "RESTORE"
 
 	// Buddy list status event constants
-	EnvEventTopicBuddyListStatus       = "EVENT_TOPIC_BUDDY_LIST_STATUS"
-	StatusEventTypeBuddyCapacityUpdate = "CAPACITY_CHANGE"
-	StatusEventTypeBuddyRemoved        = "BUDDY_REMOVED"
-	StatusEventTypeError               = "ERROR"
+	EnvEventTopicBuddyListStatus       topic.Token = "EVENT_TOPIC_BUDDY_LIST_STATUS"
+	StatusEventTypeBuddyCapacityUpdate             = "CAPACITY_CHANGE"
+	StatusEventTypeBuddyRemoved                    = "BUDDY_REMOVED"
+	StatusEventTypeError                           = "ERROR"
 )
 
 type Command[E any] struct {

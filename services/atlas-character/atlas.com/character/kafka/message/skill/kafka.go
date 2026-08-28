@@ -1,11 +1,14 @@
 package skill
 
-import "time"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"time"
+)
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_SKILL"
-	CommandTypeRequestCreate = "REQUEST_CREATE"
-	CommandTypeRequestUpdate = "REQUEST_UPDATE"
+	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_SKILL"
+	CommandTypeRequestCreate             = "REQUEST_CREATE"
+	CommandTypeRequestUpdate             = "REQUEST_UPDATE"
 )
 
 type Command[E any] struct {

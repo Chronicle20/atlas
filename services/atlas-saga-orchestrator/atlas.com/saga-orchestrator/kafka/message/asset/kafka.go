@@ -3,16 +3,17 @@ package asset
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
 const (
-	EnvEventTopicStatus            = "EVENT_TOPIC_ASSET_STATUS"
-	StatusEventTypeCreated         = "CREATED"
-	StatusEventTypeDeleted         = "DELETED"
-	StatusEventTypeMoved           = "MOVED"
-	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
-	StatusEventTypeUpdated         = "UPDATED"
+	EnvEventTopicStatus            topic.Token = "EVENT_TOPIC_ASSET_STATUS"
+	StatusEventTypeCreated                     = "CREATED"
+	StatusEventTypeDeleted                     = "DELETED"
+	StatusEventTypeMoved                       = "MOVED"
+	StatusEventTypeQuantityChanged             = "QUANTITY_CHANGED"
+	StatusEventTypeUpdated                     = "UPDATED"
 )
 
 type StatusEvent[E any] struct {

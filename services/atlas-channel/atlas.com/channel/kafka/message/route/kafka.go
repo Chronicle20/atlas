@@ -4,12 +4,13 @@ import (
 	"github.com/google/uuid"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicStatus = "EVENT_TOPIC_TRANSPORT_STATUS"
-	EventStatusArrived  = "ARRIVED"
-	EventStatusDeparted = "DEPARTED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRANSPORT_STATUS"
+	EventStatusArrived              = "ARRIVED"
+	EventStatusDeparted             = "DEPARTED"
 )
 
 // StatusEvent is a generic event for transport route status changes

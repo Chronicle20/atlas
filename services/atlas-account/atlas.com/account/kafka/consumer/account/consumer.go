@@ -30,14 +30,21 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
-			t, _ = topic.EnvProvider(l)(account2.EnvCommandTopic)()
+			var err error
+			t, err = topic.EnvProvider(l)(account2.EnvCommandTopic)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountCommand(db)))); err != nil {
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDeleteAccountCommand(db)))); err != nil {
 				return err
 			}
-			t, _ = topic.EnvProvider(l)(account2.EnvCommandSessionTopic)()
+			t, err = topic.EnvProvider(l)(account2.EnvCommandSessionTopic)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountSessionCommand(db)))); err != nil {
 				return err
 			}

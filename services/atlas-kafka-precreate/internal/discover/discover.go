@@ -6,13 +6,14 @@
 package discover
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"sort"
 	"strings"
 )
 
 const (
-	commandPrefix = "COMMAND_TOPIC_"
-	eventPrefix   = "EVENT_TOPIC_"
+	commandPrefix topic.Token = "COMMAND_TOPIC_"
+	eventPrefix   topic.Token = "EVENT_TOPIC_"
 )
 
 // compactVars names the three config-projection variables whose topics must
@@ -63,8 +64,8 @@ func FromEnviron(environ []string) Topics {
 			continue
 		}
 
-		hasCommandPrefix := strings.HasPrefix(name, commandPrefix)
-		hasEventPrefix := strings.HasPrefix(name, eventPrefix)
+		hasCommandPrefix := strings.HasPrefix(name, string(commandPrefix))
+		hasEventPrefix := strings.HasPrefix(name, string(eventPrefix))
 		if !hasCommandPrefix && !hasEventPrefix {
 			continue
 		}

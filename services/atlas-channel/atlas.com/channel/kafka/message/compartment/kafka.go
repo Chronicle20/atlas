@@ -8,22 +8,23 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
-	CommandEquip             = "EQUIP"
-	CommandUnequip           = "UNEQUIP"
-	CommandMove              = "MOVE"
-	CommandDrop              = "DROP"
-	CommandRequestReserve    = "REQUEST_RESERVE"
-	CommandConsume           = "CONSUME"
-	CommandDestroy           = "DESTROY"
-	CommandCancelReservation = "CANCEL_RESERVATION"
-	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
-	CommandCreateAsset       = "CREATE_ASSET"
-	CommandMerge             = "MERGE"
-	CommandSort              = "SORT"
+	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+	CommandEquip                         = "EQUIP"
+	CommandUnequip                       = "UNEQUIP"
+	CommandMove                          = "MOVE"
+	CommandDrop                          = "DROP"
+	CommandRequestReserve                = "REQUEST_RESERVE"
+	CommandConsume                       = "CONSUME"
+	CommandDestroy                       = "DESTROY"
+	CommandCancelReservation             = "CANCEL_RESERVATION"
+	CommandIncreaseCapacity              = "INCREASE_CAPACITY"
+	CommandCreateAsset                   = "CREATE_ASSET"
+	CommandMerge                         = "MERGE"
+	CommandSort                          = "SORT"
 )
 
 type Command[E any] struct {
@@ -110,16 +111,16 @@ type MoveToCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
-	StatusEventTypeCreated              = "CREATED"
-	StatusEventTypeDeleted              = "DELETED"
-	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
-	StatusEventTypeReserved             = "RESERVED"
-	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
-	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
-	StatusEventTypeSortComplete         = "SORT_COMPLETE"
-	StatusEventTypeCompleted            = "COMPLETED"
-	StatusEventTypeCreationFailed       = "CREATION_FAILED"
+	EnvEventTopicStatus                 topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
+	StatusEventTypeCreated                          = "CREATED"
+	StatusEventTypeDeleted                          = "DELETED"
+	StatusEventTypeCapacityChanged                  = "CAPACITY_CHANGED"
+	StatusEventTypeReserved                         = "RESERVED"
+	StatusEventTypeReservationCancelled             = "RESERVATION_CANCELLED"
+	StatusEventTypeMergeComplete                    = "MERGE_COMPLETE"
+	StatusEventTypeSortComplete                     = "SORT_COMPLETE"
+	StatusEventTypeCompleted                        = "COMPLETED"
+	StatusEventTypeCreationFailed                   = "CREATION_FAILED"
 
 	CreateAssetTemplateNotFound = "CREATE_ASSET_TEMPLATE_NOT_FOUND"
 	CreateAssetInventoryFull    = "CREATE_ASSET_INVENTORY_FULL"

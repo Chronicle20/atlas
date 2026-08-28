@@ -1,14 +1,17 @@
 package party
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/google/uuid"
+)
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_PARTY"
-	CommandPartyCreate        = "CREATE"
-	CommandPartyJoin          = "JOIN"
-	CommandPartyLeave         = "LEAVE"
-	CommandPartyChangeLeader  = "CHANGE_LEADER"
-	CommandPartyRequestInvite = "REQUEST_INVITE"
+	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_PARTY"
+	CommandPartyCreate                    = "CREATE"
+	CommandPartyJoin                      = "JOIN"
+	CommandPartyLeave                     = "LEAVE"
+	CommandPartyChangeLeader              = "CHANGE_LEADER"
+	CommandPartyRequestInvite             = "REQUEST_INVITE"
 )
 
 type commandEvent[E any] struct {

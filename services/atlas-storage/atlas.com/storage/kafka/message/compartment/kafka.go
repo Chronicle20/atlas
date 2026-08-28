@@ -7,12 +7,13 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
-	CommandAccept   = "ACCEPT"
-	CommandRelease  = "RELEASE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
+	CommandAccept               = "ACCEPT"
+	CommandRelease              = "RELEASE"
 )
 
 // Command represents a storage compartment command (ACCEPT/RELEASE)
@@ -39,10 +40,10 @@ type ReleaseCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus     = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
-	StatusEventTypeAccepted = "ACCEPTED"
-	StatusEventTypeReleased = "RELEASED"
-	StatusEventTypeError    = "ERROR"
+	EnvEventTopicStatus     topic.Token = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
+	StatusEventTypeAccepted             = "ACCEPTED"
+	StatusEventTypeReleased             = "RELEASED"
+	StatusEventTypeError                = "ERROR"
 )
 
 // StatusEvent represents a storage compartment status event

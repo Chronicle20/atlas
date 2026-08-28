@@ -3,13 +3,14 @@ package compartment
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_COMPARTMENT"
-	CommandChangeTemplate     = "CHANGE_TEMPLATE"
-	CommandResetPetExpiration = "RESET_PET_EXPIRATION"
+	EnvCommandTopic           topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+	CommandChangeTemplate                 = "CHANGE_TEMPLATE"
+	CommandResetPetExpiration             = "RESET_PET_EXPIRATION"
 )
 
 type Command[E any] struct {

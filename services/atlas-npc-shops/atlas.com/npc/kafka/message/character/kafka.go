@@ -6,11 +6,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER"
-	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
+	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_CHARACTER"
+	CommandRequestChangeMeso             = "REQUEST_CHANGE_MESO"
 )
 
 type Command[E any] struct {
@@ -28,10 +29,10 @@ type RequestChangeMesoBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus  = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeLogout         = "LOGOUT"
-	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
-	StatusEventTypeMapChanged     = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus  topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeLogout                     = "LOGOUT"
+	StatusEventTypeChannelChanged             = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged                 = "MAP_CHANGED"
 )
 
 type StatusEvent[E any] struct {

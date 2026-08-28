@@ -6,10 +6,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicChat = "EVENT_TOPIC_CHARACTER_CHAT"
+	EnvEventTopicChat topic.Token = "EVENT_TOPIC_CHARACTER_CHAT"
 
 	ChatTypeGeneral   = "GENERAL"
 	ChatTypeBuddy     = "BUDDY"

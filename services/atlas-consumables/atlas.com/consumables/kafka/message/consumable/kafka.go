@@ -9,10 +9,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
 
 	CommandRequestItemConsume     = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll          = "REQUEST_SCROLL"
@@ -104,16 +105,16 @@ type CancelConsumableEffectBody struct {
 }
 
 const (
-	EnvEventTopic            = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError           = "ERROR"
-	EventTypeScroll          = "SCROLL"
-	EventTypeVegaScroll      = "VEGA_SCROLL"
-	EventTypeEffectApplied   = "EFFECT_APPLIED"
-	EventTypeRewardEffect    = "REWARD_EFFECT"
-	EventTypeRewardWon       = "REWARD_WON"
-	EventTypeViciousHammer   = "VICIOUS_HAMMER"
-	EventTypeSkillBookResult = "SKILL_BOOK_RESULT"
-	EventTypeCatchFailed     = "CATCH_FAILED"
+	EnvEventTopic            topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError                       = "ERROR"
+	EventTypeScroll                      = "SCROLL"
+	EventTypeVegaScroll                  = "VEGA_SCROLL"
+	EventTypeEffectApplied               = "EFFECT_APPLIED"
+	EventTypeRewardEffect                = "REWARD_EFFECT"
+	EventTypeRewardWon                   = "REWARD_WON"
+	EventTypeViciousHammer               = "VICIOUS_HAMMER"
+	EventTypeSkillBookResult             = "SKILL_BOOK_RESULT"
+	EventTypeCatchFailed                 = "CATCH_FAILED"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypePetCannotLearn   = "PET_CANNOT_LEARN"

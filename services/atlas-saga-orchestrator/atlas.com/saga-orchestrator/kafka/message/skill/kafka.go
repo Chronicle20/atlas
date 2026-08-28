@@ -7,14 +7,15 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_SKILL"
-	CommandTypeRequestCreate = "REQUEST_CREATE"
-	CommandTypeRequestUpdate = "REQUEST_UPDATE"
-	CommandTypeRequestDelete = "REQUEST_DELETE"
-	CommandTypeTransferSp    = "TRANSFER_SP"
+	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_SKILL"
+	CommandTypeRequestCreate             = "REQUEST_CREATE"
+	CommandTypeRequestUpdate             = "REQUEST_UPDATE"
+	CommandTypeRequestDelete             = "REQUEST_DELETE"
+	CommandTypeTransferSp                = "TRANSFER_SP"
 )
 
 // TransferSpBody moves one skill point FromSkillId -> ToSkillId (SP Reset
@@ -58,12 +59,12 @@ type RequestDeleteBody struct {
 }
 
 const (
-	EnvStatusEventTopic          = "EVENT_TOPIC_SKILL_STATUS"
-	StatusEventTypeCreated       = "CREATED"
-	StatusEventTypeUpdated       = "UPDATED"
-	StatusEventTypeDeleted       = "DELETED"
-	StatusEventTypeSpTransferred = "SP_TRANSFERRED"
-	StatusEventTypeError         = "ERROR"
+	EnvStatusEventTopic          topic.Token = "EVENT_TOPIC_SKILL_STATUS"
+	StatusEventTypeCreated                   = "CREATED"
+	StatusEventTypeUpdated                   = "UPDATED"
+	StatusEventTypeDeleted                   = "DELETED"
+	StatusEventTypeSpTransferred             = "SP_TRANSFERRED"
+	StatusEventTypeError                     = "ERROR"
 
 	StatusEventErrorTypeSkillAtZero   = "SKILL_AT_ZERO"
 	StatusEventErrorTypeSkillAtCap    = "SKILL_AT_CAP"

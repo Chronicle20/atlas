@@ -2,6 +2,7 @@ package mount
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvStatusEventTopic mirrors the atlas-mounts producer
@@ -9,10 +10,10 @@ import (
 // json tags MUST match the producer exactly or decode silently yields zero
 // values.
 const (
-	EnvStatusEventTopic = "EVENT_TOPIC_MOUNT_STATUS"
-	StatusEventTypeSet  = "SET"
-	StatusEventTypeTick = "TICK"
-	StatusEventTypeFeed = "FEED"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MOUNT_STATUS"
+	StatusEventTypeSet              = "SET"
+	StatusEventTypeTick             = "TICK"
+	StatusEventTypeFeed             = "FEED"
 )
 
 type StatusEvent[E any] struct {

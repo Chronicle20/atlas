@@ -1,8 +1,10 @@
 package compartment
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvCommandTopic         = "COMMAND_TOPIC_COMPARTMENT"
-	CommandIncreaseCapacity = "INCREASE_CAPACITY"
+	EnvCommandTopic         topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+	CommandIncreaseCapacity             = "INCREASE_CAPACITY"
 )
 
 type Command[E any] struct {

@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvCommandTopic is the channel -> consumables command topic for taming-mob
@@ -14,7 +15,7 @@ import (
 // (services/atlas-channel/.../kafka/message/food/kafka.go) field-for-field, or
 // the JSON decode silently yields zero values.
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_TAMING_MOB_FOOD"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_TAMING_MOB_FOOD"
 
 	CommandRequestFeed = "REQUEST_FEED"
 )
@@ -43,7 +44,7 @@ type RequestFeedBody struct {
 // EnvEventTopic carries the taming-mob food (feed) events produced by
 // atlas-consumables (Task 33) and consumed by atlas-mounts (Task 20). The
 // producer MUST populate worldId, characterId, itemId, and tirednessHeal.
-const EnvEventTopic = "EVENT_TOPIC_TAMING_MOB_FOOD"
+const EnvEventTopic topic.Token = "EVENT_TOPIC_TAMING_MOB_FOOD"
 
 // Event is the taming-mob food event emitted after a successful revitalizer
 // consume. This struct is the cross-service contract — it must match

@@ -11,11 +11,12 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic    = "COMMAND_TOPIC_SYSTEM_MESSAGE"
-	CommandSendMessage = "SEND_MESSAGE"
+	EnvCommandTopic    topic.Token = "COMMAND_TOPIC_SYSTEM_MESSAGE"
+	CommandSendMessage             = "SEND_MESSAGE"
 )
 
 type Command[E any] struct {

@@ -6,17 +6,18 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicMapStatus                 = "EVENT_TOPIC_MAP_STATUS"
-	EventTopicMapStatusTypeCharacterEnter  = "CHARACTER_ENTER"
-	EventTopicMapStatusTypeCharacterExit   = "CHARACTER_EXIT"
-	EventTopicMapStatusTypeWeatherStart    = "WEATHER_START"
-	EventTopicMapStatusTypeWeatherEnd      = "WEATHER_END"
-	EventTopicMapStatusTypeMapTimerStarted = "MAP_TIMER_STARTED"
-	EventTopicMapStatusTypeJukeboxStart    = "JUKEBOX_START"
-	EventTopicMapStatusTypeJukeboxEnd      = "JUKEBOX_END"
+	EnvEventTopicMapStatus                 topic.Token = "EVENT_TOPIC_MAP_STATUS"
+	EventTopicMapStatusTypeCharacterEnter              = "CHARACTER_ENTER"
+	EventTopicMapStatusTypeCharacterExit               = "CHARACTER_EXIT"
+	EventTopicMapStatusTypeWeatherStart                = "WEATHER_START"
+	EventTopicMapStatusTypeWeatherEnd                  = "WEATHER_END"
+	EventTopicMapStatusTypeMapTimerStarted             = "MAP_TIMER_STARTED"
+	EventTopicMapStatusTypeJukeboxStart                = "JUKEBOX_START"
+	EventTopicMapStatusTypeJukeboxEnd                  = "JUKEBOX_END"
 )
 
 type StatusEvent[E any] struct {

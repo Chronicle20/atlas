@@ -8,18 +8,19 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
-	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
-	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
-	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
-	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
-	CommandChangeHP            = "CHANGE_HP"
-	CommandChangeMP            = "CHANGE_MP"
-	CommandSetHP               = "SET_HP"
-	CommandAwardExperience     = "AWARD_EXPERIENCE"
+	EnvCommandTopic            topic.Token = "COMMAND_TOPIC_CHARACTER"
+	CommandRequestDistributeAp             = "REQUEST_DISTRIBUTE_AP"
+	CommandRequestDistributeSp             = "REQUEST_DISTRIBUTE_SP"
+	CommandRequestDropMeso                 = "REQUEST_DROP_MESO"
+	CommandRequestChangeMeso               = "REQUEST_CHANGE_MESO"
+	CommandChangeHP                        = "CHANGE_HP"
+	CommandChangeMP                        = "CHANGE_MP"
+	CommandSetHP                           = "SET_HP"
+	CommandAwardExperience                 = "AWARD_EXPERIENCE"
 
 	CommandDistributeApAbilityStrength     = "STRENGTH"
 	CommandDistributeApAbilityDexterity    = "DEXTERITY"
@@ -86,14 +87,14 @@ type AwardExperienceCommandBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus     = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeMapChanged        = "MAP_CHANGED"
-	StatusEventTypeJobChanged        = "JOB_CHANGED"
-	StatusEventTypeExperienceChanged = "EXPERIENCE_CHANGED"
-	StatusEventTypeLevelChanged      = "LEVEL_CHANGED"
-	StatusEventTypeMesoChanged       = "MESO_CHANGED"
-	StatusEventTypeFameChanged       = "FAME_CHANGED"
-	StatusEventTypeStatChanged       = "STAT_CHANGED"
+	EnvEventTopicCharacterStatus     topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeMapChanged                    = "MAP_CHANGED"
+	StatusEventTypeJobChanged                    = "JOB_CHANGED"
+	StatusEventTypeExperienceChanged             = "EXPERIENCE_CHANGED"
+	StatusEventTypeLevelChanged                  = "LEVEL_CHANGED"
+	StatusEventTypeMesoChanged                   = "MESO_CHANGED"
+	StatusEventTypeFameChanged                   = "FAME_CHANGED"
+	StatusEventTypeStatChanged                   = "STAT_CHANGED"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"

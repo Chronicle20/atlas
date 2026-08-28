@@ -9,10 +9,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
 
 	CommandRequestItemConsume   = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll        = "REQUEST_SCROLL"
@@ -76,12 +77,12 @@ type RequestCatchMonsterBody struct {
 }
 
 const (
-	EnvEventTopic            = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError           = "ERROR"
-	EventTypeScroll          = "SCROLL"
-	EventTypeSkillBookResult = "SKILL_BOOK_RESULT"
-	EventTypeVegaScroll      = "VEGA_SCROLL"
-	EventTypeViciousHammer   = "VICIOUS_HAMMER"
+	EnvEventTopic            topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError                       = "ERROR"
+	EventTypeScroll                      = "SCROLL"
+	EventTypeSkillBookResult             = "SKILL_BOOK_RESULT"
+	EventTypeVegaScroll                  = "VEGA_SCROLL"
+	EventTypeViciousHammer               = "VICIOUS_HAMMER"
 
 	EventTypeRewardEffect = "REWARD_EFFECT"
 	EventTypeRewardWon    = "REWARD_WON"

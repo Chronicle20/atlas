@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -38,9 +39,9 @@ var (
 // only the fields the consumer actually reads (CharacterId, Type,
 // Body.Distributions[].ExperienceType, Body.Distributions[].Amount) are populated.
 const (
-	envExperienceTopic                    = "EVENT_TOPIC_CHARACTER_STATUS"
-	experienceStatusEventTypeChanged      = "EXPERIENCE_CHANGED"
-	experienceDistributionTypeMonsterBook = "MONSTER_BOOK"
+	envExperienceTopic                    topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	experienceStatusEventTypeChanged                  = "EXPERIENCE_CHANGED"
+	experienceDistributionTypeMonsterBook             = "MONSTER_BOOK"
 )
 
 type experienceDistribution struct {

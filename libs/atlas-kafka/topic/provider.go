@@ -12,10 +12,10 @@ import (
 type Provider model.Provider[string]
 
 //goland:noinspection GoUnusedExportedFunction
-func EnvProvider(l logrus.FieldLogger) func(token string) Provider {
-	return func(token string) Provider {
+func EnvProvider(l logrus.FieldLogger) func(token Token) Provider {
+	return func(token Token) Provider {
 		return func() (string, error) {
-			t, ok := os.LookupEnv(token)
+			t, ok := os.LookupEnv(string(token))
 			if !ok || t == "" {
 				return "", fmt.Errorf("topic token [%s] has no value in the environment", token)
 			}

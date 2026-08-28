@@ -4,13 +4,14 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Topic constants for each service
 const (
-	EnvCommandTopicStorage     = "COMMAND_TOPIC_STORAGE"
-	EnvCommandTopicCashShop    = "COMMAND_TOPIC_CASH_SHOP"
-	EnvCommandTopicCompartment = "COMMAND_TOPIC_COMPARTMENT"
+	EnvCommandTopicStorage     topic.Token = "COMMAND_TOPIC_STORAGE"
+	EnvCommandTopicCashShop    topic.Token = "COMMAND_TOPIC_CASH_SHOP"
+	EnvCommandTopicCompartment topic.Token = "COMMAND_TOPIC_COMPARTMENT"
 )
 
 // Command type constant

@@ -24,7 +24,11 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
-		t, _ := topic.EnvProvider(l)(compartment.EnvEventTopicStatus)()
+		t, err := topic.EnvProvider(l)(compartment.EnvEventTopicStatus)()
+		if err != nil {
+			l.WithError(err).Warnln("Compartment status event topic not configured, skipping handler registration.")
+			return
+		}
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptedEvent())))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleReleasedEvent())))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorEvent())))

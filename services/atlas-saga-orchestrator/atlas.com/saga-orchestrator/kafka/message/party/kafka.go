@@ -10,15 +10,16 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_PARTY"
-	CommandTypeLeave = "LEAVE"
+	EnvCommandTopic  topic.Token = "COMMAND_TOPIC_PARTY"
+	CommandTypeLeave             = "LEAVE"
 
-	EnvStatusEventTopic    = "EVENT_TOPIC_PARTY_STATUS"
-	StatusEventTypeLeft    = "LEFT"
-	StatusEventTypeDisband = "DISBAND"
+	EnvStatusEventTopic    topic.Token = "EVENT_TOPIC_PARTY_STATUS"
+	StatusEventTypeLeft                = "LEFT"
+	StatusEventTypeDisband             = "DISBAND"
 )
 
 type Command[E any] struct {

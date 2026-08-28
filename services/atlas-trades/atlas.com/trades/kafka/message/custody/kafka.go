@@ -13,12 +13,13 @@ package custody
 import (
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (
 	// EnvCommandTopic is the env var naming the trade custody command topic.
-	EnvCommandTopic = "COMMAND_TOPIC_TRADE_CUSTODY"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_TRADE_CUSTODY"
 
 	CommandAcceptToTrade    = "ACCEPT_TO_TRADE"
 	CommandReleaseFromTrade = "RELEASE_FROM_TRADE"
@@ -84,7 +85,7 @@ type RemoveTradeEscrowCommandBody struct {
 
 const (
 	// EnvStatusEventTopic names the trade custody status (ack) topic.
-	EnvStatusEventTopic = "EVENT_TOPIC_TRADE_CUSTODY_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_TRADE_CUSTODY_STATUS"
 
 	StatusEventTypeAccepted = "ACCEPTED"
 	StatusEventTypeReleased = "RELEASED"

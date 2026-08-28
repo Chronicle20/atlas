@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
-	EventStatusTypeBuffApplied = "APPLIED"
-	EventStatusTypeBuffExpired = "EXPIRED"
+	EnvEventStatusTopic        topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+	EventStatusTypeBuffApplied             = "APPLIED"
+	EventStatusTypeBuffExpired             = "EXPIRED"
 )
 
 type StatusEvent[E any] struct {

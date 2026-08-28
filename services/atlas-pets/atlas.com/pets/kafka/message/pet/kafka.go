@@ -8,21 +8,22 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_PET"
-	CommandPetSpawn          = "SPAWN"
-	CommandPetDespawn        = "DESPAWN"
-	CommandPetAttemptCommand = "ATTEMPT_COMMAND"
-	CommandAwardCloseness    = "AWARD_CLOSENESS"
-	CommandAwardFullness     = "AWARD_FULLNESS"
-	CommandAwardLevel        = "AWARD_LEVEL"
-	CommandSetExclude        = "EXCLUDE"
-	CommandPetEvolve         = "EVOLVE"
-	CommandSetSkill          = "SET_SKILL"
-	CommandPetRevive         = "REVIVE"
-	CommandPetRename         = "RENAME"
+	EnvCommandTopic          topic.Token = "COMMAND_TOPIC_PET"
+	CommandPetSpawn                      = "SPAWN"
+	CommandPetDespawn                    = "DESPAWN"
+	CommandPetAttemptCommand             = "ATTEMPT_COMMAND"
+	CommandAwardCloseness                = "AWARD_CLOSENESS"
+	CommandAwardFullness                 = "AWARD_FULLNESS"
+	CommandAwardLevel                    = "AWARD_LEVEL"
+	CommandSetExclude                    = "EXCLUDE"
+	CommandPetEvolve                     = "EVOLVE"
+	CommandSetSkill                      = "SET_SKILL"
+	CommandPetRevive                     = "REVIVE"
+	CommandPetRename                     = "RENAME"
 )
 
 type Command[E any] struct {
@@ -87,7 +88,7 @@ type SetSkillCommandBody struct {
 }
 
 const (
-	EnvCommandTopicMovement = "COMMAND_TOPIC_PET_MOVEMENT"
+	EnvCommandTopicMovement topic.Token = "COMMAND_TOPIC_PET_MOVEMENT"
 )
 
 type MovementCommand struct {
@@ -103,22 +104,22 @@ type MovementCommand struct {
 }
 
 const (
-	EnvStatusEventTopic             = "EVENT_TOPIC_PET_STATUS"
-	StatusEventTypeCreated          = "CREATED"
-	StatusEventTypeDeleted          = "DELETED"
-	StatusEventTypeSpawned          = "SPAWNED"
-	StatusEventTypeDespawned        = "DESPAWNED"
-	StatusEventTypeCommandResponse  = "COMMAND_RESPONSE"
-	StatusEventTypeClosenessChanged = "CLOSENESS_CHANGED"
-	StatusEventTypeFullnessChanged  = "FULLNESS_CHANGED"
-	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
-	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
-	StatusEventTypeExcludeChanged   = "EXCLUDE_CHANGED"
-	StatusEventTypeEvolved          = "EVOLVED"
-	StatusEventTypeFlagChanged      = "FLAG_CHANGED"
-	StatusEventTypeRevived          = "REVIVED"
-	StatusEventTypeReviveFailed     = "REVIVE_FAILED"
-	StatusEventTypeNameChanged      = "NAME_CHANGED"
+	EnvStatusEventTopic             topic.Token = "EVENT_TOPIC_PET_STATUS"
+	StatusEventTypeCreated                      = "CREATED"
+	StatusEventTypeDeleted                      = "DELETED"
+	StatusEventTypeSpawned                      = "SPAWNED"
+	StatusEventTypeDespawned                    = "DESPAWNED"
+	StatusEventTypeCommandResponse              = "COMMAND_RESPONSE"
+	StatusEventTypeClosenessChanged             = "CLOSENESS_CHANGED"
+	StatusEventTypeFullnessChanged              = "FULLNESS_CHANGED"
+	StatusEventTypeLevelChanged                 = "LEVEL_CHANGED"
+	StatusEventTypeSlotChanged                  = "SLOT_CHANGED"
+	StatusEventTypeExcludeChanged               = "EXCLUDE_CHANGED"
+	StatusEventTypeEvolved                      = "EVOLVED"
+	StatusEventTypeFlagChanged                  = "FLAG_CHANGED"
+	StatusEventTypeRevived                      = "REVIVED"
+	StatusEventTypeReviveFailed                 = "REVIVE_FAILED"
+	StatusEventTypeNameChanged                  = "NAME_CHANGED"
 
 	DespawnReasonNormal  = "NORMAL"
 	DespawnReasonHunger  = "HUNGER"

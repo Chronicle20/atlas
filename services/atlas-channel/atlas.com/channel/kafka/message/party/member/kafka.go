@@ -2,13 +2,14 @@ package member
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventStatusTopic             = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
-	EventPartyStatusTypeLogin       = "LOGIN"
-	EventPartyStatusTypeLogout      = "LOGOUT"
-	EventPartyStatusTypeNameChanged = "NAME_CHANGED"
+	EnvEventStatusTopic             topic.Token = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
+	EventPartyStatusTypeLogin                   = "LOGIN"
+	EventPartyStatusTypeLogout                  = "LOGOUT"
+	EventPartyStatusTypeNameChanged             = "NAME_CHANGED"
 )
 
 type StatusEvent[E any] struct {

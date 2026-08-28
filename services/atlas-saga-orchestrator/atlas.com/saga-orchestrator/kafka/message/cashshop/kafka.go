@@ -1,16 +1,19 @@
 package cashshop
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/google/uuid"
+)
 
 const (
-	EnvCommandTopicWallet     = "COMMAND_TOPIC_WALLET"
-	CommandTypeAdjustCurrency = "ADJUST_CURRENCY"
+	EnvCommandTopicWallet     topic.Token = "COMMAND_TOPIC_WALLET"
+	CommandTypeAdjustCurrency             = "ADJUST_CURRENCY"
 
 	// Wallet status event constants
-	EnvEventTopicWalletStatus = "EVENT_TOPIC_WALLET_STATUS"
-	StatusEventTypeCreated    = "CREATED"
-	StatusEventTypeUpdated    = "UPDATED"
-	StatusEventTypeDeleted    = "DELETED"
+	EnvEventTopicWalletStatus topic.Token = "EVENT_TOPIC_WALLET_STATUS"
+	StatusEventTypeCreated                = "CREATED"
+	StatusEventTypeUpdated                = "UPDATED"
+	StatusEventTypeDeleted                = "DELETED"
 	// StatusEventTypeError reports a failed transactional wallet adjust, so an
 	// AwardCurrency/MtsBidEscrow saga step fails fast instead of timing out.
 	StatusEventTypeError = "ERROR"

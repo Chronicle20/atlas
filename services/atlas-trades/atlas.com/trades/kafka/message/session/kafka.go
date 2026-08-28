@@ -13,11 +13,12 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicSessionStatus      = "EVENT_TOPIC_SESSION_STATUS"
-	EventSessionStatusTypeDestroyed = "DESTROYED"
+	EnvEventTopicSessionStatus      topic.Token = "EVENT_TOPIC_SESSION_STATUS"
+	EventSessionStatusTypeDestroyed             = "DESTROYED"
 )
 
 type StatusEvent struct {

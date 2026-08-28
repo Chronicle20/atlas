@@ -4,11 +4,12 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic     = "COMMAND_TOPIC_SKILL_MACRO"
-	EnvStatusEventTopic = "STATUS_EVENT_TOPIC_SKILL_MACRO"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_SKILL_MACRO"
+	EnvStatusEventTopic topic.Token = "STATUS_EVENT_TOPIC_SKILL_MACRO"
 
 	CommandTypeUpdate = "UPDATE"
 

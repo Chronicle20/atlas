@@ -32,8 +32,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(ipAddress str
 		return func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var err error
 				var handles []listener.HandlerHandle
-				t, _ = topic.EnvProvider(l)(channel2.EnvCommandTopicChannelStatus)()
+				t, err = topic.EnvProvider(l)(channel2.EnvCommandTopicChannelStatus)()
+				if err != nil {
+					return nil, err
+				}
 				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandStatus(sc, ipAddress, port))))
 				if err != nil {
 					return nil, err

@@ -1,15 +1,18 @@
 package saga
 
-import "github.com/google/uuid"
-
-const (
-	EnvCommandTopic = "COMMAND_TOPIC_SAGA"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/google/uuid"
 )
 
 const (
-	EnvStatusEventTopic      = "EVENT_TOPIC_SAGA_STATUS"
-	StatusEventTypeCompleted = "COMPLETED"
-	StatusEventTypeFailed    = "FAILED"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SAGA"
+)
+
+const (
+	EnvStatusEventTopic      topic.Token = "EVENT_TOPIC_SAGA_STATUS"
+	StatusEventTypeCompleted             = "COMPLETED"
+	StatusEventTypeFailed                = "FAILED"
 )
 
 type StatusEvent[E any] struct {

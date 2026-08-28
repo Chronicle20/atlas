@@ -1,6 +1,7 @@
 package mts
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
@@ -14,7 +15,7 @@ const (
 	// EnvCommandTopic names the high-level MTS command topic. It carries BOTH
 	// atlas-mts-local operations (cancel, wish add/remove) AND saga/ticker-driven
 	// operations (create, buy, bid, take-home, expire).
-	EnvCommandTopic = "COMMAND_TOPIC_MTS"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MTS"
 
 	// CommandCancelListing performs the race-safe active->holding(seller) transition
 	// for the seller cancelling their own listing.
@@ -184,7 +185,7 @@ type TakeHomeCommandBody struct {
 // session. Only the event types the channel acts on are mirrored here.
 const (
 	// EnvStatusEventTopic names the high-level MTS status/event topic.
-	EnvStatusEventTopic = "EVENT_TOPIC_MTS_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MTS_STATUS"
 
 	StatusEventTypeListingCreated      = "LISTING_CREATED"
 	StatusEventTypeListingCancelled    = "LISTING_CANCELLED"

@@ -6,19 +6,20 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventMemberStatusTopic            = "EVENT_TOPIC_MESSENGER_MEMBER_STATUS"
-	EventMessengerMemberStatusTypeLogin  = "LOGIN"
-	EventMessengerMemberStatusTypeLogout = "LOGOUT"
+	EnvEventMemberStatusTopic            topic.Token = "EVENT_TOPIC_MESSENGER_MEMBER_STATUS"
+	EventMessengerMemberStatusTypeLogin              = "LOGIN"
+	EventMessengerMemberStatusTypeLogout             = "LOGOUT"
 
-	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeDeleted        = "DELETED"
-	EventCharacterStatusTypeLogin          = "LOGIN"
-	EventCharacterStatusTypeLogout         = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
-	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus           topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeDeleted                    = "DELETED"
+	EventCharacterStatusTypeLogin                      = "LOGIN"
+	EventCharacterStatusTypeLogout                     = "LOGOUT"
+	EventCharacterStatusTypeChannelChanged             = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeMapChanged                 = "MAP_CHANGED"
 )
 
 type MemberStatusEvent[E any] struct {

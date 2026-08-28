@@ -5,11 +5,12 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopicChannelChangeRequest = "COMMAND_TOPIC_CHARACTER_CHANNEL_CHANGE_REQUEST"
-	CommandChannelChangeRequest         = "CHANNEL_CHANGE_REQUEST"
+	EnvCommandTopicChannelChangeRequest topic.Token = "COMMAND_TOPIC_CHARACTER_CHANNEL_CHANGE_REQUEST"
+	CommandChannelChangeRequest                     = "CHANNEL_CHANGE_REQUEST"
 )
 
 type ChannelChangeRequestCommand struct {

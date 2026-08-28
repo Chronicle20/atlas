@@ -7,15 +7,18 @@
 // mechanically.
 package shops
 
-import "github.com/google/uuid"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/google/uuid"
+)
 
 const (
-	EnvCommandTopic     = "COMMAND_TOPIC_NPC_SHOP"
-	CommandShopEnter    = "ENTER"
-	CommandShopExit     = "EXIT"
-	CommandShopBuy      = "BUY"
-	CommandShopSell     = "SELL"
-	CommandShopRecharge = "RECHARGE"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_NPC_SHOP"
+	CommandShopEnter                = "ENTER"
+	CommandShopExit                 = "EXIT"
+	CommandShopBuy                  = "BUY"
+	CommandShopSell                 = "SELL"
+	CommandShopRecharge             = "RECHARGE"
 )
 
 type Command[E any] struct {
@@ -51,10 +54,10 @@ type CommandShopRechargeBody struct {
 }
 
 const (
-	EnvStatusEventTopic    = "EVENT_TOPIC_NPC_SHOP_STATUS"
-	StatusEventTypeEntered = "ENTERED"
-	StatusEventTypeExited  = "EXITED"
-	StatusEventTypeError   = "ERROR"
+	EnvStatusEventTopic    topic.Token = "EVENT_TOPIC_NPC_SHOP_STATUS"
+	StatusEventTypeEntered             = "ENTERED"
+	StatusEventTypeExited              = "EXITED"
+	StatusEventTypeError               = "ERROR"
 
 	// StatusEventTypeEnterError reports that an ENTER command failed. It is
 	// deliberately NOT StatusEventTypeError: the channel renders that one as a

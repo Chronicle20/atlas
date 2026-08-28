@@ -1,6 +1,7 @@
 package mts
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/google/uuid"
 )
 
@@ -39,7 +40,7 @@ const (
 	// operations (create, buy, bid, take-home, expire). The local operations are
 	// handled directly here; the saga/ticker-driven ones are routed in their own
 	// phases.
-	EnvCommandTopic = "COMMAND_TOPIC_MTS"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MTS"
 
 	// --- locally-handled command types (Phase 3) ---
 
@@ -221,7 +222,7 @@ type TakeHomeCommandBody struct {
 const (
 	// EnvStatusEventTopic names the high-level MTS status/event topic. Every event
 	// body carries transactionId + worldId.
-	EnvStatusEventTopic = "EVENT_TOPIC_MTS_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MTS_STATUS"
 
 	// StatusEventTypeListingCreated reports a listing was created.
 	StatusEventTypeListingCreated = "LISTING_CREATED"

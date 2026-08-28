@@ -6,20 +6,21 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic                    = "COMMAND_TOPIC_GUILD"
-	CommandTypeRequestCreate           = "REQUEST_CREATE"
-	CommandTypeRequestInvite           = "REQUEST_INVITE"
-	CommandTypeRequestDisband          = "REQUEST_DISBAND"
-	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
-	CommandTypeCreationAgreement       = "CREATION_AGREEMENT"
-	CommandTypeChangeEmblem            = "CHANGE_EMBLEM"
-	CommandTypeChangeNotice            = "CHANGE_NOTICE"
-	CommandTypeChangeTitles            = "CHANGE_TITLES"
-	CommandTypeChangeMemberTitle       = "CHANGE_MEMBER_TITLE"
-	CommandTypeLeave                   = "LEAVE"
+	EnvCommandTopic                    topic.Token = "COMMAND_TOPIC_GUILD"
+	CommandTypeRequestCreate                       = "REQUEST_CREATE"
+	CommandTypeRequestInvite                       = "REQUEST_INVITE"
+	CommandTypeRequestDisband                      = "REQUEST_DISBAND"
+	CommandTypeRequestCapacityIncrease             = "REQUEST_CAPACITY_INCREASE"
+	CommandTypeCreationAgreement                   = "CREATION_AGREEMENT"
+	CommandTypeChangeEmblem                        = "CHANGE_EMBLEM"
+	CommandTypeChangeNotice                        = "CHANGE_NOTICE"
+	CommandTypeChangeTitles                        = "CHANGE_TITLES"
+	CommandTypeChangeMemberTitle                   = "CHANGE_MEMBER_TITLE"
+	CommandTypeLeave                               = "LEAVE"
 	// CommandTypeRejoin re-adds a character to a guild at an explicitly
 	// supplied title. It exists for the world-transfer saga's compensation
 	// (task-227 FR-4.8): leave_guild_for_transfer emits a FORCED LEAVE, and a
@@ -102,19 +103,19 @@ type RequestCapacityIncreaseBody struct {
 }
 
 const (
-	EnvStatusEventTopic                = "EVENT_TOPIC_GUILD_STATUS"
-	StatusEventTypeCreated             = "CREATED"
-	StatusEventTypeDisbanded           = "DISBANDED"
-	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
-	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
-	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
-	StatusEventTypeMemberTitleUpdated  = "MEMBER_TITLE_UPDATED"
-	StatusEventTypeMemberLeft          = "MEMBER_LEFT"
-	StatusEventTypeMemberJoined        = "MEMBER_JOINED"
-	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
-	StatusEventTypeCapacityUpdated     = "CAPACITY_UPDATED"
-	StatusEventTypeTitlesUpdated       = "TITLES_UPDATED"
-	StatusEventTypeError               = "ERROR"
+	EnvStatusEventTopic                topic.Token = "EVENT_TOPIC_GUILD_STATUS"
+	StatusEventTypeCreated                         = "CREATED"
+	StatusEventTypeDisbanded                       = "DISBANDED"
+	StatusEventTypeEmblemUpdated                   = "EMBLEM_UPDATED"
+	StatusEventTypeRequestAgreement                = "REQUEST_AGREEMENT"
+	StatusEventTypeMemberStatusUpdated             = "MEMBER_STATUS_UPDATED"
+	StatusEventTypeMemberTitleUpdated              = "MEMBER_TITLE_UPDATED"
+	StatusEventTypeMemberLeft                      = "MEMBER_LEFT"
+	StatusEventTypeMemberJoined                    = "MEMBER_JOINED"
+	StatusEventTypeNoticeUpdated                   = "NOTICE_UPDATED"
+	StatusEventTypeCapacityUpdated                 = "CAPACITY_UPDATED"
+	StatusEventTypeTitlesUpdated                   = "TITLES_UPDATED"
+	StatusEventTypeError                           = "ERROR"
 )
 
 type StatusEvent[E any] struct {

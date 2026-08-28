@@ -14,13 +14,14 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_REACTOR"
-	CommandTypeHit  = "HIT"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REACTOR"
+	CommandTypeHit              = "HIT"
 )
 
 // Processor is the interface for reactor operations from the saga-orchestrator

@@ -74,3 +74,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-27T21:52:15Z	agent	Task 15 (teleport snapshot fix)	task-reviewer	sonnet	-	-	-	-	dispatched	1c5431d40	-	-	-	-
 2026-08-27T21:54:22Z	agent	Task 15 (teleport snapshot fix)	task-reviewer	sonnet	-	-	-	-	complete	1c5431d40	APPROVED	no	-	-
 2026-08-27T22:04:15Z	agent	PR	controller	-	-	-	-	-	complete	c55d766b6	-	-	-	-
+2026-08-28T11:00:31Z	agent	adversarial-event-coverage	task-reviewer	sonnet	-	-	-	-	-	-	APPROVED_WITH_FINDINGS	no	docs/tasks/task-122-attack-path-snapshots/adversarial-event-coverage.md	-
+2026-08-28T11:00:38Z	agent	adversarial-registry	task-reviewer	sonnet	-	-	-	-	-	-	APPROVED_WITH_FINDINGS	no	docs/tasks/task-122-attack-path-snapshots/adversarial-registry.md	-
+2026-08-28T11:01:37Z	agent	adversarial-attack-path	task-reviewer	sonnet	-	-	-	-	-	-	CHANGES_REQUIRED	no	docs/tasks/task-122-attack-path-snapshots/adversarial-attack-path.md	-
+2026-08-28T11:08:07Z	agent	bug-shadow-buffs-dead-code	task-implementer	sonnet	-	-	-	-	DONE	037d1a7fa	-	-	-	-

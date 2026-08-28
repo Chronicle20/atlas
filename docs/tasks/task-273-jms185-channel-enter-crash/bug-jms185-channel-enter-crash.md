@@ -5,6 +5,12 @@ specific trigger is not yet identified.** CharacterData × jms_v185 was swept
 field-by-field and is clean (see §7 under "Ruled out"). Suspicion has moved to
 the enter-field burst (see `## Next unit`).
 
+> **Round 3 supersedes part of this file.** The faulting packet is
+> `SpawnNPCRequestController` (**0x118**), not `SpawnNPC` (0x116), and the
+> client is in its normal message loop at the time — not mid-`OnSetField`.
+> See [`## Round 3`](#round-3--packet-content-log--fresh-crash-stack) at the
+> bottom; read that before acting on anything above.
+
 ## Reproduced
 
 Yes — captured live in `atlas-main`, pod `atlas-channel-75c9d7b679-msgpq`,
@@ -195,3 +201,154 @@ That reorders the candidates. The next unit should ask, in this order:
 
 The pod logs for the reproduction are gone with the pod; a re-test will be
 needed to confirm what the server sends in the second window.
+
+## Round 3 — packet-content log + fresh crash stack
+
+Two new sources: per-tenant packet-content debug logging (landed on `main` in
+09c886f7e) and a fresh x32dbg call stack from the user for the *same* build.
+
+### Reproduction (fresh)
+
+Pod `atlas-channel-9c768dd44-56jz9`, namespace `atlas-main`. Two consecutive
+crashing sessions; the second is transcribed below.
+
+- Session `5ee750c0-6e22-43a5-a814-9080f7d5819d`, character 40, map 10000,
+  world 0 / channel 0.
+
+| time (UTC) | direction | packet |
+|---|---|---|
+| 13:20:52.635 | → | `<hello>` (16 B) |
+| 13:20:53.143 | ← | `CharacterLoggedInHandle` op 0x07 |
+| 13:20:53.378 | → | `SetField` **0x7B** (720 B) |
+| 13:20:53.379 | → | `BuddyOperation` 0x39 |
+| 13:20:53.385 | → | `CharacterBuffGive` 0x1E |
+| 13:20:53.392–.393 | → | `CharacterKeyMap` **0x170**, `…AutoHp` 0x171, `…AutoMp` 0x172 |
+| 13:20:53.395–.396 | → | `SpawnNPC` **0x116** ×3 (SN 1/2/3, tmpl 0x835/0x834/0x7D7) |
+| 13:20:53.400 | → | `SpawnNPCRequestController` **0x118** ×3 (SN 2/1/3, control byte `01`) |
+| 13:20:53.401 | → | `CharacterSkillMacro` 0x7A |
+| 13:20:53.412 | → | `WorldMessage` 0x3E, `FieldTransportState` 0x92 |
+| 13:20:53.599 | → | `StatChanged` 0x1D — **last server packet of the session** |
+| 13:20:54.171 | ← | op **0xEA** (unhandled) |
+| 13:20:54.178 | ← | op **0xDA** (unhandled) |
+| 13:20:56.001 | ← | op **0xEA** (unhandled) |
+| 13:20:56.007 | — | Connection ended (client dead) |
+
+Full hex for every packet above is reproducible from the pod log with
+`[PKT OUT]` / `[PKT IN ]` and the session id.
+
+### 0xEA and 0xDA identified — they are a client-side clock for `CField::Init`
+
+Both are bodiless client→server ops, and in the JMS 185 IDB (session
+`a977912e`, `MapleStory_dump_SCY.exe.i64`) each has exactly one emitter, and
+both emitters are reached only from `CField::Init` (`0x56186b`):
+
+- `0xEA` — `CWvsContext::SendCancelPartyWanted` @0xb29783 (`COutPacket(0xEA)`),
+  called from `CWvsContext::StopPartySearch` @0xaf6517, called from
+  `CWvsContext::OnEnterField` @0xae81f7, whose **only** xref is
+  `CField::Init` @0x561996.
+- `0xDA` — `CUserLocal::ResetNLCPQ` @0xa2f78b (`COutPacket(0xDA)`), whose
+  **only** xref is `CField::Init` @0x561a50.
+
+`0xEA` also has a second reachable emitter path — `sub_AE84F4` @0xae8afe, the
+leave-game path invoked from `set_stage`'s "stage is not field/cash-shop/ITC"
+arm — which is the likely source of the *second* 0xEA at 13:20:56.001 (client
+tearing down).
+
+**Consequence:** the client did not enter `CField::Init` until **13:20:54.171**
+— 776 ms *after* the server finished sending the enter-field burst, and 793 ms
+after `SetField`. The whole burst was written to a socket whose peer had no
+field object yet.
+
+### Fresh crash stack (user-supplied, x32dbg, same build)
+
+Main thread 16092, module `maplestory` (base 0x400000, so addresses map 1:1 to
+the IDB):
+
+```
+0044F5E2   sub_44F5DF+3            <- access violation
+007207B3   CNpcPool::SetLocalNpc ret site, inside CNpcPool::OnNpcChangeController
+0056E985   CNpcPool::OnPacket ret site, inside CField::OnPacket
+004B18A9   CClientSocket::ProcessPacket
+004B17C3   CClientSocket::ManipulatePacket
+004B1378   CClientSocket::OnRead
+00AE25DE   CWvsApp::WindowProc
+           user32.DispatchMessageA  <- normal message loop
+```
+
+Two things differ from the round-1 stack recorded under "## Observed":
+
+1. **The faulting packet is 0x118 `SpawnNPCRequestController`, not 0x116
+   `SpawnNPC`.** `CNpcPool::OnPacket` @0x720430 routes `case 0x118` to
+   `CNpcPool::OnNpcChangeController` @0x720782, which reads
+   `Decode1` (control) then `Decode4` (SN) and — because our control byte is
+   `01` — calls `CNpcPool::SetLocalNpc` @0x720242 at 0x7207ae (ret 0x7207b3).
+   `SetLocalNpc`'s first act is `sub_44F5DF(this + 1, &v11, &v10)`, and
+   `sub_44F5DF` faults at its first dereference (+3).
+2. **The client is in its normal `DispatchMessageA` message loop**, not nested
+   inside `CStage::OnSetField`. So this is an ordinary socket read after the
+   field was already constructed.
+
+### What this rules out, and the contradiction it exposes
+
+Routing is correct. `CField::OnPacket` @0x56e721 was decompiled in full; the
+ranges are 0x9E–0xFC `CUserPool`, 0xFD–0x115 `CMobPool`, **0x116–0x11D
+`CNpcPool` (`dword_CD7590`)**, 0x11E–0x120 `CEmployeePool`, 0x121–0x122
+`CDropPool`, 0x123–0x125 `CMessageBoxPool`, 0x126–0x127 `CAffectedAreaPool`,
+0x128–0x129 `CTownPortalPool`, 0x12D–0x130 `CReactorPool`, 0x7B–0x7D
+`CStage`, 0x170–0x173 `CFuncKeyMappedMan`. Every opcode we sent lands where
+the template says it should. `CClientSocket::ProcessPacket` @0x4b17eb confirms
+0x1B–0x7A → `CWvsContext` and everything else → the stage.
+
+`CInterStage` does **not** inherit `CField::OnPacket` — the 33 xrefs to
+0x56e721 do not include the `CInterStage` vtables at 0xbe7c78/0xbe7c7c/
+0xbe7c80/0xbe7ccc. So the "packet arrived while the InterStage was up" variant
+is dead.
+
+**The contradiction to resolve next:** `CNpcPool::OnNpcEnterField` @0x72068f
+opens with the *same* `sub_44F5DF(this + 1, …)` call as `SetLocalNpc`. If
+`dword_CD7590` were null, the first of the three 0x116 packets — sent 5 ms
+*before* the 0x118s and necessarily processed first — would have faulted at
+the same instruction. It did not. Either the pool pointer is non-null but
+stale/freed, or the three 0x116 packets were consumed in an earlier pump while
+the pool was still valid and the pool died between the two groups.
+
+Pool lifetime, established from the IDB:
+
+- `dword_CD7590` is written in exactly two places, the `CNpcPool` ctor
+  `sub_71FED9` @0x71fef2 and dtor `sub_71FF65` @0x71ffb8.
+- ctor reached only via `sub_AFCAA0` ← `sub_AFA942` (a `ZRef` reset: release
+  old, then construct new), which has two callers:
+  `CWvsContext::OnEnterGame` @0xae7d01 and `sub_AE8325` @0xae835c.
+- `set_stage` @0x7effc0 calls `sub_AE8325` when the incoming stage is a
+  `CInterStage` **and** `GetCharacterData()->p != 0`, and calls
+  `CWvsContext::OnEnterGame` when the incoming stage is a
+  `CField`/`CCashShop`/`CITC` **and** `GetCharacterData()->p == 0`.
+- `set_stage` nulls `g_pStage` on entry (0x7effec) and restores it at 0x7f011c,
+  immediately before calling `CField::Init` at 0x7f012c. So pool creation
+  always precedes `g_pStage` becoming a `CField`.
+- Teardown: `sub_AE8B31` (→ pool dtor) from `sub_AE84F4`, which `set_stage`
+  calls when the incoming stage is null or is none of field/cash-shop/ITC.
+
+`CStage::OnSetField` @0x7eea69 skips its own `CInterStage` swap when `g_pStage`
+is already a `CInterStage` (guard @0x7eecc4) — and on a channel enter it always
+is, because `CClientSocket::OnMigrateCommand` @0x4b1924 installs a
+`CInterStage` at 0x4b1991 before reconnecting. `sub_7F019A` @0x7f019a only
+allocates a *local* `ZRef<CharacterData>`; it does not install into
+`CWvsContext`, so `GetCharacterData()->p` should still be 0 at `set_stage(field)`
+and `OnEnterGame` should fire. That is why "the pool was never created" does
+not yet add up either.
+
+### Not yet answered (round 3)
+
+- The register state at the fault. **`ESI` at 0x44F5E2, and the dword at
+  `0x00CD7590`, decide between "null pool" and "stale/freed pool" and are the
+  single cheapest next datum.**
+- Whether the three 0x116 packets were processed successfully before the fault
+  (they should have been, from the same socket read).
+- Why the client took 793 ms after `SetField` to reach `CField::Init`, and
+  where the burst was buffered in the meantime.
+
+### Fix
+
+Not yet determinable. Do not dispatch an implementer against this file until
+the ESI / `dword_CD7590` reading above resolves the null-vs-stale question.

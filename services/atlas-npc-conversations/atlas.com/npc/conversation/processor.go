@@ -93,6 +93,25 @@ func SetSagaProcessorFactory(factory SagaProcessorFactory) {
 	sagaProcessorFactory = factory
 }
 
+// NpcSenderProcessorFactory is the factory function type for creating an
+// npcSender.Processor.
+type NpcSenderProcessorFactory func(l logrus.FieldLogger, ctx context.Context) npcSender.Processor
+
+// npcSenderProcessorFactory defaults to npcSender.NewProcessor; tests may
+// override via SetNpcSenderProcessorFactory to substitute a recording
+// npcSender.Processor.
+var npcSenderProcessorFactory NpcSenderProcessorFactory = npcSender.NewProcessor
+
+// SetNpcSenderProcessorFactory overrides the npc sender processor factory
+// (for tests). Passing nil restores the default (npcSender.NewProcessor).
+func SetNpcSenderProcessorFactory(factory NpcSenderProcessorFactory) {
+	if factory == nil {
+		npcSenderProcessorFactory = npcSender.NewProcessor
+		return
+	}
+	npcSenderProcessorFactory = factory
+}
+
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	t := tenant.MustFromContext(ctx)
 	evaluator := NewEvaluator(l, ctx, t)
@@ -607,6 +626,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case AskNumberType:
 		// Process ask number state
 		return p.processAskNumberState(ctx, state)
+	case AskTextType:
+		// Process ask text state
+		return p.processAskTextState(ctx, state)
 	case AskStyleType:
 		// Process ask style state
 		return p.processAskStyleState(ctx, state)
@@ -1230,6 +1252,31 @@ func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state Sta
 	err = npcSender.NewProcessor(p.l, p.ctx).SendNumber(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, askNumber.DefaultValue(), askNumber.MinValue(), askNumber.MaxValue())
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send number request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
+		return "", err
+	}
+
+	// Return the current state ID to indicate that we're waiting for input
+	return state.Id(), nil
+}
+
+// processAskTextState processes an ask text state
+func (p *ProcessorImpl) processAskTextState(ctx ConversationContext, state StateModel) (string, error) {
+	askText := state.AskText()
+	if askText == nil {
+		return "", errors.New("askText is nil")
+	}
+
+	// Replace context placeholders in the ask text prompt
+	processedText, err := ReplaceContextPlaceholders(askText.Text(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in ask text prompt for state [%s]. Using original text.", state.Id())
+		processedText = askText.Text()
+	}
+
+	// Send the ask text request to the client
+	err = npcSenderProcessorFactory(p.l, p.ctx).SendText(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, askText.DefaultText(), askText.MinLength(), askText.MaxLength())
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to send text request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
 	}
 

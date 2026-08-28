@@ -238,9 +238,10 @@ The schema is PRD §6 as written, with one addition and one clarification:
 - **Add `overall_job_rank uint32`.** PRD §6's table omits it while PRD §5's resource shape includes
   it. FR-3.7 derived it from the script id, which D-1 makes impossible (§4). It becomes a stored
   column populated from the counter in §6.3.
-- `dir` defaults to 1 (FR-4.6). `rx0 = x + 50`, `rx1 = x - 50` are computed at deploy time and
+- `dir` defaults to 1 (FR-4.6). `rx0 = x - 50`, `rx1 = x + 50` are computed at deploy time and
   stored, not recomputed on read, so a later change to the constant cannot silently move existing
-  NPCs.
+  NPCs. This matches the WZ NPC life entry convention (`rx0 < rx1`); the original derivation here
+  had the two swapped (task-251 bug report §4).
 
 ### 3.2 Routing (`routing/`)
 

@@ -185,11 +185,11 @@ func TestPlayerNpcEntityRoundTrip(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Build() unexpected err = %v", err)
 		}
-		if m.RX0() != 150 {
-			t.Errorf("RX0() = %v, want 150", m.RX0())
+		if m.RX0() != 50 {
+			t.Errorf("RX0() = %v, want 50", m.RX0())
 		}
-		if m.RX1() != 50 {
-			t.Errorf("RX1() = %v, want 50", m.RX1())
+		if m.RX1() != 150 {
+			t.Errorf("RX1() = %v, want 150", m.RX1())
 		}
 	})
 

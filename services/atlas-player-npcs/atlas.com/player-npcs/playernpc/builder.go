@@ -121,13 +121,14 @@ func (b *Builder) setJobIdCategory(jobId uint16) *Builder {
 	return b
 }
 
-// SetX sets x and derives rx0 = x + 50, rx1 = x - 50 (design §3.1). Call
+// SetX sets x and derives rx0 = x - 50, rx1 = x + 50, matching the WZ NPC
+// life entry convention (rx0 < rx1; see task-251 bug report §4). Call
 // SetRX0/SetRX1 afterward to override -- entity.Make does this to restore
 // exactly what was stored rather than recompute it.
 func (b *Builder) SetX(x int16) *Builder {
 	b.x = x
-	b.rx0 = x + 50
-	b.rx1 = x - 50
+	b.rx0 = x - 50
+	b.rx1 = x + 50
 	return b
 }
 

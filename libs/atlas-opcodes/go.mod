@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-socket v0.0.0
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
 )
 

@@ -290,7 +290,11 @@ Five distinct carousels, plus one unverified column:
 3. **`race4`** — `0 = Cygnus, 1 = Explorer, 2 = Aran, 3 = fourth race (Evan slot)`. Version keys:
    `gms_84` (no sub-job field on the wire), `gms_87` (sub-job present but hard-coded `0`),
    `gms_92` (sub-job live). Evidence: `CLogin__Update` `0x609e9f` (v84), `CLogin::Update`
-   `0x62c5c8` (v87), `sub_5D5680` `0x5d5cad` (v92).
+   `0x62c5c8` (v87), `sub_5D5680` `0x5d5cad` (v92). The `2 = Aran, 3 = fourth race (Evan slot)`
+   class labels are verified only for `gms_84` and `gms_87`; on `gms_92` ordinals 2 and 3 are
+   ordinal-verified but class-**unverified** — one of them is Aran and the other the fourth-race
+   slot, but which is which was not established within budget (see the `gms_v92` table above,
+   rows 2 and 3). Ordinals 0 and 1 (Cygnus, Explorer) are class-verified on all three versions.
 4. **`race4-jms`** — four ordinals `0..3`, class identities unverified. Version key: `jms_185`.
    Evidence: `CLogin::Update` `0x66c17f`. Do **not** reuse the `race4` class labels for it
    without checking; only the ordinal count is established.

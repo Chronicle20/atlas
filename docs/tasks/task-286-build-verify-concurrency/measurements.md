@@ -99,3 +99,49 @@ grep count.
 
 Full log retained at `.superpowers/sdd/plan/logs/task1-all-services-bake.log`
 (git-ignored scratch; not committed).
+
+## Layer 0 — scratch
+
+Commands (per the brief): `df -h /tmp` and `ls /tmp | wc -l` before, then
+after the operator applies the host tuning (`docs/verification.md` ->
+`## Host tuning (WSL2)`) and runs `tools/scratch-sweep.sh --now --root /tmp`.
+
+### Before
+
+```
+$ df -h /tmp
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs            16G  5.1G   11G  33% /tmp
+
+$ ls /tmp | wc -l
+2661
+```
+
+`free -h` at the same moment:
+
+```
+               total        used        free      shared  buff/cache   available
+Mem:            31Gi        13Gi       4.6Gi       3.8Gi        17Gi        17Gi
+Swap:          8.0Gi       3.3Gi       4.7Gi
+```
+
+`/etc/fstab` at the same moment carries no `/tmp` line (unconfigured base
+system fstab), confirming `/tmp` is currently sized by WSL2's 50%-of-RAM
+default, not the pinned `size=4G` line this task documents. `Mem: 31Gi total`
+matches the "VM currently gets 31 GiB by the 50% default" figure the
+`## Host tuning (WSL2)` section cites.
+
+### After
+
+**Not applied at implementation time.** The `.wslconfig` memory/CPU bump and
+the `/etc/fstab` `/tmp` pin are host state outside this repo and outside this
+task's scope to apply (`wsl --shutdown` and an `/etc/fstab` edit are operator
+actions on the Windows host and the WSL2 VM, not repo changes); doing either
+from an implementer session would also invalidate the "before" figures above
+for any later comparison. No after-figure is recorded here — recording one
+without having actually applied the tuning and rerun `tools/scratch-sweep.sh
+--now --root /tmp` would be a fabricated number. Task 7's preflight is the
+mechanism that later detects whether an operator has applied this section on
+a given host; that detection output, or a fresh `df -h /tmp` / `ls /tmp | wc
+-l` pair taken after the operator applies the tuning, is the legitimate
+source for an after-figure.

@@ -97,6 +97,93 @@ The narrowing is safe only because every commit in the range gets gated by
 not blindly `HEAD~1`. The flagless pre-PR run always uses the merge base and
 covers the branch as a whole regardless.
 
+## Host tuning (WSL2)
+
+`/tmp` is a tmpfs — RAM, not disk — and WSL2 sizes it at 50% of the VM's RAM
+by default. On a host measured with ~64 GiB and 24 logical CPUs, the VM
+currently gets 31 GiB by that default, and every stale scratch file left in
+`/tmp` is RAM taken from the compilers doing the build. This section is host
+state, not repo state — none of it is applied by checking out this branch.
+Task 7's preflight *detects* whether it has been applied and reports the
+un-tuned condition; it does not assume this section was followed.
+
+### `.wslconfig` — give the VM the memory and CPU the host actually has
+
+Location: `C:\Users\<windows-user>\.wslconfig` (a placeholder — never a
+literal home path).
+
+```ini
+[wsl2]
+memory=52GB
+processors=24
+swap=16GB
+```
+
+Apply with `wsl --shutdown` from a Windows shell, then restart the WSL2
+session.
+
+### `/etc/fstab` — pin `/tmp` after the memory bump
+
+WSL2's default `/tmp` sizing rule is 50% of VM RAM. Applied *after* the
+`.wslconfig` bump above, that default would make `/tmp` 26 GiB — worse than
+the 16 GiB it is today. Pin it explicitly instead:
+
+```
+tmpfs /tmp tmpfs rw,nosuid,nodev,size=4G,nr_inodes=1048576 0 0
+```
+
+### `TMPDIR` — move scratch off tmpfs
+
+```sh
+export TMPDIR=/var/tmp/atlas/scratch
+```
+
+Set in the user's shell profile (e.g. `~/.bashrc` or `~/.zshrc`). The repo
+deliberately does **not** ship a tracked `.envrc` for this: an untracked
+personal `.envrc` already exists in the main checkout and is not gitignored,
+so a tracked one would break `git checkout` of this branch there. Relocating
+`CLAUDE_JOB_DIR` is best-effort where the harness permits it; `TMPDIR` is the
+load-bearing control — it is what `tools/scratch-sweep.sh`'s default root
+(`/var/tmp/atlas/scratch`) is meant to align with.
+
+### Sweeper — systemd user timer
+
+`tools/scratch-sweep.sh` ages entries out of the scratch root; give it a
+daily systemd **user** timer rather than relying on manual runs. Drop these
+two unit files in the user systemd directory
+(`~/.config/systemd/user/`, again a placeholder, never a literal home path):
+
+`atlas-scratch-sweep.service`:
+
+```ini
+[Unit]
+Description=Sweep atlas scratch root
+
+[Service]
+Type=oneshot
+ExecStart=<repo-root>/tools/scratch-sweep.sh
+```
+
+`atlas-scratch-sweep.timer`:
+
+```ini
+[Unit]
+Description=Daily atlas scratch sweep
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable with:
+
+```sh
+systemctl --user enable --now atlas-scratch-sweep.timer
+```
+
 ## The Go layer
 
 Per changed module: `go build ./...`, `go vet ./...`, `go test -race ./...`.

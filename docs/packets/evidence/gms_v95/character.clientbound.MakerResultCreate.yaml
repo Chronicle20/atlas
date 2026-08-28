@@ -1,0 +1,10 @@
+packet: character/clientbound/MakerResultCreate
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnMakerResult
+    address: "0x9102f0"
+    decompile_sha256: 9f82f0b417be66636605f02f34deb8a4a360672f25f273ebe76f90a260ff38cf
+verifies:
+    - libs/atlas-packet/character/clientbound/maker_result_test.go#TestMakerResultCreateByteOutput

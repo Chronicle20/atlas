@@ -1,0 +1,36 @@
+# MakerResult — CUserLocal::OnMakerResult item-maker result dispatcher.
+# NOTE (design C-1): this op is RESULT-CODE-prefixed, not mode-prefixed. The
+# client reads Decode4(nResult) FIRST and only reads Decode4(nMode) when
+# nResult is 0 or 1; any other result ends the body (the bodyless failed arm).
+# The mode is therefore the SECOND field, and nResult is a shared header field
+# carried by every arm struct, not an arm selector. DISPATCHER_FAMILY.md
+# requires a config-resolved mode, not that the mode be the first field, so
+# this is still a legitimate family.
+# Modes 1 and 2 are body-identical but are distinct client operations and get
+# discrete structs per INV-1.
+# Addresses, per-version confirmation, and the verdict that all eight versions
+# are field-for-field identical (so no version gate):
+# docs/tasks/task-285-maker-skill-crafting/wire-derivation.md
+writer: MakerResult
+fname: CUserLocal::OnMakerResult
+op: MAKER_RESULT
+direction: clientbound
+opcodes:
+  gms_v72: "0xC7"
+  gms_v79: "0xCB"
+  gms_v83: "0xD9"
+  gms_v84: "0xDD"
+  gms_v87: "0xE6"
+  gms_v92: "0xFA"
+  gms_v95: "0xF8"
+  jms_v185: "0xE2"
+operations:
+  - { key: CREATE,              modes: { gms_v72: 1, gms_v79: 1, gms_v83: 1, gms_v84: 1, gms_v87: 1, gms_v92: 1, gms_v95: 1, jms_v185: 1 } }
+  - { key: CREATE_WITH_UPGRADE, modes: { gms_v72: 2, gms_v79: 2, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v92: 2, gms_v95: 2, jms_v185: 2 } }
+  - { key: MONSTER_CRYSTAL,     modes: { gms_v72: 3, gms_v79: 3, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v92: 3, gms_v95: 3, jms_v185: 3 } }
+  - { key: DISASSEMBLE,         modes: { gms_v72: 4, gms_v79: 4, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v92: 4, gms_v95: 4, jms_v185: 4 } }
+  # FAILED: no key. The client returns at nResult > 1 before reading nMode, so
+  # this arm writes no mode field and no code path resolves an operations value
+  # for it. Mirrors guild.Info / GuildInfoBody
+  # (libs/atlas-packet/guild/operation_body.go), which is a family-enrolled arm
+  # with no YAML key, clean against dispatcher-lint today.

@@ -16697,6 +16697,112 @@
       "address": "0x67e0e0",
       "direction": "",
       "calls": null
+    },
+    "CUserLocal::OnMakerResult": {
+      "address": "0x9e01b2",
+      "direction": "clientbound",
+      "notes": "MAKER_RESULT (clientbound). CUserLocal::OnMakerResult @0x9e01b2 (size 0x634), session c0829805, GMSv87_4GB.exe.i64. The client reads i32 nResult first; only for nResult in {0,1} does it read i32 nMode and dispatch to the mode-1|2 create body, the mode-3 monster-crystal body (two reads, NO meso field) or the mode-4 disassemble body. A nResult > 1 is bodyless -- the guard compiles to `cmp 0/jz` + `cmp 1/jnz`, not a magnitude compare -- and a nMode outside 1..4 performs no reads. Entry authored for task-285 from this version's own decompilation; every Decode site address is the gms_v87 row of sections 3/4 of docs/tasks/task-285-maker-skill-crafting/wire-derivation.md, which found all eight versions field-for-field identical (hence no version gate). task-285.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nResult (read unconditionally; > 1 ends the body)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMode (arm selector)",
+          "guard": "nResult == 0 || nResult == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNoItemGain @0x9e04d9 (truthy SUPPRESSES the pair below)",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nTargetItemID @0x9e04f2",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2) && !bNoItemGain"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemCount @0x9e0503",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2) && !bNoItemGain"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNumUsedItem @0x9e0599 (loop length prefix)",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "used[i].nItemID @0x9e05b7",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2), loop count nNumUsedItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "used[i].nCount @0x9e05c4",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2), loop count nNumUsedItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNumUsedGem @0x9e063b (loop length prefix)",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "gem[i].nItemID @0x9e0648 (id only, no count)",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2), loop count nNumUsedGem"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bUsedCatalyst @0x9e06c0",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nCatalystItemID @0x9e06d0",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2) && bUsedCatalyst"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMesoCost @0x9e0749 (rendered as a loss by the client)",
+          "guard": "nResult == 0 || nResult == 1 && (nMode == 1 || nMode == 2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nTargetItemID @0x9e021d (crystal produced)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSourceItemID @0x9e022e (item consumed; Decode4 despite a byte-width local)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nDisassembledItemID @0x9e0350",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNumRewardItem @0x9e03b2 (loop length prefix)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reward[i].nItemID @0x9e03cb",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4, loop count nNumRewardItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reward[i].nCount @0x9e03d8",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4, loop count nNumRewardItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMesoCost @0x9e0478",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4"
+        }
+      ]
     }
   }
 }

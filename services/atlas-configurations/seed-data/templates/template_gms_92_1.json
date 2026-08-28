@@ -3518,6 +3518,19 @@
         ]
       },
       {
+        "opCode": "0xFA",
+        "writer": "MakerResult",
+        "fname": "CUserLocal::OnMakerResult",
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "CREATE_WITH_UPGRADE": 2,
+            "MONSTER_CRYSTAL": 3,
+            "DISASSEMBLE": 4
+          }
+        }
+      },
+      {
         "opCode": "0xFF",
         "writer": "UiLock",
         "fname": "CUserLocal::OnSetDirectionMode",

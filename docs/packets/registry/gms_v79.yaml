@@ -1428,6 +1428,7 @@
   direction: clientbound
   opcode: 203
   fname: CUserLocal::OnMakerResult
+  packet: character/clientbound/MakerResultCreate
   provenance: ida-discovered
   ida:
     address: 9132789

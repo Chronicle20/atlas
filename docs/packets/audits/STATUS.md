@@ -10,12 +10,12 @@ Tool: `07ab19794b87907f9ebb7355b3898e371a83e331c02243084caa45da2d4db733`
 - export gms_v61: `d50b21b2cfc509dfbcd635503a474ba71bf98f8c333e8c7f45bc46b7f137de85`
 - export gms_v72: `8d5a04486bbbc919084d6db28f677940b3681dc24b2af72481bdc3dc17cdf65f`
 - export gms_v79: `0d3f7e4dc6749467b02dd20d802f41becf408bffb7a41a4072709f8fa8f48ae3`
-- export gms_v83: `006143ac5d1bfe229b61185510602e9404b06b73538e8c81b0fcedadbe033af6`
-- export gms_v84: `794e0b8da20603d47ea76058b54793b206e432a0cf96e37d059ee2b1ae2c46fa`
-- export gms_v87: `f77c2c379af22ebf4912faeefd1c475d3ebc3a95710a78a043c10feed9023034`
-- export gms_v92: `b9e03868a1a82bb563e44383d71d092479b7dc1b172163ff0e51d8da8f833864`
-- export gms_v95: `8d6bff1c99ae0ae239164e53f002f15c037c95a16cffedd32fa2c9233766c564`
-- export jms_v185: `a564226ec84d90b1b75cb299e1ca1f7a30c57d369e7bd43bf9062b45386886b6`
+- export gms_v83: `990ecddde1337274a253a366e497cd70a5074d3ce688e39268d389079b3b6b44`
+- export gms_v84: `4c1b6a5e4081f511e4f3fa708ca5a0d36c49a25f66e8c0f6eaf5aad99467f18f`
+- export gms_v87: `6c2a037f9935ce6dacffc2886b23ce421b2dcca3352fa576f8e0aeca011b0891`
+- export gms_v92: `b0e6052379ad221dd7a2a0d0e613551424f41b0fe6114789d2c52d0782eb357a`
+- export gms_v95: `4e685a4d5575a226ab734087e6754ea642d7c8ce89a1ad144c18c096a9284bf1`
+- export jms_v185: `f9d9b2c74d94c12bde0cc098317c353d0db13c78572a3f8f292ecaaff3fa4e79`
 
 ## Clientbound
 
@@ -329,7 +329,7 @@ Tool: `07ab19794b87907f9ebb7355b3898e371a83e331c02243084caa45da2d4db733`
 | NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) |  | ⬜ | 0x0C5 | ✅ | 0x0E6 | ✅ | 0x0EE | ✅ | 0x104 | ❌ | 0x10B | ❌ | 0x115 | ❌ | 0x132 | ❌ | 0x13A | ✅ | 0x119 | ❌ |
 | SPAWN_KITE | CMessageBoxPool::OnMessageBoxEnterField | field/clientbound/FieldKiteSpawn (T1) | 0x0C6 | ✅ | 0x0D0 | 🟡ᶠ | 0x0F1 | 🟡ᶠ | 0x0F9 | 🟡ᶠ | 0x10F | ✅ | 0x10F | ✅ | 0x120 | ✅ | 0x13E | 🟡ᶠ | 0x146 | ✅ | 0x124 | ✅ |
 | UPDATE_LIMITED_INFO | CNpc::OnUpdateLimitedInfo |  |  | ⬜ | 0x0C6 | ❌ | 0x0E7 | ❌ | 0x0EF | ❌ | 0x105 | ❌ | 0x10C | ❌ | 0x116 | ❌ | 0x133 | ❌ | 0x13B | ❌ |  | ⬜ |
-| MAKER_RESULT | CUserLocal::OnMakerResult |  |  | ⬜ |  | ⬜ | 0x0C7 | ❌ | 0x0CB | ❌ | 0x0D9 | ❌ | 0x0DD | ❌ | 0x0E6 | ❌ | 0x0FA | ❌ | 0x0F8 | ❌ | 0x0E2 | ❌ |
+| MAKER_RESULT | CUserLocal::OnMakerResult |  |  | ⬜ |  | ⬜ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D9 | ✅ | 0x0DD | ✅ | 0x0E6 | ✅ | 0x0FA | ✅ | 0x0F8 | ✅ | 0x0E2 | ✅ |
 | NPC_SPECIAL_ACTION | CNpc::OnSetSpecialAction |  |  | ⬜ | 0x0C7 | ❌ | 0x0E8 | ❌ | 0x0F0 | ❌ | 0x106 | ❌ | 0x10D | ❌ | 0x117 | ❌ | 0x134 | ❌ | 0x13C | ❌ |  | ⬜ |
 | REMOVE_KITE | CMessageBoxPool::OnMessageBoxLeaveField | field/clientbound/FieldKiteDestroy (T1) | 0x0C7 | ✅ | 0x0D1 | 🟡ᶠ | 0x0F2 | 🟡ᶠ | 0x0FA | 🟡ᶠ | 0x110 | ✅ | 0x117 | ✅ | 0x121 | ✅ | 0x13F | 🟡ᶠ | 0x147 | ✅ | 0x125 | ✅ |
 | SET_NPC_SCRIPTABLE | CNpcPool::OnSetNpcScript; CNpcTemplate::OnSetNpcScript; sub_5EFDA2; sub_645E9C; sub_668A2D |  |  | ⬜ | 0x0C8 | ❌ | 0x0E9 | ❌ | 0x0F1 | ❌ | 0x107 | ❌ | 0x107 | ❌ | 0x118 | ❌ | 0x135 | ❌ | 0x13D | ❌ | 0x11C | ❌ |
@@ -1063,14 +1063,14 @@ Tool: `07ab19794b87907f9ebb7355b3898e371a83e331c02243084caa45da2d4db733`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 215 | 0 | 19 | 198 | 593 | 0 | 49.8% |
 | v61 | 284 | 0 | 56 | 229 | 456 | 0 | 49.9% |
-| v72 | 312 | 0 | 69 | 238 | 406 | 0 | 50.4% |
-| v79 | 358 | 0 | 68 | 234 | 365 | 0 | 54.2% |
-| v83 | 487 | 0 | 0 | 312 | 226 | 0 | 61.0% |
-| v84 | 462 | 0 | 0 | 318 | 245 | 0 | 59.2% |
-| v87 | 495 | 0 | 0 | 341 | 189 | 0 | 59.2% |
-| v92 | 76 | 0 | 147 | 663 | 139 | 0 | 8.6% |
-| v95 | 531 | 0 | 0 | 388 | 106 | 0 | 57.8% |
-| JMS185 | 458 | 0 | 0 | 371 | 196 | 0 | 55.2% |
+| v72 | 313 | 0 | 69 | 237 | 406 | 0 | 50.6% |
+| v79 | 359 | 0 | 68 | 233 | 365 | 0 | 54.4% |
+| v83 | 488 | 0 | 0 | 311 | 226 | 0 | 61.1% |
+| v84 | 463 | 0 | 0 | 317 | 245 | 0 | 59.4% |
+| v87 | 496 | 0 | 0 | 340 | 189 | 0 | 59.3% |
+| v92 | 77 | 0 | 147 | 662 | 139 | 0 | 8.7% |
+| v95 | 532 | 0 | 0 | 387 | 106 | 0 | 57.9% |
+| JMS185 | 459 | 0 | 0 | 370 | 196 | 0 | 55.4% |
 
 ## Conflicts
 

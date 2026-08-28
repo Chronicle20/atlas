@@ -4099,6 +4099,19 @@
         ]
       },
       {
+        "opCode": "0xE2",
+        "writer": "MakerResult",
+        "fname": "CUserLocal::OnMakerResult",
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "CREATE_WITH_UPGRADE": 2,
+            "MONSTER_CRYSTAL": 3,
+            "DISASSEMBLE": 4
+          }
+        }
+      },
+      {
         "opCode": "0xE5",
         "writer": "UiOpen",
         "fname": "CUserLocal::OnOpenUI",

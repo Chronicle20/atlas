@@ -45,6 +45,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -1200,6 +1201,18 @@ func handleStatusEventJukeboxEnd(sc server.Model, wp writer.Producer) func(l log
 	}
 }
 
+// backEffectWireByte resolves the semantic Effect to the client's raw wire
+// byte (0=show, 1=hide, per libs/atlas-packet/field/clientbound/set_back_effect.go).
+// This is the one place in the codebase where that resolution happens --
+// every Kafka body and REST surface upstream of it carries the semantic
+// value (task-281 DOM-25 fix).
+func backEffectWireByte(e beconst.Effect) byte {
+	if e == beconst.EffectHide {
+		return fieldcb.BackEffectHide
+	}
+	return fieldcb.BackEffectShow
+}
+
 // announceObjectState sends one (name, state) to s using the writer preferred
 // for kind, falling back to SetObjectState when the tenant routes no writer for
 // that opcode. The fallback is behaviourally identical: CField::OnSetObjectState
@@ -1341,7 +1354,7 @@ func handleStatusEventBackEffectSet(sc server.Model, wp writer.Producer) func(l 
 		l.Debugf("Back effect [%d] set in map [%d] instance [%s] for field [%d] page [%d] over [%d]ms.", e.Body.Effect, e.MapId, e.Instance, e.Body.FieldId, e.Body.PageId, e.Body.Duration)
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
-			return doorAnnounce(l, ctx, wp, fieldcb.SetBackEffectWriter, fieldcb.NewSetBackEffect(byte(e.Body.Effect), e.Body.FieldId, byte(e.Body.PageId), e.Body.Duration).Encode, s)
+			return doorAnnounce(l, ctx, wp, fieldcb.SetBackEffectWriter, fieldcb.NewSetBackEffect(backEffectWireByte(e.Body.Effect), e.Body.FieldId, byte(e.Body.PageId), e.Body.Duration).Encode, s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast back effect set to map [%d] instance [%s].", e.MapId, e.Instance)
@@ -1391,6 +1404,6 @@ func announceActiveBackEffects(l logrus.FieldLogger, ctx context.Context, wp wri
 		return
 	}
 	for _, e := range es {
-		_ = doorAnnounce(l, ctx, wp, fieldcb.SetBackEffectWriter, fieldcb.NewSetBackEffect(byte(e.Effect), e.FieldId, byte(e.PageId), 0).Encode, s)
+		_ = doorAnnounce(l, ctx, wp, fieldcb.SetBackEffectWriter, fieldcb.NewSetBackEffect(backEffectWireByte(e.Effect), e.FieldId, byte(e.PageId), 0).Encode, s)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -79,7 +80,7 @@ func ResetEnvironmentCommandProvider(transactionId uuid.UUID, f field.Model) mod
 	return producer.SingleMessageProvider(key, value)
 }
 
-func SetBackEffectCommandProvider(transactionId uuid.UUID, f field.Model, effect uint8, fieldId uint32, pageId uint8, duration uint32) model.Provider[[]kafka.Message] {
+func SetBackEffectCommandProvider(transactionId uuid.UUID, f field.Model, effect backeffect.Effect, fieldId uint32, pageId uint8, duration uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(f.MapId()))
 	value := &mapKafka.Command[mapKafka.SetBackEffectCommandBody]{
 		TransactionId: transactionId,

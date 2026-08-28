@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -20,7 +21,7 @@ func TestSetThenGetActive(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), ten)
 
 	p := NewProcessor(l, ctx)
-	entry := BackEffectEntry{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000}
+	entry := BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000}
 	p.Set(f, entry)
 
 	active := p.GetActive(f)
@@ -36,14 +37,14 @@ func TestSetReplacesSamePageInPlace(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), ten)
 
 	p := NewProcessor(l, ctx)
-	p.Set(f, BackEffectEntry{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000})
-	p.Set(f, BackEffectEntry{Effect: 0, FieldId: 100000000, PageId: 2, Duration: 1000})
-	p.Set(f, BackEffectEntry{Effect: 1, FieldId: 100000000, PageId: 1, Duration: 250})
+	p.Set(f, BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000})
+	p.Set(f, BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 2, Duration: 1000})
+	p.Set(f, BackEffectEntry{Effect: beconst.EffectHide, FieldId: 100000000, PageId: 1, Duration: 250})
 
 	active := p.GetActive(f)
 	require.Len(t, active, 2)
 	require.Equal(t, byte(1), active[0].PageId)
-	require.Equal(t, byte(1), active[0].Effect)
+	require.Equal(t, beconst.EffectHide, active[0].Effect)
 	require.Equal(t, uint32(250), active[0].Duration)
 	require.Equal(t, byte(2), active[1].PageId)
 }
@@ -56,9 +57,9 @@ func TestClearRemovesEveryPage(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), ten)
 
 	p := NewProcessor(l, ctx)
-	p.Set(f, BackEffectEntry{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000})
-	p.Set(f, BackEffectEntry{Effect: 0, FieldId: 100000000, PageId: 2, Duration: 1000})
-	p.Set(f, BackEffectEntry{Effect: 0, FieldId: 100000000, PageId: 3, Duration: 1000})
+	p.Set(f, BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000})
+	p.Set(f, BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 2, Duration: 1000})
+	p.Set(f, BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 3, Duration: 1000})
 
 	require.True(t, p.Clear(f))
 	require.Len(t, p.GetActive(f), 0)
@@ -79,7 +80,7 @@ func TestBackEffectIsTenantIsolated(t *testing.T) {
 	pA := NewProcessor(l, ctxA)
 	pB := NewProcessor(l, ctxB)
 
-	pA.Set(f, BackEffectEntry{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000})
+	pA.Set(f, BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000})
 
 	require.Len(t, pA.GetActive(f), 1)
 	require.Len(t, pB.GetActive(f), 0)

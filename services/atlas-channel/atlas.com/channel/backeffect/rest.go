@@ -1,14 +1,18 @@
 package backeffect
 
+import (
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
+)
+
 // RestModel is the channel's projection of the atlas-maps back-effect
 // resource. Field names and GetName() below must match
 // services/atlas-maps/atlas.com/maps/map/backeffect/rest.go exactly.
 type RestModel struct {
-	Id       string `json:"-"`
-	Effect   uint8  `json:"effect"`
-	FieldId  uint32 `json:"fieldId"`
-	PageId   uint8  `json:"pageId"`
-	Duration uint32 `json:"duration"`
+	Id       string         `json:"-"`
+	Effect   beconst.Effect `json:"effect"`
+	FieldId  uint32         `json:"fieldId"`
+	PageId   uint8          `json:"pageId"`
+	Duration uint32         `json:"duration"`
 }
 
 func (m RestModel) GetID() string {

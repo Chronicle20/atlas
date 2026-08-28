@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -1735,7 +1736,7 @@ func (m *mapCommandProcessorMock) ResetEnvironment(transactionId uuid.UUID, f fi
 	return nil
 }
 
-func (m *mapCommandProcessorMock) SetBackEffect(_ uuid.UUID, _ field.Model, _ uint8, _ uint32, _ uint8, _ uint32) error {
+func (m *mapCommandProcessorMock) SetBackEffect(_ uuid.UUID, _ field.Model, _ backeffect.Effect, _ uint32, _ uint8, _ uint32) error {
 	return nil
 }
 

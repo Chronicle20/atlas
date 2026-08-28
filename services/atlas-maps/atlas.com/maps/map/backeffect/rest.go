@@ -1,13 +1,17 @@
 package backeffect
 
-import "strconv"
+import (
+	"strconv"
+
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
+)
 
 type RestModel struct {
-	Id       string `json:"-"`
-	Effect   uint8  `json:"effect"`
-	FieldId  uint32 `json:"fieldId"`
-	PageId   uint8  `json:"pageId"`
-	Duration uint32 `json:"duration"`
+	Id       string         `json:"-"`
+	Effect   beconst.Effect `json:"effect"`
+	FieldId  uint32         `json:"fieldId"`
+	PageId   uint8          `json:"pageId"`
+	Duration uint32         `json:"duration"`
 }
 
 func (m RestModel) GetID() string {
@@ -26,7 +30,7 @@ func (m *RestModel) SetID(idStr string) error {
 func Transform(e BackEffectEntry) (RestModel, error) {
 	return RestModel{
 		Id:       strconv.Itoa(int(e.PageId)),
-		Effect:   uint8(e.Effect),
+		Effect:   e.Effect,
 		FieldId:  e.FieldId,
 		PageId:   uint8(e.PageId),
 		Duration: e.Duration,

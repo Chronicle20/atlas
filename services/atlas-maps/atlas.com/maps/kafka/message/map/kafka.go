@@ -3,6 +3,7 @@ package _map
 import (
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -91,10 +92,10 @@ type EnvironmentReset struct {
 }
 
 type BackEffectSet struct {
-	Effect   uint8  `json:"effect"`
-	FieldId  uint32 `json:"fieldId"`
-	PageId   uint8  `json:"pageId"`
-	Duration uint32 `json:"duration"`
+	Effect   backeffect.Effect `json:"effect"`
+	FieldId  uint32            `json:"fieldId"`
+	PageId   uint8             `json:"pageId"`
+	Duration uint32            `json:"duration"`
 }
 
 type BackEffectClear struct{}

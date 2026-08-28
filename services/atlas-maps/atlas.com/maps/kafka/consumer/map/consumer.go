@@ -15,6 +15,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -168,8 +169,8 @@ func handleSetBackEffectCommand() func(l logrus.FieldLogger, ctx context.Context
 			return
 		}
 
-		if c.Body.Effect != 0 && c.Body.Effect != 1 {
-			l.Warnf("Rejecting set back effect command with invalid effect [%d] for map [%d] instance [%s].", c.Body.Effect, c.MapId, c.Instance)
+		if c.Body.Effect != beconst.EffectShow && c.Body.Effect != beconst.EffectHide {
+			l.Warnf("Rejecting set back effect command with invalid effect [%s] for map [%d] instance [%s].", c.Body.Effect, c.MapId, c.Instance)
 			return
 		}
 
@@ -185,7 +186,7 @@ func handleSetBackEffectCommand() func(l logrus.FieldLogger, ctx context.Context
 			Duration: c.Body.Duration,
 		}
 
-		l.Debugf("Received set back effect command for map [%d] instance [%s] page [%d] effect [%d] duration [%d].", c.MapId, c.Instance, c.Body.PageId, c.Body.Effect, c.Body.Duration)
+		l.Debugf("Received set back effect command for map [%d] instance [%s] page [%d] effect [%s] duration [%d].", c.MapId, c.Instance, c.Body.PageId, c.Body.Effect, c.Body.Duration)
 
 		backeffect.NewProcessor(l, ctx).Set(f, entry)
 

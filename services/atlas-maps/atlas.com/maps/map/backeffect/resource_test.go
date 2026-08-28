@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -58,8 +59,8 @@ func TestGetBackEffectsInMap_ReturnsEntries(t *testing.T) {
 
 	f := field.NewBuilder(1, 1, 100000000).Build()
 	p := NewProcessor(logrus.New(), ctx)
-	p.Set(f, BackEffectEntry{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000})
-	p.Set(f, BackEffectEntry{Effect: 1, FieldId: 100000000, PageId: 2, Duration: 0})
+	p.Set(f, BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000})
+	p.Set(f, BackEffectEntry{Effect: beconst.EffectHide, FieldId: 100000000, PageId: 2, Duration: 0})
 
 	srv := httptest.NewServer(setupBackEffectRouter())
 	defer srv.Close()
@@ -84,13 +85,13 @@ func TestGetBackEffectsInMap_ReturnsEntries(t *testing.T) {
 
 	var attrs0 RestModel
 	require.NoError(t, json.Unmarshal(doc.Data.DataArray[0].Attributes, &attrs0))
-	assert.EqualValues(t, 0, attrs0.Effect)
+	assert.Equal(t, beconst.EffectShow, attrs0.Effect)
 	assert.EqualValues(t, 1000, attrs0.Duration)
 
 	assert.Equal(t, "2", doc.Data.DataArray[1].ID)
 	var attrs1 RestModel
 	require.NoError(t, json.Unmarshal(doc.Data.DataArray[1].Attributes, &attrs1))
-	assert.EqualValues(t, 1, attrs1.Effect)
+	assert.Equal(t, beconst.EffectHide, attrs1.Effect)
 }
 
 // TestGetBackEffectsInMap_EmptyIsTwoHundred asserts the deviation from PRD

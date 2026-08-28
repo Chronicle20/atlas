@@ -14,9 +14,26 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
+
+// parseBackEffect maps the GM chat command's user-facing effect digit
+// (0=show, 1=hide, per the @backeffect syntax) to the semantic Effect
+// carried across every domain, Kafka, and REST boundary from here on. This
+// is the one place in atlas-messages where the raw digit is resolved --
+// everything downstream carries the semantic value.
+func parseBackEffect(s string) (backeffect.Effect, bool) {
+	switch s {
+	case "0":
+		return backeffect.EffectShow, true
+	case "1":
+		return backeffect.EffectHide, true
+	default:
+		return "", false
+	}
+}
 
 func BackEffectCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 	return func(_ context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
@@ -36,8 +53,8 @@ func BackEffectCommandProducer(_ logrus.FieldLogger) func(_ context.Context) fun
 				return nil, false
 			}
 
-			effect, err := strconv.ParseUint(match[2], 10, 8)
-			if err != nil {
+			effect, ok := parseBackEffect(match[2])
+			if !ok {
 				return nil, false
 			}
 
@@ -51,14 +68,14 @@ func BackEffectCommandProducer(_ logrus.FieldLogger) func(_ context.Context) fun
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
-					return producer.ProviderImpl(l)(ctx)(mapKafka.EnvCommandTopicMap)(setBackEffectCommandProvider(f, uint8(pageId), uint8(effect), uint32(durationMs)))
+					return producer.ProviderImpl(l)(ctx)(mapKafka.EnvCommandTopicMap)(setBackEffectCommandProvider(f, uint8(pageId), effect, uint32(durationMs)))
 				}
 			}, true
 		}
 	}
 }
 
-func setBackEffectCommandProvider(f field.Model, pageId uint8, effect uint8, durationMs uint32) model.Provider[[]kafka.Message] {
+func setBackEffectCommandProvider(f field.Model, pageId uint8, effect backeffect.Effect, durationMs uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(f.MapId()))
 	value := &mapKafka.Command[mapKafka.SetBackEffectCommandBody]{
 		TransactionId: uuid.New(),

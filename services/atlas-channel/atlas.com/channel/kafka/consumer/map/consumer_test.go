@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -1357,7 +1358,7 @@ func TestHandleStatusEventBackEffectSet_BroadcastsToField(t *testing.T) {
 		ChannelId: channel.Id(0),
 		MapId:     _map.Id(100000000),
 		Instance:  uuid.Nil,
-		Body:      _map3.BackEffectSet{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000},
+		Body:      _map3.BackEffectSet{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000},
 	}
 	handleStatusEventBackEffectSet(sc, nil)(l, ctx, e)
 
@@ -1370,8 +1371,8 @@ func TestHandleStatusEventBackEffectSet_BroadcastsToField(t *testing.T) {
 			t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.SetBackEffectWriter)
 		}
 		m := decodeSetBackEffect(t, c.Body)
-		if m.Effect() != 0 {
-			t.Fatalf("effect = %d, want 0", m.Effect())
+		if m.Effect() != fieldcb.BackEffectShow {
+			t.Fatalf("effect = %d, want %d", m.Effect(), fieldcb.BackEffectShow)
 		}
 		if m.FieldId() != 100000000 {
 			t.Fatalf("fieldId = %d, want 100000000", m.FieldId())
@@ -1405,10 +1406,9 @@ func TestHandleStatusEventBackEffectSet_IgnoresOtherChannel(t *testing.T) {
 		ChannelId: channel.Id(1),
 		MapId:     _map.Id(100000000),
 		Instance:  uuid.Nil,
-		Body:      _map3.BackEffectSet{Effect: 0, FieldId: 100000000, PageId: 1, Duration: 1000},
+		Body:      _map3.BackEffectSet{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000},
 	}
 	handleStatusEventBackEffectSet(sc, nil)(l, ctx, e)
-
 	if calls := rec.snapshot(); len(calls) != 0 {
 		t.Fatalf("announce count = %d, want 0", len(calls))
 	}
@@ -1476,8 +1476,8 @@ func TestAnnounceActiveBackEffects_ReplaysWithZeroDuration(t *testing.T) {
 	f := newTestField()
 
 	backEffectServer(t, http.StatusOK, `{"data":[`+
-		`{"type":"backEffect","id":"1","attributes":{"effect":0,"fieldId":100000000,"pageId":1,"duration":1000}},`+
-		`{"type":"backEffect","id":"2","attributes":{"effect":1,"fieldId":100000000,"pageId":2,"duration":500}}`+
+		`{"type":"backEffect","id":"1","attributes":{"effect":"SHOW","fieldId":100000000,"pageId":1,"duration":1000}},`+
+		`{"type":"backEffect","id":"2","attributes":{"effect":"HIDE","fieldId":100000000,"pageId":2,"duration":500}}`+
 		`]}`)
 
 	restore, rec := stubDoorAnnounceForBackEffect(t)
@@ -1494,16 +1494,16 @@ func TestAnnounceActiveBackEffects_ReplaysWithZeroDuration(t *testing.T) {
 	if calls[0].Writer != fieldcb.SetBackEffectWriter {
 		t.Fatalf("writer = %s, want %s", calls[0].Writer, fieldcb.SetBackEffectWriter)
 	}
-	if first.Effect() != 0 || first.FieldId() != 100000000 || first.PageId() != 1 || first.Duration() != 0 {
-		t.Fatalf("first = %+v, want {Effect:0 FieldId:100000000 PageId:1 Duration:0}", first)
+	if first.Effect() != fieldcb.BackEffectShow || first.FieldId() != 100000000 || first.PageId() != 1 || first.Duration() != 0 {
+		t.Fatalf("first = %+v, want {Effect:show FieldId:100000000 PageId:1 Duration:0}", first)
 	}
 
 	second := decodeSetBackEffect(t, calls[1].Body)
 	if calls[1].Writer != fieldcb.SetBackEffectWriter {
 		t.Fatalf("writer = %s, want %s", calls[1].Writer, fieldcb.SetBackEffectWriter)
 	}
-	if second.Effect() != 1 || second.FieldId() != 100000000 || second.PageId() != 2 || second.Duration() != 0 {
-		t.Fatalf("second = %+v, want {Effect:1 FieldId:100000000 PageId:2 Duration:0}", second)
+	if second.Effect() != fieldcb.BackEffectHide || second.FieldId() != 100000000 || second.PageId() != 2 || second.Duration() != 0 {
+		t.Fatalf("second = %+v, want {Effect:hide FieldId:100000000 PageId:2 Duration:0}", second)
 	}
 }
 

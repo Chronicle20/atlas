@@ -1,6 +1,7 @@
 package backeffect
 
 import (
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -11,7 +12,7 @@ type FieldKey struct {
 }
 
 type BackEffectEntry struct {
-	Effect  byte
+	Effect  beconst.Effect
 	FieldId uint32
 	PageId  byte
 	// Duration is the client's fade length in milliseconds, as sent in the

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -102,7 +103,7 @@ func TestSetBackEffectCommandProvider(t *testing.T) {
 	instanceId := uuid.New()
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).SetInstance(instanceId).Build()
 
-	msgs, err := SetBackEffectCommandProvider(transactionId, f, 0, 100000000, 1, 1000)()
+	msgs, err := SetBackEffectCommandProvider(transactionId, f, backeffect.EffectShow, 100000000, 1, 1000)()
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
 	assert.Equal(t, producer.CreateKey(100000000), msgs[0].Key)
@@ -116,7 +117,7 @@ func TestSetBackEffectCommandProvider(t *testing.T) {
 	assert.Equal(t, channel.Id(1), c.ChannelId)
 	assert.Equal(t, _map.Id(100000000), c.MapId)
 	assert.Equal(t, instanceId, c.Instance)
-	assert.Equal(t, uint8(0), c.Body.Effect)
+	assert.Equal(t, backeffect.EffectShow, c.Body.Effect)
 	assert.Equal(t, uint32(100000000), c.Body.FieldId)
 	assert.Equal(t, uint8(1), c.Body.PageId)
 	assert.Equal(t, uint32(1000), c.Body.Duration)

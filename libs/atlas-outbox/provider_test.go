@@ -20,6 +20,7 @@ import (
 type localProvider func(token topic.Token) kafkaproducer.MessageProducer
 
 func TestEmitProvider_EnqueuesThroughEmitShapedLoop(t *testing.T) {
+	t.Setenv("EVENT_TOPIC_X", "EVENT_TOPIC_X")
 	db := bridgeDb(t)
 	ctx := tenantCtx(t)
 

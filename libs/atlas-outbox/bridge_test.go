@@ -57,21 +57,22 @@ func TestEnqueueBuffer_ResolvesTokenAndPreservesBytes(t *testing.T) {
 	require.Equal(t, []byte("k2"), ents[1].MessageKey)
 }
 
-func TestEnqueueBuffer_UnsetTokenFallsThroughToToken(t *testing.T) {
+func TestEnqueueBuffer_UnsetTokenIsAnError(t *testing.T) {
 	db := bridgeDb(t)
 	contents := map[topic.Token][]kafka.Message{
 		"EVENT_TOPIC_UNSET": {{Key: []byte("k"), Value: []byte("v")}},
 	}
-	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
+	require.Error(t, db.Transaction(func(tx *gorm.DB) error {
 		return outbox.EnqueueBuffer(logrus.New(), tenantCtx(t), tx, contents)
 	}))
-	var ent outbox.Entity
-	require.NoError(t, db.First(&ent).Error)
-	require.Equal(t, "EVENT_TOPIC_UNSET", ent.Topic)
+	var ents []outbox.Entity
+	require.NoError(t, db.Find(&ents).Error)
+	require.Empty(t, ents)
 }
 
 // FR-2.2 acceptance: enqueued header set == the direct path's decorator fold.
 func TestEnqueueBuffer_HeaderParityWithDirectPath(t *testing.T) {
+	t.Setenv("T", "T")
 	db := bridgeDb(t)
 	ctx := tenantCtx(t)
 
@@ -120,6 +121,7 @@ func TestEnqueueBuffer_HeaderParityWithDirectPath(t *testing.T) {
 // environment. Assert parity through the exported bridge entry point — the
 // path every caller actually takes.
 func TestEnqueueBuffer_HeaderParityWithDirectPath_IncludesEnvironment(t *testing.T) {
+	t.Setenv("T", "T")
 	db := bridgeDb(t)
 	ctx := env.WithContext(tenantCtx(t), env.Id("pr-123"))
 
@@ -169,6 +171,7 @@ func TestEnqueueBuffer_HeaderParityWithDirectPath_IncludesEnvironment(t *testing
 // TestEnvHeaderDecoratorEmitsNothingForTheLegacyEnvironment in
 // libs/atlas-kafka/producer/header_test.go.
 func TestEnqueueBuffer_NoEnvironmentHeaderForLegacyEnvironment(t *testing.T) {
+	t.Setenv("T", "T")
 	db := bridgeDb(t)
 	ctx := tenantCtx(t)
 

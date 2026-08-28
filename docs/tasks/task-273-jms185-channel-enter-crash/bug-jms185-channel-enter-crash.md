@@ -620,3 +620,93 @@ is dropped without a single `Decode` call.
 Once the throwing handler is named, the fix is in that writer's JMS 185 branch
 under `libs/atlas-packet/`, plus a byte-fixture test pinning the client's read
 order. Do not dispatch an implementer before the breakpoint identifies it.
+
+## Round 7 — NAMED: `CharacterKeyMap` (0x170) is 20 bytes short for JMS 185
+
+Round 6 predicted an under-length packet whose handler over-reads and throws.
+It is `CharacterKeyMap` 0x170, and it was found statically — no breakpoint
+needed, because the burst ordering alone narrows the candidate set to the
+packets that arrive **between** pool construction and the first pooled packet.
+
+### The ordering constraint round 6 left on the table
+
+The fault lands on `SpawnNPC` 0x116 / `SpawnNPCRequestController` 0x118, sent
+at 13:20:53.395–.400. The throw must therefore happen **before** them. That
+retires most of round 6's shortlist: `CharacterSkillMacro` 0x7A (.401),
+`WorldMessage` 0x3E (.412) and `StatChanged` 0x1D (.599) all arrive *after* the
+crashing packet, and cannot be the destroyer. The surviving candidates are the
+tail of `SetField` 0x7B, `BuddyOperation` 0x39, `CharacterBuffGive` 0x1E, and
+`CharacterKeyMap`/`AutoHp`/`AutoMp` 0x170–0x172.
+
+### The client (JMS 185, IDB `a977912e`)
+
+`CFuncKeyMappedMan::OnPacket` @0x5e7a85 routes 0x170 → `OnInit` @0x5e79aa:
+
+```
+if ( CInPacket::Decode1(iPacket) )      /* reset-to-default path */
+  ...load config / DefaultFuncKeyMap...
+else
+{
+  v4 = this + 4;
+  v5 = 94;                              /* <-- 94 entries */
+  do { FUNCKEY_MAPPED::Decode(v4++, iPacket); --v5; } while ( v5 );
+}
+...
+memcpy(this + 474, v3, 0x1D6u);         /* 0x1D6 = 470 = 94 * 5 */
+```
+
+`FUNCKEY_MAPPED::Decode` @0x510948 is `CInPacket::DecodeBuffer(iPacket, this, 5)`.
+`DecodeBuffer` @0x436da6 throws on short read — the same `ZException(38)` as
+`Decode1`:
+
+```
+v5 = this->m_uLength - m_uOffset;                    /*0x436dc9*/
+if ( v5 < uSize ) { pExceptionObject[0] = 38;        /*0x436de0*/
+  _CxxThrowException(pExceptionObject, &_TI1_AVZException__); }   /*0x436de7*/
+```
+
+Crucially, JMS 185's `OnInit` has **no length guard**. GMS v95 does:
+`CFuncKeyMappedMan::OnInit` @0x568c30 reads `89` entries and short-circuits with
+`if ( iPacket->m_uDataLen < 0x1BDu || v3 )` (0x1BD = 445 = 89*5) — a short packet
+there falls into the default-config path instead of throwing. That is why the
+identical codec has never crashed a GMS client.
+
+### The server
+
+`libs/atlas-packet/character/clientbound/keymap.go:20` — `keyMapEntryCount`
+returns 89 for GMS < 83 and **90 for everything else**, including JMS. So for
+`jms_v185` we emit `1 + 90*5 = 451` body bytes where the client consumes
+`1 + 94*5 = 471`. Entry 91 over-reads by 5, `DecodeBuffer` throws
+`ZException(38)`, `CWvsApp::WindowProc`'s catch funclet calls `sub_AE8B31`, every
+field pool global is nulled while `g_pStage` keeps the live `CField` — and the
+next pooled packet (0x116/0x118, or a mob/drop/reactor on an NPC-less map)
+dereferences null. **Short by exactly 20 bytes.**
+
+This closes every open observation from rounds 3–6 with no remaining slack:
+0x170 is sent at .392–.393, before the first pooled packet at .395, and it is
+the only packet in that window whose client handler reads a fixed count that
+our codec does not match.
+
+`0x171`/`0x172` in the same window are clean: `OnPetConsumeItemInit` @0x5e7a23 and
+`OnPetConsumeMPItemInit` @0x5e7a49 each read exactly one `Decode4`, and
+`keymap_auto_hp.go` / `keymap_auto_mp.go` each write exactly one int32.
+
+### Fix
+
+- `libs/atlas-packet/character/clientbound/keymap.go` — extend
+  `keyMapEntryCount` with a JMS arm returning **94**, using the repo's
+  region+version idiom (`t.Region() == "JMS"`, cf. `reactor/serverbound/hit.go:45`),
+  never a raw `> N`. Both `Encode` and `Decode` already consume the shared
+  helper, so both sides move together. Keep GMS arms byte-identical: 89 for
+  GMS < 83, 90 for GMS >= 83 (over-send vs the client's 89 is the documented
+  benign case, and GMS guards on `m_uDataLen` anyway).
+- `libs/atlas-packet/character/clientbound/keymap_test.go` — add a `jms_v185`
+  byte-fixture asserting the encoded body is `1 + 94*5 = 471` bytes and that
+  Decode round-trips it; keep the existing GMS fixtures unchanged.
+
+### Not yet answered (round 7)
+
+- Whether any *other* JMS-185 divergence lurks later in the burst (0x7A, 0x3E,
+  0x1D were never cleared — they were only shown to be too late to be *this*
+  crash). Re-test after the fix; if the client survives to the field, they were
+  fine.

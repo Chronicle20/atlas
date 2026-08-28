@@ -1,6 +1,10 @@
 package consumable
 
 import (
+	"atlas-consumables/character/buff"
+	"atlas-consumables/character/buff/stat"
+	"atlas-consumables/compartment"
+	"atlas-consumables/kafka/message/consumable"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,16 +19,12 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 
-	"atlas-consumables/character/buff"
-	"atlas-consumables/character/buff/stat"
-	"atlas-consumables/compartment"
-	"atlas-consumables/kafka/message/consumable"
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	item2 "github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
 )
 
 // lockedBuffs builds a single unexpired STOP_PORTION buff using the package's

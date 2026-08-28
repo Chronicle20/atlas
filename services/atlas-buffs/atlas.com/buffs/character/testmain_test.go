@@ -1,6 +1,7 @@
 package character
 
 import (
+	character2 "atlas-buffs/kafka/message/character"
 	"os"
 	"testing"
 
@@ -16,6 +17,8 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(character2.EnvEventStatusTopic), string(character2.EnvEventStatusTopic))
+	_ = os.Setenv(string(character2.EnvCommandTopicCharacter), string(character2.EnvCommandTopicCharacter))
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

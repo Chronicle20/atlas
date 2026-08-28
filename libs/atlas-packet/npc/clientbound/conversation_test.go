@@ -225,6 +225,29 @@ func TestAskSlideMenuConversationDetailEncode(t *testing.T) {
 	}
 }
 
+// TestAskTextConversationDetailEncodeV84 verifies the ASK_TEXT arm's wire
+// order against GMS_v84.1_U_DEVM.i64: CScriptMan::OnScriptMessage
+// (0x76850a) decodes dialogType==3 into CScriptMan::OnAskText (0x768b6b),
+// which reads DecodeStr (message, 0x768b86), DecodeStr (def, 0x768b96),
+// Decode2 (min, 0x768bab), Decode2 (max, 0x768bbd) — string, string, int16,
+// int16, matching AskTextConversationDetail.Encode unchanged. No version
+// gate: v84 read order is identical to the already-verified gms_v83 cell.
+// packet-audit:verify packet=npc/clientbound/NpcAskTextConversationDetail version=gms_v84 ida=0x768b6b
+func TestAskTextConversationDetailEncodeV84(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 84, 1)
+	d := &AskTextConversationDetail{Message: "Password!", Def: "", Min: uint16(1), Max: uint16(32)}
+	got := d.Encode(l, ctx)(nil)
+
+	want := asciiBytes("Password!")
+	want = append(want, asciiBytes("")...)
+	want = append(want, 0x01, 0x00) // Min=1, little-endian uint16
+	want = append(want, 0x20, 0x00) // Max=32, little-endian uint16
+	if !bytesEqual(got, want) {
+		t.Errorf("AskText encode mismatch\n got=%v\nwant=%v", got, want)
+	}
+}
+
 func bytesEqual(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false

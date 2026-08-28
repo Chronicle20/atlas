@@ -1019,7 +1019,7 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | npc/clientbound/NpcAskQuizConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskSlideMenuConversationDetail (T1) |  |  | ⬜ |  | ❌ |  | ❌ |  | ⬜ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | npc/clientbound/NpcAskSpeedQuizConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskTextConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskTextConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskYesNoConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcNpcConversation (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcSayConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1068,7 +1068,7 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | v72 | 309 | 0 | 69 | 240 | 409 | 0 | 50.0% |
 | v79 | 355 | 0 | 68 | 236 | 368 | 0 | 53.9% |
 | v83 | 484 | 0 | 0 | 315 | 228 | 0 | 60.6% |
-| v84 | 458 | 0 | 0 | 322 | 247 | 0 | 58.7% |
+| v84 | 459 | 0 | 0 | 321 | 247 | 0 | 58.8% |
 | v87 | 492 | 0 | 0 | 344 | 191 | 0 | 58.9% |
 | v92 | 71 | 0 | 147 | 668 | 141 | 0 | 8.0% |
 | v95 | 528 | 0 | 0 | 391 | 108 | 0 | 57.5% |

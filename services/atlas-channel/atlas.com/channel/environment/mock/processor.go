@@ -7,14 +7,14 @@ import (
 )
 
 type ProcessorMock struct {
-	GetAllFunc func(f field.Model) ([]environment.RestModel, error)
+	GetAllFunc func(f field.Model) ([]environment.Model, error)
 }
 
 var _ environment.Processor = (*ProcessorMock)(nil)
 
-func (m *ProcessorMock) GetAll(f field.Model) ([]environment.RestModel, error) {
+func (m *ProcessorMock) GetAll(f field.Model) ([]environment.Model, error) {
 	if m.GetAllFunc != nil {
 		return m.GetAllFunc(f)
 	}
-	return []environment.RestModel{}, nil
+	return []environment.Model{}, nil
 }

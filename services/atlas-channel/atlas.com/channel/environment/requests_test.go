@@ -26,7 +26,7 @@ func newTestTenant(t *testing.T) tenant.Model {
 }
 
 // TestGetAll_ParsesCollection verifies GetAll decodes a JSON:API collection
-// of environment-objects resources into a slice of RestModel, preserving
+// of environment-objects resources into a slice of Model, preserving
 // order.
 func TestGetAll_ParsesCollection(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,12 +46,12 @@ func TestGetAll_ParsesCollection(t *testing.T) {
 	ms, err := NewProcessor(logrus.New(), ctx).GetAll(f)
 	require.NoError(t, err)
 	require.Len(t, ms, 2)
-	require.Equal(t, "OBSTACLE", ms[0].Kind)
-	require.Equal(t, "obs3", ms[0].Name)
-	require.Equal(t, uint32(2), ms[0].State)
-	require.Equal(t, "ENVIRONMENT", ms[1].Kind)
-	require.Equal(t, "gate01", ms[1].Name)
-	require.Equal(t, uint32(1), ms[1].State)
+	require.Equal(t, "OBSTACLE", ms[0].Kind())
+	require.Equal(t, "obs3", ms[0].Name())
+	require.Equal(t, uint32(2), ms[0].State())
+	require.Equal(t, "ENVIRONMENT", ms[1].Kind())
+	require.Equal(t, "gate01", ms[1].Name())
+	require.Equal(t, uint32(1), ms[1].State())
 }
 
 // TestGetAll_EmptyCollection verifies GetAll returns an empty, non-nil-error

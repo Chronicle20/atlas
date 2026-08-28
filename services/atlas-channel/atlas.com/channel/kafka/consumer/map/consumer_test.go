@@ -1060,6 +1060,17 @@ func TestHandleStatusEventEnvironmentReset_EmptyCleared(t *testing.T) {
 	}
 }
 
+// envModel builds an environment.Model via environment.Extract, since Model's
+// fields are unexported and this package is outside environment.
+func envModel(t *testing.T, kind, name string, state uint32) environment.Model {
+	t.Helper()
+	m, err := environment.Extract(environment.RestModel{Kind: kind, Name: name, State: state})
+	if err != nil {
+		t.Fatalf("environment.Extract: %v", err)
+	}
+	return m
+}
+
 // assertWriterNames fails the test unless got exactly equals want, in order.
 func assertWriterNames(t *testing.T, got, want []string) {
 	t.Helper()
@@ -1080,10 +1091,10 @@ func TestAnnounceEnvironmentState_ObstaclesThenEnvironment(t *testing.T) {
 	restore, captured := stubDoorAnnounceCapture(t)
 	defer restore()
 
-	entries := []environment.RestModel{
-		{Kind: "OBSTACLE", Name: "a", State: 1},
-		{Kind: "ENVIRONMENT", Name: "b", State: 2},
-		{Kind: "OBSTACLE", Name: "c", State: 3},
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
 	}
 	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
 
@@ -1099,10 +1110,10 @@ func TestAnnounceEnvironmentState_ListWriterUnrouted(t *testing.T) {
 	restore, captured := stubDoorAnnounceCapture(t)
 	defer restore()
 
-	entries := []environment.RestModel{
-		{Kind: "OBSTACLE", Name: "a", State: 1},
-		{Kind: "ENVIRONMENT", Name: "b", State: 2},
-		{Kind: "OBSTACLE", Name: "c", State: 3},
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
 	}
 	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter)
 
@@ -1118,10 +1129,10 @@ func TestAnnounceEnvironmentState_NoObstacleWritersAtAll(t *testing.T) {
 	restore, captured := stubDoorAnnounceCapture(t)
 	defer restore()
 
-	entries := []environment.RestModel{
-		{Kind: "OBSTACLE", Name: "a", State: 1},
-		{Kind: "ENVIRONMENT", Name: "b", State: 2},
-		{Kind: "OBSTACLE", Name: "c", State: 3},
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
 	}
 	wp := routed(fieldcb.SetObjectStateWriter)
 
@@ -1139,7 +1150,7 @@ func TestAnnounceEnvironmentState_Empty(t *testing.T) {
 
 	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
 
-	announceEnvironmentState(l, ctx, wp, []environment.RestModel{}, session.Model{})
+	announceEnvironmentState(l, ctx, wp, []environment.Model{}, session.Model{})
 
 	if len(*captured) != 0 {
 		t.Fatalf("captured writer names = %v, want none", *captured)
@@ -1153,8 +1164,8 @@ func TestAnnounceEnvironmentState_OnlyEnvironment(t *testing.T) {
 	restore, captured := stubDoorAnnounceCapture(t)
 	defer restore()
 
-	entries := []environment.RestModel{
-		{Kind: "ENVIRONMENT", Name: "b", State: 2},
+	entries := []environment.Model{
+		envModel(t, "ENVIRONMENT", "b", 2),
 	}
 	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
 
@@ -1170,9 +1181,9 @@ func TestAnnounceEnvironmentState_BadKindSkipped(t *testing.T) {
 	restore, captured := stubDoorAnnounceCapture(t)
 	defer restore()
 
-	entries := []environment.RestModel{
-		{Kind: "GATE", Name: "x", State: 1},
-		{Kind: "ENVIRONMENT", Name: "b", State: 2},
+	entries := []environment.Model{
+		envModel(t, "GATE", "x", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
 	}
 	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
 

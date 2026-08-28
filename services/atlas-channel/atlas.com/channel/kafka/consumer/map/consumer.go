@@ -1202,18 +1202,18 @@ func announceObjectState(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 // insertion order atlas-maps preserved. Replay order is observable to the
 // client. gms_48_1 routes no obstacle list writer, so the obstacle branch falls
 // back to one announceObjectState per obstacle.
-func announceEnvironmentState(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, entries []environment.RestModel, s session.Model) {
+func announceEnvironmentState(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, entries []environment.Model, s session.Model) {
 	obstacles := make([]fieldcb.ObstacleState, 0, len(entries))
-	obstacleNames := make([]environment.RestModel, 0, len(entries))
-	others := make([]environment.RestModel, 0, len(entries))
+	obstacleNames := make([]environment.Model, 0, len(entries))
+	others := make([]environment.Model, 0, len(entries))
 	for _, e := range entries {
-		kind, err := field.ParseObjectKind(e.Kind)
+		kind, err := field.ParseObjectKind(e.Kind())
 		if err != nil {
-			l.WithError(err).Errorf("Skipping environment object [%s] on enter replay.", e.Name)
+			l.WithError(err).Errorf("Skipping environment object [%s] on enter replay.", e.Name())
 			continue
 		}
 		if kind == field.ObjectKindObstacle {
-			obstacles = append(obstacles, fieldcb.NewObstacleState(e.Name, e.State))
+			obstacles = append(obstacles, fieldcb.NewObstacleState(e.Name(), e.State()))
 			obstacleNames = append(obstacleNames, e)
 			continue
 		}
@@ -1225,13 +1225,13 @@ func announceEnvironmentState(l logrus.FieldLogger, ctx context.Context, wp writ
 			_ = doorAnnounce(l, ctx, wp, fieldcb.FieldObstacleOnOffListWriter, writer.FieldObstacleOnOffListBody(obstacles), s)
 		} else {
 			for _, e := range obstacleNames {
-				_ = announceObjectState(l, ctx, wp, field.ObjectKindObstacle, e.Name, e.State, s)
+				_ = announceObjectState(l, ctx, wp, field.ObjectKindObstacle, e.Name(), e.State(), s)
 			}
 		}
 	}
 
 	for _, e := range others {
-		_ = announceObjectState(l, ctx, wp, field.ObjectKindEnvironment, e.Name, e.State, s)
+		_ = announceObjectState(l, ctx, wp, field.ObjectKindEnvironment, e.Name(), e.State(), s)
 	}
 }
 

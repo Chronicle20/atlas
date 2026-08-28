@@ -10,7 +10,7 @@ import (
 )
 
 type Processor interface {
-	GetAll(f field.Model) ([]RestModel, error)
+	GetAll(f field.Model) ([]Model, error)
 }
 
 type ProcessorImpl struct {
@@ -24,10 +24,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) GetAll(f field.Model) ([]RestModel, error) {
-	return requests.SliceProvider[RestModel, RestModel](p.l, p.ctx)(requestEnvironmentInMap(p.ctx, f), Extract, nil)()
-}
-
-func Extract(m RestModel) (RestModel, error) {
-	return m, nil
+func (p *ProcessorImpl) GetAll(f field.Model) ([]Model, error) {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestEnvironmentInMap(p.ctx, f), Extract, nil)()
 }

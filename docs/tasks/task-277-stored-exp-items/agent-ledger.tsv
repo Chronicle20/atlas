@@ -1,0 +1,12 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-28T13:31:19Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	38fdbc8c6	-	-	-	-
+2026-08-28T13:32:37Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	8f8a629	-	-	-	-
+2026-08-28T13:33:24Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	38fdbc8c6	APPROVED	no	-	-
+2026-08-28T13:33:59Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	8f8a629e3	APPROVED	no	-	-
+2026-08-28T13:35:36Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	5ac002ae0	-	-	-	-
+2026-08-28T13:38:42Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	5ac002ae0	CHANGES_REQUIRED	yes	-	-
+2026-08-28T13:41:48Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	NO_PROGRESS	-	-	-	-	-
+2026-08-28T13:43:42Z	agent	Task 3 fix 1	task-implementer	sonnet	-	-	-	-	DONE	002a593f6	-	-	-	-
+2026-08-28T13:44:28Z	agent	Task 3 fix 1	task-reviewer	sonnet	-	-	-	-	DONE	002a593f6	APPROVED	no	-	-
+2026-08-28T13:58:28Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	640b6958d	-	-	-	-
+2026-08-28T14:08:43Z	agent	Task 4	task-reviewer	opus	-	-	-	-	DONE	640b6958d	APPROVED_WITH_FINDINGS	no	-	-

@@ -15,26 +15,36 @@ import (
 // CheckName — CUICharacterSaleDlg::SendCheckDuplicateIDPacket, the Maple
 // Life duplicate-name probe.
 //
-// FOUR in-scope cells: gms_v83, gms_v87, gms_v92, gms_v95. gms_v84 is
-// VERSION-ABSENT — no CUICharacterSaleDlg code path exists on that binary
-// (derivation.md §2.0/§6.1) — no marker, no fixture.
+// FIVE in-scope cells: gms_v83, gms_v84, gms_v87, gms_v92, gms_v95 —
+// CUICharacterSaleDlg exists on gms_v84 too, at its own opcode 263 (0x107);
+// an earlier pass's VERSION-ABSENT finding was wrong and has been retracted
+// (derivation.md §2.0-CORRECTION, supersedes §6.1's four-cell framing; see
+// also docs/tasks/task-246-maple-life-character-creation/bug-maple-life-v84-registration.md).
+// The byte-fixture list below now covers all five cells; gms_v84's wire
+// framing is identical to the rest (a single EncodeStr, no per-version
+// field-shape difference).
 //
 // The `ida=` address on each marker is that version's SENDER, decompiled
-// this pass: gms_v83 @0x7d75ab, gms_v87 @0x82e04d, gms_v92 @0x756250
-// (unnamed sub_756250 renamed to the mangled
+// this pass: gms_v83 @0x7d75ab, gms_v84 @0x7fd86a, gms_v87 @0x82e04d,
+// gms_v92 @0x756250 (unnamed sub_756250 renamed to the mangled
 // CUICharacterSaleDlg::SendCheckDuplicateIDPacket symbol this pass),
-// gms_v95 @0x777d20. Opcodes per version: v83=256, v87=270, v92=301,
-// v95=311 (derivation.md §6.1) — each version's own dedicated opcode, no
-// CHECK_CHAR_NAME(21) collision on any of them.
+// gms_v95 @0x777d20. Opcodes per version: v83=256, v84=263, v87=270,
+// v92=301, v95=311 (derivation.md §6.1; gms_v84 per
+// docs/tasks/task-246-maple-life-character-creation/bug-maple-life-v84-registration.md,
+// which retracted an earlier VERSION-ABSENT finding for v84) — each
+// version's own dedicated opcode, no CHECK_CHAR_NAME(21) collision on any
+// of them.
 // ---------------------------------------------------------------------------
 
 // packet-audit:verify packet=maplelife/serverbound/MaplelifeCheckName version=gms_v83 ida=0x7d75ab
+// packet-audit:verify packet=maplelife/serverbound/MaplelifeCheckName version=gms_v84 ida=0x7fd86a
 // packet-audit:verify packet=maplelife/serverbound/MaplelifeCheckName version=gms_v87 ida=0x82e04d
 // packet-audit:verify packet=maplelife/serverbound/MaplelifeCheckName version=gms_v92 ida=0x756250
 // packet-audit:verify packet=maplelife/serverbound/MaplelifeCheckName version=gms_v95 ida=0x777d20
 func TestMapleLifeCheckNameRoundTrip(t *testing.T) {
 	inScope := []pt.TenantVariant{
 		{Name: "GMS v83", Region: "GMS", MajorVersion: 83, MinorVersion: 1},
+		{Name: "GMS v84", Region: "GMS", MajorVersion: 84, MinorVersion: 1},
 		{Name: "GMS v87", Region: "GMS", MajorVersion: 87, MinorVersion: 1},
 		{Name: "GMS v92", Region: "GMS", MajorVersion: 92, MinorVersion: 1},
 		{Name: "GMS v95", Region: "GMS", MajorVersion: 95, MinorVersion: 1},
@@ -69,7 +79,7 @@ func TestMapleLifeCheckNameOperation(t *testing.T) {
 // Framing: WriteAsciiString is a uint16 LE length prefix + raw bytes.
 // Field order: derivation.md §6 (a single EncodeStr sCharName, no other
 // fields) — IDENTICAL SHAPE on every in-scope version, so the fixture is
-// deliberately the same bytes for all four.
+// deliberately the same bytes for all five.
 // ---------------------------------------------------------------------------
 
 // mapleLifeCheckNameGoldenBody: sCharName = "Chronicle" (9 ascii bytes).
@@ -86,6 +96,7 @@ type mlcnFixtureVersion struct {
 
 var mlcnFixtureVersions = []mlcnFixtureVersion{
 	{"gms_v83", 83, 1},
+	{"gms_v84", 84, 1},
 	{"gms_v87", 87, 1},
 	{"gms_v92", 92, 1},
 	{"gms_v95", 95, 1},

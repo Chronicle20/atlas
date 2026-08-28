@@ -29726,6 +29726,46 @@
           "guard": "a6 && v11 && sub_A912F3(v68, v13, 0, 0x7FFFFFFF, 1) && Src"
         }
       ]
+    },
+    "CUICharacterSaleDlg::SendCheckDuplicateIDPacket": {
+      "address": "0x7fd86a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sCharName; MAPLELIFE_CHECK_NAME opcode 263 (0x107)"
+        }
+      ]
+    },
+    "CUICharacterSaleDlg::OnCheckDuplicatedIDResult": {
+      "address": "0x7fd949",
+      "direction": "clientbound",
+      "_note": "MAPLELIFE_RESULT opcode 359 (0x167), read off CUICharacterSaleDlg::OnPacket_recv_0x167_0x168@0x7fd845. DecodeStr(sName)@0x7fd96a then Decode1(nResult)@0x7fd975: 0 -> success (vtable+32, 1000); >0 -> GetString(5052) name-taken notice (1001); <0 -> GetString(5757) formatted unknown-error notice (1001), matching v83/v87/v92/v95's structure byte-for-byte.",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "sName @0x7fd96a"
+        },
+        {
+          "op": "Decode1",
+          "comment": "nResult @0x7fd975"
+        }
+      ]
+    },
+    "CUICharacterSaleDlg::OnCreateNewCharacterResult": {
+      "address": "0x7fda6f",
+      "direction": "clientbound",
+      "_note": "MAPLELIFE_ERROR opcode 360 (0x168), read off CUICharacterSaleDlg::OnPacket_recv_0x167_0x168@0x7fd845. Decode1(nType)@0x7fda94 then Decode4(nParam)@0x7fda9c: 52 -> success (GetString(5053) notice) if nParam==0, else GetString(5757) formatted unknown-error notice; 54 -> GetString(5051) name-taken notice; any other nType -> GetString(5757) formatted unknown-error notice, matching gms_83_1's SUCCESS:52/NAME_TAKEN_AT_SUBMIT:54/UNKNOWN_ERROR:255 table.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nType @0x7fda94"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nParam @0x7fda9c"
+        }
+      ]
     }
   }
 }

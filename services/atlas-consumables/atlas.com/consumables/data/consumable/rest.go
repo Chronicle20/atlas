@@ -20,6 +20,7 @@ type RestModel struct {
 	TimeLimited     bool               `json:"timeLimited"`
 	NotSale         bool               `json:"notSale"`
 	ReqLevel        uint32             `json:"reqLevel"`
+	MaxLevel        uint32             `json:"maxLevel"`
 	Quest           bool               `json:"quest"`
 	Only            bool               `json:"only"`
 	ConsumeOnPickup bool               `json:"consumeOnPickup"`
@@ -116,6 +117,7 @@ func Transform(m Model) (RestModel, error) {
 		TimeLimited:     m.timeLimited,
 		NotSale:         m.notSale,
 		ReqLevel:        m.reqLevel,
+		MaxLevel:        m.maxLevel,
 		Quest:           m.quest,
 		Only:            m.only,
 		ConsumeOnPickup: m.consumeOnPickup,
@@ -193,6 +195,7 @@ func Extract(rm RestModel) (Model, error) {
 		timeLimited:     rm.TimeLimited,
 		notSale:         rm.NotSale,
 		reqLevel:        rm.ReqLevel,
+		maxLevel:        rm.MaxLevel,
 		quest:           rm.Quest,
 		only:            rm.Only,
 		consumeOnPickup: rm.ConsumeOnPickup,

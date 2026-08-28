@@ -9,6 +9,12 @@ type Buffer struct {
 	buffer map[string][]message.Message
 }
 
+func NewBuffer() *Buffer {
+	return &Buffer{
+		buffer: make(map[string][]message.Message),
+	}
+}
+
 func (b *Buffer) Put(t string, p model.Provider[[]message.Message]) error {
 	ms, err := p()
 	if err != nil {

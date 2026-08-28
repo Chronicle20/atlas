@@ -13,7 +13,10 @@ import (
 // Run walks dirs, applying Rewrite to every .go file it finds (skipping
 // _test.go, vendor/, and testdata/ paths), formats the result with
 // go/format, and writes it back unless check is true. It returns every
-// residue Finding collected across all files.
+// residue Finding collected across all files, plus — when check is true —
+// a "check" Finding for every file Rewrite would change, so a caller can
+// treat any un-migrated site (residue or would-change) as a non-zero
+// exit rather than silently reporting nothing.
 func Run(dirs []string, check bool) ([]Finding, error) {
 	var findings []Finding
 
@@ -40,7 +43,15 @@ func Run(dirs []string, check bool) ([]Finding, error) {
 
 			changed, residue := Rewrite(fset, f, path)
 			findings = append(findings, residue...)
-			if !changed || check {
+			if !changed {
+				return nil
+			}
+			if check {
+				findings = append(findings, Finding{
+					Pos:    fset.Position(f.Package),
+					Rule:   "check",
+					Reason: "file requires rewriting (run without -check to apply)",
+				})
 				return nil
 			}
 

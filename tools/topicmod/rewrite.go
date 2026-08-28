@@ -198,6 +198,8 @@ func rewriteBuffer(fset *token.FileSet, f *ast.File) (changed bool, residue []Fi
 		return false, nil
 	}
 
+	retypedFields := map[string]bool{}
+
 	for _, decl := range f.Decls {
 		switch d := decl.(type) {
 		case *ast.GenDecl:
@@ -217,6 +219,9 @@ func rewriteBuffer(fset *token.FileSet, f *ast.File) (changed bool, residue []Fi
 					if mt, ok := stringSliceMapType(field.Type); ok {
 						mt.Key = topicTokenType()
 						changed = true
+						for _, name := range field.Names {
+							retypedFields[name.Name] = true
+						}
 					}
 				}
 			}
@@ -246,6 +251,12 @@ func rewriteBuffer(fset *token.FileSet, f *ast.File) (changed bool, residue []Fi
 		}
 	}
 
+	// Retype any make(map[string][]T) initializer of a retyped buffer
+	// field, e.g. NewBuffer()'s `&Buffer{buffer: make(map[string][]T)}`.
+	if len(retypedFields) > 0 && rewriteBufferInit(f, retypedFields) {
+		changed = true
+	}
+
 	// Any top-level Emit/EmitWithResult ranging over b.GetAll() with an
 	// explicit `var t string` shadow is residue; the inferred range
 	// variable itself needs no edit.
@@ -261,6 +272,60 @@ func rewriteBuffer(fset *token.FileSet, f *ast.File) (changed bool, residue []Fi
 	}
 
 	return changed, residue
+}
+
+// rewriteBufferInit retypes make(map[string][]T) initializer sites that
+// initialize a buffer field retyped by rewriteBuffer, wherever they appear
+// inside a composite literal constructing Buffer (e.g. NewBuffer's
+// `&Buffer{buffer: make(map[string][]T)}`).
+func rewriteBufferInit(f *ast.File, retypedFields map[string]bool) (changed bool) {
+	ast.Inspect(f, func(n ast.Node) bool {
+		cl, ok := n.(*ast.CompositeLit)
+		if !ok || !isBufferCompositeLitType(cl.Type) {
+			return true
+		}
+		for _, elt := range cl.Elts {
+			kv, ok := elt.(*ast.KeyValueExpr)
+			if !ok {
+				continue
+			}
+			key, ok := kv.Key.(*ast.Ident)
+			if !ok || !retypedFields[key.Name] {
+				continue
+			}
+			if retypeMakeMapCall(kv.Value) {
+				changed = true
+			}
+		}
+		return true
+	})
+	return changed
+}
+
+// isBufferCompositeLitType reports whether t is the `Buffer` identifier, the
+// type of a composite literal constructing a Buffer value.
+func isBufferCompositeLitType(t ast.Expr) bool {
+	ident, ok := t.(*ast.Ident)
+	return ok && ident.Name == "Buffer"
+}
+
+// retypeMakeMapCall reports whether e is `make(map[string][]T, ...)` and, if
+// so, retypes the map's key to topic.Token.
+func retypeMakeMapCall(e ast.Expr) bool {
+	call, ok := e.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	fn, ok := call.Fun.(*ast.Ident)
+	if !ok || fn.Name != "make" || len(call.Args) == 0 {
+		return false
+	}
+	mt, ok := stringSliceMapType(call.Args[0])
+	if !ok {
+		return false
+	}
+	mt.Key = topicTokenType()
+	return true
 }
 
 // declaresBufferStruct reports whether f declares `type Buffer struct`.

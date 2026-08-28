@@ -10,6 +10,12 @@ type Buffer struct {
 	buffer map[topic.Token][]message.Message
 }
 
+func NewBuffer() *Buffer {
+	return &Buffer{
+		buffer: make(map[topic.Token][]message.Message),
+	}
+}
+
 func (b *Buffer) Put(t topic.Token, p model.Provider[[]message.Message]) error {
 	ms, err := p()
 	if err != nil {

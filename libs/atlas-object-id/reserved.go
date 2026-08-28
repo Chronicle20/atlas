@@ -31,3 +31,23 @@ func PlayerNpcObjectIdFor(scriptId uint32) uint32 {
 	}
 	return PlayerNpcObjectIdBase + (scriptId - playerNpcScriptIdBase)
 }
+
+// playerNpcImitateTemplateMin and playerNpcImitateTemplateMax bound the
+// Player NPC imitate pool (design §4.2: 9901000-9906599). WZ Hall of Fame
+// maps carry one placeholder NPC life entry per pool slot, one per possible
+// deployed Player NPC; the client's CNpcPool::OnNpcImitateData overlay is
+// keyed on template id, not oid, so a deployed Player NPC (spawned with its
+// own SPAWN_NPC, outside this pool) and its unoccupied placeholder siblings
+// would otherwise render as duplicates (task-251 bug report §2).
+const (
+	playerNpcImitateTemplateMin = uint32(9901000)
+	playerNpcImitateTemplateMax = uint32(9906599)
+)
+
+// IsPlayerNpcImitateTemplate reports whether templateId falls within the
+// Player NPC imitate pool (design §4.2: 9901000-9906599). Callers building a
+// per-map NPC list use this to drop the WZ placeholder entries so they never
+// spawn or receive controller elections alongside a deployed Player NPC.
+func IsPlayerNpcImitateTemplate(templateId uint32) bool {
+	return templateId >= playerNpcImitateTemplateMin && templateId <= playerNpcImitateTemplateMax
+}

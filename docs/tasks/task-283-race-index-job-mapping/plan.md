@@ -1,6 +1,6 @@
 # Version-Aware Race-Index → Job Mapping — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make the character-creation race-ordinal → beginner-job mapping a function of the tenant's client version, derived from the client binaries, and turn the no-op `validJob` into a real rejection gate.
 
@@ -119,7 +119,7 @@ Patterns to copy: `docs/packets/audits/gms_v95/CreateCharacter.md` (evidence-doc
 
 No Go module is built by this task.
 
-- [ ] **Step 1: Load the IDA tool schemas in one turn**
+- [x] **Step 1: Load the IDA tool schemas in one turn**
 
 Per `docs/reverse-engineering.md` ("Load the tool schemas in one turn"), do this once, not per
 unit of work:
@@ -128,7 +128,7 @@ unit of work:
 ToolSearch: select:mcp__ida-pro__idb_list,mcp__ida-pro__func_query,mcp__ida-pro__decompile,mcp__ida-pro__xrefs_to,mcp__ida-pro__insn_query,mcp__ida-pro__get_global_value,mcp__ida-pro__search_text
 ```
 
-- [ ] **Step 2: Resolve all ten sessions by filename**
+- [x] **Step 2: Resolve all ten sessions by filename**
 
 Call `mcp__ida-pro__idb_list` once. Build a filename → `session_id` map using the table in
 "Version key → IDB / export map" above. Pass `session_id` as the `database` parameter on every
@@ -137,7 +137,7 @@ later call. **Do not hard-code a session id into `findings.md`** — they are ep
 If a session for a version key is missing from `idb_list`, record that key as `unverified` with
 reason `"IDB not available in this session"` and continue. Do not stall the task.
 
-- [ ] **Step 3: Derive the v95 carousel independently, before looking at the lead**
+- [x] **Step 3: Derive the v95 carousel independently, before looking at the lead**
 
 The claim under test (FR-7), stated here so it can be *compared to*, not *copied from*:
 
@@ -157,7 +157,7 @@ Reach your own ordering first. In `GMS_v95.0_U_DEVM.exe.i64`:
 
 Only after you have an ordering, compare it to the lead and record agreement or correction.
 
-- [ ] **Step 4: Answer the Resistance selectability question (FR-12)**
+- [x] **Step 4: Answer the Resistance selectability question (FR-12)**
 
 Enum membership is not evidence. Find the race-**availability** flags the v95 login screen
 consults to decide which slots it *draws* — the guard around the slot's creation/enable path in
@@ -166,7 +166,7 @@ the race-select UI. Record, with function + address:
 - whether the Resistance/Citizen slot is drawn at all on v95.0
 - if it is, what beginner job id the client expects for it (**read from data, never assumed**)
 
-- [ ] **Step 5: Answer the Dual Blade question (FR-5 / PRD §9.3)**
+- [x] **Step 5: Answer the Dual Blade question (FR-5 / PRD §9.3)**
 
 `BladeRecruit` exists today only as `Identity = 430` (`libs/atlas-constants/job/identities_gen.go:41`),
 not as a creation-time `job.Id`. Determine which of the three outcomes holds on each of `gms_v92`,
@@ -179,13 +179,13 @@ not as a creation-time `job.Id`. Determine which of the three outcomes holds on 
    `template_gms_95_1.json`, and `template_jms_185_1.json` each carry a `(1,1)` row that Task 7
    must then remove or annotate
 
-- [ ] **Step 6: Derive `gms_jms_185` independently (FR-9)**
+- [x] **Step 6: Derive `gms_jms_185` independently (FR-9)**
 
 Use `MapleStory_dump_SCY.exe.i64`. Its seed rows share `gms_95`'s shape; that is **suggestive and
 is recorded in `notes` as such**, never used as a source. If the JMS ordering is derived and
 matches v95, say so as a *result*.
 
-- [ ] **Step 7: Derive the pre-Big-Bang columns (FR-8)**
+- [x] **Step 7: Derive the pre-Big-Bang columns (FR-8)**
 
 For `gms_v48`, `gms_v61`, `gms_v72`, `gms_v79`, `gms_v83`, `gms_v84`, `gms_v87`, `gms_v92`, run
 the same derivation. The claim under test is `0 = Cygnus, 1 = Explorer, 2 = Aran, 3 = Evan` —
@@ -198,12 +198,12 @@ against the binary:
   Knights — if the binary shows the slot is not drawn on an early version, that is a positive
   contradiction and must be recorded
 
-- [ ] **Step 8: Record `gms_12` as unverified (FR-10)**
+- [x] **Step 8: Record `gms_12` as unverified (FR-10)**
 
 One row, `status: unverified`, reason `"no IDA export and no IDB"`, and the note that its lone
 `(1,0)` slot is present in every candidate mapping and is therefore insensitive to the ambiguity.
 
-- [ ] **Step 9: Write `findings.md`**
+- [x] **Step 9: Write `findings.md`**
 
 Exactly this structure. One `##` section per version key, each containing a table with **one row
 per `(raceIndex, subJobIndex)`**, plus a `### Method` subsection naming the functions and
@@ -255,7 +255,7 @@ because …>.
 - Seed rows to remove/annotate (Task 7): <the (1,1) rows, if outcome 3>
 ```
 
-- [ ] **Step 10: Self-check before committing**
+- [x] **Step 10: Self-check before committing**
 
 Confirm each of these by inspection of the file you just wrote:
 
@@ -265,7 +265,7 @@ Confirm each of these by inspection of the file you just wrote:
 - the `## Open questions resolved` section answers all three questions
 - the `## Consequences for later tasks` section is filled in — Tasks 4, 5, and 7 read it directly
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add docs/tasks/task-283-race-index-job-mapping/findings.md
@@ -284,7 +284,7 @@ git commit -m "docs(task-283): IDA-derived race-carousel findings for all versio
 
 No Go module is built by this task.
 
-- [ ] **Step 1: Write the fixture**
+- [x] **Step 1: Write the fixture**
 
 One object per version key. `slots` is an array so JSON key ordering is not load-bearing;
 `jobId` is the numeric `job.Id`. A version key recorded `unverified` in `findings.md` still
@@ -316,7 +316,7 @@ Populate every version key from the corresponding `findings.md` section. `class`
 human-readable label and is what the TypeScript side renders; it must match the `class` column in
 `findings.md` character-for-character.
 
-- [ ] **Step 2: Verify the projection is faithful and well-formed**
+- [x] **Step 2: Verify the projection is faithful and well-formed**
 
 ```bash
 python3 -c "import json;d=json.load(open('docs/packets/race-carousels.json'));print(sorted(d['versions']));print({k:len(v['slots']) for k,v in d['versions'].items()})"
@@ -327,7 +327,7 @@ Expected: all eleven version keys (`gms_12`, `gms_v48`, `gms_v61`, `gms_v72`, `g
 equal to the row count of that key's table in `findings.md`. If a count differs, the projection
 dropped or invented a row — fix the JSON, never the findings.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/packets/race-carousels.json
@@ -350,7 +350,7 @@ Module root: `services/atlas-character-factory/atlas.com/character-factory`.
 
 Patterns to copy: `factory/processor_test.go:358-436` (`TestBuildCharacterCreationSaga_AllFieldsPresent` — input/template construction and `result.Steps[0].Payload.(saga.CharacterCreatePayload)` assertion shape); `factory/processor_test.go:949-959` (`createMockContext`, the only tenant-context builder in the file).
 
-- [ ] **Step 1: Replace the two tautologies with literals**
+- [x] **Step 1: Replace the two tautologies with literals**
 
 At `processor_test.go:400` and `processor_test.go:1069-1071` the current text is, identically:
 
@@ -379,7 +379,7 @@ if payload.JobId != expectedJobId {
 is the service-local `atlas-character-factory/job`. After this step **no test in the file calls
 `job2.JobFromIndex`** — that is what lets Task 6 delete it.
 
-- [ ] **Step 2: Write the frozen pre-Big-Bang regression test**
+- [x] **Step 2: Write the frozen pre-Big-Bang regression test**
 
 New test in the same file. It enumerates every currently-seeded `(jobIndex, subJobIndex)` on
 every pre-Big-Bang template and pins the job id. These are **frozen literals captured from
@@ -439,7 +439,7 @@ Head the test with this comment verbatim:
 // contradicts the row, and the change cites the finding.
 ```
 
-- [ ] **Step 3: Run the tests**
+- [x] **Step 3: Run the tests**
 
 ```bash
 go test ./factory/... -run 'TestFromIndex_PreBigBangFrozen|TestBuildCharacterCreationSaga_AllFieldsPresent|TestCharacterCreationOrchestrationFlow' -v
@@ -449,7 +449,7 @@ from `services/atlas-character-factory/atlas.com/character-factory`.
 Expected: PASS. The new test passes against the *current* mapper — that is the point of
 capturing it now.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-character-factory/atlas.com/character-factory/factory/processor_test.go
@@ -474,7 +474,7 @@ not invent a constant to have something to do.
 
 Module root: `libs/atlas-constants`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add rows to the existing case table at `advancement_test.go:14-18`, which currently reads:
 
@@ -508,7 +508,7 @@ Also assert the registry entry exists, since `Jobs[id]` misses are what silently
 |---|---|---|
 | *(new id per findings.md)* | `_, present := job.Jobs[job.<NewId>]` | `present == true` |
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 ```bash
 go test ./job/... -run 'TestIsBeginner_CoversEveryBeginnerId|TestAdvancement' -v
@@ -517,7 +517,7 @@ go test ./job/... -run 'TestIsBeginner_CoversEveryBeginnerId|TestAdvancement' -v
 from `libs/atlas-constants`.
 Expected: FAIL — `undefined: job.<NewId>` (compile error) before the constant exists.
 
-- [ ] **Step 3: Add the constant, the registry entry, and the beginner-set membership**
+- [x] **Step 3: Add the constant, the registry entry, and the beginner-set membership**
 
 All four sites, in one commit (D-6 — omitting any one produces a silent downstream failure):
 
@@ -527,7 +527,7 @@ All four sites, in one commit (D-6 — omitting any one produces a silent downst
 3. `model.go:57` — `return IsA(jobId, BeginnerId, NoblesseId, LegendId, EvanId, <NewId>)`
 4. `advancement_test.go` — the rows added in Step 1
 
-- [ ] **Step 4: Run the module's tests**
+- [x] **Step 4: Run the module's tests**
 
 ```bash
 go build ./... && go test ./... 
@@ -537,7 +537,7 @@ from `libs/atlas-constants`.
 Expected: PASS. If Task 1 concluded no new constant is needed, this still runs and passes
 unchanged — record that in the task report and make no commit for Steps 1–3.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-constants/job/constants.go libs/atlas-constants/job/model.go libs/atlas-constants/job/advancement_test.go
@@ -569,7 +569,7 @@ pattern in the repo, and what the parity and correspondence tests need).
 `job2.JobFromIndex` in `job/model.go` stays in place through this task so `factory/processor.go`
 keeps compiling; Task 6 deletes it.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `carousel_test.go`, package `job`.
 
@@ -619,7 +619,7 @@ body, build two tenants on different versions whose carousels differ for the sam
 `FromIndex` for each, and assert the two results differ. Then call each again in the opposite
 order and assert the same results, proving no order-dependent package state.
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
 ```bash
 go test ./job/... -v
@@ -628,7 +628,7 @@ go test ./job/... -v
 from `services/atlas-character-factory/atlas.com/character-factory`.
 Expected: FAIL — `undefined: FromIndex`, `undefined: Slot`, `undefined: carouselFor`.
 
-- [ ] **Step 3: Write `carousel.go`**
+- [x] **Step 3: Write `carousel.go`**
 
 ```go
 package job
@@ -716,14 +716,14 @@ arm list above is the shape, not a prediction of the count. If the findings show
 column needs its own carousel (e.g. `gms_v84` diverging from `gms_v87`), add a named var and an
 arm using `MajorInRange`.
 
-- [ ] **Step 4: Delete the unreferenced twin in `atlas-constants`**
+- [x] **Step 4: Delete the unreferenced twin in `atlas-constants`**
 
 Delete `func FromIndex` at `libs/atlas-constants/job/model.go:106-122` entirely. It has **zero
 callers repo-wide** (verified during planning), so this is a pure deletion. Check whether the
 `skill` import at the top of that file is still used after the deletion; if `go build` complains,
 remove the now-unused import.
 
-- [ ] **Step 5: Run both modules' tests**
+- [x] **Step 5: Run both modules' tests**
 
 ```bash
 go test ./job/... -v
@@ -735,7 +735,7 @@ go build ./... && go test ./...
 ```
 from `libs/atlas-constants` — Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-character-factory/atlas.com/character-factory/job/carousel.go \
@@ -762,7 +762,7 @@ shape that `categorizeError` should adopt); `factory/processor.go:111-114` (the 
 sentinel style the new rejection must match); `factory/processor_test.go:949-959`
 (`createMockContext`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 **(a) `TestCreate_RejectsOffCarouselRaceIndex`** — table-driven, calls `Create` through a
 processor built the way `TestCharacterCreationOrchestrationFlow` (`processor_test.go:965`)
@@ -810,7 +810,7 @@ failure, and moving `categorizeError` to `errors.Is` is what makes the new senti
 all. If a reviewer disputes the `ErrTemplateNotFound` status change, keep it at 500 and say so in
 the task report; the `ErrInvalidRaceIndex` row is the non-negotiable one.
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
 ```bash
 go test ./factory/... -run 'TestCreate_RejectsOffCarouselRaceIndex|TestCreate_ValidatorOrderIsPreserved|TestCategorizeError_InvalidRaceIndexIsBadRequest' -v
@@ -818,7 +818,7 @@ go test ./factory/... -run 'TestCreate_RejectsOffCarouselRaceIndex|TestCreate_Va
 
 Expected: FAIL — `undefined: ErrInvalidRaceIndex`.
 
-- [ ] **Step 3: Add the sentinel**
+- [x] **Step 3: Add the sentinel**
 
 In the `var (...)` block at `processor.go:26-32`, alongside `ErrTemplateNotFound`:
 
@@ -826,7 +826,7 @@ In the `var (...)` block at `processor.go:26-32`, alongside `ErrTemplateNotFound
 	ErrInvalidRaceIndex     = errors.New("race index is not selectable on this client version")
 ```
 
-- [ ] **Step 4: Resolve once in `Create`, reject, and reuse**
+- [x] **Step 4: Resolve once in `Create`, reject, and reuse**
 
 Delete the `validJob` call at `processor.go:100-102`:
 
@@ -858,7 +858,7 @@ This moves race-index validation from before the tenant fetch to after it. Name 
 validation still run first, so ordering among the pre-existing validators is unchanged — that is
 the deliberate, tested behavior change from D-7, pinned by test (b).
 
-- [ ] **Step 5: Thread the resolved `jobId` to the saga payload**
+- [x] **Step 5: Thread the resolved `jobId` to the saga payload**
 
 Change the signature at `processor.go:185` to:
 
@@ -883,7 +883,7 @@ sites (`processor_test.go` lines 230, 269, 342, 386, 466, 511, 993, 1486, 1527, 
 literal expected job id for that test's `input.JobIndex`/`SubJobIndex` — the same literals Task 3
 established. This is a mechanical sweep; the compiler finds every site.
 
-- [ ] **Step 6: Switch `categorizeError` to sentinel matching**
+- [x] **Step 6: Switch `categorizeError` to sentinel matching**
 
 Replace `categorizeError` (`resource.go:130-157`) with an `errors.Is` switch in the shape of
 `categorizePresetError` (`resource.go:38-77`), keeping the existing substring list as a trailing
@@ -904,7 +904,7 @@ the face/hair/skin/top/bottom/shoes/weapon messages) still map to 400. Drop
 
 before the substring loop. Confirm `errors` and `net/http` are imported in `resource.go`.
 
-- [ ] **Step 7: Delete the service-local twin**
+- [x] **Step 7: Delete the service-local twin**
 
 ```bash
 git rm services/atlas-character-factory/atlas.com/character-factory/job/model.go
@@ -913,7 +913,7 @@ git rm services/atlas-character-factory/atlas.com/character-factory/job/model.go
 `JobFromIndex` is that file's only declaration and has no remaining callers after Steps 5 and
 Task 3.
 
-- [ ] **Step 8: Run the module's tests and confirm the twin is gone**
+- [x] **Step 8: Run the module's tests and confirm the twin is gone**
 
 ```bash
 go build ./... && go test ./... 
@@ -928,7 +928,7 @@ from the worktree root — Expected: matches in
 `job/carousel_test.go`, `factory/processor.go`, and `factory/processor_test.go` **only**. Any
 match in `libs/atlas-constants/` or any `JobFromIndex` match is FR-4 unsatisfied.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A services/atlas-character-factory/atlas.com/character-factory/factory \
@@ -959,7 +959,7 @@ Patterns to copy: `tools/packet-audit/internal/template/real_test.go:9-20` (loca
 template from a Go test via `runtime.Caller(0)`); an existing template row literal is quoted
 below.
 
-- [ ] **Step 1: Write the failing correspondence test**
+- [x] **Step 1: Write the failing correspondence test**
 
 `correspondence_test.go`, package `job`.
 
@@ -1013,7 +1013,7 @@ type seedTemplate struct {
 Also assert each file's `region`/`majorVersion`/`minorVersion` equal the table's values, so a
 renamed or re-keyed template file fails loudly instead of being silently skipped.
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 ```bash
 go test ./job/... -run TestCarouselMatchesSeedTemplates -v
@@ -1023,7 +1023,7 @@ Expected: FAIL, listing the missing rows — at minimum the v95 slots `findings.
 have no template row (FR-19's known instance is `(4,0)`), and any row whose slot is not in the
 carousel (FR-20 / Dual Blade outcome 3).
 
-- [ ] **Step 3: Add the missing rows**
+- [x] **Step 3: Add the missing rows**
 
 For each missing `(jobIndex, subJobIndex)`, add **two** entries (gender 0 and gender 1) to that
 file's `characters.templates` array. Row shape, verbatim from
@@ -1052,14 +1052,14 @@ file's `characters.templates` array. Row shape, verbatim from
 option lists from the same file's existing row for the nearest comparable class, and say in the
 task report which row you copied from.
 
-- [ ] **Step 4: Correct the contradicted `mapId`s**
+- [x] **Step 4: Correct the contradicted `mapId`s**
 
 Only where `findings.md` cites a positive contradiction. The candidates flagged in the PRD are
 `template_gms_95_1.json` ordinal 2 (`mapId 140090000`, Aran's start map) and ordinal 0
 (`130010220`) — both wrong if the v95 carousel binds those ordinals to different classes than
 pre-Big-Bang. Change the `mapId` for **both** gender rows of each corrected ordinal.
 
-- [ ] **Step 5: Handle the `(1,1)` rows per the Dual Blade outcome**
+- [x] **Step 5: Handle the `(1,1)` rows per the Dual Blade outcome**
 
 - Outcome 1 or 2 (Dual Blade maps to something) → carousel has a `{1,1}` entry and the existing
   `(1,1)` rows in `template_gms_92_1.json`, `template_gms_95_1.json`, `template_jms_185_1.json`
@@ -1067,7 +1067,7 @@ pre-Big-Bang. Change the `mapId` for **both** gender rows of each corrected ordi
 - Outcome 3 (slot not offered) → **remove** the `(1,1)` row pair from all three files. Direction
   (2) of the correspondence test is what forces this.
 
-- [ ] **Step 6: Confirm every touched file is still valid JSON and line endings survived**
+- [x] **Step 6: Confirm every touched file is still valid JSON and line endings survived**
 
 ```bash
 python3 -c "
@@ -1089,7 +1089,7 @@ Expected: only the files `findings.md` named appear, and the changed-line count 
 showing every line changed means the editor normalized CRLF→LF — revert it and redo the edit
 preserving line endings.
 
-- [ ] **Step 7: Run the test**
+- [x] **Step 7: Run the test**
 
 ```bash
 go test ./job/... -v
@@ -1097,7 +1097,7 @@ go test ./job/... -v
 
 from `services/atlas-character-factory/atlas.com/character-factory`. Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/ \
@@ -1135,7 +1135,7 @@ pattern; `vitest`'s `jsdom` environment still permits `node:fs` in the test proc
 `activeTenant?.attributes.majorVersion` and `activeTenant?.attributes.region`
 (`tenants.service.ts:14-24`). **Not** top-level fields.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 **(a) `raceCarousels.parity.test.ts`** — reads `docs/packets/race-carousels.json` and asserts the
 TS tables cover exactly the same slots as the fixture, per version:
@@ -1183,7 +1183,7 @@ the hardcoded pre-Big-Bang names and asserts the file "mirrors `JobFromIndex`". 
 `templateLabels` now takes the version — keep its `" (2)"`/`" (3)"` duplicate-ordinal behavior and
 its existing cases, with the version threaded through.
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
 ```bash
 npm test -- src/components/features/characters/templates
@@ -1191,7 +1191,7 @@ npm test -- src/components/features/characters/templates
 
 from `services/atlas-ui`. Expected: FAIL — `classesForVersion` is not exported.
 
-- [ ] **Step 3: Rewrite `jobNames.ts`**
+- [x] **Step 3: Rewrite `jobNames.ts`**
 
 Delete the stale header comment at `jobNames.ts:1-4` (`"World names mirror atlas-character-factory
 job/model.go JobFromIndex"`) — after task-283 there is no version-invariant mirror to claim, and
@@ -1239,7 +1239,7 @@ Note the `(1,1)` gap this closes: `KNOWN_CLASSES` today has no `(1,1)` entry eve
 `gms_92`, `gms_95`, and `jms_185` all seed a `(1,1)` row, so that class falls to the "unknown"
 label path. Whether it gains a label is decided by the Dual Blade outcome in `findings.md`.
 
-- [ ] **Step 4: Thread the tenant version through the callers**
+- [x] **Step 4: Thread the tenant version through the callers**
 
 `IdentitySection.tsx:24-78` — add `const { activeTenant } = useTenant();` and pass
 `activeTenant?.attributes.region` / `activeTenant?.attributes.majorVersion` into
@@ -1251,7 +1251,7 @@ label must still render (FR-23).
 `TemplateSelector.tsx:5` and `CharacterTemplatesEditor.tsx:13` import `templateLabels`; add the
 two arguments at both call sites from `useTenant()` in the same way.
 
-- [ ] **Step 5: Run the UI tests and the type check**
+- [x] **Step 5: Run the UI tests and the type check**
 
 ```bash
 npm test
@@ -1260,7 +1260,7 @@ npm run build
 
 from `services/atlas-ui`. Expected: PASS, and a clean TypeScript build.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-ui/src/components/features/characters/templates
@@ -1308,7 +1308,7 @@ grep -rn "TODO\|FIXME\|BladeRecruit TODO" --include="*.go" services/atlas-charac
 Expected: no output. The `// jobId = job.BladeRecruit TODO` comment must be gone with the deleted
 `job/model.go`, and `validJob`'s always-true stub must be gone with Task 6.
 
-- [ ] **Step 4: Run the flagless gate**
+- [x] **Step 4: Run the flagless gate**
 
 ```bash
 tools/verify.sh
@@ -1334,7 +1334,7 @@ output) for each in the task report. The three that are easy to leave unproven:
   outcome and the test that pins it
 - "Code review completed before PR" — Task 9 does not satisfy this; it is the next gate
 
-- [ ] **Step 6: Commit any gate-driven fixes, then hand off to review**
+- [x] **Step 6: Commit any gate-driven fixes, then hand off to review**
 
 ```bash
 git add -A

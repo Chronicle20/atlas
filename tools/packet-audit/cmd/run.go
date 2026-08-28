@@ -347,6 +347,13 @@ func candidatesFromFName(fname string) []candidate {
 		// rename suffixes (task-100 cluster-H / task-217 Task 12) — both literal
 		// export keys are handled here so report-gen resolves on those versions.
 		return []candidate{{name: "AranComboCounterRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUIItemMaker::RequestItemMake":
+		// Maker-skill crafting request (task-285). Encode4(nRecipeClass) inside
+		// the selected arm, then that arm's fields; identical on all eight
+		// applicable versions. NOT a dispatcher family (families are clientbound
+		// only), so no "#" suffix — the mode routes via the tenant template's
+		// options.operations table instead.
+		return []candidate{{name: "MakerSkill", pkg: "character", dir: csvpkg.DirServerbound}}
 	case "CUserLocal::OnIncComboResponse":
 		// Aran combo-counter echo (task-217). Decode4(count) -> m_nCombo,
 		// get_update_time(), DrawCombo(this). Struct is ShowCombo.

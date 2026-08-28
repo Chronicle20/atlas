@@ -48,7 +48,7 @@ type Processor interface {
 	StartItem(f field.Model, itemId uint32, npcId uint32, characterId uint32, accountId uint32, scriptName string, originTransactionId uuid.UUID, stateMachine StateContainer) error
 
 	// Continue continues a conversation with an NPC
-	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
+	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32, text string) error
 
 	// End ends a conversation
 	End(characterId uint32) error
@@ -336,7 +336,7 @@ func (p *ProcessorImpl) StartItem(f field.Model, itemId uint32, npcId uint32, ch
 	return nil
 }
 
-func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error {
+func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32, text string) error {
 	// Get the previous context
 	ctx, err := GetRegistry().GetPreviousContext(p.ctx, characterId)
 	if err != nil {
@@ -425,6 +425,49 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 
 		// Get the next state from the askNumber model
 		nextStateId = askNumber.NextState()
+
+	case AskTextType:
+		// For ask text states, the text contains the free text entered by the player
+		askText := state.AskText()
+		if askText == nil {
+			return errors.New("askText is nil")
+		}
+
+		// Trim once, before anything else
+		trimmed := strings.TrimSpace(text)
+
+		// Validate the trimmed text against min/max length
+		if len(trimmed) < int(askText.MinLength()) {
+			p.l.Errorf("Invalid text input for character [%d] in state [%s]: below minimum length [%d]", characterId, state.Id(), askText.MinLength())
+			return fmt.Errorf("text below minimum length")
+		}
+		if len(trimmed) > int(askText.MaxLength()) {
+			p.l.Errorf("Invalid text input for character [%d] in state [%s]: above maximum length [%d]", characterId, state.Id(), askText.MaxLength())
+			return fmt.Errorf("text above maximum length")
+		}
+
+		// Store the trimmed text in the context using the configured context key
+		choiceContext = make(map[string]string)
+		choiceContext[askText.ContextKey()] = trimmed
+
+		// Walk the matches in order; the first satisfied match wins
+		nextStateId = askText.NextState()
+		for _, m := range askText.Matches() {
+			if m.ValueFromContext() != "" {
+				resolved, _, err := ExtractContextValue(m.ValueFromContext(), ctx.Context())
+				if err != nil {
+					// An unresolvable context reference is a non-match, not an error
+					continue
+				}
+				if trimmed == resolved {
+					nextStateId = m.NextState()
+					break
+				}
+			} else if trimmed == m.Value() {
+				nextStateId = m.NextState()
+				break
+			}
+		}
 
 	case AskStyleType:
 		// For ask style states, the selection contains the index of the selected style

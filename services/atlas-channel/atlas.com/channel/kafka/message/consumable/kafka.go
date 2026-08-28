@@ -90,6 +90,11 @@ const (
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
+	// ErrorTypePotionLocked is atlas-consumables' pre-reservation refusal of a
+	// consume while STOP_PORTION is active. Hand-mirrored from
+	// services/atlas-consumables/.../kafka/message/consumable/kafka.go; the
+	// two spellings must agree. See task-280.
+	ErrorTypePotionLocked = "POTION_LOCKED"
 
 	// CatchCauseUseDelay / CatchCauseInventoryFull / CatchCauseInvalidItem are
 	// the pre-reservation bridle-capture failure causes atlas-consumables

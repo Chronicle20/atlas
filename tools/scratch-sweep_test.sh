@@ -89,21 +89,33 @@ assert_has "--dry-run stdout names the candidate" "old.txt" "$out"
 
 # --- refuses dangerous roots -------------------------------------------------
 
-out="$(ATLAS_SCRATCH_ROOT=/ "$SWEEP" --now 2>&1)"; rc=$?
+# These cases run against real dangerous paths ($ATLAS_SCRATCH_ROOT is not
+# fixture-scoped here), so they use --dry-run rather than --now: the guard
+# must fire before any deletion fork, and asserting that under --dry-run
+# means a future guard regression fails an assertion instead of sweeping
+# $HOME for real.
+
+out="$(ATLAS_SCRATCH_ROOT=/ "$SWEEP" --dry-run 2>&1)"; rc=$?
 assert_eq "refuses / : exit 2" "2" "$rc"
 assert_has "refuses / : stderr says refusing" "refusing" "$out"
 
-out="$(ATLAS_SCRATCH_ROOT=/tmp "$SWEEP" --now 2>&1)"; rc=$?
+out="$(ATLAS_SCRATCH_ROOT=/tmp "$SWEEP" --dry-run 2>&1)"; rc=$?
 assert_eq "refuses /tmp : exit 2" "2" "$rc"
 assert_has "refuses /tmp : stderr says refusing" "refusing" "$out"
 
-out="$(ATLAS_SCRATCH_ROOT=/var/tmp "$SWEEP" --now 2>&1)"; rc=$?
+out="$(ATLAS_SCRATCH_ROOT=/var/tmp "$SWEEP" --dry-run 2>&1)"; rc=$?
 assert_eq "refuses /var/tmp : exit 2" "2" "$rc"
 assert_has "refuses /var/tmp : stderr says refusing" "refusing" "$out"
 
-out="$(ATLAS_SCRATCH_ROOT="$HOME" "$SWEEP" --now 2>&1)"; rc=$?
+out="$(ATLAS_SCRATCH_ROOT="$HOME" "$SWEEP" --dry-run 2>&1)"; rc=$?
 assert_eq "refuses home dir: exit 2" "2" "$rc"
 assert_has "refuses home dir: stderr says refusing" "refusing" "$out"
+
+# --- refuses a relative root --------------------------------------------------
+
+out="$(cd "$tmp" && ATLAS_SCRATCH_ROOT="relative/scratch" "$SWEEP" --dry-run 2>&1)"; rc=$?
+assert_eq "refuses relative root: exit 2" "2" "$rc"
+assert_has "refuses relative root: stderr says refusing" "refusing" "$out"
 
 # --- unknown option -----------------------------------------------------------
 

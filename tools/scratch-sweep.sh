@@ -58,9 +58,17 @@ components="$(echo "$root" | tr -s '/' '\n' | sed '/^$/d' | wc -l | tr -d ' ')"
 if [ "$components" -lt 2 ]; then
     die "refusing to sweep dangerous root: $root (fewer than two path components)"
 fi
+# A relative root resolves against the caller's cwd, which is not something
+# this script controls — require an absolute path so the resolved root is
+# always exactly what was configured.
+case "$root" in
+    /*) ;;
+    *) die "refusing to sweep dangerous root: $root (not an absolute path)" ;;
+esac
 
 if [ ! -d "$root" ]; then
-    mkdir -p -m 700 "$root"
+    mkdir -p "$root"
+    chmod 700 "$root"
     echo "scratch-sweep: removed 0 entries from $root"
     exit 0
 fi

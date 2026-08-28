@@ -3,6 +3,7 @@ package _map
 import (
 	consumer2 "atlas-maps/kafka/consumer"
 	mapKafka "atlas-maps/kafka/message/map"
+	"atlas-maps/map/backeffect"
 	"atlas-maps/map/environment"
 	"atlas-maps/map/jukebox"
 	"atlas-maps/map/weather"
@@ -48,6 +49,12 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleResetEnvironmentCommand()))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetBackEffectCommand()))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClearBackEffectCommand()))); err != nil {
 			return err
 		}
 		return nil
@@ -151,6 +158,59 @@ func handleResetEnvironmentCommand() func(l logrus.FieldLogger, ctx context.Cont
 		err := producer.ProviderImpl(l)(ctx)(mapKafka.EnvEventTopicMapStatus)(environment.EnvironmentResetEventProvider(c.TransactionId, f, cleared))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to produce environment reset event for map [%d] instance [%s].", c.MapId, c.Instance)
+		}
+	}
+}
+
+func handleSetBackEffectCommand() func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.SetBackEffectCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.SetBackEffectCommandBody]) {
+		if c.Type != mapKafka.CommandTypeSetBackEffect {
+			return
+		}
+
+		if c.Body.Effect != 0 && c.Body.Effect != 1 {
+			l.Warnf("Rejecting set back effect command with invalid effect [%d] for map [%d] instance [%s].", c.Body.Effect, c.MapId, c.Instance)
+			return
+		}
+
+		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+		entry := backeffect.BackEffectEntry{
+			Effect:  c.Body.Effect,
+			FieldId: c.Body.FieldId,
+			PageId:  c.Body.PageId,
+			// Duration is not clamped: it is a fade length bounded by the
+			// client's own tween, with no denial-of-service shape comparable
+			// to pinning a field's BGM (the counterpart to maxJukeboxDuration
+			// above).
+			Duration: c.Body.Duration,
+		}
+
+		l.Debugf("Received set back effect command for map [%d] instance [%s] page [%d] effect [%d] duration [%d].", c.MapId, c.Instance, c.Body.PageId, c.Body.Effect, c.Body.Duration)
+
+		backeffect.NewProcessor(l, ctx).Set(f, entry)
+
+		err := producer.ProviderImpl(l)(ctx)(mapKafka.EnvEventTopicMapStatus)(backeffect.BackEffectSetEventProvider(c.TransactionId, f, entry))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to produce back effect set event for map [%d] instance [%s].", c.MapId, c.Instance)
+		}
+	}
+}
+
+func handleClearBackEffectCommand() func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.ClearBackEffectCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.ClearBackEffectCommandBody]) {
+		if c.Type != mapKafka.CommandTypeClearBackEffect {
+			return
+		}
+
+		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+
+		if !backeffect.NewProcessor(l, ctx).Clear(f) {
+			l.Debugf("Received clear back effect command for map [%d] instance [%s] with no active entries.", c.MapId, c.Instance)
+		}
+
+		err := producer.ProviderImpl(l)(ctx)(mapKafka.EnvEventTopicMapStatus)(backeffect.BackEffectClearEventProvider(c.TransactionId, f))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to produce back effect clear event for map [%d] instance [%s].", c.MapId, c.Instance)
 		}
 	}
 }

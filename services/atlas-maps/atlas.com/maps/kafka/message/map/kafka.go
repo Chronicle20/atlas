@@ -21,6 +21,8 @@ const (
 	EventTopicMapStatusTypeMapTimerStarted = "MAP_TIMER_STARTED"
 	EventTopicMapStatusTypeJukeboxStart    = "JUKEBOX_START"
 	EventTopicMapStatusTypeJukeboxEnd      = "JUKEBOX_END"
+	EventTopicMapStatusTypeBackEffectSet   = "BACK_EFFECT_SET"
+	EventTopicMapStatusTypeBackEffectClear = "BACK_EFFECT_CLEAR"
 
 	EventTopicMapStatusTypeEnvironmentStateChanged = "ENVIRONMENT_STATE_CHANGED"
 	EventTopicMapStatusTypeEnvironmentReset        = "ENVIRONMENT_RESET"
@@ -87,3 +89,12 @@ type EnvironmentObject struct {
 type EnvironmentReset struct {
 	Cleared []EnvironmentObject `json:"cleared"`
 }
+
+type BackEffectSet struct {
+	Effect   uint8  `json:"effect"`
+	FieldId  uint32 `json:"fieldId"`
+	PageId   uint8  `json:"pageId"`
+	Duration uint32 `json:"duration"`
+}
+
+type BackEffectClear struct{}

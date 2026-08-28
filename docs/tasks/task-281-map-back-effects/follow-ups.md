@@ -34,3 +34,34 @@ the `SET_MAP_OBJECT_VISIBLE` row; at the time this file was written the row had
 moved to line 227 (confirmed by `grep -n SET_MAP_OBJECT_VISIBLE
 docs/packets/audits/STATUS.md`). The row content (opcode/status table) is
 otherwise unchanged from what the brief described.
+
+## Dead code: `set_back_effect.go` / `clear_back_effect.go` writer wrappers (out of scope, sweep-with-`play_jukebox.go`)
+
+`services/atlas-channel/atlas.com/channel/socket/writer/set_back_effect.go`
+and `clear_back_effect.go` are zero-caller dead code, established by the
+backend-fixes review (`docs/tasks/task-281-map-back-effects/review-backend-fixes.md`,
+Q1). They were added in commit `057060bee` ("feat(atlas-channel): broadcast
+back-effect set and clear packets"), predating task-281's fix commits
+(`797d1e0cf..318b1c0c0`); neither fix commit touches them.
+
+They are **not** the live send path. The real path is
+`services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:1181-1219`
+(`handleStatusEventBackEffectSet` / `handleStatusEventBackEffectClear`),
+which calls `fieldcb.NewSetBackEffect(...)` / `fieldcb.NewClearBackEffect()`
+and their `.Encode` methods directly, bypassing the `socket/writer` wrappers
+entirely. The feature works end-to-end on this path — confirmed by the
+review via `TestHandleStatusEventBackEffectSet_*` /
+`TestAnnounceActiveBackEffects_*` (`consumer_test.go:837-1046`), which
+decode the captured wire bytes through the real codec and pass.
+
+An identical zero-caller shape already exists at
+`services/atlas-channel/atlas.com/channel/socket/writer/play_jukebox.go`
+(`PlayJukeboxBody(itemId int32, playerName string)`), which `consumer.go`
+also bypasses in favor of calling `fieldcb.NewPlayJukebox(...).Encode`
+directly. This is a pre-existing, tolerated convention in the package, not
+something task-281 introduced.
+
+Deleting `set_back_effect.go` / `clear_back_effect.go` is out of scope for
+task-281: it should be a separate cleanup that sweeps the pattern (including
+`play_jukebox.go`) rather than a one-off removal of the two back-effect
+files alone.

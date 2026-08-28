@@ -215,6 +215,7 @@ func registryOccurrence(o occurrence.Model) registry.Occurrence {
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	os.Setenv(string(buff.EnvCommandTopic), string(buff.EnvCommandTopic))
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

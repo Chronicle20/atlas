@@ -24,6 +24,8 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	os.Setenv(string(monster.EnvCommandTopic), string(monster.EnvCommandTopic))
+	os.Setenv(string(event.EnvEventTopicEventVisual), string(event.EnvEventTopicEventVisual))
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

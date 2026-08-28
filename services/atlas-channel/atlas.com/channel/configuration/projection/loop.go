@@ -84,6 +84,17 @@ func (a *ApplyLoop) Run(ctx context.Context, l logrus.FieldLogger) {
 			return
 		case <-t.C:
 			nextSvc, nextTenants := a.State.Snapshot()
+
+			// Keep the package-level configuration snapshot in step with the
+			// projection on every tick. Without this atlas-channel never
+			// populates it at all: PublishSnapshot has no other production
+			// caller here, so serviceConfig stays nil and readyCh is never
+			// closed. registry.go's own doc comment already promises this
+			// call site; it was never written. TracePacketsEnabled reads
+			// from here, so FR-2.3's "takes effect on the next packet" is
+			// bounded by one tick (250ms) plus Kafka propagation.
+			configuration.PublishSnapshot(nextSvc, nextTenants)
+
 			ops := ComputeOps(prevSvc, prevTenants, nextSvc, nextTenants)
 
 			// Retry pending ops first, and only those whose key is still

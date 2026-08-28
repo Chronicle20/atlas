@@ -78,3 +78,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-28T11:00:38Z	agent	adversarial-registry	task-reviewer	sonnet	-	-	-	-	-	-	APPROVED_WITH_FINDINGS	no	docs/tasks/task-122-attack-path-snapshots/adversarial-registry.md	-
 2026-08-28T11:01:37Z	agent	adversarial-attack-path	task-reviewer	sonnet	-	-	-	-	-	-	CHANGES_REQUIRED	no	docs/tasks/task-122-attack-path-snapshots/adversarial-attack-path.md	-
 2026-08-28T11:08:07Z	agent	bug-shadow-buffs-dead-code	task-implementer	sonnet	-	-	-	-	DONE	037d1a7fa	-	-	-	-
+2026-08-28T11:12:58Z	agent	bug-shadow-buffs-dead-code	task-reviewer	sonnet	-	-	-	-	-	-	APPROVED_WITH_FINDINGS	no	docs/tasks/task-122-attack-path-snapshots/reviews/bug-shadow-buffs-dead-code.md	-

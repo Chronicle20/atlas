@@ -2527,6 +2527,24 @@
   ida:
     address: 6582679
   note: 'reply COutPacket(154); v83 MOB_CRC_KEY_CHANGED_REPLY=164 (d-10).'
+- op: USE_SOLOMON_ITEM
+  direction: serverbound
+  opcode: 155
+  fname: CWvsContext::SendExpUpItemUseRequest
+  packet: inventory/serverbound/InventorySolomonItemUse
+  provenance: ida-discovered
+  ida:
+    address: 9822440
+  note: 'task-277: v79 opcode READ off the COutPacket ctor at CWvsContext::SendExpUpItemUseRequest @0x95dee8 (=9822440) — COutPacket(155)/0x9B, then Encode4/Encode2/Encode4. Body invariant vs v83..v95. Closes the disputed ⬜ from FR-3.'
+- op: USE_GACHA_EXP
+  direction: serverbound
+  opcode: 156
+  fname: CWvsContext::SendTempExpUseRequest
+  packet: character/serverbound/StoredExperienceUse
+  provenance: ida-discovered
+  ida:
+    address: 9822960
+  note: 'task-277: v79 opcode READ off the COutPacket ctor at CWvsContext::SendTempExpUseRequest @0x95e0f0 (=9822960) — COutPacket(156)/0x9C then a single Encode4(get_update_time). Body invariant vs v83..v95. Closes the disputed ⬜ from FR-3.'
 - op: CASH_ITEM_GACHAPON_BUTTON
   direction: serverbound
   opcode: 159

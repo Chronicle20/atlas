@@ -1,0 +1,21 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-28T13:19:39Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	ef0cb9b7c	-	-	-	-
+2026-08-28T13:24:05Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	ef0cb9b7c	APPROVED	no	-	-
+2026-08-28T13:24:08Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	9612616a7	-	-	-	-
+2026-08-28T13:24:10Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	9612616a7	APPROVED	no	-	-
+2026-08-28T13:25:21Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	685e1f607	-	-	-	-
+2026-08-28T13:28:22Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	b5eceb779	-	-	-	-
+2026-08-28T13:28:34Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	685e1f607	APPROVED	no	-	-
+2026-08-28T13:29:34Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	b5eceb779	APPROVED	no	-	-
+2026-08-28T13:29:34Z	handoff	after Task 4	controller	opus	-	-	-	-	handoff	b5eceb779	-	-	-	-
+2026-08-28T13:50:06Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	dispatched	b5eceb779	-	-	-	-
+2026-08-28T13:54:24Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	558d822	-	-	-	-
+2026-08-28T13:54:26Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	dispatched	558d822	-	-	-	-
+2026-08-28T13:56:32Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	558d822	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/task-5-review.md	-
+2026-08-28T13:56:43Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	f1beab939	-	-	-	-
+2026-08-28T13:57:14Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	f1beab939	APPROVED	no	.superpowers/sdd/plan/task-6-review.md	-
+2026-08-28T13:58:33Z	agent	Task 5 fix 1	task-implementer	sonnet	-	-	-	-	DONE	23b2f2b6a	-	-	-	-
+2026-08-28T14:00:03Z	agent	Task 5 fix 1	task-reviewer	sonnet	-	-	-	-	DONE	23b2f2b6a	APPROVED	no	.superpowers/sdd/plan/task-5-fix-review.md	-
+2026-08-28T16:06:57Z	agent	Task 7	verify.sh	-	-	-	-	-	PASS	23b2f2b6a	-	-	.superpowers/sdd/plan/gates/gate-final-2.log	-
+2026-08-28T16:09:42Z	agent	Task 7	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	23b2f2b6a	APPROVED	no	docs/tasks/task-279-carnival-mob-skills/audit.md	-
+2026-08-28T16:15:22Z	agent	Task 7	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	23b2f2b6a	APPROVED	no	docs/tasks/task-279-carnival-mob-skills/backend-audit/audit.md	-

@@ -80,6 +80,10 @@ func installCapturingProducer() (*map[string][]kafka.Message, func()) {
 }
 
 func TestMain(m *testing.M) {
+	os.Setenv(string(assetMsg.EnvEventTopicStatus), string(assetMsg.EnvEventTopicStatus))
+	os.Setenv(string(compartmentMsg.EnvEventTopicStatus), string(compartmentMsg.EnvEventTopicStatus))
+	os.Setenv(string(dropMsg.EnvCommandTopic), string(dropMsg.EnvCommandTopic))
+
 	// Failure-path rejections/commands (Accept/Release/AttemptXPickUp) fire
 	// via the DIRECT producer path (see D7 fix). Swap in a no-op writer so
 	// those real-Kafka calls succeed instantly instead of retrying against

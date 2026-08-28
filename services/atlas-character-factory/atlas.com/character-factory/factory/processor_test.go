@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	tenantModel "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -397,7 +398,10 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 		if payload.WorldId != input.WorldId {
 			t.Errorf("WorldId mismatch: expected %d, got %d", input.WorldId, payload.WorldId)
 		}
-		expectedJobId := job2.JobFromIndex(input.JobIndex, input.SubJobIndex)
+		// task-283: literal expectation. JobIndex 500 falls outside the seeded
+		// (0,1,2,3) rows and lands in the mapper's default branch -> BeginnerId (0)
+		// on every verified carousel; see docs/tasks/task-283-race-index-job-mapping/findings.md.
+		const expectedJobId = job.BeginnerId
 		if payload.JobId != expectedJobId {
 			t.Errorf("JobId mismatch: expected %d, got %d", expectedJobId, payload.JobId)
 		}
@@ -960,6 +964,72 @@ func createMockContext(t *testing.T) (context.Context, uuid.UUID) {
 	return ctx, tenantId
 }
 
+// TestFromIndex_PreBigBangFrozen pins today's mapping for every currently-seeded
+// (jobIndex, subJobIndex) row on the pre-Big-Bang templates. These literals were captured
+// from the behavior of JobFromIndex BEFORE task-283's refactor; they are the backward-
+// compatibility gate (PRD §8) and must not be regenerated from the new mapper. A literal
+// changes only when docs/tasks/task-283-race-index-job-mapping/findings.md positively
+// contradicts the row, and the change cites the finding.
+func TestFromIndex_PreBigBangFrozen(t *testing.T) {
+	tests := []struct {
+		name        string
+		region      string
+		major       uint16
+		minor       uint16
+		jobIndex    uint32
+		subJobIndex uint32
+		expectJobId job.Id
+		expectOk    bool
+	}{
+		{"gms_12/1.0", "GMS", 12, 1, 1, 0, job.BeginnerId, true},
+		{"gms_48/0.0", "GMS", 48, 1, 0, 0, job.NoblesseId, true},
+		{"gms_48/1.0", "GMS", 48, 1, 1, 0, job.BeginnerId, true},
+		{"gms_48/2.0", "GMS", 48, 1, 2, 0, job.LegendId, true},
+		{"gms_61/0.0", "GMS", 61, 1, 0, 0, job.NoblesseId, true},
+		{"gms_61/1.0", "GMS", 61, 1, 1, 0, job.BeginnerId, true},
+		{"gms_61/2.0", "GMS", 61, 1, 2, 0, job.LegendId, true},
+		{"gms_72/0.0", "GMS", 72, 1, 0, 0, job.NoblesseId, true},
+		{"gms_72/1.0", "GMS", 72, 1, 1, 0, job.BeginnerId, true},
+		{"gms_72/2.0", "GMS", 72, 1, 2, 0, job.LegendId, true},
+		{"gms_79/0.0", "GMS", 79, 1, 0, 0, job.NoblesseId, true},
+		{"gms_79/1.0", "GMS", 79, 1, 1, 0, job.BeginnerId, true},
+		{"gms_79/2.0", "GMS", 79, 1, 2, 0, job.LegendId, true},
+		{"gms_83/0.0", "GMS", 83, 1, 0, 0, job.NoblesseId, true},
+		{"gms_83/1.0", "GMS", 83, 1, 1, 0, job.BeginnerId, true},
+		{"gms_83/2.0", "GMS", 83, 1, 2, 0, job.LegendId, true},
+		{"gms_84/0.0", "GMS", 84, 1, 0, 0, job.NoblesseId, true},
+		{"gms_84/1.0", "GMS", 84, 1, 1, 0, job.BeginnerId, true},
+		{"gms_84/2.0", "GMS", 84, 1, 2, 0, job.LegendId, true},
+		{"gms_84/3.0", "GMS", 84, 1, 3, 0, job.EvanId, true},
+		{"gms_87/0.0", "GMS", 87, 1, 0, 0, job.NoblesseId, true},
+		{"gms_87/1.0", "GMS", 87, 1, 1, 0, job.BeginnerId, true},
+		{"gms_87/2.0", "GMS", 87, 1, 2, 0, job.LegendId, true},
+		{"gms_87/3.0", "GMS", 87, 1, 3, 0, job.EvanId, true},
+		{"gms_92/0.0", "GMS", 92, 1, 0, 0, job.NoblesseId, true},
+		{"gms_92/1.0", "GMS", 92, 1, 1, 0, job.BeginnerId, true},
+		{"gms_92/2.0", "GMS", 92, 1, 2, 0, job.LegendId, true},
+		{"gms_92/3.0", "GMS", 92, 1, 3, 0, job.EvanId, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testTenant, err := tenantModel.Create(uuid.New(), tc.region, tc.major, tc.minor)
+			if err != nil {
+				t.Fatalf("Failed to create test tenant: %v", err)
+			}
+			tenantModel.WithContext(context.Background(), testTenant)
+
+			// Until Task 5 lands, this asserts against the version-blind mapper directly.
+			// Task 5 rewrites this to job2.FromIndex(testTenant, tc.jobIndex, tc.subJobIndex)
+			// and adds an `ok` assertion against tc.expectOk.
+			jobId := job2.JobFromIndex(tc.jobIndex, tc.subJobIndex)
+			if jobId != tc.expectJobId {
+				t.Errorf("jobId mismatch: expected %d, got %d", tc.expectJobId, jobId)
+			}
+		})
+	}
+}
+
 // TestCharacterCreationOrchestrationFlow tests the complete orchestration flow
 // with a unified saga that includes create, items, equipment, and skills.
 func TestCharacterCreationOrchestrationFlow(t *testing.T) {
@@ -1067,7 +1137,10 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			if payload.WorldId != input.WorldId {
 				t.Errorf("WorldId mismatch: expected %d, got %d", input.WorldId, payload.WorldId)
 			}
-			expectedJobId := job2.JobFromIndex(input.JobIndex, input.SubJobIndex)
+			// task-283: literal expectation. JobIndex 100 falls outside the seeded
+			// (0,1,2,3) rows and lands in the mapper's default branch -> BeginnerId (0)
+			// on every verified carousel; see docs/tasks/task-283-race-index-job-mapping/findings.md.
+			const expectedJobId = job.BeginnerId
 			if payload.JobId != expectedJobId {
 				t.Errorf("JobId mismatch: expected %d, got %d", expectedJobId, payload.JobId)
 			}

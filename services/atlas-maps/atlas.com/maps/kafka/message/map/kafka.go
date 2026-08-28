@@ -17,6 +17,9 @@ const (
 	EventTopicMapStatusTypeMapTimerStarted = "MAP_TIMER_STARTED"
 	EventTopicMapStatusTypeJukeboxStart    = "JUKEBOX_START"
 	EventTopicMapStatusTypeJukeboxEnd      = "JUKEBOX_END"
+
+	EventTopicMapStatusTypeEnvironmentStateChanged = "ENVIRONMENT_STATE_CHANGED"
+	EventTopicMapStatusTypeEnvironmentReset        = "ENVIRONMENT_RESET"
 )
 
 type StatusEvent[E any] struct {
@@ -58,4 +61,23 @@ type JukeboxStart struct {
 
 type JukeboxEnd struct {
 	ItemId uint32 `json:"itemId"`
+}
+
+type EnvironmentStateChanged struct {
+	Kind  string `json:"kind"`
+	Name  string `json:"name"`
+	State uint32 `json:"state"`
+}
+
+type EnvironmentObject struct {
+	Kind string `json:"kind"`
+	Name string `json:"name"`
+}
+
+// EnvironmentReset carries every entry that was tracked. It is not an empty
+// body: FieldObstacleAllReset restores only the client's obstacle list, so the
+// channel must be told which non-obstacle objects to zero explicitly, and the
+// channel keeps no registry of its own -- see design.md section 1.2.
+type EnvironmentReset struct {
+	Cleared []EnvironmentObject `json:"cleared"`
 }

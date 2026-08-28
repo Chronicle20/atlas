@@ -9,9 +9,11 @@ import (
 )
 
 const (
-	EnvCommandTopicMap      = "COMMAND_TOPIC_MAP"
-	CommandTypeWeatherStart = "WEATHER_START"
-	CommandTypePlayJukebox  = "PLAY_JUKEBOX"
+	EnvCommandTopicMap             = "COMMAND_TOPIC_MAP"
+	CommandTypeWeatherStart        = "WEATHER_START"
+	CommandTypePlayJukebox         = "PLAY_JUKEBOX"
+	CommandTypeSetEnvironmentState = "SET_ENVIRONMENT_STATE"
+	CommandTypeResetEnvironment    = "RESET_ENVIRONMENT"
 )
 
 type Command[E any] struct {
@@ -35,3 +37,15 @@ type PlayJukeboxCommandBody struct {
 	PlayerName string `json:"playerName"`
 	DurationMs uint32 `json:"durationMs"`
 }
+
+// SetEnvironmentStateCommandBody carries one named field-object state change.
+// Kind is a plain string so an unrecognised value from a future producer
+// deserialises and is rejected by the handler, rather than failing the decode.
+type SetEnvironmentStateCommandBody struct {
+	Kind  string `json:"kind"`
+	Name  string `json:"name"`
+	State uint32 `json:"state"`
+}
+
+// ResetEnvironmentCommandBody is empty; field routing comes from the envelope.
+type ResetEnvironmentCommandBody struct{}

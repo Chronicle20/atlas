@@ -2,6 +2,7 @@ package _map
 
 import (
 	mapKafka "atlas-maps/kafka/message/map"
+	"atlas-maps/map/environment"
 	"atlas-maps/map/jukebox"
 	"context"
 	"testing"
@@ -102,4 +103,206 @@ func TestHandlePlayJukeboxCommand_IgnoresOtherCommandTypes(t *testing.T) {
 
 	_, ok := jukebox.NewProcessor(l, ctx).GetActive(f)
 	require.False(t, ok)
+}
+
+func TestHandleSetEnvironmentStateCommand_Applies(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 910010000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         910010000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeSetEnvironmentState,
+		Body: mapKafka.SetEnvironmentStateCommandBody{
+			Kind:  "OBSTACLE",
+			Name:  "obs3",
+			State: 2,
+		},
+	}
+
+	handleSetEnvironmentStateCommand()(l, ctx, cmd)
+
+	entries := environment.NewProcessor(l, ctx).GetAll(f)
+	require.Len(t, entries, 1)
+	require.Equal(t, environment.ObjectEntry{Kind: field.ObjectKindObstacle, Name: "obs3", State: 2}, entries[0])
+}
+
+func TestHandleSetEnvironmentStateCommand_BlankKindDefaultsEnvironment(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 910010000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         910010000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeSetEnvironmentState,
+		Body: mapKafka.SetEnvironmentStateCommandBody{
+			Kind:  "",
+			Name:  "gate01",
+			State: 1,
+		},
+	}
+
+	handleSetEnvironmentStateCommand()(l, ctx, cmd)
+
+	entries := environment.NewProcessor(l, ctx).GetAll(f)
+	require.Len(t, entries, 1)
+	require.Equal(t, field.ObjectKindEnvironment, entries[0].Kind)
+}
+
+func TestHandleSetEnvironmentStateCommand_WrongTypeIgnored(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 910010000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         910010000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeWeatherStart,
+		Body: mapKafka.SetEnvironmentStateCommandBody{
+			Kind:  "OBSTACLE",
+			Name:  "obs3",
+			State: 2,
+		},
+	}
+
+	handleSetEnvironmentStateCommand()(l, ctx, cmd)
+
+	entries := environment.NewProcessor(l, ctx).GetAll(f)
+	require.Len(t, entries, 0)
+}
+
+func TestHandleSetEnvironmentStateCommand_UnknownKindRejected(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 910010000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         910010000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeSetEnvironmentState,
+		Body: mapKafka.SetEnvironmentStateCommandBody{
+			Kind:  "GATE",
+			Name:  "obs3",
+			State: 2,
+		},
+	}
+
+	require.NotPanics(t, func() {
+		handleSetEnvironmentStateCommand()(l, ctx, cmd)
+	})
+
+	entries := environment.NewProcessor(l, ctx).GetAll(f)
+	require.Len(t, entries, 0)
+}
+
+func TestHandleSetEnvironmentStateCommand_BlankNameRejected(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 910010000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         910010000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeSetEnvironmentState,
+		Body: mapKafka.SetEnvironmentStateCommandBody{
+			Kind:  "ENVIRONMENT",
+			Name:  "",
+			State: 1,
+		},
+	}
+
+	handleSetEnvironmentStateCommand()(l, ctx, cmd)
+
+	entries := environment.NewProcessor(l, ctx).GetAll(f)
+	require.Len(t, entries, 0)
+}
+
+func TestHandleResetEnvironmentCommand_ClearsTracked(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 910010000).SetInstance(uuid.Nil).Build()
+
+	proc := environment.NewProcessor(l, ctx)
+	_, err = proc.Set(f, field.ObjectKindObstacle, "a", 1)
+	require.NoError(t, err)
+	_, err = proc.Set(f, field.ObjectKindEnvironment, "b", 2)
+	require.NoError(t, err)
+
+	cmd := mapKafka.Command[mapKafka.ResetEnvironmentCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         910010000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeResetEnvironment,
+		Body:          mapKafka.ResetEnvironmentCommandBody{},
+	}
+
+	handleResetEnvironmentCommand()(l, ctx, cmd)
+
+	entries := environment.NewProcessor(l, ctx).GetAll(f)
+	require.Len(t, entries, 0)
+}
+
+func TestHandleResetEnvironmentCommand_WrongTypeIgnored(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 910010000).SetInstance(uuid.Nil).Build()
+
+	proc := environment.NewProcessor(l, ctx)
+	_, err = proc.Set(f, field.ObjectKindObstacle, "a", 1)
+	require.NoError(t, err)
+
+	cmd := mapKafka.Command[mapKafka.ResetEnvironmentCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         910010000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypePlayJukebox,
+		Body:          mapKafka.ResetEnvironmentCommandBody{},
+	}
+
+	handleResetEnvironmentCommand()(l, ctx, cmd)
+
+	entries := environment.NewProcessor(l, ctx).GetAll(f)
+	require.Len(t, entries, 1)
 }

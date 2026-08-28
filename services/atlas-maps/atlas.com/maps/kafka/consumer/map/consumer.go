@@ -3,6 +3,7 @@ package _map
 import (
 	consumer2 "atlas-maps/kafka/consumer"
 	mapKafka "atlas-maps/kafka/message/map"
+	"atlas-maps/map/environment"
 	"atlas-maps/map/jukebox"
 	"atlas-maps/map/weather"
 	"context"
@@ -37,6 +38,12 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlayJukeboxCommand()))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetEnvironmentStateCommand()))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleResetEnvironmentCommand()))); err != nil {
 			return err
 		}
 		return nil
@@ -96,6 +103,50 @@ func handlePlayJukeboxCommand() func(l logrus.FieldLogger, ctx context.Context, 
 		err := producer.ProviderImpl(l)(ctx)(mapKafka.EnvEventTopicMapStatus)(jukebox.JukeboxStartEventProvider(c.TransactionId, f, c.Body.ItemId, c.Body.PlayerName))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to produce jukebox start event for map [%d] instance [%s].", c.MapId, c.Instance)
+		}
+	}
+}
+
+func handleSetEnvironmentStateCommand() func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.SetEnvironmentStateCommandBody]) {
+		if c.Type != mapKafka.CommandTypeSetEnvironmentState {
+			return
+		}
+
+		kind, err := field.ParseObjectKind(c.Body.Kind)
+		if err != nil {
+			l.WithError(err).Errorf("Rejecting environment state command for map [%d] instance [%s].", c.MapId, c.Instance)
+			return
+		}
+
+		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+		entry, err := environment.NewProcessor(l, ctx).Set(f, kind, c.Body.Name, c.Body.State)
+		if err != nil {
+			l.WithError(err).Errorf("Rejecting environment state command for map [%d] instance [%s].", c.MapId, c.Instance)
+			return
+		}
+
+		// Emitted unconditionally, including for a re-set to the same state:
+		// scripts may rely on the re-broadcast to re-run the client animation.
+		err = producer.ProviderImpl(l)(ctx)(mapKafka.EnvEventTopicMapStatus)(environment.EnvironmentStateChangedEventProvider(c.TransactionId, f, entry))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to produce environment state changed event for map [%d] instance [%s].", c.MapId, c.Instance)
+		}
+	}
+}
+
+func handleResetEnvironmentCommand() func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.ResetEnvironmentCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.ResetEnvironmentCommandBody]) {
+		if c.Type != mapKafka.CommandTypeResetEnvironment {
+			return
+		}
+
+		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+		cleared := environment.NewProcessor(l, ctx).Reset(f)
+
+		err := producer.ProviderImpl(l)(ctx)(mapKafka.EnvEventTopicMapStatus)(environment.EnvironmentResetEventProvider(c.TransactionId, f, cleared))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to produce environment reset event for map [%d] instance [%s].", c.MapId, c.Instance)
 		}
 	}
 }

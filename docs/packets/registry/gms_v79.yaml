@@ -1430,7 +1430,12 @@
   fname: CUserLocal::OnMakerResult
   provenance: ida-discovered
   ida:
-    address: 9080139
+    address: 9132789
+  note: >-
+    task-285: address corrected from the bulk-import placeholder 9080139 (which
+    was repeated verbatim on the neighbouring PLAY_MINI_GAME_SOUND and
+    KOREAN_EVENT entries) to 0x8b5af5, the CUserLocal::OnMakerResult address
+    recorded in docs/packets/ida-exports/gms_v79.json.
 - op: KOREAN_EVENT
   direction: clientbound
   opcode: 205

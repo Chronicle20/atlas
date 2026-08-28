@@ -65,3 +65,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-28T17:27:34Z	agent	Backend fix B2/B3	task-implementer	sonnet	-	-	-	-	DONE	3375aa52b	-	-	-	-
 2026-08-28T17:42:24Z	agent	Backend fix B1	task-implementer	sonnet	-	-	-	-	DONE	318b1c0c0	-	-	-	-
 2026-08-28T17:49:17Z	agent	Backend fixes B1/B2/B3	task-reviewer	sonnet	-	-	-	-	DONE	318b1c0c0	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-28T17:51:32Z	handoff	after Task 13 + backend fixes	-	-	-	-	-	-	-	-	-	-	-	110000

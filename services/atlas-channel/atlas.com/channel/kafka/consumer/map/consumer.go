@@ -1,6 +1,7 @@
 package _map
 
 import (
+	"atlas-channel/backeffect"
 	"atlas-channel/chair"
 	"atlas-channel/chalkboard"
 	"atlas-channel/character"
@@ -426,6 +427,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 				return
 			}
 			announceEnvironmentState(l, ctx, wp, entries, s)
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
+			announceActiveBackEffects(l, ctx, wp, f, s)
 		})
 
 		return nil
@@ -1374,4 +1378,19 @@ func announceActiveJukebox(l logrus.FieldLogger, ctx context.Context, wp writer.
 		return
 	}
 	_ = doorAnnounce(l, ctx, wp, fieldcb.PlayJukeboxWriter, fieldcb.NewPlayJukebox(int32(jb.ItemId), jb.PlayerName).Encode, s)
+}
+
+// announceActiveBackEffects replays the field's active back-effects to a
+// single entering session. Duration is replayed as 0: the fade already
+// happened for everyone else, so a late joiner should land on the end state
+// rather than re-run the tween (design §4.3). Fails open — an unreachable
+// atlas-maps costs the background, not the map entry.
+func announceActiveBackEffects(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, s session.Model) {
+	es, err := backeffect.NewProcessor(l, ctx).GetActive(f)
+	if err != nil {
+		return
+	}
+	for _, e := range es {
+		_ = doorAnnounce(l, ctx, wp, fieldcb.SetBackEffectWriter, fieldcb.NewSetBackEffect(byte(e.Effect), e.FieldId, byte(e.PageId), 0).Encode, s)
+	}
 }

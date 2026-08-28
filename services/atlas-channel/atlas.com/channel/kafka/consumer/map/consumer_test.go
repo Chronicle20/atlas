@@ -1448,3 +1448,102 @@ func TestHandleStatusEventBackEffectClear_BroadcastsToField(t *testing.T) {
 		t.Fatalf("body = % x, want zero-length", calls[0].Body)
 	}
 }
+
+// backEffectServer starts an httptest server that answers the atlas-maps
+// back-effects-in-map resource with body, and points MAPS_SERVICE_URL at it.
+func backEffectServer(t *testing.T, status int, body string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+			return
+		}
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("MAPS_SERVICE_URL", srv.URL+"/")
+}
+
+// TestAnnounceActiveBackEffects_ReplaysWithZeroDuration asserts that every
+// active back-effect atlas-maps reports for the field is replayed to the
+// entering session, in order, with Duration forced to 0 -- the fade already
+// happened for everyone else, so a late joiner lands on the end state
+// instead of re-running the tween.
+func TestAnnounceActiveBackEffects_ReplaysWithZeroDuration(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	backEffectServer(t, http.StatusOK, `{"data":[`+
+		`{"type":"backEffect","id":"1","attributes":{"effect":0,"fieldId":100000000,"pageId":1,"duration":1000}},`+
+		`{"type":"backEffect","id":"2","attributes":{"effect":1,"fieldId":100000000,"pageId":2,"duration":500}}`+
+		`]}`)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	announceActiveBackEffects(l, ctx, nil, f, session.Model{})
+
+	calls := rec.snapshot()
+	if len(calls) != 2 {
+		t.Fatalf("announce count = %d, want 2", len(calls))
+	}
+
+	first := decodeSetBackEffect(t, calls[0].Body)
+	if calls[0].Writer != fieldcb.SetBackEffectWriter {
+		t.Fatalf("writer = %s, want %s", calls[0].Writer, fieldcb.SetBackEffectWriter)
+	}
+	if first.Effect() != 0 || first.FieldId() != 100000000 || first.PageId() != 1 || first.Duration() != 0 {
+		t.Fatalf("first = %+v, want {Effect:0 FieldId:100000000 PageId:1 Duration:0}", first)
+	}
+
+	second := decodeSetBackEffect(t, calls[1].Body)
+	if calls[1].Writer != fieldcb.SetBackEffectWriter {
+		t.Fatalf("writer = %s, want %s", calls[1].Writer, fieldcb.SetBackEffectWriter)
+	}
+	if second.Effect() != 1 || second.FieldId() != 100000000 || second.PageId() != 2 || second.Duration() != 0 {
+		t.Fatalf("second = %+v, want {Effect:1 FieldId:100000000 PageId:2 Duration:0}", second)
+	}
+}
+
+// TestAnnounceActiveBackEffects_EmptyAnnouncesNothing asserts that when
+// atlas-maps reports no active back-effects for the field, nothing is
+// announced to the entering session.
+func TestAnnounceActiveBackEffects_EmptyAnnouncesNothing(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	backEffectServer(t, http.StatusOK, `{"data":[]}`)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	announceActiveBackEffects(l, ctx, nil, f, session.Model{})
+
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}
+
+// TestAnnounceActiveBackEffects_LookupFailureIsFailOpen asserts that when
+// atlas-maps is unreachable, announceActiveBackEffects announces nothing and
+// returns without panicking or otherwise disrupting the caller (PRD FR-5) --
+// map entry itself is unaffected.
+func TestAnnounceActiveBackEffects_LookupFailureIsFailOpen(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	backEffectServer(t, http.StatusNotFound, "")
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	announceActiveBackEffects(l, ctx, nil, f, session.Model{})
+
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}

@@ -6,7 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestUnmarshalRebalanceAPStep(t *testing.T) {
@@ -1661,5 +1666,76 @@ func TestUnmarshalPlayJukeboxStep(t *testing.T) {
 	}
 	if p.WorldId != 0 || p.ChannelId != 1 || p.MapId != 100000000 {
 		t.Fatalf("field coordinates = %+v", p)
+	}
+}
+
+func TestUnmarshalMoveEnvironmentStep(t *testing.T) {
+	data := []byte(`{
+		"stepId": "move-environment-gate01",
+		"status": "pending",
+		"action": "move_environment",
+		"payload": {
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 910010000,
+			"instance": "00000000-0000-0000-0000-000000000000",
+			"kind": "OBSTACLE",
+			"name": "gate01",
+			"state": 3
+		}
+	}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.Action != MoveEnvironment {
+		t.Fatalf("action = %v, want %v", s.Action, MoveEnvironment)
+	}
+	p, ok := s.Payload.(MoveEnvironmentPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want MoveEnvironmentPayload", s.Payload)
+	}
+	if p.WorldId != world.Id(0) || p.ChannelId != channel.Id(1) || p.MapId != _map.Id(910010000) {
+		t.Fatalf("field coordinates = %+v", p)
+	}
+	if p.Instance != uuid.Nil {
+		t.Fatalf("instance = %v, want uuid.Nil", p.Instance)
+	}
+	if p.Kind != field.ObjectKindObstacle {
+		t.Fatalf("kind = %v, want %v", p.Kind, field.ObjectKindObstacle)
+	}
+	if p.Name != "gate01" {
+		t.Fatalf("name = %v, want gate01", p.Name)
+	}
+	if p.State != uint32(3) {
+		t.Fatalf("state = %v, want 3", p.State)
+	}
+}
+
+func TestUnmarshalResetEnvironmentStep(t *testing.T) {
+	data := []byte(`{
+		"stepId": "reset-environment-1",
+		"status": "pending",
+		"action": "reset_environment",
+		"payload": {
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 910010000,
+			"instance": "00000000-0000-0000-0000-000000000000"
+		}
+	}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	if s.Action != ResetEnvironment {
+		t.Fatalf("action = %v, want %v", s.Action, ResetEnvironment)
+	}
+	p, ok := s.Payload.(ResetEnvironmentPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want ResetEnvironmentPayload", s.Payload)
+	}
+	if p.MapId != _map.Id(910010000) {
+		t.Fatalf("mapId = %v, want 910010000", p.MapId)
 	}
 }

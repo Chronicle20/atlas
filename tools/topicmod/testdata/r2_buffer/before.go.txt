@@ -1,0 +1,23 @@
+package message
+
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+)
+
+type Buffer struct {
+	buffer map[string][]message.Message
+}
+
+func (b *Buffer) Put(t string, p model.Provider[[]message.Message]) error {
+	ms, err := p()
+	if err != nil {
+		return err
+	}
+	b.buffer[t] = append(b.buffer[t], ms...)
+	return nil
+}
+
+func (b *Buffer) GetAll() map[string][]message.Message {
+	return b.buffer
+}

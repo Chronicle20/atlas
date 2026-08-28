@@ -70,3 +70,23 @@ func Extract(rm RestModel) (Model, error) {
 		playerDrop:   rm.CharacterDrop,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:            m.id,
+		ItemId:        m.itemId,
+		EquipmentId:   m.equipmentId,
+		Quantity:      m.quantity,
+		Meso:          m.meso,
+		Type:          m.dropType,
+		X:             m.x,
+		Y:             m.y,
+		OwnerId:       m.ownerId,
+		OwnerPartyId:  m.ownerPartyId,
+		DropTime:      m.dropTime,
+		DropperId:     m.dropperId,
+		DropperX:      m.dropperX,
+		DropperY:      m.dropperY,
+		CharacterDrop: m.playerDrop,
+	}, nil
+}

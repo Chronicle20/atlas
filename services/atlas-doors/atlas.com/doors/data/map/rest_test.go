@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -99,4 +100,72 @@ func TestGetById_ServedWithPortals(t *testing.T) {
 	if p1.X() != 200 || p1.Y() != 20 {
 		t.Fatalf("portal[1] wrong: x=%d y=%d", p1.X(), p1.Y())
 	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	t.Run("Portal", func(t *testing.T) {
+		p := Portal{
+			id:          7,
+			name:        "tp",
+			portalType:  6,
+			x:           -100,
+			y:           200,
+			targetMapId: 999,
+		}
+
+		rm, err := TransformPortal(p)
+		if err != nil {
+			t.Fatalf("TransformPortal: %v", err)
+		}
+
+		got, err := ExtractPortal(rm)
+		if err != nil {
+			t.Fatalf("ExtractPortal: %v", err)
+		}
+
+		if !reflect.DeepEqual(got, p) {
+			t.Fatalf("round trip mismatch: got %+v, want %+v", got, p)
+		}
+	})
+
+	t.Run("Model", func(t *testing.T) {
+		m := NewBuilder(104000000).
+			SetReturnMapId(104000001).
+			SetForcedReturnMapId(999999999).
+			SetTown(true).
+			SetFieldLimit(42).
+			SetPortals([]Portal{
+				{
+					id:          1,
+					name:        "dp0",
+					portalType:  6,
+					x:           -100,
+					y:           10,
+					targetMapId: 104000002,
+				},
+				{
+					id:          2,
+					name:        "dp1",
+					portalType:  6,
+					x:           200,
+					y:           20,
+					targetMapId: 104000003,
+				},
+			}).
+			Build()
+
+		rm, err := Transform(m)
+		if err != nil {
+			t.Fatalf("Transform: %v", err)
+		}
+
+		got, err := Extract(rm)
+		if err != nil {
+			t.Fatalf("Extract: %v", err)
+		}
+
+		if !reflect.DeepEqual(got, m) {
+			t.Fatalf("round trip mismatch: got %+v, want %+v", got, m)
+		}
+	})
 }

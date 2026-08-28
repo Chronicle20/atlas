@@ -35,7 +35,7 @@ func newTestTenant(t *testing.T) tenant.Model {
 
 func testCore(t *testing.T, id uint32) character.Model {
 	t.Helper()
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(id).SetLevel(30).SetJobId(312).
 		SetMp(500).SetMaxMp(800).SetX(100).SetY(-50).
 		MustBuild()
@@ -44,7 +44,7 @@ func testCore(t *testing.T, id uint32) character.Model {
 func testInventory(t *testing.T, characterId uint32) (inventory.Model, uuid.UUID, asset.Model) {
 	t.Helper()
 	compId := uuid.New()
-	a := asset.NewModelBuilder(9001, compId, 2060000).SetSlot(2).SetQuantity(400).MustBuild()
+	a := asset.NewBuilderWithId(9001, compId, 2060000).SetSlot(2).SetQuantity(400).MustBuild()
 	comp := compartment.NewBuilder(compId, characterId, invconst.TypeValueUse, 96).AddAsset(a).MustBuild()
 	inv := inventory.NewBuilder(characterId).
 		SetEquipable(compartment.NewBuilder(uuid.New(), characterId, invconst.TypeValueEquip, 96).MustBuild()).
@@ -354,9 +354,9 @@ func TestRegistry_AssetLifecycle(t *testing.T) {
 			}
 
 			// Upsert (full replace by AssetId) + insert of a new asset.
-			repl := asset.NewModelBuilder(9001, compId, 2061000).SetSlot(5).SetQuantity(111).MustBuild()
+			repl := asset.NewBuilderWithId(9001, compId, 2061000).SetSlot(5).SetQuantity(111).MustBuild()
 			r.UpsertAsset(tm, 7, compId, repl)
-			ins := asset.NewModelBuilder(9002, compId, 2060001).SetSlot(6).SetQuantity(200).MustBuild()
+			ins := asset.NewBuilderWithId(9002, compId, 2060001).SetSlot(6).SetQuantity(200).MustBuild()
 			r.UpsertAsset(tm, 7, compId, ins)
 			got = r.View(tm, 7)
 			if len(got.Inv.Consumable().Assets()) != 2 {

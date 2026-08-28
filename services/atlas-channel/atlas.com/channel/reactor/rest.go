@@ -45,6 +45,29 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// Transform converts the domain Model into the wire RestModel.
+//
+// UpdateTime is deliberately not carried: RestModel has no field for it, so
+// Extract can never restore it. A Model round-tripped through Transform ->
+// Extract therefore loses UpdateTime (see rest_test.go).
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:             m.id,
+		WorldId:        m.field.WorldId(),
+		ChannelId:      m.field.ChannelId(),
+		MapId:          m.field.MapId(),
+		Instance:       m.field.Instance(),
+		Classification: m.classification,
+		Name:           m.name,
+		State:          m.state,
+		EventState:     m.eventState,
+		X:              m.x,
+		Y:              m.y,
+		Delay:          m.delay,
+		Direction:      m.direction,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:             rm.Id,

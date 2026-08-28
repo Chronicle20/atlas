@@ -4,7 +4,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
-type modelBuilder struct {
+type builder struct {
 	id       uint32
 	name     string
 	shout    bool
@@ -13,12 +13,12 @@ type modelBuilder struct {
 	skillId3 skill.Id
 }
 
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{}
+func NewBuilder() *builder {
+	return &builder{}
 }
 
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:       m.id,
 		name:     m.name,
 		shout:    m.shout,
@@ -28,37 +28,37 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetId(id uint32) *modelBuilder {
+func (b *builder) SetId(id uint32) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetName(name string) *modelBuilder {
+func (b *builder) SetName(name string) *builder {
 	b.name = name
 	return b
 }
 
-func (b *modelBuilder) SetShout(shout bool) *modelBuilder {
+func (b *builder) SetShout(shout bool) *builder {
 	b.shout = shout
 	return b
 }
 
-func (b *modelBuilder) SetSkillId1(skillId skill.Id) *modelBuilder {
+func (b *builder) SetSkillId1(skillId skill.Id) *builder {
 	b.skillId1 = skillId
 	return b
 }
 
-func (b *modelBuilder) SetSkillId2(skillId skill.Id) *modelBuilder {
+func (b *builder) SetSkillId2(skillId skill.Id) *builder {
 	b.skillId2 = skillId
 	return b
 }
 
-func (b *modelBuilder) SetSkillId3(skillId skill.Id) *modelBuilder {
+func (b *builder) SetSkillId3(skillId skill.Id) *builder {
 	b.skillId3 = skillId
 	return b
 }
 
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	return Model{
 		id:       b.id,
 		name:     b.name,

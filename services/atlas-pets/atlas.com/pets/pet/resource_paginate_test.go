@@ -55,7 +55,7 @@ func requestPetsWithTenant(method, url string, tenantId uuid.UUID) *http.Request
 // production writes them.
 func seedPet(t *testing.T, db *gorm.DB, ctx context.Context, ownerId uint32, templateId uint32) Model {
 	t.Helper()
-	b := NewModelBuilder(0, uint64(templateId)*100, templateId, "Pet", ownerId)
+	b := NewBuilder(0, uint64(templateId)*100, templateId, "Pet", ownerId)
 	i, err := b.Build()
 	require.NoError(t, err)
 	m, err := NewProcessor(testPaginateLogger(), ctx, db).Create(message.NewBuffer())(i)

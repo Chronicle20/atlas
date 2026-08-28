@@ -154,7 +154,7 @@ func (p *ProcessorImpl) ForNPC(f field.Model, characterId uint32, objectId uint3
 func (p *ProcessorImpl) ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error {
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		// TODO look up pet.
-		pe := pet.NewModelBuilder(petId, 0, 0, "").
+		pe := pet.NewBuilder(petId, 0, 0, "").
 			SetOwnerID(characterId).
 			SetSlot(0).
 			MustBuild()

@@ -42,7 +42,7 @@ func (m Model) String() string {
 
 // Make converts an Entity to a Model
 func Make(e Entity) (Model, error) {
-	return NewModelBuilder().
+	return NewBuilder().
 		SetID(e.ID).
 		SetTenantId(e.TenantId).
 		SetResourceName(e.ResourceName).

@@ -32,6 +32,19 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
+// Transform converts a Model into a RestModel by transforming each per-level
+// effect. It is the inverse of Extract.
+func Transform(m Model) (RestModel, error) {
+	es, err := model.SliceMap(effect.Transform)(model.FixedProvider(m.effects))()()
+	if err != nil {
+		return RestModel{}, err
+	}
+	return RestModel{
+		Id:      m.id,
+		Effects: es,
+	}, nil
+}
+
 // Extract converts a RestModel into an immutable Model by extracting each
 // per-level effect.
 // Exported so tests can call it directly without network I/O.

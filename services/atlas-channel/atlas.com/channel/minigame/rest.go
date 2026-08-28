@@ -34,6 +34,20 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:          m.id,
+		OwnerId:     m.ownerId,
+		RoomType:    m.roomType,
+		Title:       m.title,
+		Private:     m.private,
+		HasPassword: m.hasPassword,
+		PieceType:   m.pieceType,
+		Occupancy:   m.occupancy,
+		InProgress:  m.inProgress,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:          rm.Id,

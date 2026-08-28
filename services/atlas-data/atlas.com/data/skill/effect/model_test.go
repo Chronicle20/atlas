@@ -9,7 +9,7 @@ import (
 // a Skill.wz `common` key. The tag is the wz key verbatim (design §5.1) so
 // atlas-ui and any other consumer can address it by its archive name.
 func TestCommonKeyJSONTags(t *testing.T) {
-	m := NewModelBuilder().
+	m := NewBuilder().
 		SetRange(1).SetMastery(2).SetZ(3).SetDot(4).SetCr(5).
 		SetDotInterval(6).SetDotTime(7).SetDamR(8).SetCriticaldamageMin(9).
 		SetMHPRRate(10).SetV(11).SetIgnoreMobpdpR(12).SetEpad(13).SetW(14).
@@ -59,7 +59,7 @@ func TestCommonKeyJSONTags(t *testing.T) {
 // `itemConsume` attribute is fed by wz `itemCon` and must NOT be repurposed
 // for wz `common/itemConsume`, which lands on `consumeItemId`.
 func TestExistingItemConsumeUnchanged(t *testing.T) {
-	m := NewModelBuilder().SetItemConsume(2000000).SetConsumeItemId(2331000).Build()
+	m := NewBuilder().SetItemConsume(2000000).SetConsumeItemId(2331000).Build()
 	rm, err := Transform(m)
 	if err != nil {
 		t.Fatalf("Transform error = %v", err)

@@ -38,7 +38,7 @@ func newTestServer(t *testing.T, tm tenant.Model) server.Model {
 func seedSnapshotCore(t *testing.T, tm tenant.Model, characterId uint32) {
 	t.Helper()
 	v := snapshot.GetRegistry().View(tm, characterId)
-	core := character3.NewModelBuilder().
+	core := character3.NewBuilder().
 		SetId(characterId).SetLevel(30).SetMp(500).SetMaxMp(800).
 		MustBuild()
 	if !snapshot.GetRegistry().BackfillCore(tm, characterId, core, v.CoreGen) {

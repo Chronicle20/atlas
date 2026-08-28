@@ -18,3 +18,11 @@ func Extract(rm RestModel) (Model, error) {
 		itemConsume: rm.ItemConsume,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Duration:    m.duration,
+		MPConsume:   m.mpConsume,
+		ItemConsume: m.itemConsume,
+	}, nil
+}

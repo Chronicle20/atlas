@@ -10,12 +10,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
-func testCharacter(isGm bool) character.Model {
+func testCharacter(t *testing.T, isGm bool) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	return character.NewModelBuilder().SetId(1).SetGm(gm).Build()
+	m, err := character.NewBuilder().SetId(1).SetGm(gm).Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
+	return m
 }
 
 func TestParseSpawnArgs(t *testing.T) {
@@ -101,7 +105,7 @@ func TestMobSpawnCommandProducer_GmGate(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := testCharacter(tc.isGm)
+			char := testCharacter(t, tc.isGm)
 			executor, found := MobSpawnCommandProducer(logger)(ctx)(f, char, tc.message)
 			if found != tc.expectFound {
 				t.Fatalf("found = %v, want %v", found, tc.expectFound)

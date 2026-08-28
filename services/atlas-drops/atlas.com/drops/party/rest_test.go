@@ -1,6 +1,7 @@
 package party
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
@@ -8,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
@@ -133,4 +135,51 @@ func TestExtract_JSONAPIFixture(t *testing.T) {
 	require.Equal(t, channel.Id(1), m.Members()[0].Field().ChannelId())
 	require.Equal(t, _map.Id(100000000), m.Members()[0].Field().MapId())
 	require.Equal(t, uuid.MustParse("00000000-0000-0000-0000-000000000001"), m.Members()[0].Field().Instance())
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	t.Run("Transform", func(t *testing.T) {
+		f := field.NewBuilder(world.Id(5), channel.Id(2), _map.Id(300000000)).
+			SetInstance(uuid.MustParse("11111111-1111-1111-1111-111111111111")).
+			Build()
+
+		m := NewBuilder().
+			SetId(9).
+			SetMembers([]MemberModel{
+				NewMemberBuilder().
+					SetId(101).
+					SetField(f).
+					SetOnline(true).
+					Build(),
+			}).
+			Build()
+
+		rm, err := Transform(m)
+		require.NoError(t, err)
+
+		got, err := Extract(rm)
+		require.NoError(t, err)
+
+		require.True(t, reflect.DeepEqual(got, m))
+	})
+
+	t.Run("TransformMember", func(t *testing.T) {
+		f := field.NewBuilder(world.Id(6), channel.Id(4), _map.Id(400000000)).
+			SetInstance(uuid.MustParse("22222222-2222-2222-2222-222222222222")).
+			Build()
+
+		mm := NewMemberBuilder().
+			SetId(202).
+			SetField(f).
+			SetOnline(true).
+			Build()
+
+		rm, err := TransformMember(mm)
+		require.NoError(t, err)
+
+		got, err := ExtractMember(rm)
+		require.NoError(t, err)
+
+		require.True(t, reflect.DeepEqual(got, mm))
+	})
 }

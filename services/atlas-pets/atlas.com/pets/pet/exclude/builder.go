@@ -2,23 +2,23 @@ package exclude
 
 import "errors"
 
-type ModelBuilder struct {
+type Builder struct {
 	id     uint32
 	itemId uint32
 }
 
-func NewModelBuilder(itemId uint32) *ModelBuilder {
-	return &ModelBuilder{
+func NewBuilder(itemId uint32) *Builder {
+	return &Builder{
 		itemId: itemId,
 	}
 }
 
-func (b *ModelBuilder) SetId(id uint32) *ModelBuilder {
+func (b *Builder) SetId(id uint32) *Builder {
 	b.id = id
 	return b
 }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.itemId == 0 {
 		return Model{}, errors.New("itemId is required")
 	}

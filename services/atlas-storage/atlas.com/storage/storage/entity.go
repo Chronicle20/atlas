@@ -34,7 +34,7 @@ func Migration(db *gorm.DB) error {
 // Make converts an Entity to a Model.
 // Uses MustBuild since entities from database are trusted.
 func Make(e Entity) Model {
-	return NewModelBuilder().
+	return NewBuilder().
 		SetId(e.Id).
 		SetWorldId(world.Id(e.WorldId)).
 		SetAccountId(e.AccountId).

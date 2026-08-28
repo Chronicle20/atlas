@@ -50,7 +50,7 @@ func requestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 
 func seedKey(t *testing.T, db *gorm.DB, tenantId uuid.UUID, characterId uint32, k int32) {
 	t.Helper()
-	m, err := key.NewModelBuilder().SetCharacterId(characterId).SetKey(k).SetType(4).SetAction(0).Build()
+	m, err := key.NewBuilder().SetCharacterId(characterId).SetKey(k).SetType(4).SetAction(0).Build()
 	require.NoError(t, err)
 	e := m.ToEntity(tenantId)
 	require.NoError(t, db.Create(&e).Error)

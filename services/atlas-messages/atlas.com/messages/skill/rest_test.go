@@ -1,7 +1,9 @@
 package skill
 
 import (
+	"reflect"
 	"testing"
+	"time"
 )
 
 // TestRestModel_GetName tests the GetName method
@@ -147,5 +149,26 @@ func TestExtract_ZeroValues(t *testing.T) {
 	}
 	if model.MasterLevel() != 0 {
 		t.Errorf("Expected MasterLevel=0, got %d", model.MasterLevel())
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		id:                11,
+		level:             22,
+		masterLevel:       33,
+		expiration:        time.Unix(1700000004, 0).UTC(),
+		cooldownExpiresAt: time.Unix(1700000005, 0).UTC(),
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

@@ -23,7 +23,7 @@ func TestPatchCharacterIntegration(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -40,6 +40,9 @@ func TestPatchCharacterIntegration(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -107,7 +110,7 @@ func TestPatchCharacterPartialUpdate(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("PartialUpd").
@@ -124,6 +127,9 @@ func TestPatchCharacterPartialUpdate(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -179,7 +185,7 @@ func TestPatchCharacterWithInvalidName(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -196,6 +202,9 @@ func TestPatchCharacterWithInvalidName(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -236,7 +245,7 @@ func TestPatchCharacterWithInvalidHair(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -253,6 +262,9 @@ func TestPatchCharacterWithInvalidHair(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -321,7 +333,7 @@ func TestPatchCharacterWithInvalidGender(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -338,6 +350,9 @@ func TestPatchCharacterWithInvalidGender(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -378,7 +393,7 @@ func TestPatchCharacterWithNoUpdates(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -395,6 +410,9 @@ func TestPatchCharacterWithNoUpdates(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -447,7 +465,7 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 	logger := testLogger()
 
 	// Create first character
-	firstCharacter := character.NewModelBuilder().
+	firstCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("ExistingName").
@@ -464,9 +482,12 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	// Create second character
-	secondCharacter := character.NewModelBuilder().
+	secondCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1001).
 		SetWorldId(world.Id(0)).
 		SetName("SecondName").
@@ -483,11 +504,14 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 
 	// Create both characters
-	_, err := processor.Create(message.NewBuffer())(uuid.New(), firstCharacter, 0)
+	_, err = processor.Create(message.NewBuffer())(uuid.New(), firstCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create first character: %v", err)
 	}
@@ -530,7 +554,7 @@ func TestPatchCharacterWithInvalidFace(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -547,6 +571,9 @@ func TestPatchCharacterWithInvalidFace(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -587,7 +614,7 @@ func TestPatchCharacterWithInvalidSkinColor(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -604,6 +631,9 @@ func TestPatchCharacterWithInvalidSkinColor(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -644,7 +674,7 @@ func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -661,6 +691,9 @@ func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -701,7 +734,7 @@ func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -718,6 +751,9 @@ func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -758,7 +794,7 @@ func TestNameChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -775,6 +811,9 @@ func TestNameChangedEventEmission(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -871,7 +910,7 @@ func TestHairChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -888,6 +927,9 @@ func TestHairChangedEventEmission(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -984,7 +1026,7 @@ func TestFaceChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1001,6 +1043,9 @@ func TestFaceChangedEventEmission(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -1097,7 +1142,7 @@ func TestGenderChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1114,6 +1159,9 @@ func TestGenderChangedEventEmission(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -1210,7 +1258,7 @@ func TestSkinColorChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1227,6 +1275,9 @@ func TestSkinColorChangedEventEmission(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -1323,7 +1374,7 @@ func TestGmChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1341,6 +1392,9 @@ func TestGmChangedEventEmission(t *testing.T) {
 		SetSkinColor(0).
 		SetGm(0). // Initially not a GM
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -1437,7 +1491,7 @@ func TestGmDemotionEventEmission(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("DemoteMe").
@@ -1455,6 +1509,9 @@ func TestGmDemotionEventEmission(t *testing.T) {
 		SetSkinColor(0).
 		SetGm(1). // starts as GM
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -1504,7 +1561,7 @@ func TestGmAbsentMeansNoChange(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("StayGm").
@@ -1522,6 +1579,9 @@ func TestGmAbsentMeansNoChange(t *testing.T) {
 		SetSkinColor(0).
 		SetGm(2).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -1569,7 +1629,7 @@ func TestChangeWorldToWorldZeroEmitsWorldChanged(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(3)).
 		SetName("OriginalName").
@@ -1586,6 +1646,9 @@ func TestChangeWorldToWorldZeroEmitsWorldChanged(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -1617,7 +1680,7 @@ func TestChangeWorldEmitsExactlyOneWorldChangedWithNewWorldRouting(t *testing.T)
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(3)).
 		SetName("OriginalName").
@@ -1634,6 +1697,9 @@ func TestChangeWorldEmitsExactlyOneWorldChangedWithNewWorldRouting(t *testing.T)
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
@@ -1696,7 +1762,7 @@ func TestChangeWorldSameValueIsANoOpAndEmitsNoEvent(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1713,6 +1779,9 @@ func TestChangeWorldSameValueIsANoOpAndEmitsNoEvent(t *testing.T) {
 		SetFace(20000).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	processor := character.NewProcessor(logger, tctx, db)
 	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)

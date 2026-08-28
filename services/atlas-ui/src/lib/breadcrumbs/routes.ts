@@ -394,6 +394,11 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     label: "Presets",
     parent: "/templates/[id]/character",
   },
+  {
+    pattern: "/templates/[id]/character/maple-life",
+    label: "Maple Life",
+    parent: "/templates/[id]/character",
+  },
 
   // Tenant routes
   {
@@ -439,6 +444,11 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
   {
     pattern: "/tenants/[id]/character/presets",
     label: "Presets",
+    parent: "/tenants/[id]/character",
+  },
+  {
+    pattern: "/tenants/[id]/character/maple-life",
+    label: "Maple Life",
     parent: "/tenants/[id]/character",
   },
 
@@ -661,6 +671,7 @@ export const ROUTE_PATTERNS = {
   TEMPLATE_CHARACTER: "/templates/[id]/character",
   TEMPLATE_CHARACTER_TEMPLATES: "/templates/[id]/character/templates",
   TEMPLATE_CHARACTER_PRESETS: "/templates/[id]/character/presets",
+  TEMPLATE_CHARACTER_MAPLE_LIFE: "/templates/[id]/character/maple-life",
   MONSTERS: "/monsters",
   MONSTER_DETAIL: "/monsters/[id]",
   ITEMS: "/items",
@@ -699,4 +710,5 @@ export const ROUTE_PATTERNS = {
   TENANT_CHARACTER: "/tenants/[id]/character",
   TENANT_CHARACTER_TEMPLATES: "/tenants/[id]/character/templates",
   TENANT_CHARACTER_PRESETS: "/tenants/[id]/character/presets",
+  TENANT_CHARACTER_MAPLE_LIFE: "/tenants/[id]/character/maple-life",
 } as const;

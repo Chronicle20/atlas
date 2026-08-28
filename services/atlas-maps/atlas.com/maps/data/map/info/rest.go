@@ -37,6 +37,14 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                m.id,
+		TimeLimit:         m.timeLimit,
+		ForcedReturnMapId: m.forcedReturnMapId,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:                rm.Id,

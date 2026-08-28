@@ -103,7 +103,7 @@ func dueySendTestWP(announced *[]dueySendRecordedAnnounce) writer.Producer {
 
 func mustCharacterModel(t *testing.T, id uint32, accountId uint32, worldId world.Id, name string, level byte, meso uint32) character.Model {
 	t.Helper()
-	m, err := character.NewModelBuilder().SetId(id).SetAccountId(accountId).SetWorldId(worldId).SetName(name).SetLevel(level).SetMeso(meso).Build()
+	m, err := character.NewBuilder().SetId(id).SetAccountId(accountId).SetWorldId(worldId).SetName(name).SetLevel(level).SetMeso(meso).Build()
 	if err != nil {
 		t.Fatalf("building character fixture: %v", err)
 	}

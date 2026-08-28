@@ -81,7 +81,7 @@ func (p *ProcessorImpl) ByIdProvider(ch channel.Model) model.Provider[Model] {
 // Register registers a new channel server
 func (p *ProcessorImpl) Register(ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error) {
 	p.l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", ch.WorldId(), ch.Id(), p.t.String())
-	m, err := NewModelBuilder().
+	m, err := NewBuilder().
 		SetId(uuid.New()).
 		SetWorldId(ch.WorldId()).
 		SetChannelId(ch.Id()).

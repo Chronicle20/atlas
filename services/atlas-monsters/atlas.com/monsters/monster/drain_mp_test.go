@@ -27,7 +27,7 @@ func TestDrainMp_HappyPath_EmitsMpChanged(t *testing.T) {
 	// Stub information lookup to return a non-boss monster.
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(false).Build(), nil
+		return information.NewBuilder().SetBoss(false).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -96,7 +96,7 @@ func TestDrainMp_ClampsAtZero(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(false).Build(), nil
+		return information.NewBuilder().SetBoss(false).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -143,7 +143,7 @@ func TestDrainMp_SkipsZeroMaxMp(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(false).Build(), nil
+		return information.NewBuilder().SetBoss(false).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -175,7 +175,7 @@ func TestDrainMp_DryMonsterStillEmits(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(false).Build(), nil
+		return information.NewBuilder().SetBoss(false).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -221,7 +221,7 @@ func TestDrainMp_SkipsZeroRequest(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(false).Build(), nil
+		return information.NewBuilder().SetBoss(false).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -296,7 +296,7 @@ func TestDrainMp_SkipsBoss(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(true).Build(), nil
+		return information.NewBuilder().SetBoss(true).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 

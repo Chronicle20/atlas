@@ -275,7 +275,7 @@ func newSnapshotTestServer(t *testing.T, tm tenant.Model) server.Model {
 func seedInventory(t *testing.T, tm tenant.Model, characterId uint32) uuid.UUID {
 	t.Helper()
 	compId := uuid.New()
-	a := asset.NewModelBuilder(9001, compId, 2060000).SetSlot(2).SetQuantity(400).MustBuild()
+	a := asset.NewBuilderWithId(9001, compId, 2060000).SetSlot(2).SetQuantity(400).MustBuild()
 	comp := compartment.NewBuilder(compId, characterId, invconst.TypeValueUse, 96).AddAsset(a).MustBuild()
 	inv := inventory.NewBuilder(characterId).
 		SetEquipable(compartment.NewBuilder(uuid.New(), characterId, invconst.TypeValueEquip, 96).MustBuild()).

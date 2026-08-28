@@ -129,11 +129,13 @@ func countUpdatesTo(t *testing.T, db *gorm.DB, table string) func() int {
 // compartment.TypeExplorer, which is what seedCompartment writes.
 func characterModel(t *testing.T, characterId uint32, accountId uint32) character.Model {
 	t.Helper()
-	return character.NewModelBuilder().
+	m, err := character.NewBuilder().
 		SetId(characterId).
 		SetAccountId(accountId).
 		SetJobId(job.Id(100)).
 		Build()
+	require.NoError(t, err)
+	return m
 }
 
 // newProcessorForCharacter is newTestProcessor with both remote seams

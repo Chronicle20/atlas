@@ -60,9 +60,9 @@ func TestModel_Accessors(t *testing.T) {
 	}
 }
 
-func TestNewModelBuilder(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	builder := NewModelBuilder(f, 1001, "test-reactor")
+	builder := NewBuilder(f, 1001, "test-reactor")
 
 	if builder.f.WorldId() != 1 {
 		t.Errorf("Expected worldId 1, got %d", builder.f.WorldId())
@@ -84,9 +84,9 @@ func TestNewModelBuilder(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_Success(t *testing.T) {
+func TestBuilder_Build_Success(t *testing.T) {
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	builder := NewModelBuilder(f, 1001, "test-reactor")
+	builder := NewBuilder(f, 1001, "test-reactor")
 	builder.SetId(123)
 	builder.SetState(1)
 	builder.SetPosition(100, 200)
@@ -137,9 +137,9 @@ func TestModelBuilder_Build_Success(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_EmptyName_Error(t *testing.T) {
+func TestBuilder_Build_EmptyName_Error(t *testing.T) {
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	builder := NewModelBuilder(f, 1001, "")
+	builder := NewBuilder(f, 1001, "")
 
 	_, err := builder.Build()
 	if err == nil {
@@ -150,9 +150,9 @@ func TestModelBuilder_Build_EmptyName_Error(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_ZeroClassification_Error(t *testing.T) {
+func TestBuilder_Build_ZeroClassification_Error(t *testing.T) {
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	builder := NewModelBuilder(f, 0, "test-reactor")
+	builder := NewBuilder(f, 0, "test-reactor")
 
 	_, err := builder.Build()
 	if err == nil {
@@ -222,9 +222,9 @@ func TestNewFromModel(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_SetMethods(t *testing.T) {
+func TestBuilder_SetMethods(t *testing.T) {
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	builder := NewModelBuilder(f, 1001, "test-reactor")
+	builder := NewBuilder(f, 1001, "test-reactor")
 
 	// Test chaining
 	result := builder.SetId(123).SetState(1).SetPosition(100, 200).SetDelay(1000).SetDirection(1).SetEventState(2)
@@ -256,9 +256,9 @@ func TestModelBuilder_SetMethods(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_UpdateTime(t *testing.T) {
+func TestBuilder_UpdateTime(t *testing.T) {
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	builder := NewModelBuilder(f, 1001, "test-reactor")
+	builder := NewBuilder(f, 1001, "test-reactor")
 	originalTime := builder.updateTime
 
 	// Wait a tiny bit to ensure time changes
@@ -271,9 +271,9 @@ func TestModelBuilder_UpdateTime(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Classification(t *testing.T) {
+func TestBuilder_Classification(t *testing.T) {
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	builder := NewModelBuilder(f, 1001, "test-reactor")
+	builder := NewBuilder(f, 1001, "test-reactor")
 
 	if builder.Classification() != 1001 {
 		t.Errorf("Expected Classification 1001, got %d", builder.Classification())

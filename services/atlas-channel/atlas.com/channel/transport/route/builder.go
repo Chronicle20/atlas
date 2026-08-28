@@ -12,7 +12,7 @@ import (
 var ErrInvalidId = errors.New("route id must not be nil")
 
 // modelBuilder is a builder for Model
-type modelBuilder struct {
+type builder struct {
 	id                     uuid.UUID
 	name                   string
 	startMapId             _map.Id
@@ -27,9 +27,9 @@ type modelBuilder struct {
 	cycleInterval          time.Duration
 }
 
-// NewModelBuilder creates a new builder for Model
-func NewModelBuilder(name string) *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new builder for Model
+func NewBuilder(name string) *builder {
+	return &builder{
 		id:            uuid.New(),
 		name:          name,
 		enRouteMapIds: []_map.Id{},
@@ -38,14 +38,9 @@ func NewModelBuilder(name string) *modelBuilder {
 	}
 }
 
-// NewBuilder is an alias for NewModelBuilder for backward compatibility
-func NewBuilder(name string) *modelBuilder {
-	return NewModelBuilder(name)
-}
-
 // CloneModel creates a builder from an existing Model
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:                     m.id,
 		name:                   m.name,
 		startMapId:             m.startMapId,
@@ -61,77 +56,77 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetId(id uuid.UUID) *modelBuilder {
+func (b *builder) SetId(id uuid.UUID) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetName(name string) *modelBuilder {
+func (b *builder) SetName(name string) *builder {
 	b.name = name
 	return b
 }
 
-func (b *modelBuilder) SetStartMapId(startMapId _map.Id) *modelBuilder {
+func (b *builder) SetStartMapId(startMapId _map.Id) *builder {
 	b.startMapId = startMapId
 	return b
 }
 
-func (b *modelBuilder) SetStagingMapId(stagingMapId _map.Id) *modelBuilder {
+func (b *builder) SetStagingMapId(stagingMapId _map.Id) *builder {
 	b.stagingMapId = stagingMapId
 	return b
 }
 
-func (b *modelBuilder) SetEnRouteMapIds(enRouteMapIds []_map.Id) *modelBuilder {
+func (b *builder) SetEnRouteMapIds(enRouteMapIds []_map.Id) *builder {
 	b.enRouteMapIds = enRouteMapIds
 	return b
 }
 
-func (b *modelBuilder) AddEnRouteMapId(enRouteMapId _map.Id) *modelBuilder {
+func (b *builder) AddEnRouteMapId(enRouteMapId _map.Id) *builder {
 	b.enRouteMapIds = append(b.enRouteMapIds, enRouteMapId)
 	return b
 }
 
-func (b *modelBuilder) SetDestinationMapId(destinationMapId _map.Id) *modelBuilder {
+func (b *builder) SetDestinationMapId(destinationMapId _map.Id) *builder {
 	b.destinationMapId = destinationMapId
 	return b
 }
 
-func (b *modelBuilder) SetBoardingWindowDuration(boardingWindowDuration time.Duration) *modelBuilder {
+func (b *builder) SetBoardingWindowDuration(boardingWindowDuration time.Duration) *builder {
 	b.boardingWindowDuration = boardingWindowDuration
 	return b
 }
 
-func (b *modelBuilder) SetPreDepartureDuration(preDepartureDuration time.Duration) *modelBuilder {
+func (b *builder) SetPreDepartureDuration(preDepartureDuration time.Duration) *builder {
 	b.preDepartureDuration = preDepartureDuration
 	return b
 }
 
-func (b *modelBuilder) SetTravelDuration(travelDuration time.Duration) *modelBuilder {
+func (b *builder) SetTravelDuration(travelDuration time.Duration) *builder {
 	b.travelDuration = travelDuration
 	return b
 }
 
-func (b *modelBuilder) SetCycleInterval(cycleInterval time.Duration) *modelBuilder {
+func (b *builder) SetCycleInterval(cycleInterval time.Duration) *builder {
 	b.cycleInterval = cycleInterval
 	return b
 }
 
-func (b *modelBuilder) SetState(state RouteState) *modelBuilder {
+func (b *builder) SetState(state RouteState) *builder {
 	b.state = state
 	return b
 }
 
-func (b *modelBuilder) SetSchedule(schedule []TripScheduleModel) *modelBuilder {
+func (b *builder) SetSchedule(schedule []TripScheduleModel) *builder {
 	b.schedule = schedule
 	return b
 }
 
-func (b *modelBuilder) AddToSchedule(schedule TripScheduleModel) *modelBuilder {
+func (b *builder) AddToSchedule(schedule TripScheduleModel) *builder {
 	b.schedule = append(b.schedule, schedule)
 	return b
 }
 
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == uuid.Nil {
 		return Model{}, ErrInvalidId
 	}
@@ -151,7 +146,7 @@ func (b *modelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

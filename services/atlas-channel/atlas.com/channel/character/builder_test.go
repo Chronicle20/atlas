@@ -10,15 +10,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := character.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := character.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	model, err := character.NewModelBuilder().
+	model, err := character.NewBuilder().
 		SetId(1).
 		SetAccountId(100).
 		SetName("TestCharacter").
@@ -52,7 +52,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := character.NewModelBuilder().
+	_, err := character.NewBuilder().
 		SetAccountId(100).
 		SetName("TestCharacter").
 		Build()
@@ -63,7 +63,7 @@ func TestBuild_MissingId(t *testing.T) {
 }
 
 func TestBuild_ZeroId(t *testing.T) {
-	_, err := character.NewModelBuilder().
+	_, err := character.NewBuilder().
 		SetId(0).
 		SetAccountId(100).
 		Build()
@@ -74,7 +74,7 @@ func TestBuild_ZeroId(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	original, err := character.NewModelBuilder().
+	original, err := character.NewBuilder().
 		SetId(1).
 		SetAccountId(100).
 		SetName("Original").
@@ -126,7 +126,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := character.NewModelBuilder().
+	model := character.NewBuilder().
 		SetId(1).
 		SetAccountId(100).
 		MustBuild()
@@ -143,13 +143,13 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	character.NewModelBuilder().
+	character.NewBuilder().
 		SetAccountId(100).
 		MustBuild() // Missing ID, should panic
 }
 
 func TestBuilderFluentChaining(t *testing.T) {
-	model, err := character.NewModelBuilder().
+	model, err := character.NewBuilder().
 		SetId(1).
 		SetAccountId(100).
 		SetWorldId(0).
@@ -186,7 +186,7 @@ func TestBuilderFluentChaining(t *testing.T) {
 }
 
 func TestBuild_PartyDefaultsToZero(t *testing.T) {
-	model, err := character.NewModelBuilder().
+	model, err := character.NewBuilder().
 		SetId(1).
 		Build()
 	if err != nil {
@@ -202,7 +202,7 @@ func TestBuild_PartyDefaultsToZero(t *testing.T) {
 
 func TestBuild_SetParty(t *testing.T) {
 	pm := party.NewBuilder().SetId(42).SetLeaderId(7).MustBuild()
-	model, err := character.NewModelBuilder().
+	model, err := character.NewBuilder().
 		SetId(1).
 		SetParty(pm).
 		Build()
@@ -219,7 +219,7 @@ func TestBuild_SetParty(t *testing.T) {
 
 func TestCloneModel_PreservesParty(t *testing.T) {
 	pm := party.NewBuilder().SetId(99).MustBuild()
-	original := character.NewModelBuilder().
+	original := character.NewBuilder().
 		SetId(1).
 		SetParty(pm).
 		MustBuild()
@@ -240,7 +240,7 @@ func TestModel_MonsterBookCards(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Extract: %v", err)
 	}
-	m := character.NewModelBuilder().SetId(7).SetMonsterBook(monsterbook.NewModel(col, nil)).MustBuild()
+	m := character.NewBuilder().SetId(7).SetMonsterBook(monsterbook.NewModel(col, nil)).MustBuild()
 	if got := m.MonsterBook().Cards(); len(got) != 0 {
 		t.Fatalf("expected empty cards, got %d", len(got))
 	}
@@ -269,7 +269,7 @@ func TestGm_IsTrueForEveryLevelAboveZero(t *testing.T) {
 		{5, true},
 	}
 	for _, c := range cases {
-		m := character.NewModelBuilder().SetId(1).SetGm(c.level).MustBuild()
+		m := character.NewBuilder().SetId(1).SetGm(c.level).MustBuild()
 		if got := m.Gm(); got != c.want {
 			t.Errorf("gm level %d: Gm() = %t, want %t", c.level, got, c.want)
 		}

@@ -97,7 +97,7 @@ func newFindEnv(t *testing.T) *findEnv {
 	// Defaults: the target resolves, is in the requester's world, is not a GM,
 	// has no local session, and has no location row. Each subtest overrides
 	// only what its rule needs.
-	env.target = character.NewModelBuilder().
+	env.target = character.NewBuilder().
 		SetId(findTargetId).
 		SetName("Bob").
 		SetWorldId(findWorldId).
@@ -209,7 +209,7 @@ func TestFind_FR2_CrossWorld(t *testing.T) {
 	for _, arm := range findArms {
 		t.Run(arm.name, func(t *testing.T) {
 			env := newFindEnv(t)
-			env.target = character.NewModelBuilder().
+			env.target = character.NewBuilder().
 				SetId(findTargetId).SetName("Bob").SetWorldId(world.Id(1)).SetGm(0).MustBuild()
 
 			mode, name := decodeFindError(t, env.ctx, env.l, env.dispatch(arm.mode, "Bob"))
@@ -248,7 +248,7 @@ func TestFind_FR3_GmConcealment(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			env := newFindEnv(t)
-			env.target = character.NewModelBuilder().
+			env.target = character.NewBuilder().
 				SetId(findTargetId).SetName("Bob").SetWorldId(findWorldId).SetGm(c.targetGm).MustBuild()
 			if c.requesterGm {
 				env.s = session.NewProcessor(env.l, env.ctx).SetGm(env.sessionId, true)

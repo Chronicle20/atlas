@@ -64,7 +64,7 @@ func TestExecuteDiseaseCaller(t *testing.T) {
 			},
 			count: 2,
 			infoModel: func() information.Model {
-				return information.NewModelBuilder().SetBanish(information.Banish{MapId: 104000000}).Build()
+				return information.NewBuilder().SetBanish(information.Banish{MapId: 104000000}).Build()
 			},
 			execute: func(p *ProcessorImpl, m Model, sd mobskill.Model) {
 				p.executeBanish(m, sd, byte(monster2.SkillTypeBanish))
@@ -82,7 +82,7 @@ func TestExecuteDiseaseCaller(t *testing.T) {
 			},
 			count: 2,
 			infoModel: func() information.Model {
-				return information.NewModelBuilder().Build()
+				return information.NewBuilder().Build()
 			},
 			execute: func(p *ProcessorImpl, m Model, sd mobskill.Model) {
 				p.executeBanish(m, sd, byte(monster2.SkillTypeBanish))
@@ -111,7 +111,7 @@ func TestExecuteDiseaseCaller(t *testing.T) {
 			}
 
 			m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-			sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(tt.count).Build()
+			sd := mobskill.NewBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(tt.count).Build()
 
 			tt.execute(p, m, sd)
 

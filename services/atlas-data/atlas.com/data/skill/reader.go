@@ -182,7 +182,7 @@ func getEffects(t tenant.Model, skillId skill.Id, buff bool, nodes []xml.Node) [
 }
 
 func getEffect(t tenant.Model, skillId skill.Id, overTime bool, node xml.Node) effect.RestModel {
-	e := effect.NewModelBuilder().
+	e := effect.NewBuilder().
 		SetDuration(node.GetIntegerWithDefault("time", -1)).
 		SetHp(uint16(node.GetIntegerWithDefault("hp", 0))).
 		SetHPRecovery(float64(node.GetIntegerWithDefault("hpR", 0)) / 100.0).
@@ -510,7 +510,7 @@ func getMob(node xml.Node) uint32 {
 	return uint32(c.GetIntegerWithDefault("mob", 0))
 }
 
-func applyMobInformation(e *effect.ModelBuilder, node xml.Node) {
+func applyMobInformation(e *effect.Builder, node xml.Node) {
 	c, err := node.ChildByName("0")
 	if err == nil && len(c.ChildNodes) > 0 {
 		e.SetMobSkill(uint16(node.GetIntegerWithDefault("mobSkill", 0))).

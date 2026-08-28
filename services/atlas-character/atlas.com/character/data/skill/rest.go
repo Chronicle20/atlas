@@ -46,3 +46,20 @@ func Extract(rm RestModel) (Model, error) {
 		effects:       es,
 	}, nil
 }
+
+// Transform is the inverse of Extract: it converts the domain Model back into
+// the RestModel representation.
+func Transform(m Model) (RestModel, error) {
+	es, err := model.SliceMap(effect.Transform)(model.FixedProvider(m.effects))()()
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	return RestModel{
+		Id:            m.id,
+		Action:        m.action,
+		Element:       m.element,
+		AnimationTime: m.animationTime,
+		Effects:       es,
+	}, nil
+}

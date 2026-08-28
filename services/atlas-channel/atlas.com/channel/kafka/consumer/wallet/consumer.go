@@ -78,6 +78,13 @@ func handleWalletUpdated(sc server.Model, wp writer.Producer) message.Handler[wa
 			case session.CashSceneMts:
 				return session.Announce(l)(ctx)(wp)(fieldcb.MtsOperation2Writer)(fieldcb.NewMtsOperation2(e.Body.Prepaid, e.Body.Points).Encode)(s)
 			case session.CashSceneCashShop:
+				// SceneRefreshOwned means the originating operation's own status
+				// handler (e.g. handleStatusEventGiftPurchased) already announces
+				// CashQueryResult in the client-required order; announcing it again
+				// here would race it across topics. See bug-round-2-gift-notice-*.
+				if e.Body.SceneRefreshOwned {
+					return nil
+				}
 				return session.Announce(l)(ctx)(wp)(cashcb.CashQueryResultWriter)(cashcb.NewCashQueryResult(e.Body.Credit, e.Body.Points, e.Body.Prepaid).Encode)(s)
 			default:
 				return nil

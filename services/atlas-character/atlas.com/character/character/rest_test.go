@@ -50,13 +50,16 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	rc := setupTestRedis(t)
 	character.InitTemporalRegistry(rc)
 
-	im := character.NewModelBuilder().
+	im, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("Atlas").
 		SetLevel(1).
 		SetExperience(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	ctx := testTenantContext()
 	res, err := model.Map(character.Transform(testLogger(), ctx))(model.FixedProvider(im))()
@@ -99,7 +102,7 @@ func TestTransformExtractGmField(t *testing.T) {
 	rc := setupTestRedis(t)
 	character.InitTemporalRegistry(rc)
 
-	im := character.NewModelBuilder().
+	im, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("TestChar").
@@ -107,6 +110,9 @@ func TestTransformExtractGmField(t *testing.T) {
 		SetExperience(1000).
 		SetGm(1).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 
 	ctx := testTenantContext()
 	// task-087: Transform no longer emits location; the GET projection has no

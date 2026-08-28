@@ -74,7 +74,7 @@ func TestHandleStatusEventDeleted(t *testing.T) {
 		t.Fatalf("Create skill 2 unexpected error: %v", err)
 	}
 
-	testMacro, err := macro.NewModelBuilder().
+	testMacro, err := macro.NewBuilder().
 		SetId(0).
 		SetName("Test Macro").
 		SetSkillId1(skillconst.Id(1001001)).

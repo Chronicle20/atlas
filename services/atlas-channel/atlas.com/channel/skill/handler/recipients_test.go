@@ -69,7 +69,7 @@ func mkPartyMember(id uint32, online bool, ch channel.Id, mapId _map.Id) party.M
 }
 
 func mkMemberChar(id uint32, hp uint16) character.Model {
-	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).SetLevel(70).MustBuild()
+	return character.NewBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).SetLevel(70).MustBuild()
 }
 
 func recipientIds(rs []PartyRecipient) []uint32 {
@@ -301,7 +301,7 @@ func installMapSeams(t *testing.T, inMap map[uint32]struct{}, players map[uint32
 }
 
 func mkPlayerCharAt(id uint32, hp uint16, x, y int16) character.Model {
-	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).SetX(x).SetY(y).SetLevel(70).MustBuild()
+	return character.NewBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).SetX(x).SetY(y).SetLevel(70).MustBuild()
 }
 
 func rectEffect(t *testing.T) effect.Model {

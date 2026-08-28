@@ -119,14 +119,14 @@ func testEffectModel(t *testing.T) effect.Model {
 
 func testCasterModel(t *testing.T, id uint32, luck, hp, maxHp uint16) character.Model {
 	t.Helper()
-	m, err := character.NewModelBuilder().
+	m, err := character.NewBuilder().
 		SetId(id).
 		SetLuck(luck).
 		SetHp(hp).
 		SetMaxHp(maxHp).
 		Build()
 	if err != nil {
-		t.Fatalf("character.NewModelBuilder().Build(): %v", err)
+		t.Fatalf("character.NewBuilder().Build(): %v", err)
 	}
 	return m
 }

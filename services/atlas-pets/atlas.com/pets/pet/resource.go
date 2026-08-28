@@ -107,7 +107,7 @@ func createPetLevel(provided byte) byte {
 	return provided
 }
 
-// petLifespan is the standard pet lifespan (90 days), matching NewModelBuilder's
+// petLifespan is the standard pet lifespan (90 days), matching NewBuilder's
 // default and the evolution reset.
 const petLifespan = 2160 * time.Hour
 

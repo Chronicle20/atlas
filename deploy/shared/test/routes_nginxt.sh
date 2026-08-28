@@ -119,6 +119,38 @@ if ! grep -nE 'character/\(\?<hash>\[a-f0-9\]\{16\}\)' "$ROUTES" >/dev/null; the
 fi
 echo "routes.conf character-render hash-length check: OK"
 
+# Ring route guard (task-269): GET /api/rings must resolve to atlas-cashshop,
+# not fall through to the atlas-ui `location /` catch-all. ring/resource.go
+# registers /rings and /rings/{ringId} at the cashshop router root, so
+# `^/api/cash-shop(/.*)?$` does not cover it and it needs its own block.
+python3 - "$ROUTES" <<'PY' || exit 1
+import re, sys, pathlib
+text = pathlib.Path(sys.argv[1]).read_text()
+
+m = re.search(r'location ~ (\^/api/rings\(/\.\*\)\?\$) \{([^}]*)\}', text)
+if not m:
+    print("error: no `location ~ ^/api/rings(/.*)?$` block found in routes.conf", file=sys.stderr)
+    sys.exit(1)
+pattern, body = m.group(1), m.group(2)
+hm = re.search(r'set \$u "([^":]+):\d+"', body)
+upstream = hm.group(1) if hm else None
+if upstream != 'atlas-cashshop':
+    print(f"error: /api/rings block proxies to {upstream!r}, expected 'atlas-cashshop'", file=sys.stderr)
+    sys.exit(1)
+
+paths = [
+    '/api/rings?filter[characterId]=1',
+    '/api/rings/9c5b3b1a-1111-4a2b-9c3d-000000000001',
+]
+compiled = re.compile(pattern)
+for path in paths:
+    path_only = path.split('?', 1)[0]
+    if not compiled.fullmatch(path_only):
+        print(f"error: {path!r} does not match location pattern {pattern!r}", file=sys.stderr)
+        sys.exit(1)
+print("routes.conf rings route check: OK")
+PY
+
 # F18: confirm the generated k8s routes file is in sync with the canonical
 # shared source. If shared/routes.conf changes, the committer MUST also run
 # tools/gen-routes.sh and commit the resulting routes.conf.template.generated.

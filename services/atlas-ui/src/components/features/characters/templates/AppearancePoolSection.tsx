@@ -1,29 +1,30 @@
 import { useState, type ReactNode } from "react";
 import { Plus, TriangleAlert } from "lucide-react";
-import type { CharacterTemplate } from "@/types/models/template";
 import { Button } from "@/components/ui/button";
+import type { CharacterLoadout } from "@/services/api/characterRender.service";
 import { generateCharacterUrl } from "@/services/api/characterRender.service";
 import { useTenant } from "@/context/tenant-context";
-import {
-  PICK_KEY_BY_POOL,
-  type AppearancePoolKey,
-  type PreviewPicks,
-} from "./editorState";
-import { buildVariantLoadout } from "./previewLoadout";
+import type { AppearancePoolKey } from "./editorState";
 import { AppearanceThumb, THUMB_SIZE } from "./AppearanceThumb";
 
 interface AppearancePoolSectionProps {
   dimension: AppearancePoolKey;
   title: string;
-  template: CharacterTemplate;
-  picks: PreviewPicks;
-  onPick: (pick: keyof PreviewPicks, idx: number) => void;
+  pool: number[];
+  selectedIndex: number;
+  variantLoadout: (
+    dimension: AppearancePoolKey,
+    id: number,
+  ) => CharacterLoadout;
+  onPick: (index: number) => void;
   onRemoveEntry: (entryIndex: number) => void;
   /** Editor supplies the AppearanceBrowserDialog here (open state owned locally). */
   renderAddDialog: (
     open: boolean,
     onOpenChange: (open: boolean) => void,
   ) => ReactNode;
+  /** Extra copy under the header — FR-6.5 value domain, FR-6.6 allow-list note. */
+  description?: ReactNode;
 }
 
 // Singular noun for aria labels, e.g. "Preview face 20000".
@@ -37,16 +38,16 @@ const NOUN: Record<AppearancePoolKey, string> = {
 export function AppearancePoolSection({
   dimension,
   title,
-  template,
-  picks,
+  pool,
+  selectedIndex,
+  variantLoadout,
   onPick,
   onRemoveEntry,
   renderAddDialog,
+  description,
 }: AppearancePoolSectionProps) {
   const { activeTenant } = useTenant();
   const [addOpen, setAddOpen] = useState(false);
-  const pickKey = PICK_KEY_BY_POOL[dimension]!;
-  const pool = template[dimension];
 
   return (
     <section className="space-y-2">
@@ -62,6 +63,9 @@ export function AppearancePoolSection({
           </span>
         )}
       </div>
+      {description && (
+        <p className="text-xs text-muted-foreground">{description}</p>
+      )}
       <div className="flex flex-wrap items-start gap-2">
         {activeTenant &&
           pool.map((id, idx) => (
@@ -72,13 +76,13 @@ export function AppearancePoolSection({
                 activeTenant.attributes.region,
                 activeTenant.attributes.majorVersion,
                 activeTenant.attributes.minorVersion,
-                buildVariantLoadout(template, picks, dimension, id),
+                variantLoadout(dimension, id),
                 { stance: "stand1", resize: 2 },
               )}
               idLabel={id}
               ariaLabel={`Preview ${NOUN[dimension]} ${id}`}
-              selected={picks[pickKey] === idx}
-              onSelect={() => onPick(pickKey, idx)}
+              selected={selectedIndex === idx}
+              onSelect={() => onPick(idx)}
               onRemove={() => onRemoveEntry(idx)}
               removeAriaLabel={`Remove ${NOUN[dimension]} ${id}`}
             />

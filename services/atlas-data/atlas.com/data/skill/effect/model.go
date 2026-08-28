@@ -9,9 +9,9 @@ import (
 // Model is the immutable domain representation of a single skill effect
 // (one `level` entry, or one node synthesized from `common` — see
 // skill.getEffect, the single shared implementation for both read paths).
-// It is produced by ModelBuilder.Build() and converted to the wire shape via
+// It is produced by Builder.Build() and converted to the wire shape via
 // Transform. Private fields + getters, per the project's immutable-model
-// convention; construction goes exclusively through ModelBuilder in
+// convention; construction goes exclusively through Builder in
 // builder.go.
 type Model struct {
 	weaponAttack         int16

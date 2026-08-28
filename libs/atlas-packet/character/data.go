@@ -47,14 +47,18 @@ type InventoryData struct {
 	SetupCapacity byte
 	EtcCapacity   byte
 	CashCapacity  byte
-	Timestamp     int64
-	RegularEquip  []model.Asset
-	CashEquip     []model.Asset
-	EquipInv      []model.Asset
-	UseInv        []model.Asset
-	SetupInv      []model.Asset
-	EtcInv        []model.Asset
-	CashInv       []model.Asset
+	// EquipSlotExtExpire is CharacterData::aEquipExtExpire[0] (a Windows
+	// FILETIME): the expiry of the character's purchased extended equip slot
+	// (see docs/tasks/task-240-cash-shop-stub-operations/derivation-equip-slot.md
+	// E2). It is not an inventory-update timestamp despite the field's old name.
+	EquipSlotExtExpire int64
+	RegularEquip       []model.Asset
+	CashEquip          []model.Asset
+	EquipInv           []model.Asset
+	UseInv             []model.Asset
+	SetupInv           []model.Asset
+	EtcInv             []model.Asset
+	CashInv            []model.Asset
 }
 
 type SkillEntry struct {
@@ -114,6 +118,7 @@ type CharacterData struct {
 	// decoding strips the padding.
 	TeleportMaps    []_map.Id
 	VipTeleportMaps []_map.Id
+	Rings           model.RingRecords
 }
 
 func (m CharacterData) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -443,11 +448,12 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 		w.WriteByte(m.Inventory.CashCapacity)
 	}
 
-	// Inventory-update FILETIME: added in the v79 protocol revision (flag 0x100000,
-	// read before the equip section). Absent v48/v61/v72 — v72 has no 0x100000 block
-	// before equipment (its only 0x100000 use is the trailing wishlist map). IDA-verified.
+	// Equip-slot-extension expiry FILETIME: added in the v79 protocol revision
+	// (flag 0x100000, read before the equip section). Absent v48/v61/v72 — v72
+	// has no 0x100000 block before equipment (its only 0x100000 use is the
+	// trailing wishlist map). IDA-verified.
 	if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
-		w.WriteInt64(m.Inventory.Timestamp)
+		w.WriteInt64(m.Inventory.EquipSlotExtExpire)
 	}
 
 	// Regular equipment
@@ -536,9 +542,9 @@ func (m *CharacterData) decodeInventory(l logrus.FieldLogger, ctx context.Contex
 		m.Inventory.CashCapacity = r.ReadByte()
 	}
 
-	// Inventory-update FILETIME: v79+ only (mirror of Encode).
+	// Equip-slot-extension expiry FILETIME: v79+ only (mirror of Encode).
 	if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
-		m.Inventory.Timestamp = r.ReadInt64()
+		m.Inventory.EquipSlotExtExpire = r.ReadInt64()
 	}
 
 	// Regular equipment: slot is negative (equipped items)
@@ -757,20 +763,16 @@ func (m *CharacterData) decodeMiniGame(r *request.Reader) {
 	_ = r.ReadUint16()
 }
 
+// encodeRings/decodeRings delegate to model.RingRecords, which owns the
+// version gate ((GMS>28) || JMS) verbatim from the pre-task stub. A zero-
+// valued Rings field produces byte-identical output to the pre-task
+// WriteShort(0)x3 / WriteShort(0)x1 stub (PRD FR-9).
 func (m *CharacterData) encodeRings(w *response.Writer, t tenant.Model) {
-	w.WriteShort(0) // crush rings
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-		w.WriteShort(0) // friendship rings
-		w.WriteShort(0) // partner
-	}
+	m.Rings.EncodeRecords(w, t)
 }
 
 func (m *CharacterData) decodeRings(r *request.Reader, t tenant.Model) {
-	_ = r.ReadUint16() // crush rings
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-		_ = r.ReadUint16() // friendship rings
-		_ = r.ReadUint16() // partner
-	}
+	m.Rings.DecodeRecords(r, t)
 }
 
 func (m *CharacterData) encodeTeleports(w *response.Writer, t tenant.Model) {

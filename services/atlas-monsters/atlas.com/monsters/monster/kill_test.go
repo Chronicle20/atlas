@@ -28,7 +28,7 @@ func TestKill_NonBoss_KilledAndRemoved(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(false).Build(), nil
+		return information.NewBuilder().SetBoss(false).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -81,7 +81,7 @@ func TestKill_Boss_Dropped(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(true).Build(), nil
+		return information.NewBuilder().SetBoss(true).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -166,7 +166,7 @@ func TestKill_DeadMonster_NoOp(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBoss(false).Build(), nil
+		return information.NewBuilder().SetBoss(false).Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 

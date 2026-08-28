@@ -38,3 +38,12 @@ func Extract(rm RestModel) (Model, error) {
 		expiration:  rm.Expiration,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:          m.id,
+		Level:       m.level,
+		MasterLevel: m.masterLevel,
+		Expiration:  m.expiration,
+	}, nil
+}

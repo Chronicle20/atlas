@@ -9,15 +9,18 @@ import (
 	"atlas-cashshop/coupon/redemption"
 	"atlas-cashshop/kafka/consumer/account"
 	"atlas-cashshop/kafka/consumer/cashshop"
-	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"
 	"atlas-cashshop/kafka/consumer/character"
-	itemConsumer "atlas-cashshop/kafka/consumer/item"
-	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
+	"atlas-cashshop/purchaserecord"
+	"atlas-cashshop/ring"
 	"atlas-cashshop/surprise/opening"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
 	"context"
 	"os"
+
+	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"
+	itemConsumer "atlas-cashshop/kafka/consumer/item"
+	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
@@ -59,7 +62,17 @@ func main() {
 	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, purchaserecord.Migration, ring.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
+
+	// Seed cash_purchase_records from cash_assets history for accounts that
+	// bought before purchaserecord existed. Idempotent, so it runs on every
+	// boot; a failure here is a degraded answer (missing purchase history),
+	// not a reason to refuse to serve the cash shop.
+	if backfilled, err := purchaserecord.Backfill(l, db); err != nil {
+		l.WithError(err).Warn("Failed to backfill purchase records from cash_assets history.")
+	} else if backfilled > 0 {
+		l.Infof("Backfilled %d purchase record(s) from existing cash_assets history.", backfilled)
+	}
 
 	// ACCEPT/RELEASE claim an idempotency key so an at-least-once redelivery
 	// cannot duplicate or double-release a cash asset (task-208).
@@ -125,12 +138,14 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
 		AddRouteInitializer(wishlist.InitResource(GetServer())(db)).
+		AddRouteInitializer(purchaserecord.InitResource(GetServer())(db)).
 		AddRouteInitializer(compartment.InitResource(GetServer())(db)).
 		AddRouteInitializer(asset.InitResource(GetServer())(db)).
 		AddRouteInitializer(inventory.InitResource(GetServer())(db)).
 		AddRouteInitializer(coupon.InitResource(GetServer())(db)).
 		AddRouteInitializer(batch.InitResource(GetServer())(db)).
 		AddRouteInitializer(redemption.InitResource(GetServer())(db)).
+		AddRouteInitializer(ring.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

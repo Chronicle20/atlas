@@ -27,45 +27,6 @@ func (m Model) MemberCount() int {
 	return len(m.members)
 }
 
-// ModelBuilder provides a builder pattern for creating party models
-type ModelBuilder struct {
-	id       uint32
-	leaderId uint32
-	members  []uint32
-}
-
-// NewModelBuilder creates a new party model builder
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{}
-}
-
-// SetId sets the party ID
-func (b *ModelBuilder) SetId(id uint32) *ModelBuilder {
-	b.id = id
-	return b
-}
-
-// SetLeaderId sets the party leader's character ID
-func (b *ModelBuilder) SetLeaderId(leaderId uint32) *ModelBuilder {
-	b.leaderId = leaderId
-	return b
-}
-
-// SetMembers sets the member character IDs
-func (b *ModelBuilder) SetMembers(members []uint32) *ModelBuilder {
-	b.members = members
-	return b
-}
-
-// Build creates a party model from the builder
-func (b *ModelBuilder) Build() Model {
-	return Model{
-		id:       b.id,
-		leaderId: b.leaderId,
-		members:  b.members,
-	}
-}
-
 // RestModel represents the REST representation of party data
 type RestModel struct {
 	Id       uint32            `json:"-"`
@@ -93,7 +54,7 @@ func Extract(r RestModel) (Model, error) {
 		memberIds[i] = m.Id
 	}
 
-	return NewModelBuilder().
+	return NewBuilder().
 		SetId(r.Id).
 		SetLeaderId(r.LeaderId).
 		SetMembers(memberIds).

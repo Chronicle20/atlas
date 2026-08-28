@@ -7,4 +7,4 @@ ida:
     address: "0x88c934"
     decompile_sha256: d17c0410027513dabf304b83811275e8c67f44e9831374d4a49cc0351eb31828
 verifies:
-  - libs/atlas-packet/character/clientbound/v72_test.go#TestCharacterAppearanceUpdateByteOutputV72
+    - libs/atlas-packet/character/clientbound/v72_test.go#TestCharacterAppearanceUpdateByteOutputV72

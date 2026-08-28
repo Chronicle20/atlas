@@ -20,7 +20,7 @@ func TestProcessor_SpawnExpiredPast(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -31,7 +31,7 @@ func TestProcessor_SpawnExpiredPast(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
 
 	// test setup: a pet whose expiration is in the past
-	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).
 		SetSlot(-1).
 		SetExpiration(time.Now().Add(-1*time.Hour))))
 	if err != nil {
@@ -57,7 +57,7 @@ func TestProcessor_SpawnExpiredFuture(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -68,7 +68,7 @@ func TestProcessor_SpawnExpiredFuture(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
 
 	// test setup: a pet whose expiration is in the future
-	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).
 		SetSlot(-1).
 		SetExpiration(time.Now().Add(1*time.Hour))))
 	if err != nil {
@@ -94,7 +94,7 @@ func TestProcessor_SpawnExpiredZero(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -105,7 +105,7 @@ func TestProcessor_SpawnExpiredZero(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
 
 	// test setup: a permanent pet (zero-value expiration) is not "expired"
-	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).
+	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).
 		SetSlot(-1).
 		SetExpiration(time.Time{})))
 	if err != nil {

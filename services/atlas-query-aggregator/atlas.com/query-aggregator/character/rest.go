@@ -125,7 +125,7 @@ func Transform(m Model) (RestModel, error) {
 		Face:               m.Face(),
 		Ap:                 m.Ap(),
 		Sp:                 spStr,
-		SpawnPoint:         uint32(m.SpawnPoint()),
+		SpawnPoint:         m.SpawnPoint(),
 		Gm:                 m.GmLevel(),
 		X:                  m.X(),
 		Y:                  m.Y(),

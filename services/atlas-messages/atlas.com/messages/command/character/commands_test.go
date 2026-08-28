@@ -17,17 +17,21 @@ import (
 )
 
 // createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool) character.Model {
+func createTestCharacter(t *testing.T, id uint32, name string, isGm bool) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	return character.NewModelBuilder().
+	m, err := character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
 		SetAccountId(100).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
+	return m
 }
 
 // TestAwardExperienceCommandProducer_RegexPatterns tests the regex pattern matching
@@ -389,7 +393,7 @@ func TestAwardExperienceCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
+			char := createTestCharacter(t, 12345, "TestPlayer", tc.isGm)
 
 			producer := AwardExperienceCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -429,7 +433,7 @@ func TestAwardLevelCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
+			char := createTestCharacter(t, 12345, "TestPlayer", tc.isGm)
 
 			producer := AwardLevelCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -469,7 +473,7 @@ func TestChangeJobCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
+			char := createTestCharacter(t, 12345, "TestPlayer", tc.isGm)
 
 			producer := ChangeJobCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -509,7 +513,7 @@ func TestAwardMesoCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
+			char := createTestCharacter(t, 12345, "TestPlayer", tc.isGm)
 
 			producer := AwardMesoCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
@@ -526,7 +530,7 @@ func TestAwardMesoCommandProducer_GmCheck(t *testing.T) {
 func TestCommandProducers_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true)
+	gmChar := createTestCharacter(t, 12345, "TestGM", true)
 
 	testCases := []struct {
 		name     string
@@ -580,7 +584,7 @@ func TestCommandProducers_NoMatchReturnsNil(t *testing.T) {
 func TestAwardExperienceCommandProducer_InvalidAmount(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true)
+	gmChar := createTestCharacter(t, 12345, "TestGM", true)
 
 	// Note: The regex only matches digits, so truly invalid amounts won't match
 	// This tests the case where the regex matches but parsing might fail
@@ -618,7 +622,7 @@ func TestAwardExperienceCommandProducer_InvalidAmount(t *testing.T) {
 func TestAwardLevelCommandProducer_InvalidAmount(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true)
+	gmChar := createTestCharacter(t, 12345, "TestGM", true)
 
 	testCases := []struct {
 		name        string

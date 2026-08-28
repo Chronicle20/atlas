@@ -488,7 +488,8 @@ func extractConsumable(t *testing.T, rm consumable3.RestModel) consumable3.Model
 // T8: refactor regression — representative pre-existing items produce the same
 // decisions ApplyItemEffects made before the extraction.
 func TestComputeEffectPlan_CurePotWithHp(t *testing.T) {
-	c := character.NewModelBuilder().SetMaxHp(500).SetMaxMp(500).Build()
+	c, err := character.NewBuilder().SetId(1).SetMaxHp(500).SetMaxMp(500).Build()
+	assert.NoError(t, err)
 	ci := extractConsumable(t, consumable3.RestModel{
 		Spec: map[consumable3.SpecType]int32{
 			consumable3.SpecTypePoison: 1,
@@ -504,7 +505,8 @@ func TestComputeEffectPlan_CurePotWithHp(t *testing.T) {
 }
 
 func TestComputeEffectPlan_StatPotWithTime(t *testing.T) {
-	c := character.NewModelBuilder().SetMaxHp(500).SetMaxMp(500).Build()
+	c, err := character.NewBuilder().SetId(1).SetMaxHp(500).SetMaxMp(500).Build()
+	assert.NoError(t, err)
 	ci := extractConsumable(t, consumable3.RestModel{
 		Spec: map[consumable3.SpecType]int32{
 			consumable3.SpecTypeWeaponAttack: 12,
@@ -523,7 +525,8 @@ func TestComputeEffectPlan_StatPotWithTime(t *testing.T) {
 
 func TestComputeEffectPlan_HpRecoveryPercent(t *testing.T) {
 	// Pins the MaxHp * pct floor math: floor(1547 * 0.60) = 928.
-	c := character.NewModelBuilder().SetMaxHp(1547).Build()
+	c, err := character.NewBuilder().SetId(1).SetMaxHp(1547).Build()
+	assert.NoError(t, err)
 	ci := extractConsumable(t, consumable3.RestModel{
 		Spec: map[consumable3.SpecType]int32{
 			consumable3.SpecTypeHPRecovery: 60,
@@ -536,7 +539,8 @@ func TestComputeEffectPlan_HpRecoveryPercent(t *testing.T) {
 // T5 (FR-3 + hp-alongside): fixed-morph 221 item applies MORPH statup with the
 // morph id, duration = the WZ time spec (ms), and the coexisting hp spec still heals.
 func TestComputeEffectPlan_FixedMorphWithHp(t *testing.T) {
-	c := character.NewModelBuilder().SetMaxHp(100).Build()
+	c, err := character.NewBuilder().SetId(1).SetMaxHp(100).Build()
+	assert.NoError(t, err)
 	ci := extractConsumable(t, consumable3.RestModel{
 		Spec: map[consumable3.SpecType]int32{
 			consumable3.SpecTypeMorph: 2,
@@ -553,7 +557,8 @@ func TestComputeEffectPlan_FixedMorphWithHp(t *testing.T) {
 // T6: 2211000-shaped item — no fixed morph spec, non-empty morphRandom table.
 // Exactly one MORPH statup whose amount is a table key; hp still applies.
 func TestComputeEffectPlan_RandomMorphOnly(t *testing.T) {
-	c := character.NewModelBuilder().SetMaxHp(100).Build()
+	c, err := character.NewBuilder().SetId(1).SetMaxHp(100).Build()
+	assert.NoError(t, err)
 	morphs := map[uint32]uint32{20: 50, 21: 30, 22: 20}
 	ci := extractConsumable(t, consumable3.RestModel{
 		Spec: map[consumable3.SpecType]int32{
@@ -579,7 +584,9 @@ func TestComputeEffectPlan_FixedMorphPrecedence(t *testing.T) {
 		Spec:   map[consumable3.SpecType]int32{consumable3.SpecTypeMorph: 2},
 		Morphs: map[uint32]uint32{20: 100},
 	})
-	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci, false)
+	c, err := character.NewBuilder().SetId(1).Build()
+	assert.NoError(t, err)
+	plan := computeEffectPlan(discardLogger(), c, ci, false)
 	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeMorph, Amount: 2}}, plan.statups)
 }
 
@@ -590,7 +597,9 @@ func TestComputeEffectPlan_ZeroWeightMorphTableSkipsMorphOnly(t *testing.T) {
 		Spec:   map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 50},
 		Morphs: map[uint32]uint32{20: 0},
 	})
-	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci, false)
+	c, err := character.NewBuilder().SetId(1).Build()
+	assert.NoError(t, err)
+	plan := computeEffectPlan(discardLogger(), c, ci, false)
 	assert.Empty(t, plan.statups)
 	assert.Equal(t, []int16{50}, plan.hpChanges)
 }
@@ -717,7 +726,8 @@ func TestComputeEffectPlan_Zombify(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			c := character.NewModelBuilder().SetMaxHp(tc.maxHp).SetMaxMp(tc.maxMp).Build()
+			c, err := character.NewBuilder().SetId(1).SetMaxHp(tc.maxHp).SetMaxMp(tc.maxMp).Build()
+			assert.NoError(t, err)
 			ci := extractConsumable(t, consumable3.RestModel{Spec: tc.spec})
 			plan := computeEffectPlan(discardLogger(), c, ci, tc.zombified)
 			assert.Equal(t, tc.wantHpChanges, plan.hpChanges)
@@ -730,7 +740,8 @@ func TestComputeEffectPlan_Zombify(t *testing.T) {
 // FR-5/FR-6: only hpChanges differs between a zombified and a non-zombified
 // plan for the same consumable.
 func TestComputeEffectPlan_ZombifyLeavesNonHpFieldsIdentical(t *testing.T) {
-	c := character.NewModelBuilder().SetMaxHp(1000).Build()
+	c, err := character.NewBuilder().SetId(1).SetMaxHp(1000).Build()
+	assert.NoError(t, err)
 	ci := extractConsumable(t, consumable3.RestModel{
 		Spec: map[consumable3.SpecType]int32{
 			consumable3.SpecTypePoison:       1,

@@ -25,7 +25,7 @@ func setupTestRegistry(t *testing.T) {
 
 func createTestChannel(t *testing.T, worldId world.Id, channelId channelConstant.Id, ipAddress string, port int) channel.Model {
 	t.Helper()
-	m, err := channel.NewModelBuilder().
+	m, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetWorldId(worldId).
 		SetChannelId(channelId).

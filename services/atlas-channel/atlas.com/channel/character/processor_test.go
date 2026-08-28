@@ -28,7 +28,7 @@ func testSetup() (*logrus.Logger, func()) {
 }
 
 func createTestCharacter(id uint32, name string, level byte) character.Model {
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetLevel(level).
@@ -258,7 +258,7 @@ func TestMonsterBookDecorator_FailOpen(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	p := character.NewProcessor(logrus.New(), ctx)
 
-	m := character.NewModelBuilder().SetId(42).MustBuild()
+	m := character.NewBuilder().SetId(42).MustBuild()
 	got := p.MonsterBookDecorator(m)
 	if got.MonsterBook().CoverCardId() != 0 {
 		t.Errorf("cover should be 0 on fail-open, got %d", got.MonsterBook().CoverCardId())
@@ -287,7 +287,7 @@ func TestMonsterBookDecorator_Populates(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	p := character.NewProcessor(logrus.New(), ctx)
 
-	m := character.NewModelBuilder().SetId(42).MustBuild()
+	m := character.NewBuilder().SetId(42).MustBuild()
 	got := p.MonsterBookDecorator(m)
 	if got.MonsterBook().CoverCardId() != item.Id(2380001) {
 		t.Errorf("cover = %d, want 2380001", got.MonsterBook().CoverCardId())

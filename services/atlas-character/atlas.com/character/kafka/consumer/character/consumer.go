@@ -368,7 +368,7 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 		// atlas-maps on the CREATED status event so atlas-maps can seed
 		// character_locations before the first LOGIN. atlas-maps owns the
 		// row; atlas-character only forwards the spawn map on the wire.
-		model := character.NewModelBuilder().
+		model, err := character.NewEmptyBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
 			SetName(c.Body.Name).
@@ -389,6 +389,15 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			SetAp(c.Body.AP).
 			SetSp(c.Body.SP).
 			Build()
+		if err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": c.TransactionId.String(),
+				"account_id":     c.Body.AccountId,
+				"world_id":       c.Body.WorldId,
+				"name":           c.Body.Name,
+			}).Error("Unable to build character model for creation.")
+			return
+		}
 
 		// PRD §4.6 / plan Phase 9: capture and log the CreateAndEmit error
 		// rather than discarding. CreateAndEmit already emits

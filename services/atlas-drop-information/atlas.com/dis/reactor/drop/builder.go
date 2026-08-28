@@ -15,7 +15,7 @@ type Builder struct {
 	chance    uint32
 }
 
-func NewReactorDropBuilder(tenantId uuid.UUID, id uint32) *Builder {
+func NewBuilder(tenantId uuid.UUID, id uint32) *Builder {
 	return &Builder{tenantId: tenantId, id: id}
 }
 

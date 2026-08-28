@@ -57,9 +57,10 @@ const (
 // client's duplicate-name-check request issued while composing a Maple Life
 // (Cash/0543) character-slot purchase.
 //
-// Body, IDENTICAL on every in-scope version — gms_v83, gms_v87, gms_v92,
-// gms_v95 (derivation.md §4.7; gms_v84 is VERSION-ABSENT — no
-// CUICharacterSaleDlg code path exists on that binary, §4.3):
+// Body, IDENTICAL on every in-scope version — gms_v83, gms_v84, gms_v87,
+// gms_v92, gms_v95 (derivation.md §4.7 and §2.0-CORRECTION; gms_v84 registers
+// this op too — CUICharacterSaleDlg exists on that binary and was mis-flagged
+// VERSION-ABSENT by an earlier, retracted pass, §4.3):
 //
 //	DecodeStr  sName    // echoed back to the client, formatting/UI only
 //	Decode1    nResult  // SIGNED: >0 taken, ==0 available, <0 unknown error
@@ -70,7 +71,7 @@ const (
 //
 // Receiver addresses (derivation.md §4.2/§4.4/§4.5/§4.6, decompiled this
 // pass): gms_v83 0x7d768a, gms_v87 0x82e12c, gms_v92 0x756370,
-// gms_v95 0x777e40. gms_v84: VERSION-ABSENT (§4.3).
+// gms_v95 0x777e40. gms_v84 0x7fd949 (derivation.md §2.0-CORRECTION).
 //
 // Derivation: docs/tasks/task-246-maple-life-character-creation/derivation.md §4.
 // packet-audit:fname CUICharacterSaleDlg::OnCheckDuplicatedIDResult

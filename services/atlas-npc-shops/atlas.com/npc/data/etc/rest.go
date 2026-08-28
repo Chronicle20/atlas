@@ -36,3 +36,12 @@ func Extract(m RestModel) (Model, error) {
 		slotMax:   m.SlotMax,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:        m.id,
+		Price:     m.price,
+		UnitPrice: m.unitPrice,
+		SlotMax:   m.slotMax,
+	}, nil
+}

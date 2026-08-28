@@ -27,6 +27,13 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// Transform converts the domain Model into the wire RestModel.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id: m.id.String(),
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	id, err := uuid.Parse(rm.Id)
 	if err != nil {

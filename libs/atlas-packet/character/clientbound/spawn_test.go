@@ -10,6 +10,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v83 ida=0x972100
@@ -21,7 +23,7 @@ func TestCharacterSpawnEncode(t *testing.T) {
 	avatar := model.Avatar{}
 	cts := model.NewCharacterTemporaryStat()
 	guild := GuildEmblem{Name: "TestGuild"}
-	input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, avatar, nil, true, 100, 200, 6, 0)
+	input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, avatar, nil, true, 100, 200, 6, 0, model.RingSet{})
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -57,7 +59,7 @@ func TestCharacterSpawnJMSGolden(t *testing.T) {
 	v := pt.Variants[4] // JMS v185
 	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
-	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0)
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0, model.RingSet{})
 
 	got := in.Encode(nil, ctx)(nil)
 
@@ -99,7 +101,7 @@ func TestCharacterSpawnJMSGolden(t *testing.T) {
 func TestCharacterSpawnV48Golden(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 48, 1)
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
-	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0)
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0, model.RingSet{})
 	got := in.Encode(nil, ctx)(nil)
 
 	if len(got) != 99 {
@@ -128,6 +130,147 @@ func TestCharacterSpawnV48Golden(t *testing.T) {
 	}
 }
 
+// TestCharacterSpawnV92Golden pins the full gms_v92 CharacterSpawn wire
+// against CUserPool::OnUserEnterField @0x92a4e0. v92 is a unique gate
+// combination not shared by any other tenant fixture: MajorVersion()>87
+// (driver/passenger ints, nCompletedSetItemID, dragon-effect arm absent) AND
+// MajorVersion()<95 (the new-year-card byte between the ring span and the
+// berserk/final-effect byte, present at v61..v94 but absent at v95+) both
+// hold simultaneously (spawn.go:179,191-194). The wire is therefore exactly
+// 1 byte longer than the byte-identical-to-v95-except-that-byte shape:
+// captured below against a live encode, not derived by hand.
+// packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v92 ida=0x92a4e0
+func TestCharacterSpawnV92Golden(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 92, 1)
+	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0, model.RingSet{})
+	got := in.Encode(nil, ctx)(nil)
+
+	want, _ := hex.DecodeString("3930000032080054657374436861720900546573744775696c6401000203000400000000000000000000000000000000000064000000000000000100000000ffff000000000000000000000000000000000000000000000000000000000000000000000000000000006400c800030000000001000000000000000000000000000000000000000000000000")
+	if !bytes.Equal(got, want) {
+		t.Errorf("v92 CharacterSpawn wire (len got=%d want=%d):\n got %x\nwant %x", len(got), len(want), got, want)
+	}
+
+	// Cross-version delta: v92 must be exactly 1 byte longer than v95 (the
+	// extra new-year-card byte v95 no longer emits), with everything else
+	// byte-identical once that one byte is excised.
+	v95 := in.Encode(nil, pt.CreateContext("GMS", 95, 1))(nil)
+	if len(got) != len(v95)+1 {
+		t.Fatalf("v92 length must be v95+1: got %d want %d (v95=%d)", len(got), len(v95)+1, len(v95))
+	}
+}
+
+// TestCharacterSpawnRingBlocks is the FR-9 guard for site B (CharacterSpawn):
+// an empty model.RingSet must produce byte-identical output to the pre-task
+// three-WriteByte(0) encoder, and a populated couple ring must replace the
+// 3-byte ring span with the 21-byte populated couple block (flag + OwnSN +
+// PartnerSN + ItemId), growing the total length by exactly 18.
+func TestCharacterSpawnRingBlocks(t *testing.T) {
+	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
+	newInput := func(v pt.TenantVariant, rings model.RingSet) []byte {
+		ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+		in := NewCharacterSpawn(12345, 50, "TestChar", guild, model.NewCharacterTemporaryStat(), 100, model.Avatar{}, nil, false, 100, 200, 3, 0, rings)
+		return in.Encode(nil, ctx)(nil)
+	}
+
+	t.Run("empty is unchanged", func(t *testing.T) {
+		cases := []struct {
+			variant pt.TenantVariant
+			want    string
+		}{
+			{pt.Variants[1], "3930000032080054657374436861720900546573744775696c6401000203000400000000000000000000000000000000000064000000000000000100000000ffff000000000000000000000000000000000000000000000000000000006400c8000300000000010000000000000000000000000000000000000000"},
+			{pt.Variants[3], "3930000032080054657374436861720900546573744775696c6401000203000400000000000000000000000000000000000064000000000000000100000000ffff000000000000000000000000000000000000000000000000000000000000000000000000000000006400c8000300000000010000000000000000000000000000000000000000000000"},
+			{pt.Variants[4], "3930000032080054657374436861720900546573744775696c6401000203000400000000000000000000000000000000000064000000000000000100000000ffff0000000000000000000000000000000000000000000000000000000000000000000000006400c8000300000001000000000000000000000000000000000000"},
+			{pt.Variants[11], "3930000032080054657374436861720900546573744775696c6401000203000400000000000000000000000000000000000064000000000000000100000000ffff000000000000000000000000000000000000000000000000000000000000000000000000000000006400c800030000000001000000000000000000000000000000000000000000000000"},
+		}
+		for _, c := range cases {
+			t.Run(c.variant.Name, func(t *testing.T) {
+				want, _ := hex.DecodeString(c.want)
+				got := newInput(c.variant, model.RingSet{})
+				if !bytes.Equal(got, want) {
+					t.Errorf("%s empty RingSet output:\n got %x\nwant %x", c.variant.Name, got, want)
+				}
+			})
+		}
+	})
+
+	t.Run("couple populated", func(t *testing.T) {
+		v := pt.Variants[1] // GMS v83
+		emptyHex := "3930000032080054657374436861720900546573744775696c6401000203000400000000000000000000000000000000000064000000000000000100000000ffff000000000000000000000000000000000000000000000000000000006400c8000300000000010000000000000000000000000000000000000000"
+		empty, _ := hex.DecodeString(emptyHex)
+		// The 3-byte ring span (couple + friendship + marriage flags) sits
+		// after mount(12 bytes)+miniroom(1)+adboard(1) and before the v83
+		// newyear/berserk/dragon/team tail (4 bytes): offset = len-4-3.
+		offset := len(empty) - 4 - 3
+		// fixture values shared with Task 2 (libs/atlas-packet/model/ring_test.go).
+		// PartnerSN goes through a variable (not a bare constant conversion) so
+		// the two's-complement reinterpretation is a runtime, not a constant,
+		// conversion — the literal exceeds int64's range as an untyped constant.
+		fixturePartnerSNU := uint64(0x99AABBCCDDEEFF00)
+		fixturePartnerSN := int64(fixturePartnerSNU)
+		couple := &model.PairRing{OwnSN: 0x1122334455667788, PartnerSN: fixturePartnerSN, ItemId: 0x00001234}
+		got := newInput(v, model.RingSet{Couple: couple})
+
+		// Only the couple arm's 1-byte flag grows to a 21-byte block (flag +
+		// OwnSN + PartnerSN + ItemId); the friendship and marriage flags stay
+		// at 1 byte each, unmoved. Growth is therefore 21-1 = 20 bytes, not
+		// the whole 3-byte span for 21 bytes — the friendship/marriage flags
+		// still ride the wire immediately after the couple block.
+		if len(got) != len(empty)+20 {
+			t.Fatalf("couple-populated length: got %d want %d (empty %d + 20)", len(got), len(empty)+20, len(empty))
+		}
+		if !bytes.Equal(got[:offset], empty[:offset]) {
+			t.Errorf("prefix before ring span changed:\n got %x\nwant %x", got[:offset], empty[:offset])
+		}
+		// Friendship + marriage flags (2 bytes) and everything after are
+		// unchanged, just shifted by the couple block's +20 bytes.
+		if !bytes.Equal(got[offset+21:], empty[offset+1:]) {
+			t.Errorf("suffix after couple block changed:\n got %x\nwant %x", got[offset+21:], empty[offset+1:])
+		}
+		// The replaced span must equal exactly what model.RingSet.EncodeField
+		// (Task 2/3, already covered by its own tests) writes for this couple
+		// ring in isolation: this proves wiring, not codec correctness.
+		w := response.NewWriter(nil)
+		(model.RingSet{Couple: couple}).EncodeField(w, tenant.MustFromContext(pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)))
+		wantSpan := w.Bytes() // couple(21) + friendship flag(1) + marriage flag(1) = 23 bytes
+		gotSpan := got[offset : offset+len(wantSpan)]
+		if !bytes.Equal(gotSpan, wantSpan) {
+			t.Errorf("ring span:\n got %x\nwant %x", gotSpan, wantSpan)
+		}
+	})
+
+	t.Run("couple populated v92", func(t *testing.T) {
+		v := pt.Variants[11] // GMS v92
+		emptyHex := "3930000032080054657374436861720900546573744775696c6401000203000400000000000000000000000000000000000064000000000000000100000000ffff000000000000000000000000000000000000000000000000000000000000000000000000000000006400c800030000000001000000000000000000000000000000000000000000000000"
+		empty, _ := hex.DecodeString(emptyHex)
+		// v92's ring span is followed by an 8-byte tail (newyear + berserk +
+		// newyear + nPhase(4) + team, spawn.go:179-203), unlike v83's 4-byte
+		// tail: offset = len-8-3.
+		offset := len(empty) - 8 - 3
+		fixturePartnerSNU := uint64(0x99AABBCCDDEEFF00)
+		fixturePartnerSN := int64(fixturePartnerSNU)
+		couple := &model.PairRing{OwnSN: 0x1122334455667788, PartnerSN: fixturePartnerSN, ItemId: 0x00001234}
+		got := newInput(v, model.RingSet{Couple: couple})
+
+		if len(got) != len(empty)+20 {
+			t.Fatalf("couple-populated length: got %d want %d (empty %d + 20)", len(got), len(empty)+20, len(empty))
+		}
+		if !bytes.Equal(got[:offset], empty[:offset]) {
+			t.Errorf("prefix before ring span changed:\n got %x\nwant %x", got[:offset], empty[:offset])
+		}
+		if !bytes.Equal(got[offset+21:], empty[offset+1:]) {
+			t.Errorf("suffix after couple block changed:\n got %x\nwant %x", got[offset+21:], empty[offset+1:])
+		}
+		w := response.NewWriter(nil)
+		(model.RingSet{Couple: couple}).EncodeField(w, tenant.MustFromContext(pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)))
+		wantSpan := w.Bytes()
+		gotSpan := got[offset : offset+len(wantSpan)]
+		if !bytes.Equal(gotSpan, wantSpan) {
+			t.Errorf("ring span:\n got %x\nwant %x", gotSpan, wantSpan)
+		}
+	})
+}
+
 func testSpawnAvatar() model.Avatar {
 	equip := map[slot.Position]uint32{5: 1040002, 6: 1060002, 7: 1072001}
 	masked := map[slot.Position]uint32{}
@@ -143,7 +286,7 @@ func TestCharacterSpawnRoundTrip(t *testing.T) {
 			cts := model.NewCharacterTemporaryStat()
 			guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
 			// enteringField=false for exact round-trip
-			input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, false, 100, 200, 3, 37)
+			input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, false, 100, 200, 3, 37, model.RingSet{})
 			output := CharacterSpawn{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CharacterId() != input.CharacterId() {
@@ -194,7 +337,7 @@ func TestCharacterSpawnEnteringFieldEncodesFhZero(t *testing.T) {
 			avatar := testSpawnAvatar()
 			cts := model.NewCharacterTemporaryStat()
 			guild := GuildEmblem{Name: "TestGuild"}
-			input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, true, 100, 200, 6, 37)
+			input := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, true, 100, 200, 6, 37, model.RingSet{})
 			output := CharacterSpawn{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Fh() != 0 {
@@ -215,7 +358,7 @@ func TestCharacterSpawnWithPetsRoundTrip(t *testing.T) {
 				{Slot: 0, Pet: model.Pet{TemplateId: 5000001, Name: "Dog", Id: 100, X: 10, Y: 20, Stance: 1, Foothold: 5}},
 				{Slot: 1, Pet: model.Pet{TemplateId: 5000002, Name: "Cat", Id: 200, X: 30, Y: 40, Stance: 2, Foothold: 6}},
 			}
-			input := NewCharacterSpawn(999, 80, "PetOwner", guild, cts, 100, avatar, pets, false, 50, 60, 4, 0)
+			input := NewCharacterSpawn(999, 80, "PetOwner", guild, cts, 100, avatar, pets, false, 50, 60, 4, 0, model.RingSet{})
 			output := CharacterSpawn{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			// Pre-v61 GMS (v48) SPAWN_PLAYER carries a single-pet flag (sub_58C7CC),

@@ -11,8 +11,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := channel.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := channel.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -20,7 +20,7 @@ func TestNewModelBuilder(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
-	model, err := channel.NewModelBuilder().
+	model, err := channel.NewBuilder().
 		SetId(id).
 		SetWorldId(world.Id(0)).
 		SetChannelId(channelId.Id(1)).
@@ -44,7 +44,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetWorldId(world.Id(0)).
 		Build()
 
@@ -61,7 +61,7 @@ func TestMustBuild_Success(t *testing.T) {
 	}()
 
 	id := uuid.New()
-	model := channel.NewModelBuilder().
+	model := channel.NewBuilder().
 		SetId(id).
 		MustBuild()
 
@@ -77,12 +77,12 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	channel.NewModelBuilder().MustBuild()
+	channel.NewBuilder().MustBuild()
 }
 
 func TestCloneModel(t *testing.T) {
 	id := uuid.New()
-	original, _ := channel.NewModelBuilder().
+	original, _ := channel.NewBuilder().
 		SetId(id).
 		SetWorldId(world.Id(0)).
 		SetPort(8080).

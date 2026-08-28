@@ -51,7 +51,7 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c reactor.Command[r
 
 	t := tenant.MustFromContext(ctx)
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
-	b := reactor.NewModelBuilder(t, f, c.Body.Classification, c.Body.Name).
+	b := reactor.NewBuilder(t, f, c.Body.Classification, c.Body.Name).
 		SetState(c.Body.State).
 		SetPosition(c.Body.X, c.Body.Y).
 		SetDelay(c.Body.Delay).

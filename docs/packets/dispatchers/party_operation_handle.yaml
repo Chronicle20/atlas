@@ -1,0 +1,45 @@
+# PartyOperationHandle — serverbound PARTY_OPERATION mode table (gms_v95 only).
+#
+# SOURCE OF TRUTH for this handler's options.operations map.
+#
+# gms_v95 ONLY. Declaring another version here would make `packet-audit
+# operations` rewrite that version's hand-authored table with an un-derived
+# carry-over — exactly the v83->v95 drift this task exists to catch, and a
+# violation of "no non-v95 template is modified". Backfilling IDA-derived
+# columns for v83/v84/v87/v92/jms_v185 is filed as a follow-up.
+#
+# ALL-OR-NOTHING: expectedTable reports every template key absent from this
+# file as EXTRA once a version has at least one declared key, so gms_v95 must
+# be enumerated COMPLETELY. Per-arm addresses: v95-option-tables.md.
+#
+# The client has no single PARTY_OPERATION builder: each CField:: send method
+# builds its own COutPacket(&pkt, 0x91) and writes its own leading
+# Encode1(mode). Enumerated by an exhaustive find_bytes search for the
+# COutPacket opcode-145 push (68 91 00 00 00) across the whole image — 22
+# hits, 5 real send sites, the rest unrelated UI constants — so the table is
+# complete BY CONSTRUCTION.
+#
+# mode 4 (CField::SendJoinPartyMsg) is client-internally named "Join" but its
+# only callers are invite-initiating UI (CTabParty::OnInvite,
+# CTabFriend::OnPartyInvite, right-click "invite to party") — never an
+# accept flow. The Atlas key is INVITE, matching v83's INVITE=4 exactly.
+#
+# v83's JOIN(3) has NO arm here: accepting a party invite in this build is
+# routed through the separate PARTY_RESULT opcode (0x92), not
+# PARTY_OPERATION — CUIFadeYesNo::OnButtonClicked case 5 (m_nType==5, the
+# party-invite dialog) builds COutPacket(&pkt, 146) with mode 0x1B, not
+# opcode 0x91 at all. JOIN is omitted because the arm itself does not exist
+# on this opcode, not because its key is unknown.
+
+handler: PartyOperationHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CField::SendCreateNewPartyMsg
+op: PARTY_OPERATION
+direction: serverbound
+operations:
+  - { key: CREATE,       modes: { gms_v95: 1 } }
+  - { key: LEAVE,         modes: { gms_v95: 2 } }
+  - { key: INVITE,        modes: { gms_v95: 4 } }
+  - { key: EXPEL,         modes: { gms_v95: 5 } }
+  - { key: CHANGE_LEADER, modes: { gms_v95: 6 } }

@@ -35,3 +35,11 @@ func Extract(rm RestModel) (Model, error) {
 		fixedDamage: rm.FixedDamage,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:          m.id,
+		Boss:        m.boss,
+		FixedDamage: m.fixedDamage,
+	}, nil
+}

@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestModelBuilder_Build_Success(t *testing.T) {
-	m, err := NewModelBuilder().
+func TestBuilder_Build_Success(t *testing.T) {
+	m, err := NewBuilder().
 		SetCharacterId(12345).
 		SetKey(18).
 		SetType(4).
@@ -28,8 +28,8 @@ func TestModelBuilder_Build_Success(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_FailsWithZeroCharacterId(t *testing.T) {
-	_, err := NewModelBuilder().
+func TestBuilder_Build_FailsWithZeroCharacterId(t *testing.T) {
+	_, err := NewBuilder().
 		SetKey(18).
 		SetType(4).
 		SetAction(0).
@@ -43,15 +43,15 @@ func TestModelBuilder_Build_FailsWithZeroCharacterId(t *testing.T) {
 	}
 }
 
-func TestCloneModelBuilder_CopiesAllFields(t *testing.T) {
-	original, _ := NewModelBuilder().
+func TestCloneBuilder_CopiesAllFields(t *testing.T) {
+	original, _ := NewBuilder().
 		SetCharacterId(99999).
 		SetKey(65).
 		SetType(6).
 		SetAction(106).
 		Build()
 
-	cloned := CloneModelBuilder(original).MustBuild()
+	cloned := CloneBuilder(original).MustBuild()
 
 	if cloned.CharacterId() != original.CharacterId() {
 		t.Errorf("characterId mismatch: got %d, want %d", cloned.CharacterId(), original.CharacterId())
@@ -67,18 +67,18 @@ func TestCloneModelBuilder_CopiesAllFields(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_MustBuild_PanicsOnInvalidInput(t *testing.T) {
+func TestBuilder_MustBuild_PanicsOnInvalidInput(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("expected panic for invalid input, got none")
 		}
 	}()
 
-	NewModelBuilder().MustBuild()
+	NewBuilder().MustBuild()
 }
 
-func TestModelBuilder_FluentSetters_ReturnBuilder(t *testing.T) {
-	b := NewModelBuilder()
+func TestBuilder_FluentSetters_ReturnBuilder(t *testing.T) {
+	b := NewBuilder()
 
 	if b.SetCharacterId(1) != b {
 		t.Error("SetCharacterId should return the same builder")
@@ -94,8 +94,8 @@ func TestModelBuilder_FluentSetters_ReturnBuilder(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Accessors(t *testing.T) {
-	b := NewModelBuilder().
+func TestBuilder_Accessors(t *testing.T) {
+	b := NewBuilder().
 		SetCharacterId(111).
 		SetKey(222).
 		SetType(5).

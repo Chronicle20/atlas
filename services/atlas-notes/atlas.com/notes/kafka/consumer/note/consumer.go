@@ -48,7 +48,7 @@ func handleNoteCreate(db *gorm.DB) message.Handler[note2.Command[note2.CommandCr
 			return
 		}
 
-		_, err := note.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, c.CharacterId, c.Body.SenderId, c.Body.Message, c.Body.Flag)
+		_, err := note.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, c.CharacterId, c.Body.SenderId, c.Body.Message, c.Body.Flag, c.Body.GiftNote)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create note for character [%d] from sender [%d].", c.CharacterId, c.Body.SenderId)
 			emitErr := producer.ProviderImpl(l)(ctx)(note2.EnvEventTopicNoteStatus)(note.CreateFailedStatusEventProvider(c.TransactionId, c.CharacterId, c.Body.SenderId, err.Error()))

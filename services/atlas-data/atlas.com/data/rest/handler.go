@@ -74,3 +74,7 @@ func ParseFaceId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.
 func ParseHairId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseIntId[uint32](l, "hairId", next)
 }
+
+func ParsePackageId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "packageId", next)
+}

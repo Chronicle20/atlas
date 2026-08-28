@@ -71,7 +71,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[reactor2
 		}
 
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		r := reactor.NewModelBuilder(f, e.Body.Classification, e.Body.Name).
+		r := reactor.NewBuilder(f, e.Body.Classification, e.Body.Name).
 			SetId(e.ReactorId).
 			SetState(e.Body.State).
 			SetEventState(e.Body.EventState).
@@ -119,7 +119,7 @@ func handleHit(sc server.Model, wp writer.Producer) message.Handler[reactor2.Sta
 		}
 
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		r := reactor.NewModelBuilder(f, e.Body.Classification, "").
+		r := reactor.NewBuilder(f, e.Body.Classification, "").
 			SetId(e.ReactorId).
 			SetState(e.Body.State).
 			SetPosition(e.Body.X, e.Body.Y).

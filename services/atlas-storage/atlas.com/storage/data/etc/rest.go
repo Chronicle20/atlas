@@ -20,6 +20,13 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:      strconv.FormatUint(uint64(m.id), 10),
+		SlotMax: m.slotMax,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	id, err := strconv.ParseUint(rm.Id, 10, 32)
 	if err != nil {

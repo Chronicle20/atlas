@@ -9,12 +9,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	var id uint32 = 1
 	compartmentId := uuid.New()
-	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testItem := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
-	builder := asset.NewModelBuilder(id, compartmentId, testItem)
+	builder := asset.NewBuilder(id, compartmentId, testItem)
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -23,13 +23,13 @@ func TestNewModelBuilder(t *testing.T) {
 func TestBuild_AllFieldsSet(t *testing.T) {
 	var id uint32 = 1
 	compartmentId := uuid.New()
-	testItem := item.NewModelBuilder().
+	testItem := item.NewBuilder().
 		SetId(1).
 		SetTemplateId(5000000).
 		SetQuantity(1).
 		MustBuild()
 
-	model, err := asset.NewModelBuilder(id, compartmentId, testItem).Build()
+	model, err := asset.NewBuilder(id, compartmentId, testItem).Build()
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -46,9 +46,9 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 
 func TestBuild_MissingId(t *testing.T) {
 	compartmentId := uuid.New()
-	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testItem := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
-	_, err := asset.NewModelBuilder(0, compartmentId, testItem).Build()
+	_, err := asset.NewBuilder(0, compartmentId, testItem).Build()
 
 	if !errors.Is(err, asset.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
@@ -57,9 +57,9 @@ func TestBuild_MissingId(t *testing.T) {
 
 func TestBuild_MissingCompartmentId(t *testing.T) {
 	var id uint32 = 1
-	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testItem := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
-	_, err := asset.NewModelBuilder(id, uuid.Nil, testItem).Build()
+	_, err := asset.NewBuilder(id, uuid.Nil, testItem).Build()
 
 	if !errors.Is(err, asset.ErrInvalidCompartmentId) {
 		t.Errorf("Build() error = %v, want ErrInvalidCompartmentId", err)
@@ -69,10 +69,10 @@ func TestBuild_MissingCompartmentId(t *testing.T) {
 func TestCloneModel(t *testing.T) {
 	var id uint32 = 1
 	compartmentId := uuid.New()
-	testItem1 := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testItem2 := item.NewModelBuilder().SetId(2).SetTemplateId(5000001).MustBuild()
+	testItem1 := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testItem2 := item.NewBuilder().SetId(2).SetTemplateId(5000001).MustBuild()
 
-	original, err := asset.NewModelBuilder(id, compartmentId, testItem1).Build()
+	original, err := asset.NewBuilder(id, compartmentId, testItem1).Build()
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -110,9 +110,9 @@ func TestMustBuild_Success(t *testing.T) {
 
 	var id uint32 = 1
 	compartmentId := uuid.New()
-	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testItem := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
-	model := asset.NewModelBuilder(id, compartmentId, testItem).MustBuild()
+	model := asset.NewBuilder(id, compartmentId, testItem).MustBuild()
 
 	if model.Id() != id {
 		t.Errorf("model.Id() = %v, want %v", model.Id(), id)
@@ -127,7 +127,7 @@ func TestMustBuild_Panics(t *testing.T) {
 	}()
 
 	compartmentId := uuid.New()
-	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testItem := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
-	asset.NewModelBuilder(0, compartmentId, testItem).MustBuild() // Missing ID, should panic
+	asset.NewBuilder(0, compartmentId, testItem).MustBuild() // Missing ID, should panic
 }

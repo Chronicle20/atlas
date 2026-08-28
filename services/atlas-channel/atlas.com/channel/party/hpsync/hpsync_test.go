@@ -108,12 +108,12 @@ func installSeams(t *testing.T, c *capture, partyChar character.Model, partyErr 
 }
 
 func mkChar(id uint32, hp, maxHp uint16) character.Model {
-	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(maxHp).MustBuild()
+	return character.NewBuilder().SetId(id).SetHp(hp).SetMaxHp(maxHp).MustBuild()
 }
 
 func mkPartyChar(id uint32, hp, maxHp uint16, members []party.MemberModel) character.Model {
 	p := party.NewBuilder().SetId(1).SetLeaderId(id).SetMembers(members).Build()
-	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(maxHp).SetParty(p).MustBuild()
+	return character.NewBuilder().SetId(id).SetHp(hp).SetMaxHp(maxHp).SetParty(p).MustBuild()
 }
 
 const (
@@ -159,7 +159,7 @@ func TestSync_BidirectionalForInMapMembers(t *testing.T) {
 func TestSync_NotInPartyIsNoOp(t *testing.T) {
 	c := &capture{}
 	// No SetParty -> party.Id() == 0 -> InParty() false.
-	pc := character.NewModelBuilder().SetId(caster).SetHp(800).SetMaxHp(1000).MustBuild()
+	pc := character.NewBuilder().SetId(caster).SetHp(800).SetMaxHp(1000).MustBuild()
 	installSeams(t, c, pc, nil, map[uint32]character.Model{}, nil)
 
 	if err := Sync(testLogger(), context.Background(), nil, mkField(), caster); err != nil {

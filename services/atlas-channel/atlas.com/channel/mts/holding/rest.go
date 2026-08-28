@@ -42,3 +42,15 @@ func Extract(r RestModel) (Model, error) {
 		quantity:   r.Quantity,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:         m.id,
+		WorldId:    byte(m.worldId),
+		ItcSn:      m.itcSn,
+		OwnerId:    m.ownerId,
+		Origin:     m.origin,
+		TemplateId: m.templateId,
+		Quantity:   m.quantity,
+	}, nil
+}

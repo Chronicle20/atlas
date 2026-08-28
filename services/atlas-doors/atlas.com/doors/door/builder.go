@@ -10,7 +10,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
-type ModelBuilder struct {
+type Builder struct {
 	areaDoorId       uint32
 	townDoorId       uint32
 	ownerCharacterId character.Id
@@ -29,10 +29,10 @@ type ModelBuilder struct {
 	expiresAt        time.Time
 }
 
-func NewBuilder() *ModelBuilder { return &ModelBuilder{} }
+func NewBuilder() *Builder { return &Builder{} }
 
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func Clone(m Model) *Builder {
+	return &Builder{
 		areaDoorId: m.areaDoorId, townDoorId: m.townDoorId, ownerCharacterId: m.ownerCharacterId,
 		partyId: m.partyId, skillId: m.skillId, skillLevel: m.skillLevel, fld: m.fld,
 		townMapId: m.townMapId, slot: m.slot, townPortalId: m.townPortalId,
@@ -41,27 +41,27 @@ func Clone(m Model) *ModelBuilder {
 	}
 }
 
-func (b *ModelBuilder) SetAreaDoorId(v uint32) *ModelBuilder { b.areaDoorId = v; return b }
-func (b *ModelBuilder) SetTownDoorId(v uint32) *ModelBuilder { b.townDoorId = v; return b }
-func (b *ModelBuilder) SetOwnerCharacterId(v character.Id) *ModelBuilder {
+func (b *Builder) SetAreaDoorId(v uint32) *Builder { b.areaDoorId = v; return b }
+func (b *Builder) SetTownDoorId(v uint32) *Builder { b.townDoorId = v; return b }
+func (b *Builder) SetOwnerCharacterId(v character.Id) *Builder {
 	b.ownerCharacterId = v
 	return b
 }
-func (b *ModelBuilder) SetPartyId(v uint32) *ModelBuilder       { b.partyId = v; return b }
-func (b *ModelBuilder) SetSkillId(v skill.Id) *ModelBuilder     { b.skillId = v; return b }
-func (b *ModelBuilder) SetSkillLevel(v byte) *ModelBuilder      { b.skillLevel = v; return b }
-func (b *ModelBuilder) SetField(v field.Model) *ModelBuilder    { b.fld = v; return b }
-func (b *ModelBuilder) SetTownMapId(v _map.Id) *ModelBuilder    { b.townMapId = v; return b }
-func (b *ModelBuilder) SetSlot(v byte) *ModelBuilder            { b.slot = v; return b }
-func (b *ModelBuilder) SetTownPortalId(v uint32) *ModelBuilder  { b.townPortalId = v; return b }
-func (b *ModelBuilder) SetAreaX(v point.X) *ModelBuilder        { b.areaX = v; return b }
-func (b *ModelBuilder) SetAreaY(v point.Y) *ModelBuilder        { b.areaY = v; return b }
-func (b *ModelBuilder) SetTownX(v point.X) *ModelBuilder        { b.townX = v; return b }
-func (b *ModelBuilder) SetTownY(v point.Y) *ModelBuilder        { b.townY = v; return b }
-func (b *ModelBuilder) SetDeployTime(v time.Time) *ModelBuilder { b.deployTime = v; return b }
-func (b *ModelBuilder) SetExpiresAt(v time.Time) *ModelBuilder  { b.expiresAt = v; return b }
+func (b *Builder) SetPartyId(v uint32) *Builder       { b.partyId = v; return b }
+func (b *Builder) SetSkillId(v skill.Id) *Builder     { b.skillId = v; return b }
+func (b *Builder) SetSkillLevel(v byte) *Builder      { b.skillLevel = v; return b }
+func (b *Builder) SetField(v field.Model) *Builder    { b.fld = v; return b }
+func (b *Builder) SetTownMapId(v _map.Id) *Builder    { b.townMapId = v; return b }
+func (b *Builder) SetSlot(v byte) *Builder            { b.slot = v; return b }
+func (b *Builder) SetTownPortalId(v uint32) *Builder  { b.townPortalId = v; return b }
+func (b *Builder) SetAreaX(v point.X) *Builder        { b.areaX = v; return b }
+func (b *Builder) SetAreaY(v point.Y) *Builder        { b.areaY = v; return b }
+func (b *Builder) SetTownX(v point.X) *Builder        { b.townX = v; return b }
+func (b *Builder) SetTownY(v point.Y) *Builder        { b.townY = v; return b }
+func (b *Builder) SetDeployTime(v time.Time) *Builder { b.deployTime = v; return b }
+func (b *Builder) SetExpiresAt(v time.Time) *Builder  { b.expiresAt = v; return b }
 
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	return Model{
 		areaDoorId: b.areaDoorId, townDoorId: b.townDoorId, ownerCharacterId: b.ownerCharacterId,
 		partyId: b.partyId, skillId: b.skillId, skillLevel: b.skillLevel, fld: b.fld,

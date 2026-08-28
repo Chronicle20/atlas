@@ -100,7 +100,7 @@ func TestResource_Post_SecondCallDisposesAndRecreates(t *testing.T) {
 	// Advance the session past rung 0 so we can tell a fresh Start actually
 	// replaced it, rather than merely leaving the prior state untouched.
 	ctx := testCtx(ten)
-	advanced, err := game.CloneModelBuilder(mustGet(t, ctx, 2000)).SetRung(1).SetStatus(game.StatusAwaitingDecision).Build()
+	advanced, err := game.CloneBuilder(mustGet(t, ctx, 2000)).SetRung(1).SetStatus(game.StatusAwaitingDecision).Build()
 	require.NoError(t, err)
 	game.GetRegistry().Put(ctx, advanced)
 
@@ -145,7 +145,7 @@ func TestResource_Get_ReturnsSessionWithResolvedPrize(t *testing.T) {
 	router := newResourceRouter(oneRungLadder())
 	ctx := testCtx(ten)
 
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(3000).
 		SetWorldId(0).
 		SetChannelId(1).

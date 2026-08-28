@@ -68,7 +68,7 @@ func TestGetInMapPaginates(t *testing.T) {
 
 	var ids []uint32
 	for i := 0; i < 3; i++ {
-		builder := NewModelBuilder(ten, f, 100, "reactor1").
+		builder := NewBuilder(ten, f, 100, "reactor1").
 			SetState(0).
 			SetPosition(100, 200).
 			SetDelay(0).
@@ -133,7 +133,7 @@ func TestGetInMapPaginates(t *testing.T) {
 	})
 
 	t.Run("NameFilterAppliedBeforePagination", func(t *testing.T) {
-		builder := NewModelBuilder(ten, f, 200, "special-reactor").
+		builder := NewBuilder(ten, f, 200, "special-reactor").
 			SetState(0).
 			SetPosition(300, 300).
 			SetDelay(0).

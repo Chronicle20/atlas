@@ -24,6 +24,25 @@ type StatupRestModel struct {
 	Amount int32  `json:"amount"`
 }
 
+// Transform converts a Model into a RestModel. It is the inverse of Extract.
+func Transform(m Model) (RestModel, error) {
+	statups := make([]StatupRestModel, 0, len(m.statups))
+	for _, su := range m.statups {
+		statups = append(statups, StatupRestModel(su))
+	}
+	return RestModel{
+		WeaponAttack:  m.weaponAttack,
+		MagicAttack:   m.magicAttack,
+		Hp:            m.hp,
+		Duration:      m.duration,
+		X:             m.x,
+		Y:             m.y,
+		Prop:          m.prop,
+		MonsterStatus: m.monsterStatus,
+		Statups:       statups,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	statups := make([]StatChange, 0, len(rm.Statups))
 	for _, su := range rm.Statups {

@@ -111,6 +111,160 @@ type SkillRewardRest struct {
 	Jobs        []uint16 `json:"jobs,omitempty"`
 }
 
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                m.id,
+		Name:              m.name,
+		Parent:            m.parent,
+		Area:              m.area,
+		Order:             m.order,
+		AutoStart:         m.autoStart,
+		AutoPreComplete:   m.autoPreComplete,
+		AutoComplete:      m.autoComplete,
+		TimeLimit:         m.timeLimit,
+		TimeLimit2:        m.timeLimit2,
+		SelectedMob:       m.selectedMob,
+		Summary:           m.summary,
+		DemandSummary:     m.demandSummary,
+		RewardSummary:     m.rewardSummary,
+		StartRequirements: transformRequirements(m.startRequirements),
+		EndRequirements:   transformRequirements(m.endRequirements),
+		StartActions:      transformActions(m.startActions),
+		EndActions:        transformActions(m.endActions),
+	}, nil
+}
+
+func transformRequirements(m RequirementsModel) RequirementsRestModel {
+	var quests []QuestRequirementRest
+	if m.quests != nil {
+		quests = make([]QuestRequirementRest, len(m.quests))
+		for i, q := range m.quests {
+			quests[i] = QuestRequirementRest{Id: q.id, State: q.state}
+		}
+	}
+
+	var items []ItemRequirementRest
+	if m.items != nil {
+		items = make([]ItemRequirementRest, len(m.items))
+		for i, item := range m.items {
+			items[i] = ItemRequirementRest{Id: item.id, Count: item.count}
+		}
+	}
+
+	var mobs []MobRequirementRest
+	if m.mobs != nil {
+		mobs = make([]MobRequirementRest, len(m.mobs))
+		for i, mob := range m.mobs {
+			mobs[i] = MobRequirementRest{Id: mob.id, Count: mob.count}
+		}
+	}
+
+	jobs := copyUint16Slice(m.jobs)
+	fieldEnter := copyUint32Slice(m.fieldEnter)
+	pet := copyUint32Slice(m.pet)
+	dayOfWeek := copyStringSlice(m.dayOfWeek)
+
+	return RequirementsRestModel{
+		NpcId:           m.npcId,
+		LevelMin:        m.levelMin,
+		LevelMax:        m.levelMax,
+		FameMin:         m.fameMin,
+		MesoMin:         m.mesoMin,
+		MesoMax:         m.mesoMax,
+		Jobs:            jobs,
+		Quests:          quests,
+		Items:           items,
+		Mobs:            mobs,
+		FieldEnter:      fieldEnter,
+		Pet:             pet,
+		PetTamenessMin:  m.petTamenessMin,
+		DayOfWeek:       dayOfWeek,
+		Start:           m.start,
+		End:             m.end,
+		Interval:        m.interval,
+		StartScript:     m.startScript,
+		EndScript:       m.endScript,
+		InfoNumber:      m.infoNumber,
+		NormalAutoStart: m.normalAutoStart,
+		CompletionCount: m.completionCount,
+	}
+}
+
+func transformActions(m ActionsModel) ActionsRestModel {
+	var items []ItemRewardRest
+	if m.items != nil {
+		items = make([]ItemRewardRest, len(m.items))
+		for i, item := range m.items {
+			items[i] = ItemRewardRest{
+				Id:         item.id,
+				Count:      item.count,
+				Job:        item.job,
+				Gender:     item.gender,
+				Prop:       item.prop,
+				Period:     item.period,
+				DateExpire: item.dateExpire,
+				Var:        item.variable,
+			}
+		}
+	}
+
+	var skills []SkillRewardRest
+	if m.skills != nil {
+		skills = make([]SkillRewardRest, len(m.skills))
+		for i, skill := range m.skills {
+			skills[i] = SkillRewardRest{
+				Id:          skill.id,
+				Level:       skill.level,
+				MasterLevel: skill.masterLevel,
+				Jobs:        copyUint16Slice(skill.jobs),
+			}
+		}
+	}
+
+	return ActionsRestModel{
+		NpcId:      m.npcId,
+		Exp:        m.exp,
+		Money:      m.money,
+		Fame:       m.fame,
+		Items:      items,
+		Skills:     skills,
+		NextQuest:  m.nextQuest,
+		BuffItemId: m.buffItemId,
+		Interval:   m.interval,
+		LevelMin:   m.levelMin,
+	}
+}
+
+// copyUint16Slice, copyUint32Slice, and copyStringSlice preserve the
+// nil-vs-empty distinction of src: they return nil for a nil src rather than
+// an allocated empty slice, so a Transform -> Extract round trip is exact.
+func copyUint16Slice(src []uint16) []uint16 {
+	if src == nil {
+		return nil
+	}
+	dst := make([]uint16, len(src))
+	copy(dst, src)
+	return dst
+}
+
+func copyUint32Slice(src []uint32) []uint32 {
+	if src == nil {
+		return nil
+	}
+	dst := make([]uint32, len(src))
+	copy(dst, src)
+	return dst
+}
+
+func copyStringSlice(src []string) []string {
+	if src == nil {
+		return nil
+	}
+	dst := make([]string, len(src))
+	copy(dst, src)
+	return dst
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:                rm.Id,

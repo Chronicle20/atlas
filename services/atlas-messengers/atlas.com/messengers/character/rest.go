@@ -104,3 +104,18 @@ func ExtractForeign(rm ForeignRestModel) (ForeignModel, error) {
 		gm:      rm.Gm,
 	}, nil
 }
+
+// TransformForeign is the exact inverse of ExtractForeign. ForeignRestModel
+// carries many fields (AccountId, stats, equipment position, etc.) that
+// ForeignModel does not model; only the fields ExtractForeign maps are
+// round-tripped here.
+func TransformForeign(m ForeignModel) (ForeignRestModel, error) {
+	return ForeignRestModel{
+		Id:      m.id,
+		WorldId: m.worldId,
+		Name:    m.name,
+		Level:   m.level,
+		JobId:   m.jobId,
+		Gm:      m.gm,
+	}, nil
+}

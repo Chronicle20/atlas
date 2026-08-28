@@ -71,7 +71,7 @@ func Make(e Entity) (Model, error) {
 	if err != nil {
 		return Model{}, err
 	}
-	return NewModelBuilder(e.Id, e.CashId, e.TemplateId, e.Name, e.OwnerId).
+	return NewBuilder(e.Id, e.CashId, e.TemplateId, e.Name, e.OwnerId).
 		SetLevel(e.Level).
 		SetCloseness(e.Closeness).
 		SetFullness(e.Fullness).

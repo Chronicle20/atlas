@@ -10,6 +10,7 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/messenger"
 	"atlas-channel/pet"
+	"atlas-channel/ring"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -175,7 +176,7 @@ func enrichPetAssetWith(l logrus.FieldLogger, fetch func(petId uint32) (pet.Mode
 }
 
 func buildAssetFromCreatedBody(e asset2.StatusEvent[asset2.CreatedStatusEventBody]) asset.Model {
-	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+	return asset.NewBuilderWithId(e.AssetId, e.CompartmentId, e.TemplateId).
 		SetSlot(e.Slot).
 		SetExpiration(e.Body.Expiration).
 		SetCreatedAt(e.Body.CreatedAt).
@@ -214,7 +215,7 @@ func buildAssetFromCreatedBody(e asset2.StatusEvent[asset2.CreatedStatusEventBod
 }
 
 func buildAssetFromUpdatedBody(e asset2.StatusEvent[asset2.UpdatedStatusEventBody]) asset.Model {
-	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+	return asset.NewBuilderWithId(e.AssetId, e.CompartmentId, e.TemplateId).
 		SetSlot(e.Slot).
 		SetExpiration(e.Body.Expiration).
 		SetCreatedAt(e.Body.CreatedAt).
@@ -253,7 +254,7 @@ func buildAssetFromUpdatedBody(e asset2.StatusEvent[asset2.UpdatedStatusEventBod
 }
 
 func buildAssetFromAcceptedBody(e asset2.StatusEvent[asset2.AcceptedStatusEventBody]) asset.Model {
-	return asset.NewModelBuilder(e.AssetId, e.CompartmentId, e.TemplateId).
+	return asset.NewBuilderWithId(e.AssetId, e.CompartmentId, e.TemplateId).
 		SetSlot(e.Slot).
 		SetExpiration(e.Body.Expiration).
 		SetCreatedAt(e.Body.CreatedAt).
@@ -452,12 +453,21 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	}
 }
 
+// ringProcessorFn is the test-overridable ring.Processor constructor, so
+// TestUpdateAppearanceResolvesRingsOnce can substitute a counting double.
+var ringProcessorFn = ring.NewProcessor
+
 func updateAppearance(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 			return func(c character.Model) model.Operator[session.Model] {
 				ava := model2.NewFromCharacter(c, false)
-				return session.Announce(l)(ctx)(wp)(charcb.CharacterAppearanceUpdateWriter)(charcb.NewCharacterAppearanceUpdate(c.Id(), ava).Encode)
+				// Resolved once per broadcasting character, NOT per recipient
+				// session: ForSessionsInMap (moveInCompartment above) invokes
+				// the returned Operator once per observer on the map, and
+				// GetRingSet must not be multiplied by that fan-out (PRD §8).
+				rings := ringProcessorFn(l, ctx).GetRingSet(c.Id(), c.Equipment())
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterAppearanceUpdateWriter)(charcb.NewCharacterAppearanceUpdate(c.Id(), ava, rings).Encode)
 			}
 		}
 	}

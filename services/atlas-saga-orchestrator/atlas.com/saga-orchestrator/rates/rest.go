@@ -29,3 +29,16 @@ func Extract(body DataBody) Model {
 		body.Attributes.QuestExpRate,
 	)
 }
+
+// Transform is the exact inverse of Extract: it converts a Model back into
+// the REST DataBody payload.
+func Transform(m Model) DataBody {
+	return DataBody{
+		Attributes: Attributes{
+			ExpRate:      m.expRate,
+			MesoRate:     m.mesoRate,
+			ItemDropRate: m.itemDropRate,
+			QuestExpRate: m.questExpRate,
+		},
+	}
+}

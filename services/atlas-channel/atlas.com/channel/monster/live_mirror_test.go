@@ -200,7 +200,7 @@ func TestLiveMirror_ConcurrentAccess(t *testing.T) {
 
 func TestLiveEntryFromModel_MapsPosition(t *testing.T) {
 	f := testField()
-	mo, err := NewModelBuilder(7, f, 100100).SetX(123).SetY(-45).Build()
+	mo, err := NewBuilder(7, f, 100100).SetX(123).SetY(-45).Build()
 	if err != nil {
 		t.Fatalf("build: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestLiveMirror_UpdatePosition(t *testing.T) {
 
 func TestLiveEntryFromModel_MapsAllFields(t *testing.T) {
 	f := testField()
-	mo, err := NewModelBuilder(7, f, 100100).
+	mo, err := NewBuilder(7, f, 100100).
 		SetMp(33).
 		SetMaxMp(90).
 		SetControllerHasAggro(true).

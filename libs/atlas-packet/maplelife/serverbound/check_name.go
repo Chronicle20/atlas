@@ -25,8 +25,9 @@ const MapleLifeCheckNameHandle = "MapleLifeCheckNameHandle"
 // routing consequence (A)):
 //
 //	gms_v83  opcode 256 (0x100)
-//	gms_v84  VERSION-ABSENT — no CUICharacterSaleDlg code path exists at all
-//	         (derivation.md §2.0, re-confirmed §6.1)
+//	gms_v84  opcode 263 (0x107) — CUICharacterSaleDlg exists on this binary
+//	         and was mis-flagged VERSION-ABSENT by an earlier, retracted pass
+//	         (derivation.md §2.0-CORRECTION, supersedes §2.0/§6.1)
 //	gms_v87  opcode 270 (0x10E)
 //	gms_v92  opcode 301 (0x12D)
 //	gms_v95  opcode 311

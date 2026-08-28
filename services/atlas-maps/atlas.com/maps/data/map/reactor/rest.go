@@ -42,3 +42,15 @@ func Extract(rm RestModel) (Model, error) {
 		direction:      rm.Direction,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:             m.id,
+		Classification: m.classification,
+		Name:           m.name,
+		X:              m.x,
+		Y:              m.y,
+		Delay:          m.delay,
+		Direction:      m.direction,
+	}, nil
+}

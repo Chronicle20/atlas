@@ -76,7 +76,7 @@ func (Subdomain) Build(t tenant.Model, entityID string, attrs JSONModel) ([]Mode
 
 	models := make([]Model, 0, len(attrs.Drops))
 	for _, d := range attrs.Drops {
-		m, err := NewReactorDropBuilder(t.Id(), 0).
+		m, err := NewBuilder(t.Id(), 0).
 			SetReactorId(reactorId).
 			SetItemId(d.ItemID).
 			SetQuestId(d.QuestID).

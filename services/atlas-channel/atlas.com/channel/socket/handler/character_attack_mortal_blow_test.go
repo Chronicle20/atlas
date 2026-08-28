@@ -119,7 +119,7 @@ func mbField() field.Model {
 
 func mbMonster(t *testing.T, uniqueId uint32, hp uint32, maxHp uint32) monster.Model {
 	t.Helper()
-	return monster.NewModelBuilder(uniqueId, mbField(), 1000000).SetHp(hp).SetMaxHp(maxHp).MustBuild()
+	return monster.NewBuilder(uniqueId, mbField(), 1000000).SetHp(hp).SetMaxHp(maxHp).MustBuild()
 }
 
 // TestMortalBlowTryProc_InertEffectSkipsSnapshotFetch — x/y ≤ 0 in tenant

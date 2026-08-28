@@ -72,7 +72,7 @@ func TestGetSkillMacrosPaginates(t *testing.T) {
 
 	var seeded []macro.Model
 	for i := 0; i < 3; i++ {
-		m, err := macro.NewModelBuilder().
+		m, err := macro.NewBuilder().
 			SetId(uint32(i)).
 			SetName(fmt.Sprintf("Macro %d", i)).
 			SetSkillId1(skillconst.Id(1001001 + i)).

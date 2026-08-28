@@ -23,14 +23,14 @@ type Processor interface {
 	With(opts ...ProcessorOption) Processor
 
 	// Spawn creates a new drop
-	Spawn(mb *message.Buffer) func(mb *ModelBuilder) (Model, error)
+	Spawn(mb *message.Buffer) func(mb *Builder) (Model, error)
 	// SpawnAndEmit creates a new drop and emits a Kafka message
-	SpawnAndEmit(mb *ModelBuilder) (Model, error)
+	SpawnAndEmit(mb *Builder) (Model, error)
 
 	// SpawnForCharacter creates a new drop for a character
-	SpawnForCharacter(mb *message.Buffer) func(mb *ModelBuilder) (Model, error)
+	SpawnForCharacter(mb *message.Buffer) func(mb *Builder) (Model, error)
 	// SpawnForCharacterAndEmit creates a new drop for a character and emits a Kafka message
-	SpawnForCharacterAndEmit(mb *ModelBuilder) (Model, error)
+	SpawnForCharacterAndEmit(mb *Builder) (Model, error)
 
 	// Reserve reserves a drop for a character
 	Reserve(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error)
@@ -110,8 +110,8 @@ func (p *ProcessorImpl) With(opts ...ProcessorOption) Processor {
 }
 
 // Spawn creates a new drop (equipment stats already inline from command)
-func (p *ProcessorImpl) Spawn(msgBuf *message.Buffer) func(mb *ModelBuilder) (Model, error) {
-	return func(mb *ModelBuilder) (Model, error) {
+func (p *ProcessorImpl) Spawn(msgBuf *message.Buffer) func(mb *Builder) (Model, error) {
+	return func(mb *Builder) (Model, error) {
 		m, err := GetRegistry().CreateDrop(mb)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to create drop.")
@@ -123,7 +123,7 @@ func (p *ProcessorImpl) Spawn(msgBuf *message.Buffer) func(mb *ModelBuilder) (Mo
 }
 
 // SpawnAndEmit creates a new drop and emits a Kafka message
-func (p *ProcessorImpl) SpawnAndEmit(mb *ModelBuilder) (Model, error) {
+func (p *ProcessorImpl) SpawnAndEmit(mb *Builder) (Model, error) {
 	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
 	var result Model
 	var err error
@@ -135,8 +135,8 @@ func (p *ProcessorImpl) SpawnAndEmit(mb *ModelBuilder) (Model, error) {
 }
 
 // SpawnForCharacter creates a new drop for a character
-func (p *ProcessorImpl) SpawnForCharacter(msgBuf *message.Buffer) func(mb *ModelBuilder) (Model, error) {
-	return func(mb *ModelBuilder) (Model, error) {
+func (p *ProcessorImpl) SpawnForCharacter(msgBuf *message.Buffer) func(mb *Builder) (Model, error) {
+	return func(mb *Builder) (Model, error) {
 		m, err := GetRegistry().CreateDrop(mb)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to create drop for character.")
@@ -148,7 +148,7 @@ func (p *ProcessorImpl) SpawnForCharacter(msgBuf *message.Buffer) func(mb *Model
 }
 
 // SpawnForCharacterAndEmit creates a new drop for a character and emits a Kafka message
-func (p *ProcessorImpl) SpawnForCharacterAndEmit(mb *ModelBuilder) (Model, error) {
+func (p *ProcessorImpl) SpawnForCharacterAndEmit(mb *Builder) (Model, error) {
 	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
 	var result Model
 	var err error

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -292,4 +294,48 @@ func TestExtractIncludesCoverMonsterId(t *testing.T) {
 	if c.CoverCardId() != item.Id(2380000) {
 		t.Fatalf("Collection.CoverCardId() = %d, want 2380000 (must remain card id)", c.CoverCardId())
 	}
+}
+
+// TestTransformRoundTrip asserts TransformCard/ExtractCard and Transform/Extract
+// are exact inverses of each other over the domain types.
+func TestTransformRoundTrip(t *testing.T) {
+	t.Run("card", func(t *testing.T) {
+		c := Card{cardId: item.Id(2380005), level: 5, isSpecial: true}
+
+		rm, err := TransformCard(c)
+		if err != nil {
+			t.Fatalf("TransformCard: %v", err)
+		}
+		got, err := ExtractCard(rm)
+		if err != nil {
+			t.Fatalf("ExtractCard: %v", err)
+		}
+		if !reflect.DeepEqual(got, c) {
+			t.Errorf("round trip mismatch. Expected %+v, got %+v", c, got)
+		}
+	})
+
+	t.Run("collection", func(t *testing.T) {
+		col := Collection{
+			bookLevel:        3,
+			normalCount:      5,
+			specialCount:     2,
+			totalUniqueCards: 7,
+			coverCardId:      item.Id(2380000),
+			coverMonsterId:   monster.Id(100100),
+			expBonusPercent:  9,
+		}
+
+		rm, err := Transform(col)
+		if err != nil {
+			t.Fatalf("Transform: %v", err)
+		}
+		got, err := Extract(rm)
+		if err != nil {
+			t.Fatalf("Extract: %v", err)
+		}
+		if !reflect.DeepEqual(got, col) {
+			t.Errorf("round trip mismatch. Expected %+v, got %+v", col, got)
+		}
+	})
 }

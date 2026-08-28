@@ -96,9 +96,20 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 
 func Extract(m RestModel) (Model, error) {
 	return Model{
-		id:     m.Id,
-		x:      m.X,
-		y:      m.Y,
-		stance: m.Stance,
+		id:         m.Id,
+		x:          m.X,
+		y:          m.Y,
+		stance:     m.Stance,
+		spawnPoint: m.SpawnPoint,
+	}, nil
+}
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:         m.id,
+		X:          m.x,
+		Y:          m.y,
+		Stance:     m.stance,
+		SpawnPoint: m.spawnPoint,
 	}, nil
 }

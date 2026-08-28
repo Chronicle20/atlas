@@ -7,7 +7,7 @@ import (
 )
 
 func TestBuilderCoverMobIdRoundTrip(t *testing.T) {
-	m := NewModelBuilder().
+	m := NewBuilder().
 		SetCharacterId(1).
 		SetCoverCardId(2380000).
 		SetCoverMobId(100100).
@@ -32,7 +32,7 @@ func TestBuilderCoverMobIdRoundTrip(t *testing.T) {
 }
 
 func TestBuilderRequiresIdentity(t *testing.T) {
-	_, err := NewModelBuilder().Build()
+	_, err := NewBuilder().Build()
 	if err == nil {
 		t.Fatal("expected error when characterId is zero")
 	}
@@ -40,7 +40,7 @@ func TestBuilderRequiresIdentity(t *testing.T) {
 
 func TestBuilderRoundtrip(t *testing.T) {
 	tid := uuid.New()
-	m, err := NewModelBuilder().
+	m, err := NewBuilder().
 		SetTenantId(tid).
 		SetCharacterId(42).
 		SetCoverCardId(2380000).

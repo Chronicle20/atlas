@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -65,5 +66,23 @@ func TestFieldLimit_ServedWithRelationships(t *testing.T) {
 	}
 	if fl != 128 {
 		t.Fatalf("fieldLimit: want 128, got %d", fl)
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		id:         11,
+		fieldLimit: 22,
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

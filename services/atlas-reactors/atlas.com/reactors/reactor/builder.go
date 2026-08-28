@@ -14,7 +14,7 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-type ModelBuilder struct {
+type Builder struct {
 	tenant         tenant.Model
 	id             uint32
 	worldId        world.Id
@@ -33,8 +33,8 @@ type ModelBuilder struct {
 	updateTime     time.Time
 }
 
-func NewModelBuilder(t tenant.Model, f field.Model, classification uint32, name string) *ModelBuilder {
-	return &ModelBuilder{
+func NewBuilder(t tenant.Model, f field.Model, classification uint32, name string) *Builder {
+	return &Builder{
 		tenant:         t,
 		worldId:        f.WorldId(),
 		channelId:      f.ChannelId(),
@@ -46,8 +46,8 @@ func NewModelBuilder(t tenant.Model, f field.Model, classification uint32, name 
 	}
 }
 
-func NewFromModel(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func NewFromModel(m Model) *Builder {
+	return &Builder{
 		tenant:         m.tenant,
 		id:             m.Id(),
 		worldId:        m.WorldId(),
@@ -67,7 +67,7 @@ func NewFromModel(m Model) *ModelBuilder {
 	}
 }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.classification == 0 {
 		return Model{}, errors.New("classification is required")
 	}
@@ -91,55 +91,55 @@ func (b *ModelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func (b *ModelBuilder) SetState(state int8) *ModelBuilder {
+func (b *Builder) SetState(state int8) *Builder {
 	b.state = state
 	return b
 }
 
-func (b *ModelBuilder) SetPosition(x int16, y int16) *ModelBuilder {
+func (b *Builder) SetPosition(x int16, y int16) *Builder {
 	b.x = x
 	b.y = y
 	return b
 }
 
-func (b *ModelBuilder) SetDelay(delay uint32) *ModelBuilder {
+func (b *Builder) SetDelay(delay uint32) *Builder {
 	b.delay = delay
 	return b
 }
 
-func (b *ModelBuilder) SetDirection(direction byte) *ModelBuilder {
+func (b *Builder) SetDirection(direction byte) *Builder {
 	b.direction = direction
 	return b
 }
 
-func (b *ModelBuilder) Classification() uint32 {
+func (b *Builder) Classification() uint32 {
 	return b.classification
 }
 
-func (b *ModelBuilder) Field() field.Model {
+func (b *Builder) Field() field.Model {
 	return field.NewBuilder(b.worldId, b.channelId, b.mapId).SetInstance(b.instance).Build()
 }
 
-func (b *ModelBuilder) SetData(data data.Model) *ModelBuilder {
+func (b *Builder) SetData(data data.Model) *Builder {
 	b.data = data
 	return b
 }
 
-func (b *ModelBuilder) SetName(name string) *ModelBuilder {
+func (b *Builder) SetName(name string) *Builder {
 	b.name = name
 	return b
 }
 
-func (b *ModelBuilder) Name() string {
+func (b *Builder) Name() string {
 	return b.name
 }
 
-func (b *ModelBuilder) UpdateTime() *ModelBuilder {
+func (b *Builder) UpdateTime() *Builder {
 	b.updateTime = time.Now()
 	return b
 }
 
-func (b *ModelBuilder) SetId(id uint32) *ModelBuilder {
+func (b *Builder) SetId(id uint32) *Builder {
 	b.id = id
 	return b
 }

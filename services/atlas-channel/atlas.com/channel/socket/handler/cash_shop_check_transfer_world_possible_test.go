@@ -134,7 +134,7 @@ func TestWorldTransferCheckNeverEmitsStorageWarning(t *testing.T) {
 	t.Run("would-be-stranded character", func(t *testing.T) {
 		env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
 		env.withAccount(buildAccount("s3cr3t", 0))
-		env.withCharactersInWorld(character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild())
+		env.withCharactersInWorld(character.NewBuilder().SetId(checkPossibleTestCharacterId).MustBuild())
 		env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
 
 		if got := env.lastAnnouncedResultByte(); got != 0x20 {
@@ -149,8 +149,8 @@ func TestWorldTransferCheckNeverEmitsStorageWarning(t *testing.T) {
 		env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
 		env.withAccount(buildAccount("s3cr3t", 0))
 		env.withCharactersInWorld(
-			character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild(),
-			character.NewModelBuilder().SetId(checkPossibleTestCharacterId+1).MustBuild(),
+			character.NewBuilder().SetId(checkPossibleTestCharacterId).MustBuild(),
+			character.NewBuilder().SetId(checkPossibleTestCharacterId+1).MustBuild(),
 		)
 		env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
 

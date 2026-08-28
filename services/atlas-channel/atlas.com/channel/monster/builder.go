@@ -8,7 +8,7 @@ import (
 
 var ErrInvalidUniqueId = errors.New("monster unique id must be greater than 0")
 
-type modelBuilder struct {
+type builder struct {
 	field              field.Model
 	uniqueId           uint32
 	maxHp              uint32
@@ -26,9 +26,9 @@ type modelBuilder struct {
 	statusEffects      []StatusEffectEntry
 }
 
-// NewModelBuilder creates a new builder instance with required fields
-func NewModelBuilder(uniqueId uint32, field field.Model, monsterId uint32) *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new builder instance with required fields
+func NewBuilder(uniqueId uint32, field field.Model, monsterId uint32) *builder {
+	return &builder{
 		field:     field,
 		uniqueId:  uniqueId,
 		monsterId: monsterId,
@@ -36,8 +36,8 @@ func NewModelBuilder(uniqueId uint32, field field.Model, monsterId uint32) *mode
 }
 
 // CloneModel creates a builder initialized with the Model's values
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		field:              m.field,
 		uniqueId:           m.uniqueId,
 		maxHp:              m.maxHp,
@@ -56,65 +56,65 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetMaxHp(maxHp uint32) *modelBuilder {
+func (b *builder) SetMaxHp(maxHp uint32) *builder {
 	b.maxHp = maxHp
 	return b
 }
 
-func (b *modelBuilder) SetHp(hp uint32) *modelBuilder {
+func (b *builder) SetHp(hp uint32) *builder {
 	b.hp = hp
 	return b
 }
 
-func (b *modelBuilder) SetMp(mp uint32) *modelBuilder {
+func (b *builder) SetMp(mp uint32) *builder {
 	b.mp = mp
 	return b
 }
 
-func (b *modelBuilder) SetMaxMp(maxMp uint32) *modelBuilder {
+func (b *builder) SetMaxMp(maxMp uint32) *builder {
 	b.maxMp = maxMp
 	return b
 }
 
-func (b *modelBuilder) SetControlCharacterId(controlCharacterId uint32) *modelBuilder {
+func (b *builder) SetControlCharacterId(controlCharacterId uint32) *builder {
 	b.controlCharacterId = controlCharacterId
 	return b
 }
 
 // SetControllerHasAggro sets whether the controlling character currently has
 // aggro on this monster.
-func (b *modelBuilder) SetControllerHasAggro(aggro bool) *modelBuilder {
+func (b *builder) SetControllerHasAggro(aggro bool) *builder {
 	b.controllerHasAggro = aggro
 	return b
 }
 
-func (b *modelBuilder) SetX(x int16) *modelBuilder {
+func (b *builder) SetX(x int16) *builder {
 	b.x = x
 	return b
 }
 
-func (b *modelBuilder) SetY(y int16) *modelBuilder {
+func (b *builder) SetY(y int16) *builder {
 	b.y = y
 	return b
 }
 
-func (b *modelBuilder) SetStance(stance byte) *modelBuilder {
+func (b *builder) SetStance(stance byte) *builder {
 	b.stance = stance
 	return b
 }
 
-func (b *modelBuilder) SetFH(fh int16) *modelBuilder {
+func (b *builder) SetFH(fh int16) *builder {
 	b.fh = fh
 	return b
 }
 
-func (b *modelBuilder) SetTeam(team int8) *modelBuilder {
+func (b *builder) SetTeam(team int8) *builder {
 	b.team = team
 	return b
 }
 
 // Build creates a new Model instance with validation
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.uniqueId == 0 {
 		return Model{}, ErrInvalidUniqueId
 	}
@@ -138,7 +138,7 @@ func (b *modelBuilder) Build() (Model, error) {
 }
 
 // MustBuild creates a new Model instance, panicking on validation error
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

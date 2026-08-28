@@ -9,19 +9,19 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := inventory.NewModelBuilder(100)
+func TestNewBuilder(t *testing.T) {
+	builder := inventory.NewBuilder(100)
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	explorerCompartment := compartment.NewModelBuilder(uuid.New(), 100, compartment.TypeExplorer, 50).MustBuild()
-	cygnusCompartment := compartment.NewModelBuilder(uuid.New(), 100, compartment.TypeCygnus, 50).MustBuild()
-	legendCompartment := compartment.NewModelBuilder(uuid.New(), 100, compartment.TypeLegend, 50).MustBuild()
+	explorerCompartment := compartment.NewBuilder(uuid.New(), 100, compartment.TypeExplorer, 50).MustBuild()
+	cygnusCompartment := compartment.NewBuilder(uuid.New(), 100, compartment.TypeCygnus, 50).MustBuild()
+	legendCompartment := compartment.NewBuilder(uuid.New(), 100, compartment.TypeLegend, 50).MustBuild()
 
-	model, err := inventory.NewModelBuilder(100).
+	model, err := inventory.NewBuilder(100).
 		SetExplorer(explorerCompartment).
 		SetCygnus(cygnusCompartment).
 		SetLegend(legendCompartment).
@@ -38,7 +38,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingAccountId(t *testing.T) {
-	_, err := inventory.NewModelBuilder(0).Build()
+	_, err := inventory.NewBuilder(0).Build()
 
 	if !errors.Is(err, inventory.ErrInvalidAccountId) {
 		t.Errorf("Build() error = %v, want ErrInvalidAccountId", err)
@@ -46,16 +46,16 @@ func TestBuild_MissingAccountId(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	explorerCompartment := compartment.NewModelBuilder(uuid.New(), 100, compartment.TypeExplorer, 50).MustBuild()
+	explorerCompartment := compartment.NewBuilder(uuid.New(), 100, compartment.TypeExplorer, 50).MustBuild()
 
-	original, err := inventory.NewModelBuilder(100).
+	original, err := inventory.NewBuilder(100).
 		SetExplorer(explorerCompartment).
 		Build()
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
 
-	cygnusCompartment := compartment.NewModelBuilder(uuid.New(), 100, compartment.TypeCygnus, 60).MustBuild()
+	cygnusCompartment := compartment.NewBuilder(uuid.New(), 100, compartment.TypeCygnus, 60).MustBuild()
 
 	cloned, err := inventory.CloneModel(original).
 		SetCygnus(cygnusCompartment).
@@ -85,7 +85,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := inventory.NewModelBuilder(100).MustBuild()
+	model := inventory.NewBuilder(100).MustBuild()
 
 	if model.AccountId() != 100 {
 		t.Errorf("model.AccountId() = %d, want 100", model.AccountId())
@@ -99,13 +99,13 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	inventory.NewModelBuilder(0).MustBuild() // Missing AccountId, should panic
+	inventory.NewBuilder(0).MustBuild() // Missing AccountId, should panic
 }
 
 func TestSetCompartment(t *testing.T) {
-	explorerCompartment := compartment.NewModelBuilder(uuid.New(), 100, compartment.TypeExplorer, 50).MustBuild()
+	explorerCompartment := compartment.NewBuilder(uuid.New(), 100, compartment.TypeExplorer, 50).MustBuild()
 
-	model, err := inventory.NewModelBuilder(100).
+	model, err := inventory.NewBuilder(100).
 		SetCompartment(explorerCompartment).
 		Build()
 	if err != nil {
@@ -118,9 +118,9 @@ func TestSetCompartment(t *testing.T) {
 }
 
 func TestCompartmentByType(t *testing.T) {
-	explorerCompartment := compartment.NewModelBuilder(uuid.New(), 100, compartment.TypeExplorer, 50).MustBuild()
+	explorerCompartment := compartment.NewBuilder(uuid.New(), 100, compartment.TypeExplorer, 50).MustBuild()
 
-	model, err := inventory.NewModelBuilder(100).
+	model, err := inventory.NewBuilder(100).
 		SetExplorer(explorerCompartment).
 		Build()
 	if err != nil {

@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func Clone(m Model) *Builder {
+	return &Builder{
 		id:             m.id,
 		compartmentId:  m.compartmentId,
 		slot:           m.slot,
@@ -51,7 +51,7 @@ func Clone(m Model) *ModelBuilder {
 	}
 }
 
-type ModelBuilder struct {
+type Builder struct {
 	id             uint32
 	compartmentId  uuid.UUID
 	slot           int16
@@ -94,19 +94,19 @@ type ModelBuilder struct {
 	petId          uint32
 }
 
-func NewBuilder(compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
-	return &ModelBuilder{
+func NewBuilder(compartmentId uuid.UUID, templateId uint32) *Builder {
+	return &Builder{
 		compartmentId: compartmentId,
 		templateId:    templateId,
 	}
 }
 
-func (b *ModelBuilder) SetId(id uint32) *ModelBuilder           { b.id = id; return b }
-func (b *ModelBuilder) SetSlot(slot int16) *ModelBuilder        { b.slot = slot; return b }
-func (b *ModelBuilder) SetExpiration(e time.Time) *ModelBuilder { b.expiration = e; return b }
-func (b *ModelBuilder) SetPetId(v uint32) *ModelBuilder         { b.petId = v; return b }
+func (b *Builder) SetId(id uint32) *Builder           { b.id = id; return b }
+func (b *Builder) SetSlot(slot int16) *Builder        { b.slot = slot; return b }
+func (b *Builder) SetExpiration(e time.Time) *Builder { b.expiration = e; return b }
+func (b *Builder) SetPetId(v uint32) *Builder         { b.petId = v; return b }
 
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	return Model{
 		id:             b.id,
 		compartmentId:  b.compartmentId,

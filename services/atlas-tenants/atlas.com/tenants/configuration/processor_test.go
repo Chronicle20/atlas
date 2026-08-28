@@ -378,7 +378,7 @@ func TestFromModel(t *testing.T) {
 	tenantId := uuid.New()
 	resourceData := json.RawMessage(`{"data": []}`)
 
-	model, err := configuration.NewModelBuilder().
+	model, err := configuration.NewBuilder().
 		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(resourceData).

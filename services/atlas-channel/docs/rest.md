@@ -88,6 +88,20 @@ Base URL: `BASE_SERVICE_URL` + CASHSHOP root
 - Response Model: None
 - Error Conditions: None
 
+#### GET /rings?filter[characterId]={characterId}
+- Registered at the cashshop router root, not under `/cash-shop` (routed
+  through the ingress via a dedicated `^/api/rings(/.*)?$` location block,
+  task-269). Populated once per character load into the channel's ring
+  cache (`ring.ProcessorImpl.Populate`); the couple/friendship ring set and
+  record block are joined from this cache, not fetched per encode.
+- Parameters: characterId (uint32), page[number]/page[size] (paginated)
+- Request Model: None
+- Response Model: `[]RestModel` - Ring pair halves owned by the character
+  (pairId, characterId, partnerCharacterId, assetId, itemTemplateId,
+  ringType, state, createdAt, cashId, partnerCashId, partnerName)
+- Error Conditions: None (cashshop outage degrades to an empty cache;
+  fail-soft, PRD FR-5)
+
 ---
 
 ### CHAIRS

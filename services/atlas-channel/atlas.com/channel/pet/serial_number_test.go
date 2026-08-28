@@ -8,7 +8,7 @@ import (
 
 func mustPet(t *testing.T, id uint32, cashId uint64) pet.Model {
 	t.Helper()
-	m, err := pet.NewModelBuilder(id, cashId, 5000012, "Mr. Roboto").SetOwnerID(1).Build()
+	m, err := pet.NewBuilder(id, cashId, 5000012, "Mr. Roboto").SetOwnerID(1).Build()
 	if err != nil {
 		t.Fatalf("Failed to build pet [%d]: %v", id, err)
 	}

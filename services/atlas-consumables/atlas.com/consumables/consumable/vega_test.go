@@ -43,7 +43,10 @@ func TestResolveVegaEquip_PositiveSlotFromEquipInventory(t *testing.T) {
 	equip := asset.NewBuilder(uuid.New(), 1302000).SetId(1).SetSlot(3).SetSlots(7).Build()
 	comp := compartment.NewBuilder(uuid.New(), 1, inventory2.TypeValueEquip, 96).AddAsset(equip).Build()
 	inv := inventory.NewBuilder(1).SetEquipable(comp).Build()
-	c := character.NewModelBuilder().SetId(1).SetInventory(inv).SetEquipment(equipment.NewModel()).Build()
+	c, err := character.NewBuilder().SetId(1).SetInventory(inv).SetEquipment(equipment.NewModel()).Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	got, err := resolveVegaEquip(c, 3)
 	if err != nil {
@@ -57,7 +60,10 @@ func TestResolveVegaEquip_PositiveSlotFromEquipInventory(t *testing.T) {
 func TestResolveVegaEquip_PositiveSlotMissing(t *testing.T) {
 	comp := compartment.NewBuilder(uuid.New(), 1, inventory2.TypeValueEquip, 96).Build()
 	inv := inventory.NewBuilder(1).SetEquipable(comp).Build()
-	c := character.NewModelBuilder().SetId(1).SetInventory(inv).SetEquipment(equipment.NewModel()).Build()
+	c, err := character.NewBuilder().SetId(1).SetInventory(inv).SetEquipment(equipment.NewModel()).Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if _, err := resolveVegaEquip(c, 3); err == nil {
 		t.Error("expected error for empty slot, got nil")
@@ -74,7 +80,10 @@ func TestResolveVegaEquip_NegativeSlotFromEquipped(t *testing.T) {
 	sm, _ := eq.Get(s.Type)
 	sm.Equipable = &weapon
 	eq.Set(s.Type, sm)
-	c := character.NewModelBuilder().SetId(1).SetEquipment(eq).Build()
+	c, err := character.NewBuilder().SetId(1).SetEquipment(eq).Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	got, err := resolveVegaEquip(c, -11)
 	if err != nil {
@@ -86,7 +95,10 @@ func TestResolveVegaEquip_NegativeSlotFromEquipped(t *testing.T) {
 }
 
 func TestResolveVegaEquip_NegativeSlotEmpty(t *testing.T) {
-	c := character.NewModelBuilder().SetId(1).SetEquipment(equipment.NewModel()).Build()
+	c, err := character.NewBuilder().SetId(1).SetEquipment(equipment.NewModel()).Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if _, err := resolveVegaEquip(c, -11); err == nil {
 		t.Error("expected error for empty equipped slot, got nil")
 	}

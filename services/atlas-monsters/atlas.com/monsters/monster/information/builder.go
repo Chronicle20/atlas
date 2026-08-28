@@ -1,8 +1,8 @@
 package information
 
-// ModelBuilder provides a minimal fluent interface for constructing Model
+// Builder provides a minimal fluent interface for constructing Model
 // instances in tests. Only the fields tests need are settable.
-type ModelBuilder struct {
+type Builder struct {
 	skills          []Skill
 	attacks         []AttackInfo
 	selfDestruction SelfDestruction
@@ -14,29 +14,29 @@ type ModelBuilder struct {
 	banish          Banish
 }
 
-// NewModelBuilder returns a new ModelBuilder with zero values.
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{}
+// NewBuilder returns a new Builder with zero values.
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
 // SetSkills sets the skill list on the builder.
-func (b *ModelBuilder) SetSkills(skills []Skill) *ModelBuilder {
+func (b *Builder) SetSkills(skills []Skill) *Builder {
 	b.skills = skills
 	return b
 }
 
 // SetAttacks sets the attacks list on the builder.
-func (b *ModelBuilder) SetAttacks(attacks []AttackInfo) *ModelBuilder {
+func (b *Builder) SetAttacks(attacks []AttackInfo) *Builder {
 	b.attacks = attacks
 	return b
 }
 
-func (b *ModelBuilder) SetHpRecovery(v uint32) *ModelBuilder {
+func (b *Builder) SetHpRecovery(v uint32) *Builder {
 	b.hpRecovery = v
 	return b
 }
 
-func (b *ModelBuilder) SetMpRecovery(v uint32) *ModelBuilder {
+func (b *Builder) SetMpRecovery(v uint32) *Builder {
 	b.mpRecovery = v
 	return b
 }
@@ -44,14 +44,14 @@ func (b *ModelBuilder) SetMpRecovery(v uint32) *ModelBuilder {
 // SetBoss sets the boss flag on the builder. Used by tests that drive
 // boss-immunity branches in ApplyStatusEffect and the boss-skip branch
 // in DrainMp.
-func (b *ModelBuilder) SetBoss(boss bool) *ModelBuilder {
+func (b *Builder) SetBoss(boss bool) *Builder {
 	b.boss = boss
 	return b
 }
 
 // SetFirstAttack sets the aggressive-template flag on the builder. Used by
 // tests that drive the firstAttack gate in ProcessorImpl.SetAggro.
-func (b *ModelBuilder) SetFirstAttack(v bool) *ModelBuilder {
+func (b *Builder) SetFirstAttack(v bool) *Builder {
 	b.firstAttack = v
 	return b
 }
@@ -60,27 +60,27 @@ func (b *ModelBuilder) SetFirstAttack(v bool) *ModelBuilder {
 // element letters ("P", "I", "F", "S", "L"); value "1" means immune (per
 // Model.IsImmuneToElement). Used by tests that drive elemental-immunity
 // branches in ApplyStatusEffect.
-func (b *ModelBuilder) SetResistances(r map[string]string) *ModelBuilder {
+func (b *Builder) SetResistances(r map[string]string) *Builder {
 	b.resistances = r
 	return b
 }
 
 // SetBanish sets the banish node on the builder. Used by tests that drive the
 // banish paths in Banish and executeBanish.
-func (b *ModelBuilder) SetBanish(banish Banish) *ModelBuilder {
+func (b *Builder) SetBanish(banish Banish) *Builder {
 	b.banish = banish
 	return b
 }
 
 // SetSelfDestruction sets the WZ selfDestruction block on the builder. Used by
 // tests driving the HP-threshold and timer detonation paths.
-func (b *ModelBuilder) SetSelfDestruction(sd SelfDestruction) *ModelBuilder {
+func (b *Builder) SetSelfDestruction(sd SelfDestruction) *Builder {
 	b.selfDestruction = sd
 	return b
 }
 
 // Build constructs an immutable Model from the builder state.
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	skills := b.skills
 	if skills == nil {
 		skills = []Skill{}

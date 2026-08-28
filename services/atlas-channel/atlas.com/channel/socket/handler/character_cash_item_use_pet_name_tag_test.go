@@ -140,14 +140,14 @@ func installPetsForOwnerSeam(t *testing.T, ps []pet.Model, err error) func() {
 
 func leadPetNamed(ownerId uint32, name string) []pet.Model {
 	return []pet.Model{
-		pet.NewModelBuilder(7, 0, 5000000, name).SetOwnerID(ownerId).SetSlot(0).MustBuild(),
+		pet.NewBuilder(7, 0, 5000000, name).SetOwnerID(ownerId).SetSlot(0).MustBuild(),
 	}
 }
 
 func petsAtSlots(ownerId uint32, slots ...int8) []pet.Model {
 	ps := make([]pet.Model, 0, len(slots))
 	for i, sl := range slots {
-		ps = append(ps, pet.NewModelBuilder(uint32(100+i), 0, 5000000, "Other").SetOwnerID(ownerId).SetSlot(sl).MustBuild())
+		ps = append(ps, pet.NewBuilder(uint32(100+i), 0, 5000000, "Other").SetOwnerID(ownerId).SetSlot(sl).MustBuild())
 	}
 	return ps
 }

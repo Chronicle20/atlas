@@ -3,8 +3,36 @@ package portal_test
 import (
 	"atlas-portals/portal"
 	"atlas-portals/test"
+	"reflect"
 	"testing"
 )
+
+func TestTransformRoundTrip(t *testing.T) {
+	fixture := test.PortalFixture{
+		Id:          "42",
+		Name:        "town_portal",
+		Target:      "spawn_point",
+		Type:        2,
+		X:           150,
+		Y:           -50,
+		TargetMapId: 100000000,
+		ScriptName:  "portal_script",
+	}
+
+	m, err := portal.Extract(fixture.ToRestModel())
+	if err != nil {
+		t.Fatalf("Extract() returned unexpected error: %v", err)
+	}
+
+	got, err := portal.Extract(portal.Transform(m))
+	if err != nil {
+		t.Fatalf("Extract(Transform()) returned unexpected error: %v", err)
+	}
+
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip mismatch. Expected %+v, got %+v", m, got)
+	}
+}
 
 func TestExtract_ValidModel(t *testing.T) {
 	fixture := test.PortalFixture{

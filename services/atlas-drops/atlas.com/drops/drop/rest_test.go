@@ -211,7 +211,7 @@ func TestTransform_MesoDrop(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	m, err := NewModelBuilder(ten, f).
+	m, err := NewBuilder(ten, f).
 		SetId(456).
 		SetMeso(10000).
 		SetType(3).

@@ -55,7 +55,7 @@ func TestAssetUpdatedEventEnrichesPetBlock(t *testing.T) {
 		t.Fatalf("unmarshal event: %v", err)
 	}
 
-	pm, err := pet.NewModelBuilder(1, wantSerial, 5000012, "Pet").
+	pm, err := pet.NewBuilder(1, wantSerial, 5000012, "Pet").
 		SetLevel(1).
 		SetCloseness(37).
 		SetFullness(100).

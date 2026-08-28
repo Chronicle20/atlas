@@ -50,14 +50,19 @@ func passingGateDeps() gateDeps {
 // buildCharacter constructs an in-memory character.Model without touching the
 // database — evaluateTransferEligibility's local gates (1, 2) read only its
 // getters, so a builder-only fixture is enough for those two.
-func buildCharacter(id uint32, accountId uint32, worldId world.Id, name string, gm int) character.Model {
-	return character.NewModelBuilder().
+func buildCharacter(t *testing.T, id uint32, accountId uint32, worldId world.Id, name string, gm int) character.Model {
+	t.Helper()
+	m, err := character.NewEmptyBuilder().
 		SetId(id).
 		SetAccountId(accountId).
 		SetWorldId(worldId).
 		SetName(name).
 		SetGm(gm).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
+	return m
 }
 
 func TestEligibilityGate1WorldSame(t *testing.T) {
@@ -65,7 +70,7 @@ func TestEligibilityGate1WorldSame(t *testing.T) {
 	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 		withTransferEligibilityGates(passingGateDeps()).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(0), "Alfa", 0)
+	c := buildCharacter(t, 1, 1000, world.Id(0), "Alfa", 0)
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(0))
 	if ok || reason != "world_same" {
 		t.Fatalf("got ok=%v reason=%s, want world_same", ok, reason)
@@ -77,7 +82,7 @@ func TestEligibilityGate2IsGm(t *testing.T) {
 	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 		withTransferEligibilityGates(passingGateDeps()).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(0), "Bravo", 1)
+	c := buildCharacter(t, 1, 1000, world.Id(0), "Bravo", 1)
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 	if ok || reason != "is_gm" {
 		t.Fatalf("got ok=%v reason=%s, want is_gm", ok, reason)
@@ -93,7 +98,7 @@ func TestEligibilityGate3WorldUnknown(t *testing.T) {
 	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 		withTransferEligibilityGates(deps).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(0), "Charlie", 0)
+	c := buildCharacter(t, 1, 1000, world.Id(0), "Charlie", 0)
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(9))
 	if ok || reason != "world_unknown" {
 		t.Fatalf("got ok=%v reason=%s, want world_unknown", ok, reason)
@@ -109,7 +114,7 @@ func TestEligibilityGate3WorldFull(t *testing.T) {
 	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 		withTransferEligibilityGates(deps).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(0), "Delta", 0)
+	c := buildCharacter(t, 1, 1000, world.Id(0), "Delta", 0)
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 	if ok || reason != "world_full" {
 		t.Fatalf("got ok=%v reason=%s, want world_full", ok, reason)
@@ -131,7 +136,7 @@ func TestEligibilityGate4NoCharacterSlot(t *testing.T) {
 	}
 	p := NewProcessor(l, ctx, db).(*ProcessorImpl).withTransferEligibilityGates(deps).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(0), "Echo", 0)
+	c := buildCharacter(t, 1, 1000, world.Id(0), "Echo", 0)
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 	if ok || reason != "no_character_slot" {
 		t.Fatalf("got ok=%v reason=%s, want no_character_slot", ok, reason)
@@ -163,7 +168,7 @@ func TestEligibilityGate4ReadsDestinationWorldSlotsAndAllowsBelowCap(t *testing.
 	}
 	p := NewProcessor(l, ctx, db).(*ProcessorImpl).withTransferEligibilityGates(deps).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(0), "Foxtrot", 0)
+	c := buildCharacter(t, 1, 1000, world.Id(0), "Foxtrot", 0)
 	reason, ok := p.evaluateTransferEligibility(c, destinationWorldId)
 	if !ok || reason != "" {
 		t.Fatalf("got ok=%v reason=%s, want eligible (below cap)", ok, reason)
@@ -191,7 +196,10 @@ func TestEligibilityGate5NameTaken(t *testing.T) {
 	}
 	// The fixture character is "Foxtrot"; rename its in-memory copy to
 	// collide with the already-seeded "Golf" so gate 5 trips.
-	c = character.CloneModel(c).SetName("Golf").Build()
+	c, err = character.CloneModel(c).SetName("Golf").Build()
+	if err != nil {
+		t.Fatalf("CloneModel().Build(): %v", err)
+	}
 
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 	if ok || reason != "name_taken" {
@@ -295,7 +303,7 @@ func TestEligibilityRemoteGates(t *testing.T) {
 			p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 				withTransferEligibilityGates(deps).(*ProcessorImpl)
 
-			c := buildCharacter(1, 1000, world.Id(0), tt.character, 0)
+			c := buildCharacter(t, 1, 1000, world.Id(0), tt.character, 0)
 			reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 			if ok != tt.wantOk || reason != tt.wantReason {
 				t.Fatalf("got ok=%v reason=%s, want ok=%v reason=%s", ok, reason, tt.wantOk, tt.wantReason)
@@ -309,7 +317,7 @@ func TestEligibilityAllGatesPassingIsEligible(t *testing.T) {
 	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 		withTransferEligibilityGates(passingGateDeps()).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(0), "Oscar", 0)
+	c := buildCharacter(t, 1, 1000, world.Id(0), "Oscar", 0)
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 	if !ok || reason != "" {
 		t.Fatalf("got ok=%v reason=%s, want eligible", ok, reason)
@@ -353,7 +361,7 @@ func TestEligibilityOrderingShortCircuitsBeforeAnyRemoteCall(t *testing.T) {
 	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 		withTransferEligibilityGates(panicking).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(3), "Papa", 0)
+	c := buildCharacter(t, 1, 1000, world.Id(3), "Papa", 0)
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(3))
 	if ok || reason != "world_same" {
 		t.Fatalf("got ok=%v reason=%s, want world_same", ok, reason)
@@ -449,7 +457,7 @@ func TestEligibilityGateErrorsReportCheckUnavailable(t *testing.T) {
 			p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 				withTransferEligibilityGates(deps).(*ProcessorImpl)
 
-			c := buildCharacter(1, 1000, world.Id(0), tt.name, 0)
+			c := buildCharacter(t, 1, 1000, world.Id(0), tt.name, 0)
 			reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 			if ok || reason != "check_unavailable" {
 				t.Fatalf("got ok=%v reason=%s, want ok=false reason=check_unavailable", ok, reason)
@@ -477,7 +485,7 @@ func TestEligibilityGate4ExistingCharacterCountErrorReportsCheckUnavailable(t *t
 		t.Fatalf("sqlDB.Close(): %v", err)
 	}
 
-	c := buildCharacter(1, 1000, world.Id(0), "Romeo", 0)
+	c := buildCharacter(t, 1, 1000, world.Id(0), "Romeo", 0)
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 	if ok || reason != "check_unavailable" {
 		t.Fatalf("got ok=%v reason=%s, want ok=false reason=check_unavailable", ok, reason)

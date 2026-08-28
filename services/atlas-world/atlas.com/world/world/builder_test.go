@@ -12,8 +12,8 @@ import (
 	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := world.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := world.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -22,7 +22,7 @@ func TestNewModelBuilder(t *testing.T) {
 func TestBuild_AllFieldsSet(t *testing.T) {
 	channels := createTestChannels(t, 2)
 
-	model, err := world.NewModelBuilder().
+	model, err := world.NewBuilder().
 		SetId(1).
 		SetName("Scania").
 		SetState(world.StateEvent).
@@ -62,7 +62,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingName(t *testing.T) {
-	_, err := world.NewModelBuilder().
+	_, err := world.NewBuilder().
 		SetId(1).
 		Build()
 
@@ -72,7 +72,7 @@ func TestBuild_MissingName(t *testing.T) {
 }
 
 func TestBuild_EmptyName(t *testing.T) {
-	_, err := world.NewModelBuilder().
+	_, err := world.NewBuilder().
 		SetId(1).
 		SetName("").
 		Build()
@@ -83,7 +83,7 @@ func TestBuild_EmptyName(t *testing.T) {
 }
 
 func TestBuild_Success(t *testing.T) {
-	model, err := world.NewModelBuilder().
+	model, err := world.NewBuilder().
 		SetId(0).
 		SetName("Bera").
 		Build()
@@ -100,7 +100,7 @@ func TestBuild_Success(t *testing.T) {
 
 func TestBuild_IdZero(t *testing.T) {
 	// Id of 0 should be valid (first world)
-	model, err := world.NewModelBuilder().
+	model, err := world.NewBuilder().
 		SetId(0).
 		SetName("Scania").
 		Build()
@@ -115,7 +115,7 @@ func TestBuild_IdZero(t *testing.T) {
 func TestCloneModel(t *testing.T) {
 	channels := createTestChannels(t, 2)
 
-	original, err := world.NewModelBuilder().
+	original, err := world.NewBuilder().
 		SetId(1).
 		SetName("Scania").
 		SetState(world.StateNormal).
@@ -166,7 +166,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := world.NewModelBuilder().
+	model := world.NewBuilder().
 		SetId(1).
 		SetName("Scania").
 		MustBuild()
@@ -183,13 +183,13 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	world.NewModelBuilder().
+	world.NewBuilder().
 		SetId(1).
 		MustBuild() // Missing name, should panic
 }
 
 func TestBuilderFluentChaining(t *testing.T) {
-	model, err := world.NewModelBuilder().
+	model, err := world.NewBuilder().
 		SetId(2).
 		SetName("Bera").
 		SetState(world.StateNew).
@@ -224,7 +224,7 @@ func TestAllStateValues(t *testing.T) {
 	}
 
 	for _, state := range states {
-		model, err := world.NewModelBuilder().
+		model, err := world.NewBuilder().
 			SetId(1).
 			SetName("TestWorld").
 			SetState(state).
@@ -246,7 +246,7 @@ func TestAllStatusValues(t *testing.T) {
 	}
 
 	for _, status := range statuses {
-		model, err := world.NewModelBuilder().
+		model, err := world.NewBuilder().
 			SetId(1).
 			SetName("TestWorld").
 			SetCapacityStatus(status).
@@ -261,7 +261,7 @@ func TestAllStatusValues(t *testing.T) {
 }
 
 func TestBuild_EmptyChannels(t *testing.T) {
-	model, err := world.NewModelBuilder().
+	model, err := world.NewBuilder().
 		SetId(1).
 		SetName("Scania").
 		SetChannels([]channel.Model{}).
@@ -275,7 +275,7 @@ func TestBuild_EmptyChannels(t *testing.T) {
 }
 
 func TestBuild_NilChannels(t *testing.T) {
-	model, err := world.NewModelBuilder().
+	model, err := world.NewBuilder().
 		SetId(1).
 		SetName("Scania").
 		Build()
@@ -289,7 +289,7 @@ func TestBuild_NilChannels(t *testing.T) {
 
 func TestRecommended(t *testing.T) {
 	// With recommended message
-	model1, err := world.NewModelBuilder().
+	model1, err := world.NewBuilder().
 		SetId(1).
 		SetName("Scania").
 		SetRecommendedMessage("Join this world!").
@@ -302,7 +302,7 @@ func TestRecommended(t *testing.T) {
 	}
 
 	// Without recommended message
-	model2, err := world.NewModelBuilder().
+	model2, err := world.NewBuilder().
 		SetId(1).
 		SetName("Scania").
 		Build()
@@ -319,7 +319,7 @@ func createTestChannels(t *testing.T, count int) []channel.Model {
 	t.Helper()
 	channels := make([]channel.Model, count)
 	for i := 0; i < count; i++ {
-		ch, err := channel.NewModelBuilder().
+		ch, err := channel.NewBuilder().
 			SetId(uuid.New()).
 			SetWorldId(1).
 			SetChannelId(channelConstant.Id(i)).

@@ -2,7 +2,10 @@ package data
 
 import (
 	"atlas-reactors/reactor/data/area"
+	"atlas-reactors/reactor/data/item"
 	"atlas-reactors/reactor/data/point"
+	"atlas-reactors/reactor/data/state"
+	"reflect"
 	"testing"
 )
 
@@ -123,5 +126,50 @@ func TestModelJSONRoundTripTouchFields(t *testing.T) {
 	}
 	if a.BR().Y() != 69 {
 		t.Fatalf("round-tripped TouchArea(0).BR().Y() = %d, want 69", a.BR().Y())
+	}
+}
+
+// TestTransformRoundTrip verifies Transform is the faithful inverse of
+// Extract: Extract(Transform(m)) reproduces m.
+func TestTransformRoundTrip(t *testing.T) {
+	rm := RestModel{
+		Name:            "Reactor",
+		TL:              point.RestModel{X: -53, Y: 24},
+		BR:              point.RestModel{X: 62, Y: 69},
+		ActivateByTouch: true,
+		TouchAreaInfo: map[int8]area.RestModel{
+			0: {TL: point.RestModel{X: -53, Y: 24}, BR: point.RestModel{X: 62, Y: 69}},
+		},
+		StateInfo: map[int8][]state.RestModel{
+			0: {
+				{
+					Type:         1,
+					ReactorItem:  &item.RestModel{ItemId: 2000000, Quantity: 5},
+					ActiveSkills: []uint32{1000},
+					NextState:    1,
+				},
+			},
+		},
+		TimeoutInfo:          map[int8]int32{0: 5000},
+		TimeoutNextStateInfo: map[int8]int8{0: 1},
+	}
+
+	m, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	rm2, err := Transform(m)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+
+	m2, err := Extract(rm2)
+	if err != nil {
+		t.Fatalf("Extract (round trip) failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(m2, m) {
+		t.Errorf("round trip mismatch. want %+v, got %+v", m, m2)
 	}
 }

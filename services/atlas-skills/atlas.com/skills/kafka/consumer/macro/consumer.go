@@ -46,7 +46,7 @@ func handleCommandUpdate(db *gorm.DB) message.Handler[macro2.Command[macro2.Upda
 
 		macros := make([]macro.Model, 0)
 		for _, m := range c.Body.Macros {
-			model, err := macro.NewModelBuilder().
+			model, err := macro.NewBuilder().
 				SetId(m.Id).
 				SetName(m.Name).
 				SetShout(m.Shout).

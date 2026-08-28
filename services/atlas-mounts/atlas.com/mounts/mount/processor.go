@@ -88,7 +88,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
 		if ierr != gorm.ErrRecordNotFound {
 			return ierr
 		}
-		m, berr := NewModelBuilder(p.t.Id(), characterId, uuid.New()).Build()
+		m, berr := NewBuilder(p.t.Id(), characterId, uuid.New()).Build()
 		if berr != nil {
 			return berr
 		}

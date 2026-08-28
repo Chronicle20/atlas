@@ -83,7 +83,7 @@ func TestChannelDecorator_WithChannels(t *testing.T) {
 	_, _ = channelProcessor.Register(channelConstant.NewModel(1, 1), "192.168.1.2", 8081, 0, 100)
 
 	// Create a world model
-	worldModel, _ := world.NewModelBuilder().
+	worldModel, _ := world.NewBuilder().
 		SetId(1).
 		SetName("Scania").
 		Build()
@@ -101,7 +101,7 @@ func TestChannelDecorator_NoChannels(t *testing.T) {
 	defer cleanup()
 
 	// Create a world model
-	worldModel, _ := world.NewModelBuilder().
+	worldModel, _ := world.NewBuilder().
 		SetId(5).
 		SetName("TestWorld").
 		Build()
@@ -131,7 +131,7 @@ func TestChannelDecorator_PreservesOtherFields(t *testing.T) {
 	_, _ = channelProcessor.Register(channelConstant.NewModel(2, 0), "192.168.1.1", 8080, 0, 100)
 
 	// Create a world with all fields set
-	worldModel, _ := world.NewModelBuilder().
+	worldModel, _ := world.NewBuilder().
 		SetId(2).
 		SetName("Bera").
 		SetState(world.StateEvent).
@@ -185,7 +185,7 @@ func TestGetFlag(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		model, err := world.NewModelBuilder().
+		model, err := world.NewBuilder().
 			SetId(1).
 			SetName("Test").
 			SetState(tc.state).
@@ -284,7 +284,7 @@ func TestProcessorWithMultipleChannels(t *testing.T) {
 	_, _ = channelProcessor.Register(channelConstant.NewModel(0, 2), "192.168.1.3", 8082, 30, 100)
 
 	// Create a world model for world 0
-	worldModel, _ := world.NewModelBuilder().
+	worldModel, _ := world.NewBuilder().
 		SetId(0).
 		SetName("Scania").
 		Build()
@@ -310,7 +310,7 @@ func TestProcessorWithMultipleChannels(t *testing.T) {
 
 func createTestChannelInRegistry(t *testing.T, tenantId uuid.UUID, worldId worldConstant.Id, channelId channelConstant.Id) {
 	t.Helper()
-	ch, err := channel.NewModelBuilder().
+	ch, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetWorldId(worldId).
 		SetChannelId(channelId).

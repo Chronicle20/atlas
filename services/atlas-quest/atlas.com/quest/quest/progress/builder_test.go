@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestNewModelBuilder_CreatesEmptyBuilder(t *testing.T) {
-	builder := progress.NewModelBuilder()
+func TestNewBuilder_CreatesEmptyBuilder(t *testing.T) {
+	builder := progress.NewBuilder()
 	model := builder.Build()
 
 	if model.Id() != 0 {
@@ -21,7 +21,7 @@ func TestNewModelBuilder_CreatesEmptyBuilder(t *testing.T) {
 }
 
 func TestBuilder_SettersAreChainable(t *testing.T) {
-	model := progress.NewModelBuilder().
+	model := progress.NewBuilder().
 		SetId(123).
 		SetInfoNumber(456).
 		SetProgress("005").
@@ -39,7 +39,7 @@ func TestBuilder_SettersAreChainable(t *testing.T) {
 }
 
 func TestCloneModel_PreservesAllFields(t *testing.T) {
-	original := progress.NewModelBuilder().
+	original := progress.NewBuilder().
 		SetId(123).
 		SetInfoNumber(456).
 		SetProgress("010").
@@ -59,7 +59,7 @@ func TestCloneModel_PreservesAllFields(t *testing.T) {
 }
 
 func TestCloneModel_ModificationsDoNotAffectOriginal(t *testing.T) {
-	original := progress.NewModelBuilder().
+	original := progress.NewBuilder().
 		SetId(123).
 		SetInfoNumber(456).
 		SetProgress("005").
@@ -111,7 +111,7 @@ func TestBuilder_ProgressFormats(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := progress.NewModelBuilder().
+			model := progress.NewBuilder().
 				SetProgress(tt.progress).
 				Build()
 
@@ -124,7 +124,7 @@ func TestBuilder_ProgressFormats(t *testing.T) {
 
 func TestBuilder_FluentInterface(t *testing.T) {
 	// Test that builder can be used in a single chain
-	model := progress.NewModelBuilder().
+	model := progress.NewBuilder().
 		SetId(1).
 		SetInfoNumber(100100).
 		SetProgress("000").

@@ -33,3 +33,17 @@ func (r *RewardRestModel) SetToOneReferenceID(_, _ string) error {
 func (r *RewardRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
+
+// TransformReward converts the domain Model into its wire representation.
+// RewardRestModel carries fields (Tier, Weight, GachaponId) that Model does
+// not model, per design.md's rule that only the fields an inverse actually
+// maps are round-tripped; SelectReward (processor.go) is the existing
+// wire→domain mapping this mirrors, and it maps only ItemId, Quantity, and
+// CommodityId.
+func TransformReward(m Model) (RewardRestModel, error) {
+	return RewardRestModel{
+		ItemId:      m.itemId,
+		Quantity:    m.quantity,
+		CommodityId: m.commodityId,
+	}, nil
+}

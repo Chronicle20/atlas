@@ -82,6 +82,17 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 	return nil
 }
 
+// Transform converts a domain model to a REST model
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:         m.id,
+		TemplateId: m.templateId,
+		Name:       m.name,
+		Level:      m.level,
+		Slot:       m.slot,
+	}, nil
+}
+
 // Extract converts a REST model to a domain model
 func Extract(rm RestModel) (Model, error) {
 	return NewModel(rm.Id, rm.TemplateId, rm.Name, rm.Level, rm.Slot), nil

@@ -51,8 +51,13 @@ func newTestProcessorForVersion(t *testing.T, sdp skill3.Processor, region strin
 	}
 }
 
-func buildCharacter(jobId job.Id, skills []cskill.Model) Model {
-	return NewModelBuilder().SetJobId(jobId).SetSkills(skills).Build()
+func buildCharacter(t *testing.T, jobId job.Id, skills []cskill.Model) Model {
+	t.Helper()
+	m, err := NewEmptyBuilder().SetJobId(jobId).SetSkills(skills).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
+	return m
 }
 
 func buildSkill(id uint32, level byte) cskill.Model {
@@ -63,7 +68,7 @@ func buildSkill(id uint32, level byte) cskill.Model {
 func TestResolveHPMPGainParams_Beginner(t *testing.T) {
 	mock := &mockSkillDataProcessor{}
 	p := newTestProcessor(mock)
-	c := buildCharacter(job.BeginnerId, nil)
+	c := buildCharacter(t, job.BeginnerId, nil)
 
 	params := p.resolveHPMPGainParams(c)
 
@@ -90,7 +95,7 @@ func TestResolveHPMPGainParams_Warrior(t *testing.T) {
 		},
 	}
 	p := newTestProcessor(mock)
-	c := buildCharacter(job.FighterId, []cskill.Model{
+	c := buildCharacter(t, job.FighterId, []cskill.Model{
 		buildSkill(uint32(skill.WarriorImprovedMaxHpIncreaseId), 5),
 	})
 
@@ -119,7 +124,7 @@ func TestResolveHPMPGainParams_Magician(t *testing.T) {
 		},
 	}
 	p := newTestProcessor(mock)
-	c := buildCharacter(job.MagicianId, []cskill.Model{
+	c := buildCharacter(t, job.MagicianId, []cskill.Model{
 		buildSkill(uint32(skill.MagicianImprovedMaxMpIncreaseId), 3),
 	})
 
@@ -142,7 +147,7 @@ func TestResolveHPMPGainParams_Magician(t *testing.T) {
 func TestResolveHPMPGainParams_BowmanRogue(t *testing.T) {
 	mock := &mockSkillDataProcessor{}
 	p := newTestProcessor(mock)
-	c := buildCharacter(job.HunterId, nil)
+	c := buildCharacter(t, job.HunterId, nil)
 
 	params := p.resolveHPMPGainParams(c)
 
@@ -160,7 +165,7 @@ func TestResolveHPMPGainParams_BowmanRogue(t *testing.T) {
 func TestResolveHPMPGainParams_GM(t *testing.T) {
 	mock := &mockSkillDataProcessor{}
 	p := newTestProcessor(mock)
-	c := buildCharacter(job.GmId, nil)
+	c := buildCharacter(t, job.GmId, nil)
 
 	params := p.resolveHPMPGainParams(c)
 
@@ -183,7 +188,7 @@ func TestResolveHPMPGainParams_GM(t *testing.T) {
 func TestResolveHPMPGain_v48Gm(t *testing.T) {
 	mock := &mockSkillDataProcessor{}
 	p := newTestProcessorForVersion(t, mock, "GMS", 48, 1)
-	c := buildCharacter(job.Id(500), nil)
+	c := buildCharacter(t, job.Id(500), nil)
 
 	params := p.resolveHPMPGainParams(c)
 
@@ -208,7 +213,7 @@ func TestResolveHPMPGain_v72PirateStillPirate(t *testing.T) {
 		},
 	}
 	p := newTestProcessorForVersion(t, mock, "GMS", 72, 1)
-	c := buildCharacter(job.Id(500), []cskill.Model{
+	c := buildCharacter(t, job.Id(500), []cskill.Model{
 		buildSkill(uint32(skill.BrawlerImproveMaxHpId), 5),
 	})
 
@@ -231,7 +236,7 @@ func TestResolveHPMPGainParams_Pirate(t *testing.T) {
 		},
 	}
 	p := newTestProcessor(mock)
-	c := buildCharacter(job.BrawlerId, []cskill.Model{
+	c := buildCharacter(t, job.BrawlerId, []cskill.Model{
 		buildSkill(uint32(skill.BrawlerImproveMaxHpId), 5),
 	})
 
@@ -251,7 +256,7 @@ func TestResolveHPMPGainParams_Pirate(t *testing.T) {
 func TestResolveHPMPGainParams_Aran(t *testing.T) {
 	mock := &mockSkillDataProcessor{}
 	p := newTestProcessor(mock)
-	c := buildCharacter(job.AranStage2Id, nil)
+	c := buildCharacter(t, job.AranStage2Id, nil)
 
 	params := p.resolveHPMPGainParams(c)
 
@@ -267,7 +272,7 @@ func TestResolveHPMPGainParams_NoSkillLevel(t *testing.T) {
 	mock := &mockSkillDataProcessor{}
 	p := newTestProcessor(mock)
 	// Warrior with no improving skill learned (level 0)
-	c := buildCharacter(job.FighterId, nil)
+	c := buildCharacter(t, job.FighterId, nil)
 
 	params := p.resolveHPMPGainParams(c)
 
@@ -348,7 +353,7 @@ func TestResolveHPMPGainParams_GetEffectCalledOnce(t *testing.T) {
 	}
 	p := newTestProcessor(mock)
 	// Warrior (has HP improving skill)
-	c := buildCharacter(job.FighterId, []cskill.Model{
+	c := buildCharacter(t, job.FighterId, []cskill.Model{
 		buildSkill(uint32(skill.WarriorImprovedMaxHpIncreaseId), 5),
 	})
 

@@ -11,10 +11,10 @@ import (
 )
 
 type ProcessorMock struct {
-	SpawnFunc                    func(mb *message.Buffer) func(mb *drop.ModelBuilder) (drop.Model, error)
-	SpawnAndEmitFunc             func(mb *drop.ModelBuilder) (drop.Model, error)
-	SpawnForCharacterFunc        func(mb *message.Buffer) func(mb *drop.ModelBuilder) (drop.Model, error)
-	SpawnForCharacterAndEmitFunc func(mb *drop.ModelBuilder) (drop.Model, error)
+	SpawnFunc                    func(mb *message.Buffer) func(mb *drop.Builder) (drop.Model, error)
+	SpawnAndEmitFunc             func(mb *drop.Builder) (drop.Model, error)
+	SpawnForCharacterFunc        func(mb *message.Buffer) func(mb *drop.Builder) (drop.Model, error)
+	SpawnForCharacterAndEmitFunc func(mb *drop.Builder) (drop.Model, error)
 	ReserveFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (drop.Model, error)
 	ReserveAndEmitFunc           func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (drop.Model, error)
 	CancelReservationFunc        func(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) error
@@ -29,32 +29,32 @@ type ProcessorMock struct {
 	ForMapProviderFunc           func(field field.Model) model.Provider[[]drop.Model]
 }
 
-func (m *ProcessorMock) Spawn(mb *message.Buffer) func(mb *drop.ModelBuilder) (drop.Model, error) {
+func (m *ProcessorMock) Spawn(mb *message.Buffer) func(mb *drop.Builder) (drop.Model, error) {
 	if m.SpawnFunc != nil {
 		return m.SpawnFunc(mb)
 	}
-	return func(mb *drop.ModelBuilder) (drop.Model, error) {
+	return func(mb *drop.Builder) (drop.Model, error) {
 		return drop.Model{}, nil
 	}
 }
 
-func (m *ProcessorMock) SpawnAndEmit(mb *drop.ModelBuilder) (drop.Model, error) {
+func (m *ProcessorMock) SpawnAndEmit(mb *drop.Builder) (drop.Model, error) {
 	if m.SpawnAndEmitFunc != nil {
 		return m.SpawnAndEmitFunc(mb)
 	}
 	return drop.Model{}, nil
 }
 
-func (m *ProcessorMock) SpawnForCharacter(mb *message.Buffer) func(mb *drop.ModelBuilder) (drop.Model, error) {
+func (m *ProcessorMock) SpawnForCharacter(mb *message.Buffer) func(mb *drop.Builder) (drop.Model, error) {
 	if m.SpawnForCharacterFunc != nil {
 		return m.SpawnForCharacterFunc(mb)
 	}
-	return func(mb *drop.ModelBuilder) (drop.Model, error) {
+	return func(mb *drop.Builder) (drop.Model, error) {
 		return drop.Model{}, nil
 	}
 }
 
-func (m *ProcessorMock) SpawnForCharacterAndEmit(mb *drop.ModelBuilder) (drop.Model, error) {
+func (m *ProcessorMock) SpawnForCharacterAndEmit(mb *drop.Builder) (drop.Model, error) {
 	if m.SpawnForCharacterAndEmitFunc != nil {
 		return m.SpawnForCharacterAndEmitFunc(mb)
 	}

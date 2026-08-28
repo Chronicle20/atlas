@@ -6,10 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
-// ModelBuilder constructs an immutable mount Model. Defaults: level 1, exp 0,
+// Builder constructs an immutable mount Model. Defaults: level 1, exp 0,
 // tiredness 0, nil lastTirednessTickAt. Use Clone to seed a builder from an
 // existing Model.
-type ModelBuilder struct {
+type Builder struct {
 	tenantId            uuid.UUID
 	characterId         uint32
 	id                  uuid.UUID
@@ -19,8 +19,8 @@ type ModelBuilder struct {
 	lastTirednessTickAt *time.Time
 }
 
-func NewModelBuilder(tenantId uuid.UUID, characterId uint32, id uuid.UUID) *ModelBuilder {
-	return &ModelBuilder{
+func NewBuilder(tenantId uuid.UUID, characterId uint32, id uuid.UUID) *Builder {
+	return &Builder{
 		tenantId:    tenantId,
 		characterId: characterId,
 		id:          id,
@@ -30,35 +30,35 @@ func NewModelBuilder(tenantId uuid.UUID, characterId uint32, id uuid.UUID) *Mode
 	}
 }
 
-func Clone(m Model) *ModelBuilder {
-	return NewModelBuilder(m.TenantId(), m.CharacterId(), m.Id()).
+func Clone(m Model) *Builder {
+	return NewBuilder(m.TenantId(), m.CharacterId(), m.Id()).
 		SetLevel(m.Level()).
 		SetExp(m.Exp()).
 		SetTiredness(m.Tiredness()).
 		SetLastTirednessTickAt(m.LastTirednessTickAt())
 }
 
-func (b *ModelBuilder) SetLevel(level int) *ModelBuilder {
+func (b *Builder) SetLevel(level int) *Builder {
 	b.level = level
 	return b
 }
 
-func (b *ModelBuilder) SetExp(exp int) *ModelBuilder {
+func (b *Builder) SetExp(exp int) *Builder {
 	b.exp = exp
 	return b
 }
 
-func (b *ModelBuilder) SetTiredness(tiredness int) *ModelBuilder {
+func (b *Builder) SetTiredness(tiredness int) *Builder {
 	b.tiredness = tiredness
 	return b
 }
 
-func (b *ModelBuilder) SetLastTirednessTickAt(at *time.Time) *ModelBuilder {
+func (b *Builder) SetLastTirednessTickAt(at *time.Time) *Builder {
 	b.lastTirednessTickAt = at
 	return b
 }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	return Model{
 		tenantId:            b.tenantId,
 		characterId:         b.characterId,

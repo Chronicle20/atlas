@@ -37,6 +37,24 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// Transform converts the domain Model into its RestModel representation.
+// Id is left unset: Extract never reads RestModel.Id (rest.go:50-70), so no
+// Model field carries it and Transform has nothing to populate it from.
+func Transform(m Model) RestModel {
+	tiers := make([]TierRestModel, len(m.taxTiers))
+	for i, t := range m.taxTiers {
+		tiers[i] = TierRestModel(t)
+	}
+
+	return RestModel{
+		TaxEnabled:                m.taxEnabled,
+		TaxTiers:                  tiers,
+		MaxStagedItems:            m.maxStagedItems,
+		MinTradeLevel:             m.minTradeLevel,
+		AttestationTimeoutSeconds: int(m.attestationTimeout / time.Second),
+	}
+}
+
 // Extract converts the fetched RestModel into the immutable domain Model,
 // substituting the default for any knob left at its zero value.
 //

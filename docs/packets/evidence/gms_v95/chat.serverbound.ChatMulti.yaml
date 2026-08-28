@@ -1,0 +1,23 @@
+packet: chat/serverbound/ChatMulti
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUIStatusBar::SendGroupMessage
+    address: "0x87f7f0"
+    decompile_sha256: 7f507b8d18c210f8ab506e71939f11061264db08f25a956617c677d329783f9d
+verifies:
+    - libs/atlas-packet/chat/serverbound/multi_test.go#TestMultiByteOutputV95
+notes: |
+    Registry op MULTI_CHAT (opcode 140) is routed to this codec via a manual
+    `packet:` link (registry note, task-146 Task 3), since the primary fname
+    CUIStatusBar::SendGroupMessage was absent from the committed gms_v95 export
+    (no report resolves for it) — same tier-1 no-report shape as Task 12's
+    CHECK_SPW_RESULT, but resolved here rather than deferred: the function is
+    named in the live IDB (mangled ?SendGroupMessage@CUIStatusBar@@…, decompiled
+    at 0x87f7f0) and was surgically spliced into gms_v95.json per playbook §10
+    (one entry added, zero existing entries changed, verified via a functions-map
+    diff against HEAD). Live decompile confirms the wire matches Atlas's
+    multi.go hasUpdateTime gate (GMS && major>=95) exactly: COutPacket(140),
+    Encode4(update_time), Encode1(nChatTarget), Encode1(nMemberCnt),
+    loop Encode4(memberId), EncodeStr(sText) — no wire fix needed.

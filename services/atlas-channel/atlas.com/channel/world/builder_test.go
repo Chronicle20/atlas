@@ -7,15 +7,15 @@ import (
 	worldId "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := world.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := world.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	model, err := world.NewModelBuilder().
+	model, err := world.NewBuilder().
 		SetId(worldId.Id(0)).
 		SetName("Scania").
 		SetState(world.StateNormal).
@@ -45,7 +45,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := world.NewModelBuilder().
+	model := world.NewBuilder().
 		SetId(worldId.Id(0)).
 		SetName("Scania").
 		MustBuild()
@@ -56,7 +56,7 @@ func TestMustBuild_Success(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	original, _ := world.NewModelBuilder().
+	original, _ := world.NewBuilder().
 		SetId(worldId.Id(0)).
 		SetName("Scania").
 		SetState(world.StateNormal).
@@ -85,7 +85,7 @@ func TestCloneModel(t *testing.T) {
 }
 
 func TestRecommended(t *testing.T) {
-	notRecommended := world.NewModelBuilder().
+	notRecommended := world.NewBuilder().
 		SetId(worldId.Id(0)).
 		MustBuild()
 
@@ -93,7 +93,7 @@ func TestRecommended(t *testing.T) {
 		t.Error("Expected Recommended() to be false when recommendedMessage is empty")
 	}
 
-	recommended := world.NewModelBuilder().
+	recommended := world.NewBuilder().
 		SetId(worldId.Id(0)).
 		SetRecommendedMessage("Try this world!").
 		MustBuild()

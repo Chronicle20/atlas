@@ -11,7 +11,7 @@ var (
 	ErrRegionRequired = errors.New("tenant region is required")
 )
 
-type modelBuilder struct {
+type builder struct {
 	id           uuid.UUID
 	name         string
 	region       string
@@ -20,16 +20,16 @@ type modelBuilder struct {
 	environment  string
 }
 
-// NewModelBuilder creates a new model builder
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new model builder
+func NewBuilder() *builder {
+	return &builder{
 		id: uuid.New(),
 	}
 }
 
 // CloneModel creates a builder from an existing model
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:           m.id,
 		name:         m.name,
 		region:       m.region,
@@ -40,43 +40,43 @@ func CloneModel(m Model) *modelBuilder {
 }
 
 // SetId sets the tenant ID
-func (b *modelBuilder) SetId(id uuid.UUID) *modelBuilder {
+func (b *builder) SetId(id uuid.UUID) *builder {
 	b.id = id
 	return b
 }
 
 // SetName sets the tenant name
-func (b *modelBuilder) SetName(name string) *modelBuilder {
+func (b *builder) SetName(name string) *builder {
 	b.name = name
 	return b
 }
 
 // SetRegion sets the tenant region
-func (b *modelBuilder) SetRegion(region string) *modelBuilder {
+func (b *builder) SetRegion(region string) *builder {
 	b.region = region
 	return b
 }
 
 // SetMajorVersion sets the tenant major version
-func (b *modelBuilder) SetMajorVersion(majorVersion uint16) *modelBuilder {
+func (b *builder) SetMajorVersion(majorVersion uint16) *builder {
 	b.majorVersion = majorVersion
 	return b
 }
 
 // SetMinorVersion sets the tenant minor version
-func (b *modelBuilder) SetMinorVersion(minorVersion uint16) *modelBuilder {
+func (b *builder) SetMinorVersion(minorVersion uint16) *builder {
 	b.minorVersion = minorVersion
 	return b
 }
 
 // SetEnvironment sets the tenant environment
-func (b *modelBuilder) SetEnvironment(environment string) *modelBuilder {
+func (b *builder) SetEnvironment(environment string) *builder {
 	b.environment = environment
 	return b
 }
 
 // Build creates a new Model with validation
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.name == "" {
 		return Model{}, ErrNameRequired
 	}

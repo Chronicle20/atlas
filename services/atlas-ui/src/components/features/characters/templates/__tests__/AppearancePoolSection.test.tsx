@@ -11,18 +11,24 @@ vi.mock("@/context/tenant-context", () => ({
   }),
 }));
 
-import { normalizeTemplate, DEFAULT_PICKS } from "../editorState";
 import { AppearancePoolSection } from "../AppearancePoolSection";
 
-const tpl = normalizeTemplate({ faces: [20000, 21000] });
+const POOL = [20000, 21000];
 
 function renderSection(over: Record<string, unknown> = {}) {
   return render(
     <AppearancePoolSection
       dimension="faces"
       title="Faces"
-      template={tpl}
-      picks={DEFAULT_PICKS}
+      pool={POOL}
+      selectedIndex={0}
+      variantLoadout={(_dim, id) => ({
+        skin: 0,
+        hair: 30030,
+        face: id,
+        equipment: {},
+        gender: 0,
+      })}
       onPick={vi.fn()}
       onRemoveEntry={vi.fn()}
       renderAddDialog={() => null}
@@ -44,11 +50,11 @@ describe("AppearancePoolSection", () => {
     await userEvent.click(
       screen.getByRole("button", { name: /preview face 21000/i }),
     );
-    expect(onPick).toHaveBeenCalledWith("faceIdx", 1);
+    expect(onPick).toHaveBeenCalledWith(1);
   });
 
   it("the picked thumb is marked pressed", () => {
-    renderSection({ picks: { ...DEFAULT_PICKS, faceIdx: 1 } });
+    renderSection({ selectedIndex: 1 });
     expect(
       screen.getByRole("button", { name: /preview face 21000/i }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -64,11 +70,16 @@ describe("AppearancePoolSection", () => {
   });
 
   it("empty pool shows the non-blocking factory warning", () => {
-    renderSection({ template: normalizeTemplate({}) });
+    renderSection({ pool: [] });
     expect(
       screen.getByText(
         /character creation will fail while this pool is empty/i,
       ),
     ).toBeInTheDocument();
+  });
+
+  it("renders the description when supplied", () => {
+    renderSection({ description: <span>Faces are full item ids</span> });
+    expect(screen.getByText("Faces are full item ids")).toBeInTheDocument();
   });
 });

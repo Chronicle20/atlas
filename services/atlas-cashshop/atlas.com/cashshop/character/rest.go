@@ -2,7 +2,9 @@ package character
 
 import (
 	"strconv"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -85,6 +87,44 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 	return nil
 }
 
+// Transform converts a domain Model into its RestModel. Model.equipment and
+// Model.inventory have no RestModel counterpart (this resource does not
+// serialize them) and are intentionally omitted.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                 m.id,
+		AccountId:          m.accountId,
+		WorldId:            m.worldId,
+		Name:               m.name,
+		Level:              m.level,
+		Experience:         m.experience,
+		GachaponExperience: m.gachaponExperience,
+		Strength:           m.strength,
+		Dexterity:          m.dexterity,
+		Intelligence:       m.intelligence,
+		Luck:               m.luck,
+		Hp:                 m.hp,
+		MaxHp:              m.maxHp,
+		Mp:                 m.mp,
+		MaxMp:              m.maxMp,
+		Meso:               m.meso,
+		HpMpUsed:           m.hpMpUsed,
+		JobId:              m.jobId,
+		SkinColor:          m.skinColor,
+		Gender:             m.gender,
+		Fame:               m.fame,
+		Hair:               m.hair,
+		Face:               m.face,
+		Ap:                 m.ap,
+		Sp:                 m.sp,
+		SpawnPoint:         m.spawnPoint,
+		Gm:                 m.gm,
+		X:                  m.x,
+		Y:                  m.y,
+		Stance:             m.stance,
+	}, nil
+}
+
 func Extract(m RestModel) (Model, error) {
 	return Model{
 		id:                 m.Id,
@@ -112,9 +152,87 @@ func Extract(m RestModel) (Model, error) {
 		face:               m.Face,
 		ap:                 m.Ap,
 		sp:                 m.Sp,
+		spawnPoint:         m.SpawnPoint,
 		gm:                 m.Gm,
 		x:                  m.X,
 		y:                  m.Y,
 		stance:             m.Stance,
 	}, nil
+}
+
+// EquipSlotExtensionRestModel mirrors atlas-character's equipslot.RestModel
+// (services/atlas-character/atlas.com/character/equipslot/rest.go): one
+// character's equip-slot extension, read on GET and returned by the POST
+// write this task adds. SlotIndex is the Atlas canonical equipped-inventory
+// position (derivation-equip-slot.md E1 / R1) -- e.g. the pendant2 constant
+// (libs/atlas-constants/inventory/slot) -- never a wire value.
+type EquipSlotExtensionRestModel struct {
+	Id          string    `json:"-"`
+	CharacterId uint32    `json:"characterId"`
+	SlotIndex   int16     `json:"slotIndex"`
+	ExpiresAt   time.Time `json:"expiresAt"`
+}
+
+func (r EquipSlotExtensionRestModel) GetName() string {
+	return "equip-slot-extensions"
+}
+
+func (r EquipSlotExtensionRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *EquipSlotExtensionRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+func (r *EquipSlotExtensionRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *EquipSlotExtensionRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
+// ExtendEquipSlotInputRestModel is the POST body atlas-character's write
+// route expects. SlotIndex carries the Atlas canonical position (R1) --
+// the caller resolves it (e.g. via slot.GetSlotByType("pendant2")), atlas-
+// character never invents it. Days is the extension's length; atlas-
+// character converts it to a time.Duration. TransactionId is the purchase's
+// own idempotency key (task-240 task 24c): the atlas-character write route
+// dedupes on it, so a redelivered EXTEND_EQUIP_SLOT outbox command (the
+// outbox is at-least-once) does not double-extend.
+type ExtendEquipSlotInputRestModel struct {
+	Id            string    `json:"-"`
+	SlotIndex     int16     `json:"slotIndex"`
+	Days          uint16    `json:"days"`
+	TransactionId uuid.UUID `json:"transactionId"`
+}
+
+func (r ExtendEquipSlotInputRestModel) GetName() string {
+	return "equip-slot-extensions"
+}
+
+func (r ExtendEquipSlotInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *ExtendEquipSlotInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+func (r *ExtendEquipSlotInputRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *ExtendEquipSlotInputRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
+// ExtractEquipSlotExtension is the write route's response transformer --
+// callers only need the resulting expiry, mirroring pet.Extract's shape
+// (pet/rest.go) for a create-style POST.
+func ExtractEquipSlotExtension(r EquipSlotExtensionRestModel) (time.Time, error) {
+	return r.ExpiresAt, nil
 }

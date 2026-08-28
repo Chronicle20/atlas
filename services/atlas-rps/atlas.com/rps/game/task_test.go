@@ -111,7 +111,7 @@ func TestSweepTask_Run_NoExpiredSessions(t *testing.T) {
 	now := time.Now()
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(characterId).
 		SetWorldId(0).
 		SetChannelId(1).
@@ -148,7 +148,7 @@ func TestSweepTask_Run_DisposesExpiredSessionWithNoPayout(t *testing.T) {
 	now := time.Now()
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(characterId).
 		SetWorldId(0).
 		SetChannelId(1).
@@ -198,9 +198,9 @@ func TestSweepTask_Run_MultiTenantSweepsAcrossAllTracked(t *testing.T) {
 	now := time.Now()
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
-	m1 := game.NewModelBuilder(ten1).SetCharacterId(3001).SetWorldId(0).SetChannelId(1).SetNpcId(9020000).SetStatus(game.StatusOpen).MustBuild()
+	m1 := game.NewBuilder(ten1).SetCharacterId(3001).SetWorldId(0).SetChannelId(1).SetNpcId(9020000).SetStatus(game.StatusOpen).MustBuild()
 	game.GetRegistry().Put(ctx1, m1)
-	m2 := game.NewModelBuilder(ten2).SetCharacterId(3002).SetWorldId(0).SetChannelId(1).SetNpcId(9020000).SetStatus(game.StatusOpen).MustBuild()
+	m2 := game.NewBuilder(ten2).SetCharacterId(3002).SetWorldId(0).SetChannelId(1).SetNpcId(9020000).SetStatus(game.StatusOpen).MustBuild()
 	game.GetRegistry().Put(ctx2, m2)
 
 	now = now.Add(10 * time.Minute)

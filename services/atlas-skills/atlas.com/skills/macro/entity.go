@@ -27,7 +27,7 @@ func (e Entity) TableName() string {
 }
 
 func Make(e Entity) (Model, error) {
-	return NewModelBuilder().
+	return NewBuilder().
 		SetId(e.Id).
 		SetName(e.Name).
 		SetShout(e.Shout).

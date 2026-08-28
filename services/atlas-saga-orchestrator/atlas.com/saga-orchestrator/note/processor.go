@@ -12,7 +12,7 @@ import (
 
 // Processor is the interface for note operations
 type Processor interface {
-	CreateNote(transactionId uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte) error
+	CreateNote(transactionId uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte, giftNote bool) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -34,6 +34,6 @@ var _ Processor = (*ProcessorImpl)(nil)
 // CreateNote emits the note CREATE command for the create_note saga step.
 // The step completes when atlas-notes' CREATED/CREATE_FAILED status event
 // arrives (kafka/consumer/note/consumer.go).
-func (p *ProcessorImpl) CreateNote(transactionId uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(note2.EnvCommandTopic)(CreateNoteCommandProvider(transactionId, receiverId, senderId, message, flag))
+func (p *ProcessorImpl) CreateNote(transactionId uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte, giftNote bool) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(note2.EnvCommandTopic)(CreateNoteCommandProvider(transactionId, receiverId, senderId, message, flag, giftNote))
 }

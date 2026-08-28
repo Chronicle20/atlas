@@ -54,3 +54,13 @@ func Extract(rm RestModel) (Model, error) {
 		meso:  rm.Meso,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:    m.id,
+		Name:  m.name,
+		Hp:    m.hp,
+		Level: m.level,
+		Meso:  m.meso,
+	}, nil
+}

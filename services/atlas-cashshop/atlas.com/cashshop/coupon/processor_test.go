@@ -225,15 +225,21 @@ func (s stubCharacterProcessor) GetById(_ ...model.Decorator[character.Model]) f
 
 func (s stubCharacterProcessor) InventoryDecorator(m character.Model) character.Model { return m }
 
+func (s stubCharacterProcessor) ExtendEquipSlot(_ uint32, _ int16, _ uint16, _ uuid.UUID) (time.Time, error) {
+	return time.Time{}, s.err
+}
+
 // testCharacter is an Explorer (job type 0), which resolves to
 // compartment.TypeExplorer — the type seedCompartment writes.
 func testCharacter(t *testing.T) character.Model {
 	t.Helper()
-	return character.NewModelBuilder().
+	m, err := character.NewBuilder().
 		SetId(testCharacterId).
 		SetAccountId(testAccountId).
 		SetJobId(job.Id(100)).
 		Build()
+	require.NoError(t, err)
+	return m
 }
 
 // newTestProcessor builds the real processor and replaces its two REMOTE

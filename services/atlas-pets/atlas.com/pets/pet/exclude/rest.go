@@ -32,7 +32,7 @@ func Transform(m Model) (RestModel, error) {
 }
 
 func Extract(rm RestModel) (Model, error) {
-	return NewModelBuilder(rm.ItemId).
+	return NewBuilder(rm.ItemId).
 		SetId(rm.Id).
 		Build()
 }

@@ -11,8 +11,8 @@ import (
 	inv "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := inventory.NewModelBuilder(100)
+func TestNewBuilder(t *testing.T) {
+	builder := inventory.NewBuilder(100)
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -27,9 +27,9 @@ func TestNewBuilder_Alias(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	equipId := uuid.New()
-	equip, _ := compartment.NewModelBuilder(equipId, 100, inv.TypeValueEquip, 24).Build()
+	equip, _ := compartment.NewBuilder(equipId, 100, inv.TypeValueEquip, 24).Build()
 
-	model, err := inventory.NewModelBuilder(100).
+	model, err := inventory.NewBuilder(100).
 		SetEquipable(equip).
 		Build()
 	if err != nil {
@@ -44,7 +44,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingCharacterId(t *testing.T) {
-	_, err := inventory.NewModelBuilder(0).Build()
+	_, err := inventory.NewBuilder(0).Build()
 
 	if !errors.Is(err, inventory.ErrInvalidCharacterId) {
 		t.Errorf("Build() error = %v, want ErrInvalidCharacterId", err)
@@ -53,9 +53,9 @@ func TestBuild_MissingCharacterId(t *testing.T) {
 
 func TestSetCompartment(t *testing.T) {
 	compId := uuid.New()
-	comp, _ := compartment.NewModelBuilder(compId, 100, inv.TypeValueUse, 24).Build()
+	comp, _ := compartment.NewBuilder(compId, 100, inv.TypeValueUse, 24).Build()
 
-	model, err := inventory.NewModelBuilder(100).
+	model, err := inventory.NewBuilder(100).
 		SetCompartment(comp).
 		Build()
 	if err != nil {
@@ -73,13 +73,13 @@ func TestAllCompartments(t *testing.T) {
 	etcId := uuid.New()
 	cashId := uuid.New()
 
-	equip, _ := compartment.NewModelBuilder(equipId, 100, inv.TypeValueEquip, 24).Build()
-	use, _ := compartment.NewModelBuilder(useId, 100, inv.TypeValueUse, 24).Build()
-	setup, _ := compartment.NewModelBuilder(setupId, 100, inv.TypeValueSetup, 24).Build()
-	etc, _ := compartment.NewModelBuilder(etcId, 100, inv.TypeValueETC, 24).Build()
-	cash, _ := compartment.NewModelBuilder(cashId, 100, inv.TypeValueCash, 24).Build()
+	equip, _ := compartment.NewBuilder(equipId, 100, inv.TypeValueEquip, 24).Build()
+	use, _ := compartment.NewBuilder(useId, 100, inv.TypeValueUse, 24).Build()
+	setup, _ := compartment.NewBuilder(setupId, 100, inv.TypeValueSetup, 24).Build()
+	etc, _ := compartment.NewBuilder(etcId, 100, inv.TypeValueETC, 24).Build()
+	cash, _ := compartment.NewBuilder(cashId, 100, inv.TypeValueCash, 24).Build()
 
-	model, err := inventory.NewModelBuilder(100).
+	model, err := inventory.NewBuilder(100).
 		SetEquipable(equip).
 		SetConsumable(use).
 		SetSetup(setup).
@@ -108,9 +108,9 @@ func TestAllCompartments(t *testing.T) {
 
 func TestCloneModel(t *testing.T) {
 	equipId := uuid.New()
-	equip, _ := compartment.NewModelBuilder(equipId, 100, inv.TypeValueEquip, 24).Build()
+	equip, _ := compartment.NewBuilder(equipId, 100, inv.TypeValueEquip, 24).Build()
 
-	original, err := inventory.NewModelBuilder(100).
+	original, err := inventory.NewBuilder(100).
 		SetEquipable(equip).
 		Build()
 	if err != nil {
@@ -118,7 +118,7 @@ func TestCloneModel(t *testing.T) {
 	}
 
 	useId := uuid.New()
-	use, _ := compartment.NewModelBuilder(useId, 100, inv.TypeValueUse, 24).Build()
+	use, _ := compartment.NewBuilder(useId, 100, inv.TypeValueUse, 24).Build()
 
 	cloned, err := inventory.CloneModel(original).
 		SetConsumable(use).
@@ -143,7 +143,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := inventory.NewModelBuilder(100).MustBuild()
+	model := inventory.NewBuilder(100).MustBuild()
 
 	if model.CharacterId() != 100 {
 		t.Errorf("model.CharacterId() = %d, want 100", model.CharacterId())
@@ -157,7 +157,7 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	inventory.NewModelBuilder(0).MustBuild() // Zero character ID, should panic
+	inventory.NewBuilder(0).MustBuild() // Zero character ID, should panic
 }
 
 func TestBuilderSupplier(t *testing.T) {
@@ -173,7 +173,7 @@ func TestBuilderSupplier(t *testing.T) {
 
 func TestFoldCompartment(t *testing.T) {
 	compId := uuid.New()
-	comp, _ := compartment.NewModelBuilder(compId, 100, inv.TypeValueEquip, 24).Build()
+	comp, _ := compartment.NewBuilder(compId, 100, inv.TypeValueEquip, 24).Build()
 
 	builder := inventory.NewBuilder(100)
 	builder, err := inventory.FoldCompartment(builder, comp)

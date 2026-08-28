@@ -32,7 +32,7 @@ func getByItemIdPagedProvider(itemId uint32, page model.Page) database.EntityPro
 }
 
 func modelFromEntity(m entity) (Model, error) {
-	return NewMonsterDropBuilder(m.TenantId, m.ID).
+	return NewBuilder(m.TenantId, m.ID).
 		SetMonsterId(m.MonsterId).
 		SetItemId(m.ItemId).
 		SetMinimumQuantity(m.MinimumQuantity).

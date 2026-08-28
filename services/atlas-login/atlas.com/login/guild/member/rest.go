@@ -15,3 +15,9 @@ func Extract(rm RestModel) (Model, error) {
 		characterId: rm.CharacterId,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		CharacterId: m.characterId,
+	}, nil
+}

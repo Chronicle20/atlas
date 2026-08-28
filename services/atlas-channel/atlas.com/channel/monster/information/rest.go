@@ -26,6 +26,17 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	attacks := make([]AttackInfoRestModel, 0, len(m.attacks))
+	for _, a := range m.attacks {
+		attacks = append(attacks, AttackInfoRestModel(a))
+	}
+	return RestModel{
+		Id:      strconv.FormatUint(uint64(m.monsterId), 10),
+		Attacks: attacks,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	id, err := strconv.ParseUint(rm.Id, 10, 32)
 	if err != nil {

@@ -88,4 +88,39 @@ describe("DetailActionBar", () => {
     );
     expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument();
   });
+
+  it("forwards blockingIssues to the bar", () => {
+    renderBar({ config: { dirty: true, isSaving: false, blockingIssues: 2 } });
+    expect(screen.getByText(/2 blocking errors/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
+  });
+
+  it("re-pushes when only blockingIssues changes", async () => {
+    function Toggle() {
+      const [blockingIssues, setBlockingIssues] = useState(0);
+      useRegisterDetailActionBar({
+        dirty: true,
+        isSaving: false,
+        blockingIssues,
+        onSave() {},
+        onDiscard() {},
+      });
+      return (
+        <button type="button" onClick={() => setBlockingIssues(1)}>
+          add-blocking-issue
+        </button>
+      );
+    }
+    render(
+      <DetailActionBarProvider>
+        <Toggle />
+        <DetailActionBar />
+      </DetailActionBarProvider>,
+    );
+    expect(screen.getByRole("button", { name: /^save$/i })).not.toBeDisabled();
+    await userEvent.click(
+      screen.getByRole("button", { name: /add-blocking-issue/i }),
+    );
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
+  });
 });

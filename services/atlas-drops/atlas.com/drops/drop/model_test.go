@@ -13,10 +13,10 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-func TestNewModelBuilder_DefaultValues(t *testing.T) {
+func TestNewBuilder_DefaultValues(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f)
+	mb := NewBuilder(ten, f)
 
 	mbTenant := mb.Tenant()
 	if mbTenant.Id() != ten.Id() {
@@ -44,10 +44,10 @@ func TestNewModelBuilder_DefaultValues(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_FluentSetters(t *testing.T) {
+func TestBuilder_FluentSetters(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f)
+	mb := NewBuilder(ten, f)
 
 	result := mb.SetId(123)
 	if result != mb {
@@ -111,12 +111,12 @@ func TestModelBuilder_FluentSetters(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_CreatesCorrectModel(t *testing.T) {
+func TestBuilder_Build_CreatesCorrectModel(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	txId := uuid.New()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetId(123).
 		SetTransactionId(txId).
 		SetItem(1000000, 50).
@@ -195,13 +195,13 @@ func TestModelBuilder_Build_CreatesCorrectModel(t *testing.T) {
 	}
 }
 
-func TestCloneModelBuilder_CopiesAllFields(t *testing.T) {
+func TestCloneBuilder_CopiesAllFields(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	txId := uuid.New()
 	dropTime := time.Now().Add(-time.Hour)
 
 	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
-	original, err := NewModelBuilder(ten, f).
+	original, err := NewBuilder(ten, f).
 		SetId(123).
 		SetTransactionId(txId).
 		SetItem(1000000, 50).
@@ -221,7 +221,7 @@ func TestCloneModelBuilder_CopiesAllFields(t *testing.T) {
 
 	original.dropTime = dropTime
 
-	cloned, err := CloneModelBuilder(original).Build()
+	cloned, err := CloneBuilder(original).Build()
 	if err != nil {
 		t.Fatalf("Build() failed for cloned: %v", err)
 	}
@@ -294,7 +294,7 @@ func TestModel_Reserve_ReturnsNewInstance(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	original, err := NewModelBuilder(ten, f).
+	original, err := NewBuilder(ten, f).
 		SetId(123).
 		SetStatus(StatusAvailable).
 		SetPetSlot(-1).
@@ -331,7 +331,7 @@ func TestModel_CancelReservation_ReturnsNewInstance(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	original, err := NewModelBuilder(ten, f).
+	original, err := NewBuilder(ten, f).
 		SetId(123).
 		SetStatus(StatusReserved).
 		SetPetSlot(2).
@@ -368,7 +368,7 @@ func TestModel_CharacterDrop_AliasForPlayerDrop(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	m, err := NewModelBuilder(ten, f).
+	m, err := NewBuilder(ten, f).
 		SetPlayerDrop(true).
 		Build()
 	if err != nil {
@@ -380,10 +380,10 @@ func TestModel_CharacterDrop_AliasForPlayerDrop(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_ItemId_Getter(t *testing.T) {
+func TestBuilder_ItemId_Getter(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).SetItem(1234567, 10)
+	mb := NewBuilder(ten, f).SetItem(1234567, 10)
 
 	if mb.ItemId() != 1234567 {
 		t.Fatalf("Expected ItemId() 1234567, got %d", mb.ItemId())
@@ -487,7 +487,7 @@ func TestModel_AllGetters(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
+func TestBuilder_Build_ValidationErrors(t *testing.T) {
 	tests := []struct {
 		name        string
 		buildFunc   func() (Model, error)
@@ -497,7 +497,7 @@ func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 		{
 			name: "missing tenant",
 			buildFunc: func() (Model, error) {
-				mb := &ModelBuilder{}
+				mb := &Builder{}
 				mb.transactionId = uuid.New()
 				return mb.Build()
 			},
@@ -508,7 +508,7 @@ func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 			name: "missing transactionId",
 			buildFunc: func() (Model, error) {
 				ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-				mb := &ModelBuilder{}
+				mb := &Builder{}
 				mb.tenant = ten
 				return mb.Build()
 			},
@@ -520,7 +520,7 @@ func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 			buildFunc: func() (Model, error) {
 				ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-				return NewModelBuilder(ten, f).Build()
+				return NewBuilder(ten, f).Build()
 			},
 			expectError: false,
 		},
@@ -545,21 +545,21 @@ func TestModelBuilder_Build_ValidationErrors(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_MustBuild_Panics(t *testing.T) {
+func TestBuilder_MustBuild_Panics(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatal("Expected MustBuild to panic on invalid builder")
 		}
 	}()
 
-	mb := &ModelBuilder{}
+	mb := &Builder{}
 	mb.MustBuild()
 }
 
-func TestModelBuilder_MustBuild_Success(t *testing.T) {
+func TestBuilder_MustBuild_Success(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f)
+	mb := NewBuilder(ten, f)
 
 	// Should not panic
 	m := mb.MustBuild()

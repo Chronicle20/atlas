@@ -15,17 +15,20 @@ import (
 // createTestCharacter creates a character model for testing. The mapId is
 // returned as the field map at call sites; the character mirror no longer
 // stores a map (task-087 — map lives in atlas-maps).
-func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) (character.Model, _map.Id) {
+func createTestCharacter(t *testing.T, id uint32, name string, isGm bool, mapId _map.Id) (character.Model, _map.Id) {
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	c := character.NewModelBuilder().
+	c, err := character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
 		SetAccountId(100).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
 	return c, mapId
 }
 
@@ -177,7 +180,7 @@ func TestWarpCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char, mapId := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			char, mapId := createTestCharacter(t, 12345, "TestPlayer", tc.isGm, 100000000)
 			f := field.NewBuilder(1, 1, mapId).Build()
 
 			producer := WarpCommandProducer(logger)
@@ -217,7 +220,7 @@ func TestWhereAmICommandProducer_NoGmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char, mapId := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
+			char, mapId := createTestCharacter(t, 12345, "TestPlayer", tc.isGm, 100000000)
 			f := field.NewBuilder(1, 1, mapId).Build()
 
 			producer := WhereAmICommandProducer(logger)
@@ -234,7 +237,7 @@ func TestWhereAmICommandProducer_NoGmCheck(t *testing.T) {
 func TestWarpCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar, gmMapId := createTestCharacter(12345, "TestGM", true, 100000000)
+	gmChar, gmMapId := createTestCharacter(t, 12345, "TestGM", true, 100000000)
 	f := field.NewBuilder(1, 1, gmMapId).Build()
 
 	testCases := []struct {

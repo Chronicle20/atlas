@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := note.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := note.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -16,7 +16,7 @@ func TestNewModelBuilder(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	timestamp := time.Now()
-	model, err := note.NewModelBuilder().
+	model, err := note.NewBuilder().
 		SetId(1).
 		SetCharacterId(100).
 		SetSenderId(200).
@@ -39,7 +39,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := note.NewModelBuilder().
+	_, err := note.NewBuilder().
 		SetCharacterId(100).
 		Build()
 
@@ -55,7 +55,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := note.NewModelBuilder().SetId(1).MustBuild()
+	model := note.NewBuilder().SetId(1).MustBuild()
 
 	if model.Id() != 1 {
 		t.Errorf("model.Id() = %d, want 1", model.Id())
@@ -69,11 +69,11 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	note.NewModelBuilder().MustBuild()
+	note.NewBuilder().MustBuild()
 }
 
 func TestCloneModel(t *testing.T) {
-	original, _ := note.NewModelBuilder().
+	original, _ := note.NewBuilder().
 		SetId(1).
 		SetCharacterId(100).
 		SetMessage("Original").

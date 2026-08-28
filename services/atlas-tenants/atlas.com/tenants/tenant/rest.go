@@ -40,7 +40,7 @@ func Transform(m Model) (RestModel, error) {
 
 // Extract converts a RestModel to parameters for creating or updating a Model
 func Extract(r RestModel) (Model, error) {
-	return NewModelBuilder().
+	return NewBuilder().
 		SetName(r.Name).
 		SetRegion(r.Region).
 		SetMajorVersion(r.MajorVersion).

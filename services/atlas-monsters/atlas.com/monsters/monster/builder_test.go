@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func emptyBuilder() *ModelBuilder {
+func emptyBuilder() *Builder {
 	return Clone(NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50, "", ""))
 }
 

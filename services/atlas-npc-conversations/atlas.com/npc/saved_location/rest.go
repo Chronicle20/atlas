@@ -29,6 +29,16 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// Transform converts Model to RestModel
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		CharacterId:  m.characterId,
+		LocationType: m.locationType,
+		MapId:        m.mapId,
+		PortalId:     m.portalId,
+	}, nil
+}
+
 // Extract converts RestModel to Model
 func Extract(rm RestModel) (Model, error) {
 	return NewBuilder().

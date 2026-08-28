@@ -654,7 +654,7 @@ func (p *ProcessorImpl) Release(mb *message.Buffer) func(transactionId uuid.UUID
 // applyEquipStats writes equip stats onto the builder. When useAverageStats is true,
 // the atlas-data defaults are written verbatim; otherwise each stat is rolled with
 // variance via getRandomStat.
-func applyEquipStats(b *ModelBuilder, ea statistics.Model, useAverageStats bool) *ModelBuilder {
+func applyEquipStats(b *Builder, ea statistics.Model, useAverageStats bool) *Builder {
 	if useAverageStats {
 		return b.SetStrength(ea.Strength()).
 			SetDexterity(ea.Dexterity()).

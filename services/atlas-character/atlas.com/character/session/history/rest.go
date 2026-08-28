@@ -30,7 +30,7 @@ func (r RestModel) GetName() string {
 	return "sessions"
 }
 
-func TransformToRest(m Model) RestModel {
+func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:          strconv.FormatUint(m.Id(), 10),
 		CharacterId: m.CharacterId(),
@@ -38,13 +38,14 @@ func TransformToRest(m Model) RestModel {
 		ChannelId:   m.ChannelId(),
 		LoginTime:   m.LoginTime(),
 		LogoutTime:  m.LogoutTime(),
-	}
+	}, nil
 }
 
 func TransformSliceToRest(models []Model) []RestModel {
 	result := make([]RestModel, len(models))
 	for i, m := range models {
-		result[i] = TransformToRest(m)
+		rm, _ := Transform(m)
+		result[i] = rm
 	}
 	return result
 }

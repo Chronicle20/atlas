@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := channel.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := channel.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -20,7 +20,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
 	createdAt := time.Now()
 
-	model, err := channel.NewModelBuilder().
+	model, err := channel.NewBuilder().
 		SetId(id).
 		SetWorldId(1).
 		SetChannelId(2).
@@ -60,7 +60,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetIpAddress("192.168.1.1").
 		SetPort(8080).
 		SetMaxCapacity(100).
@@ -72,7 +72,7 @@ func TestBuild_MissingId(t *testing.T) {
 }
 
 func TestBuild_ZeroUUIDId(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.Nil).
 		SetIpAddress("192.168.1.1").
 		SetPort(8080).
@@ -85,7 +85,7 @@ func TestBuild_ZeroUUIDId(t *testing.T) {
 }
 
 func TestBuild_EmptyIpAddress(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("").
 		SetPort(8080).
@@ -98,7 +98,7 @@ func TestBuild_EmptyIpAddress(t *testing.T) {
 }
 
 func TestBuild_MissingIpAddress(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetPort(8080).
 		SetMaxCapacity(100).
@@ -110,7 +110,7 @@ func TestBuild_MissingIpAddress(t *testing.T) {
 }
 
 func TestBuild_PortZero(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(0).
@@ -123,7 +123,7 @@ func TestBuild_PortZero(t *testing.T) {
 }
 
 func TestBuild_PortNegative(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(-1).
@@ -136,7 +136,7 @@ func TestBuild_PortNegative(t *testing.T) {
 }
 
 func TestBuild_PortTooHigh(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(65536).
@@ -149,7 +149,7 @@ func TestBuild_PortTooHigh(t *testing.T) {
 }
 
 func TestBuild_PortBoundaryLow(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(1).
@@ -161,7 +161,7 @@ func TestBuild_PortBoundaryLow(t *testing.T) {
 }
 
 func TestBuild_PortBoundaryHigh(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(65535).
@@ -173,7 +173,7 @@ func TestBuild_PortBoundaryHigh(t *testing.T) {
 }
 
 func TestBuild_MaxCapacityZero(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(8080).
@@ -186,7 +186,7 @@ func TestBuild_MaxCapacityZero(t *testing.T) {
 }
 
 func TestBuild_MaxCapacityOne(t *testing.T) {
-	_, err := channel.NewModelBuilder().
+	_, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(8080).
@@ -201,7 +201,7 @@ func TestCloneModel(t *testing.T) {
 	id := uuid.New()
 	createdAt := time.Now()
 
-	original, err := channel.NewModelBuilder().
+	original, err := channel.NewBuilder().
 		SetId(id).
 		SetWorldId(1).
 		SetChannelId(2).
@@ -258,7 +258,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := channel.NewModelBuilder().
+	model := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(8080).
@@ -277,7 +277,7 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	channel.NewModelBuilder().
+	channel.NewBuilder().
 		SetIpAddress("192.168.1.1").
 		SetPort(8080).
 		SetMaxCapacity(100).
@@ -287,7 +287,7 @@ func TestMustBuild_Panics(t *testing.T) {
 func TestBuilderFluentChaining(t *testing.T) {
 	id := uuid.New()
 
-	model, err := channel.NewModelBuilder().
+	model, err := channel.NewBuilder().
 		SetId(id).
 		SetWorldId(1).
 		SetChannelId(2).
@@ -313,7 +313,7 @@ func TestBuilderFluentChaining(t *testing.T) {
 func TestBuild_DefaultCreatedAt(t *testing.T) {
 	beforeBuild := time.Now()
 
-	model, err := channel.NewModelBuilder().
+	model, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(8080).
@@ -334,7 +334,7 @@ func TestBuild_DefaultCreatedAt(t *testing.T) {
 
 func TestBuild_WorldIdZero(t *testing.T) {
 	// WorldId of 0 should be valid
-	model, err := channel.NewModelBuilder().
+	model, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetWorldId(0).
 		SetIpAddress("192.168.1.1").
@@ -351,7 +351,7 @@ func TestBuild_WorldIdZero(t *testing.T) {
 
 func TestBuild_ChannelIdZero(t *testing.T) {
 	// ChannelId of 0 should be valid
-	model, err := channel.NewModelBuilder().
+	model, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetChannelId(0).
 		SetIpAddress("192.168.1.1").
@@ -368,7 +368,7 @@ func TestBuild_ChannelIdZero(t *testing.T) {
 
 func TestBuild_CurrentCapacityZero(t *testing.T) {
 	// CurrentCapacity of 0 should be valid (no users connected)
-	model, err := channel.NewModelBuilder().
+	model, err := channel.NewBuilder().
 		SetId(uuid.New()).
 		SetIpAddress("192.168.1.1").
 		SetPort(8080).

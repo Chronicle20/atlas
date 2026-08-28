@@ -39,7 +39,7 @@ func TestRegistry_PutAndGet(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := testCtx(ten)
 
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(1000).
 		SetWorldId(0).
 		SetChannelId(1).
@@ -69,7 +69,7 @@ func TestRegistry_Remove(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := testCtx(ten)
 
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(1000).
 		MustBuild()
 	game.GetRegistry().Put(ctx, m)
@@ -91,7 +91,7 @@ func TestRegistry_PopExpired(t *testing.T) {
 	now := time.Now()
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(1000).
 		MustBuild()
 	game.GetRegistry().Put(ctx, m)
@@ -133,8 +133,8 @@ func TestRegistry_PopExpired_MultipleTenants(t *testing.T) {
 	now := time.Now()
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
-	m1 := game.NewModelBuilder(ten1).SetCharacterId(1000).MustBuild()
-	m2 := game.NewModelBuilder(ten2).SetCharacterId(2000).MustBuild()
+	m1 := game.NewBuilder(ten1).SetCharacterId(1000).MustBuild()
+	m2 := game.NewBuilder(ten2).SetCharacterId(2000).MustBuild()
 	game.GetRegistry().Put(ctx1, m1)
 	game.GetRegistry().Put(ctx2, m2)
 

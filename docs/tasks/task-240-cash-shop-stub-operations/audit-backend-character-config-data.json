@@ -1,0 +1,101 @@
+{
+  "service": "atlas-character+atlas-configurations+atlas-data+atlas-constants+atlas-packet",
+  "path": "services/atlas-character, services/atlas-configurations, services/atlas-data, libs/atlas-constants, libs/atlas-packet",
+  "date": "2026-08-19",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "equipslot",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()", "status": "fail", "evidence": "no builder.go in services/atlas-character/atlas.com/character/equipslot/"},
+        {"id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "fail", "evidence": "grep for ToEntity in package: no match"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) defined in entity.go", "status": "fail", "evidence": "grep for func Make( in package: no match; model.go:33 modelFromEntity(e Entity) Model has no error return and is in the wrong file"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "pass", "evidence": "rest.go:32"},
+        {"id": "DOM-05", "name": "TransformSlice defined in rest.go and used by list handlers", "status": "fail", "evidence": "rest.go has no TransformSlice; resource.go:41 uses model.SliceMap(Transform) instead"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery", "status": "n-a", "evidence": "no provider.go file exists in the package"},
+        {"id": "DOM-16", "name": "administrator.go holds the write functions", "status": "pass", "evidence": "administrator.go:24-61 Extend, called from processor.go:38"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:26"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "resource.go:35,63"},
+        {"id": "DOM-08", "name": "POST/PATCH routes register via RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:27"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "pass", "evidence": "resource.go:41-46,85-90"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "grep -n os.Getenv resource.go: zero matches"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "resource.go handlers call only equipslot.Processor"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never provider functions directly", "status": "pass", "evidence": "resource.go:35,63,72"},
+        {"id": "DOM-15", "name": "No db.Create/db.Save/db.Delete in handlers", "status": "pass", "evidence": "grep resource.go: zero matches"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "warn", "evidence": "resource.go routes all processor errors through server.WriteErrorResponse with no explicit 404 branch; classification depends on WriteErrorResponse internals not read (see notEvaluable)"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "rest.go:19-30,57-67"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "rest.go:50-55 ExtendInputRestModel"},
+        {"id": "DOM-32", "name": "Routes register through server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:24,27 delegate via services/atlas-character/atlas.com/character/rest/handler.go:68-93 to server.RetrieveSpan/server.ParseTenant"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers never on a REST model", "status": "pass", "evidence": "rest.go:12-17,50-55 no tenant field; processor.go:31 tenant.MustFromContext(ctx)"},
+        {"id": "FILE-01", "name": "Processor interface/ctor/methods live in processor.go", "status": "pass", "evidence": "processor.go:14-53"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods live in rest.go", "status": "pass", "evidence": "rest.go entire file"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "no requests.RootUrl/GetRequest/PostRequest call sites"},
+        {"id": "FILE-04", "name": "Entity struct/Migration/TableName live in entity.go", "status": "pass", "evidence": "entity.go:17,37,39"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers each in their own file", "status": "fail", "evidence": "no builder.go; GetActive (administrator.go:66-77) is a reader misplaced in the writes file; no provider.go"},
+        {"id": "FILE-06", "name": "No file carrying >=2 responsibilities", "status": "fail", "evidence": "administrator.go bundles writes (Extend, 24-61) and readers (GetActive, 66-77)"},
+        {"id": "DOM-20", "name": "Tests are table-driven (tests := []struct + t.Run)", "status": "warn", "evidence": "administrator_test.go and resource_test.go use sequential t.Run blocks without a tests := []struct{} table"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "fail", "evidence": "administrator_test.go:17-34 testDB() opens gorm.Open (line 25) without calling database.RegisterTenantCallbacks; reused by resource_test.go:67,108"},
+        {"id": "DOM-24", "name": "Emit-reaching tests install producertest stub", "status": "n-a", "evidence": "no AndEmit/message.Emit/producer.Produce reachable from this package's tests"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "Processor is a brand new interface in this diff"},
+        {"id": "DOM-21", "name": "No redeclaration of a shared constant/type", "status": "pass", "evidence": "libs/atlas-constants/inventory/slot/constants.go:69 adds pendant2 to the existing shared Slots table; administrator_test.go:41 resolves it via slot.GetSlotByType"}
+      ]
+    },
+    {
+      "name": "cashpackage",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic lives in the package's own processor or parent's, never handler", "status": "fail", "evidence": "resource.go:39-40,57-58 call document.Storage directly; Processor interface (processor.go:14-17) has no read method"},
+        {"id": "SUB-02", "name": "Writes go through an administrator", "status": "pass", "evidence": "grep resource.go for db.Create/Save/Delete: zero matches"},
+        {"id": "SUB-03", "name": "POST endpoints use RegisterInputHandler[T]", "status": "n-a", "evidence": "resource.go:23-24 registers only GET routes"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "grep resource.go for json.NewDecoder/json.Unmarshal/io.ReadAll: zero matches"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:25"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "resource.go:39,57"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "n-a", "evidence": "resource.go never calls a package-local Transform("},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "grep resource.go: zero matches"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "handlers stay within cashpackage/document"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never providers directly", "status": "fail", "evidence": "resource.go:39-40,57-58 call document.Storage directly; no circular-dependency exception applies (anti-patterns.md:99-129)"},
+        {"id": "DOM-15", "name": "No db.Create/db.Save/db.Delete in handlers", "status": "pass", "evidence": "grep resource.go: zero matches"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "resource.go:34-37 (400), resource.go:61-62 (404)"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "rest.go:12-27"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "n-a", "evidence": "no request/input model defined - read-only surface"},
+        {"id": "DOM-32", "name": "Routes register through server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:20 rest.RegisterHandler, traced to services/atlas-data/atlas.com/data/rest/handler.go:24 var RegisterHandler = server.RegisterHandler"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers never on a REST model", "status": "pass", "evidence": "rest.go:7-10 no tenant field"},
+        {"id": "FILE-01", "name": "Processor interface/ctor/methods live in processor.go", "status": "pass", "evidence": "processor.go:14-61"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods live in rest.go", "status": "pass", "evidence": "rest.go entire file"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "no requests.RootUrl/GetRequest/PostRequest call sites"},
+        {"id": "FILE-04", "name": "Entity struct/Migration/TableName live in entity.go", "status": "n-a", "evidence": "package has no GORM entity of its own; persistence delegated to atlas-data/document.Storage"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers each in their own file", "status": "n-a", "evidence": "no domain Model, no Create/Update/Delete writes, no database.Query/SliceQuery readers defined in this package"},
+        {"id": "FILE-06", "name": "No file carrying >=2 responsibilities", "status": "pass", "evidence": "processor.go, reader.go, registry.go, resource.go, rest.go; reader.go is a genuine single-purpose XML ingestion utility"},
+        {"id": "DOM-20", "name": "Tests are table-driven (tests := []struct + t.Run)", "status": "fail", "evidence": "reader_test.go:30-65 TestReadCashPackages is a flat test with a manual nested for loop, no t.Run, no table"},
+        {"id": "DOM-20", "name": "Tests are table-driven (tests := []struct + t.Run) - resource_test.go", "status": "warn", "evidence": "resource_test.go:45-120 uses sequential t.Run sub-tests (lines 54,73,97,109) without a tests := []struct{} table"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "pass", "evidence": "resource_test.go:138 after gorm.Open() at line 123"},
+        {"id": "DOM-24", "name": "Emit-reaching tests install producertest stub", "status": "n-a", "evidence": "no AndEmit/message.Emit/producer.Produce reachable from this package's tests"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "Processor is new in this diff"},
+        {"id": "DOM-21", "name": "No redeclaration of a shared constant/type", "status": "pass", "evidence": "new domain-specific types for a new WZ document kind; no libs/atlas-constants equivalent exists"},
+        {"id": "EXT-01", "name": "External atlas-service client rules", "status": "n-a", "evidence": "no requests.*Request[T] call site added"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-17 (equipslot): whether server.WriteErrorResponse classifies Extend/GetActive errors into 404 vs 500/503 requires reading libs/atlas-rest/server, outside the changed-file surface",
+    "DOM-25/channel-wire and packet coverage matrix content in libs/atlas-packet and template_gms_95_1.json: explicitly out of scope, owned by the concurrent packet-completeness-critic"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-character/atlas.com/character/equipslot/ has no builder.go",
+    "DOM-02: equipslot/entity.go has no Model.ToEntity()",
+    "DOM-03: equipslot/entity.go has no func Make(Entity) (Model, error)",
+    "DOM-05: equipslot/rest.go has no TransformSlice",
+    "FILE-05/FILE-06: equipslot/administrator.go:66-77 bundles a reader (GetActive) into the writes file; no provider.go exists",
+    "SUB-01/DOM-14: cashpackage/resource.go:39-40,57-58 call document.Storage directly from the handler; Processor exposes no read method",
+    "DOM-10: equipslot/administrator_test.go:17-34 testDB() opens a GORM DB without database.RegisterTenantCallbacks",
+    "DOM-20: cashpackage/reader_test.go:30-65 is not table-driven and has no t.Run"
+  ],
+  "nonBlocking": [
+    "DOM-17: equipslot/resource.go has no explicit not-found branch distinct from WriteErrorResponse",
+    "DOM-20: equipslot/administrator_test.go, equipslot/resource_test.go, cashpackage/resource_test.go use t.Run without a tests := []struct{} table"
+  ]
+}

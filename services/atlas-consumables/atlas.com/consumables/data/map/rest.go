@@ -47,3 +47,9 @@ func Extract(rm RestModel) (Model, error) {
 		returnMapId: rm.ReturnMapId,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		ReturnMapId: m.returnMapId,
+	}, nil
+}

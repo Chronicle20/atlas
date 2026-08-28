@@ -73,7 +73,7 @@ func testField() field.Model {
 
 func consumeAsset(t *testing.T, slotIdx int16, templateId uint32, qty uint32) asset.Model {
 	t.Helper()
-	a, err := asset.NewModelBuilder(uint32(slotIdx), uuid.New(), templateId).SetSlot(slotIdx).SetQuantity(qty).Build()
+	a, err := asset.NewBuilderWithId(uint32(slotIdx), uuid.New(), templateId).SetSlot(slotIdx).SetQuantity(qty).Build()
 	if err != nil {
 		t.Fatalf("asset build: %v", err)
 	}
@@ -93,7 +93,7 @@ func casterWithCompartment(t *testing.T, it inventoryconst.Type, assets ...asset
 		t.Fatalf("compartment build: %v", err)
 	}
 	inv := inventory.NewBuilder(1).SetCompartment(cm).MustBuild()
-	return character.NewModelBuilder().SetId(1).SetInventory(inv).MustBuild()
+	return character.NewBuilder().SetId(1).SetInventory(inv).MustBuild()
 }
 
 func consumeEffect(t *testing.T, itemConsume uint32, amount uint32) effect.Model {

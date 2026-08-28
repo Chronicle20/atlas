@@ -13,8 +13,8 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// ModelBuilder provides a fluent API for constructing expression.Model instances.
-type ModelBuilder struct {
+// Builder provides a fluent API for constructing expression.Model instances.
+type Builder struct {
 	tenant      tenant.Model
 	characterId uint32
 	field       field.Model
@@ -22,16 +22,16 @@ type ModelBuilder struct {
 	expiration  time.Time
 }
 
-// NewModelBuilder creates a new ModelBuilder with required tenant.
-func NewModelBuilder(t tenant.Model) *ModelBuilder {
-	return &ModelBuilder{
+// NewBuilder creates a new Builder with required tenant.
+func NewBuilder(t tenant.Model) *Builder {
+	return &Builder{
 		tenant: t,
 	}
 }
 
-// CloneModelBuilder creates a new ModelBuilder initialized from an existing Model.
-func CloneModelBuilder(m Model) *ModelBuilder {
-	return &ModelBuilder{
+// CloneBuilder creates a new Builder initialized from an existing Model.
+func CloneBuilder(m Model) *Builder {
+	return &Builder{
 		tenant:      m.Tenant(),
 		characterId: m.CharacterId(),
 		field:       m.Field(),
@@ -41,55 +41,55 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 }
 
 // SetCharacterId sets the character ID.
-func (b *ModelBuilder) SetCharacterId(characterId uint32) *ModelBuilder {
+func (b *Builder) SetCharacterId(characterId uint32) *Builder {
 	b.characterId = characterId
 	return b
 }
 
 // SetWorldId sets the world ID.
-func (b *ModelBuilder) SetWorldId(worldId world.Id) *ModelBuilder {
+func (b *Builder) SetWorldId(worldId world.Id) *Builder {
 	b.field = b.field.Clone().SetWorldId(worldId).Build()
 	return b
 }
 
 // SetChannelId sets the channel ID.
-func (b *ModelBuilder) SetChannelId(channelId channel.Id) *ModelBuilder {
+func (b *Builder) SetChannelId(channelId channel.Id) *Builder {
 	b.field = b.field.Clone().SetChannelId(channelId).Build()
 	return b
 }
 
 // SetMapId sets the map ID.
-func (b *ModelBuilder) SetMapId(mapId _map.Id) *ModelBuilder {
+func (b *Builder) SetMapId(mapId _map.Id) *Builder {
 	b.field = b.field.Clone().SetMapId(mapId).Build()
 	return b
 }
 
 // SetInstance sets the instance UUID.
-func (b *ModelBuilder) SetInstance(instance uuid.UUID) *ModelBuilder {
+func (b *Builder) SetInstance(instance uuid.UUID) *Builder {
 	b.field = b.field.Clone().SetInstance(instance).Build()
 	return b
 }
 
 // SetExpression sets the expression value.
-func (b *ModelBuilder) SetExpression(expression uint32) *ModelBuilder {
+func (b *Builder) SetExpression(expression uint32) *Builder {
 	b.expression = expression
 	return b
 }
 
 // SetExpiration sets the expiration time.
-func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
+func (b *Builder) SetExpiration(expiration time.Time) *Builder {
 	b.expiration = expiration
 	return b
 }
 
 // SetLocation sets worldId, channelId, mapId, and instance together.
-func (b *ModelBuilder) SetLocation(field field.Model) *ModelBuilder {
+func (b *Builder) SetLocation(field field.Model) *Builder {
 	b.field = field
 	return b
 }
 
 // Build validates and constructs the Model. Returns an error if validation fails.
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.tenant.Id() == uuid.Nil {
 		return Model{}, errors.New("tenant is required")
 	}
@@ -110,7 +110,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 
 // MustBuild builds the model and panics if validation fails.
 // Use this only when building from a known-valid source (e.g., cloning an existing model).
-func (b *ModelBuilder) MustBuild() Model {
+func (b *Builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic("MustBuild failed: " + err.Error())
@@ -119,41 +119,41 @@ func (b *ModelBuilder) MustBuild() Model {
 }
 
 // Tenant returns the tenant from the builder.
-func (b *ModelBuilder) Tenant() tenant.Model {
+func (b *Builder) Tenant() tenant.Model {
 	return b.tenant
 }
 
 // CharacterId returns the characterId from the builder.
-func (b *ModelBuilder) CharacterId() uint32 {
+func (b *Builder) CharacterId() uint32 {
 	return b.characterId
 }
 
 // WorldId returns the worldId from the builder.
-func (b *ModelBuilder) WorldId() world.Id {
+func (b *Builder) WorldId() world.Id {
 	return b.field.WorldId()
 }
 
 // ChannelId returns the channelId from the builder.
-func (b *ModelBuilder) ChannelId() channel.Id {
+func (b *Builder) ChannelId() channel.Id {
 	return b.field.ChannelId()
 }
 
 // MapId returns the mapId from the builder.
-func (b *ModelBuilder) MapId() _map.Id {
+func (b *Builder) MapId() _map.Id {
 	return b.field.MapId()
 }
 
 // Instance returns the instance from the builder.
-func (b *ModelBuilder) Instance() uuid.UUID {
+func (b *Builder) Instance() uuid.UUID {
 	return b.field.Instance()
 }
 
 // Expression returns the expression from the builder.
-func (b *ModelBuilder) Expression() uint32 {
+func (b *Builder) Expression() uint32 {
 	return b.expression
 }
 
 // Expiration returns the expiration from the builder.
-func (b *ModelBuilder) Expiration() time.Time {
+func (b *Builder) Expiration() time.Time {
 	return b.expiration
 }

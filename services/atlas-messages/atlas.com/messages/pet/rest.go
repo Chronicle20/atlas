@@ -46,3 +46,12 @@ func (r *RestModel) SetID(strId string) error {
 func Extract(rm RestModel) (Model, error) {
 	return NewModel(rm.Id, rm.Slot, rm.Name), nil
 }
+
+// Transform converts a domain Model to a RestModel.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:   m.id,
+		Slot: m.slot,
+		Name: m.name,
+	}, nil
+}

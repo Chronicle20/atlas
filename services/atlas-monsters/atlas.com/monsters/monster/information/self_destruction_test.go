@@ -82,7 +82,7 @@ func TestExtractMapsSelfDestruction(t *testing.T) {
 }
 
 func TestBuilderSetsSelfDestruction(t *testing.T) {
-	m := NewModelBuilder().SetSelfDestruction(NewSelfDestruction(true, 3, -1, 5000)).Build()
+	m := NewBuilder().SetSelfDestruction(NewSelfDestruction(true, 3, -1, 5000)).Build()
 	sd := m.SelfDestruction()
 	if !sd.Present() {
 		t.Errorf("Present() = false, want true")

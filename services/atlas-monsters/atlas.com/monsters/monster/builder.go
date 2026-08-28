@@ -8,12 +8,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-// Clone creates a ModelBuilder initialized from an existing Model.
+// Clone creates a Builder initialized from an existing Model.
 // This centralizes field copying for immutable model mutations.
-func Clone(m Model) *ModelBuilder {
+func Clone(m Model) *Builder {
 	effects := make([]StatusEffect, len(m.statusEffects))
 	copy(effects, m.statusEffects)
-	return &ModelBuilder{
+	return &Builder{
 		uniqueId:           m.uniqueId,
 		worldId:            m.worldId,
 		channelId:          m.channelId,
@@ -42,8 +42,8 @@ func Clone(m Model) *ModelBuilder {
 	}
 }
 
-// ModelBuilder provides a fluent interface for creating Model instances.
-type ModelBuilder struct {
+// Builder provides a fluent interface for creating Model instances.
+type Builder struct {
 	uniqueId           uint32
 	worldId            world.Id
 	channelId          channel.Id
@@ -72,75 +72,75 @@ type ModelBuilder struct {
 }
 
 // SetX sets the X coordinate.
-func (b *ModelBuilder) SetX(x int16) *ModelBuilder {
+func (b *Builder) SetX(x int16) *Builder {
 	b.x = x
 	return b
 }
 
 // SetY sets the Y coordinate.
-func (b *ModelBuilder) SetY(y int16) *ModelBuilder {
+func (b *Builder) SetY(y int16) *Builder {
 	b.y = y
 	return b
 }
 
 // SetStance sets the stance/animation state.
-func (b *ModelBuilder) SetStance(stance byte) *ModelBuilder {
+func (b *Builder) SetStance(stance byte) *Builder {
 	b.stance = stance
 	return b
 }
 
 // SetFh sets the foothold the monster is anchored to.
-func (b *ModelBuilder) SetFh(fh int16) *ModelBuilder {
+func (b *Builder) SetFh(fh int16) *Builder {
 	b.fh = fh
 	return b
 }
 
 // SetHp sets the current hit points.
-func (b *ModelBuilder) SetHp(hp uint32) *ModelBuilder {
+func (b *Builder) SetHp(hp uint32) *Builder {
 	b.hp = hp
 	return b
 }
 
 // SetControlCharacterId sets the controlling character ID.
-func (b *ModelBuilder) SetControlCharacterId(id uint32) *ModelBuilder {
+func (b *Builder) SetControlCharacterId(id uint32) *Builder {
 	b.controlCharacterId = id
 	return b
 }
 
 // SetControllerHasAggro sets whether the controlling character has aggro.
-func (b *ModelBuilder) SetControllerHasAggro(v bool) *ModelBuilder {
+func (b *Builder) SetControllerHasAggro(v bool) *Builder {
 	b.controllerHasAggro = v
 	return b
 }
 
 // SetMp sets the current mana points.
-func (b *ModelBuilder) SetMp(mp uint32) *ModelBuilder {
+func (b *Builder) SetMp(mp uint32) *Builder {
 	b.mp = mp
 	return b
 }
 
 // SetNextSkillDecision sets the picker's chosen next skill (or sentinel zero
 // for "no skill"). Picker-only API; not used by gameplay code.
-func (b *ModelBuilder) SetNextSkillDecision(d nextSkillDecision) *ModelBuilder {
+func (b *Builder) SetNextSkillDecision(d nextSkillDecision) *Builder {
 	b.nextSkillDecision = d
 	return b
 }
 
 // SetLastDamageTakenMs sets the most-recent damage timestamp. Used by the
 // recovery task's HP-regen idle gate.
-func (b *ModelBuilder) SetLastDamageTakenMs(v int64) *ModelBuilder {
+func (b *Builder) SetLastDamageTakenMs(v int64) *Builder {
 	b.lastDamageTakenMs = v
 	return b
 }
 
 // SetAggroRefreshedMs sets the aggro lease stamp.
-func (b *ModelBuilder) SetAggroRefreshedMs(v int64) *ModelBuilder {
+func (b *Builder) SetAggroRefreshedMs(v int64) *Builder {
 	b.aggroRefreshedMs = v
 	return b
 }
 
 // SetSpawnSource sets the opaque spawn provenance pair.
-func (b *ModelBuilder) SetSpawnSource(sourceType string, sourceId string) *ModelBuilder {
+func (b *Builder) SetSpawnSource(sourceType string, sourceId string) *Builder {
 	b.spawnSourceType = sourceType
 	b.spawnSourceId = sourceId
 	return b
@@ -152,7 +152,7 @@ func (b *ModelBuilder) SetSpawnSource(sourceType string, sourceId string) *Model
 // a first call appends, so slice order records first contact. This mirrors
 // Registry.ApplyDamage (registry.go:436-495) so both write paths agree, which
 // is what makes Model.DamageSummary()'s "pre-aggregated" contract true.
-func (b *ModelBuilder) AddDamageEntry(characterId uint32, damage uint32) *ModelBuilder {
+func (b *Builder) AddDamageEntry(characterId uint32, damage uint32) *Builder {
 	b.damageEntries = creditModelEntry(b.damageEntries, characterId, damage)
 	b.experienceEntries = creditModelEntry(b.experienceEntries, characterId, damage)
 	return b
@@ -178,7 +178,7 @@ func creditModelEntry(es []entry, characterId uint32, damage uint32) []entry {
 // Exception: VENOM stacks up to 3 times. When the cap is reached, the
 // VENOM-bearing effect with the earliest ExpiresAt is evicted (not the
 // first-inserted), per design D3 / PRD FR-4.4.2.
-func (b *ModelBuilder) AddStatusEffect(effect StatusEffect) *ModelBuilder {
+func (b *Builder) AddStatusEffect(effect StatusEffect) *Builder {
 	for statusType := range effect.Statuses() {
 		if statusType == "VENOM" {
 			venomCount := 0
@@ -204,7 +204,7 @@ func (b *ModelBuilder) AddStatusEffect(effect StatusEffect) *ModelBuilder {
 }
 
 // RemoveStatusEffect removes a status effect by its ID.
-func (b *ModelBuilder) RemoveStatusEffect(effectId uuid.UUID) *ModelBuilder {
+func (b *Builder) RemoveStatusEffect(effectId uuid.UUID) *Builder {
 	for i, se := range b.statusEffects {
 		if se.EffectId() == effectId {
 			b.statusEffects = append(b.statusEffects[:i], b.statusEffects[i+1:]...)
@@ -215,7 +215,7 @@ func (b *ModelBuilder) RemoveStatusEffect(effectId uuid.UUID) *ModelBuilder {
 }
 
 // RemoveStatusEffectByType removes all status effects that contain the given status type.
-func (b *ModelBuilder) RemoveStatusEffectByType(statusType string) *ModelBuilder {
+func (b *Builder) RemoveStatusEffectByType(statusType string) *Builder {
 	filtered := make([]StatusEffect, 0, len(b.statusEffects))
 	for _, se := range b.statusEffects {
 		if !se.HasStatus(statusType) {
@@ -227,13 +227,13 @@ func (b *ModelBuilder) RemoveStatusEffectByType(statusType string) *ModelBuilder
 }
 
 // ClearStatusEffects removes all status effects.
-func (b *ModelBuilder) ClearStatusEffects() *ModelBuilder {
+func (b *Builder) ClearStatusEffects() *Builder {
 	b.statusEffects = make([]StatusEffect, 0)
 	return b
 }
 
 // Build creates an immutable Model from the builder state.
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	return Model{
 		uniqueId:           b.uniqueId,
 		worldId:            b.worldId,

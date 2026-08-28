@@ -13,7 +13,7 @@ import (
 // CreateNoteCommandProvider builds the note CREATE command carrying the saga
 // transaction id. CharacterId is the RECEIVER (atlas-notes stores notes keyed
 // by the receiving character).
-func CreateNoteCommandProvider(transactionId uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte) model.Provider[[]kafka.Message] {
+func CreateNoteCommandProvider(transactionId uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte, giftNote bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(receiverId))
 	value := &note2.Command[note2.CommandCreateBody]{
 		TransactionId: transactionId,
@@ -23,6 +23,7 @@ func CreateNoteCommandProvider(transactionId uuid.UUID, receiverId uint32, sende
 			SenderId: senderId,
 			Message:  message,
 			Flag:     flag,
+			GiftNote: giftNote,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

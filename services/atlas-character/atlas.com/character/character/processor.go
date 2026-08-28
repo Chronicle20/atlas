@@ -279,7 +279,15 @@ func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {
 	if err != nil {
 		return m
 	}
-	return CloneModel(m).SetSkills(ms).Build()
+	rm, err := CloneModel(m).SetSkills(ms).Build()
+	if err != nil {
+		// Unreachable: m is an already-valid Model (it satisfied the
+		// invariant when it was constructed), and CloneModel only adds
+		// skills -- it cannot turn a valid accountId/name pair invalid.
+		p.l.WithError(err).Errorf("Rebuilding character [%d] model with skills.", m.Id())
+		return m
+	}
+	return rm
 }
 
 func (p *ProcessorImpl) IsValidName(name string) (bool, error) {

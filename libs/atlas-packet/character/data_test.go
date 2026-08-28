@@ -66,7 +66,7 @@ func TestCharacterDataLegacyFieldGate_V72(t *testing.T) {
 		Inventory: InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp: 94354848000000000,
+			EquipSlotExtExpire: 94354848000000000,
 		},
 	}
 
@@ -106,8 +106,8 @@ func legacySampleCD() CharacterData {
 		Inventory: InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp:    94354848000000000,
-			RegularEquip: []model.Asset{equip},
+			EquipSlotExtExpire: 94354848000000000,
+			RegularEquip:       []model.Asset{equip},
 		},
 		MonsterBook: MonsterBookData{CoverCardId: 2388000},
 	}
@@ -215,7 +215,7 @@ func TestCharacterDataMinimalRoundTrip(t *testing.T) {
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 			}
 			output := CharacterData{}
@@ -252,7 +252,7 @@ func TestCharacterDataWithSkillsRoundTrip(t *testing.T) {
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 				Skills: []SkillEntry{
 					// 2101001 -> job 210 (2nd job): no master level.
@@ -292,7 +292,7 @@ func TestCharacterDataWithQuestsRoundTrip(t *testing.T) {
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 				StartedQuests: []QuestProgress{
 					{QuestId: 1000, Progress: "001"},
@@ -368,7 +368,7 @@ func TestCharacterDataMonsterBookRoundTrip(t *testing.T) {
 				Stats: CharacterStats{Id: 3000, Name: "Booker", Level: 30, JobId: 100, MapId: 100000000},
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
-					EtcCapacity: 24, CashCapacity: 24, Timestamp: 94354848000000000,
+					EtcCapacity: 24, CashCapacity: 24, EquipSlotExtExpire: 94354848000000000,
 				},
 				MonsterBook: MonsterBookData{
 					CoverCardId: 2380001,
@@ -434,7 +434,7 @@ func TestCharacterDataTeleportRoundTrip(t *testing.T) {
 				Inventory: InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 				TeleportMaps:    []_map.Id{100000000, 220000000},
 				VipTeleportMaps: []_map.Id{104040000},
@@ -454,4 +454,107 @@ func TestCharacterDataTeleportRoundTrip(t *testing.T) {
 			}
 		})
 	}
+}
+
+// ringMinimalInput is the fixed CharacterData used to pin the pre-task
+// encodeRings byte shape; identical to TestCharacterDataMinimalRoundTrip's
+// input so the whole stream (not just the ring bytes) is exercised.
+func ringMinimalInput() CharacterData {
+	return CharacterData{
+		Stats: CharacterStats{
+			Id: 1000, Name: "TestChar", Gender: 0, SkinColor: 1,
+			Face: 20000, Hair: 30000,
+			Level: 50, JobId: 312, Str: 100, Dex: 50, Int: 30, Luk: 20,
+			Hp: 5000, MaxHp: 5000, Mp: 3000, MaxMp: 3000,
+			Ap: 5, Sp: 3, Exp: 50000, Fame: 10,
+			MapId: 100000000, SpawnPoint: 0,
+		},
+		BuddyCapacity: 20,
+		Meso:          100000,
+		Inventory: InventoryData{
+			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+			EtcCapacity: 24, CashCapacity: 24,
+			EquipSlotExtExpire: 94354848000000000,
+		},
+	}
+}
+
+// TestCharacterDataRingsRoundTrip covers task-269 Task 4: site A wired to
+// model.RingRecords. The empty cases pin FR-9 (a zero-valued Rings field
+// must produce byte-identical output to the pre-task WriteShort(0) stub);
+// the populated cases round-trip the new record fields.
+func TestCharacterDataRingsRoundTrip(t *testing.T) {
+	t.Run("empty is unchanged (GMS v83)", func(t *testing.T) {
+		ctx := pt.CreateContext("GMS", 83, 1)
+		input := ringMinimalInput()
+		l, _ := testlog.NewNullLogger()
+		got := input.Encode(l, ctx)(nil)
+		// Captured from the pre-task encoder (three WriteShort(0) ring stubs)
+		// before data.go was edited for task-269 Task 4.
+		want := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0, 0xe8, 0x3, 0x0, 0x0, 0x54, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x72, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x20, 0x4e, 0x0, 0x0, 0x30, 0x75, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x32, 0x38, 0x1, 0x64, 0x0, 0x32, 0x0, 0x1e, 0x0, 0x14, 0x0, 0x88, 0x13, 0x88, 0x13, 0xb8, 0xb, 0xb8, 0xb, 0x5, 0x0, 0x3, 0x0, 0x50, 0xc3, 0x0, 0x0, 0xa, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xe1, 0xf5, 0x5, 0x0, 0x0, 0x0, 0x0, 0x0, 0x14, 0x0, 0xa0, 0x86, 0x1, 0x0, 0x18, 0x18, 0x18, 0x18, 0x18, 0x0, 0x40, 0xe0, 0xfd, 0x3b, 0x37, 0x4f, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
+		if !bytes.Equal(got, want) {
+			t.Errorf("empty ring bytes changed shape:\ngot  %#v\nwant %#v", got, want)
+		}
+	})
+
+	t.Run("empty legacy is unchanged (GMS v28)", func(t *testing.T) {
+		ctx := pt.CreateContext("GMS", 28, 1)
+		input := ringMinimalInput()
+		l, _ := testlog.NewNullLogger()
+		got := input.Encode(l, ctx)(nil)
+		// Captured from the pre-task encoder (one WriteShort(0) ring stub,
+		// legacy GMS<=28 gate) before data.go was edited for task-269 Task 4.
+		want := []byte{0xff, 0xff, 0xe8, 0x3, 0x0, 0x0, 0x54, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x72, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x20, 0x4e, 0x0, 0x0, 0x30, 0x75, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x32, 0x38, 0x1, 0x64, 0x0, 0x32, 0x0, 0x1e, 0x0, 0x14, 0x0, 0x88, 0x13, 0x88, 0x13, 0xb8, 0xb, 0xb8, 0xb, 0x5, 0x0, 0x3, 0x0, 0x50, 0xc3, 0x0, 0x0, 0xa, 0x0, 0x0, 0xe1, 0xf5, 0x5, 0x0, 0x14, 0xa0, 0x86, 0x1, 0x0, 0x18, 0x18, 0x18, 0x18, 0x18, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b, 0xff, 0xc9, 0x9a, 0x3b}
+		if !bytes.Equal(got, want) {
+			t.Errorf("empty legacy ring bytes changed shape:\ngot  %#v\nwant %#v", got, want)
+		}
+	})
+
+	t.Run("populated (GMS v83)", func(t *testing.T) {
+		ctx := pt.CreateContext("GMS", 83, 1)
+		input := ringMinimalInput()
+		input.Rings = model.RingRecords{
+			Couple: []model.CoupleRecord{
+				{PairCharacterId: 4000, PairCharacterName: "Partner", OwnSN: 111, PairSN: 222},
+			},
+			Friend: []model.FriendRecord{
+				{
+					CoupleRecord: model.CoupleRecord{PairCharacterId: 5000, PairCharacterName: "Buddy", OwnSN: 333, PairSN: 444},
+					FriendItemId: 1112000,
+				},
+			},
+		}
+		output := CharacterData{}
+		pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+		if len(output.Rings.Couple) != 1 {
+			t.Fatalf("couple count: got %v, want 1", len(output.Rings.Couple))
+		}
+		if output.Rings.Couple[0] != input.Rings.Couple[0] {
+			t.Errorf("couple record: got %+v, want %+v", output.Rings.Couple[0], input.Rings.Couple[0])
+		}
+		if len(output.Rings.Friend) != 1 {
+			t.Fatalf("friend count: got %v, want 1", len(output.Rings.Friend))
+		}
+		if output.Rings.Friend[0] != input.Rings.Friend[0] {
+			t.Errorf("friend record: got %+v, want %+v", output.Rings.Friend[0], input.Rings.Friend[0])
+		}
+	})
+
+	t.Run("populated (JMS v185)", func(t *testing.T) {
+		ctx := pt.CreateContext("JMS", 185, 1)
+		input := ringMinimalInput()
+		input.Rings = model.RingRecords{
+			Couple: []model.CoupleRecord{
+				{PairCharacterId: 6000, PairCharacterName: "JMSPartner", OwnSN: 555, PairSN: 666},
+			},
+		}
+		output := CharacterData{}
+		pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+		if len(output.Rings.Couple) != 1 {
+			t.Fatalf("couple count: got %v, want 1", len(output.Rings.Couple))
+		}
+		if output.Rings.Couple[0] != input.Rings.Couple[0] {
+			t.Errorf("couple record: got %+v, want %+v", output.Rings.Couple[0], input.Rings.Couple[0])
+		}
+	})
 }

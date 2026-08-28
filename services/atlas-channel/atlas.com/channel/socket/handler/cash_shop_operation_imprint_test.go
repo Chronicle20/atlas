@@ -379,7 +379,7 @@ func TestBuyWorldTransferWarnsWhenStrandingStorage(t *testing.T) {
 	pendingChangeId := uuid.New()
 
 	defer installCharactersInWorldSeam(t, []character.Model{
-		character.NewModelBuilder().SetId(characterId).MustBuild(),
+		character.NewBuilder().SetId(characterId).MustBuild(),
 	}, nil)()
 
 	srv, _ := newBuyHandlerTestServer(t, "Romeo", 5990002, http.StatusCreated,
@@ -412,8 +412,8 @@ func TestBuyWorldTransferNoWarningWhenAnotherCharacterRemains(t *testing.T) {
 	pendingChangeId := uuid.New()
 
 	defer installCharactersInWorldSeam(t, []character.Model{
-		character.NewModelBuilder().SetId(characterId).MustBuild(),
-		character.NewModelBuilder().SetId(characterId + 1).MustBuild(),
+		character.NewBuilder().SetId(characterId).MustBuild(),
+		character.NewBuilder().SetId(characterId + 1).MustBuild(),
 	}, nil)()
 
 	srv, _ := newBuyHandlerTestServer(t, "Romeo", 5990003, http.StatusCreated,

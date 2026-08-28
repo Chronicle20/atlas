@@ -134,6 +134,23 @@ func Extract(rm RestModel) (Model, error) {
 	}, nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	members := make([]MemberRestModel, 0)
+	for _, mm := range m.members {
+		mrm, err := TransformMember(mm)
+		if err != nil {
+			return RestModel{}, err
+		}
+		members = append(members, mrm)
+	}
+
+	return RestModel{
+		Id:       m.id,
+		LeaderId: m.leaderId,
+		Members:  members,
+	}, nil
+}
+
 func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 	return MemberModel{
 		id:     rm.Id,
@@ -142,6 +159,20 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 		jobId:  rm.JobId,
 		field:  field.NewBuilder(rm.WorldId, rm.ChannelId, rm.MapId).SetInstance(rm.Instance).Build(),
 		online: rm.Online,
+	}, nil
+}
+
+func TransformMember(m MemberModel) (MemberRestModel, error) {
+	return MemberRestModel{
+		Id:        m.id,
+		Name:      m.name,
+		Level:     m.level,
+		JobId:     m.jobId,
+		WorldId:   m.field.WorldId(),
+		ChannelId: m.field.ChannelId(),
+		MapId:     m.field.MapId(),
+		Instance:  m.field.Instance(),
+		Online:    m.online,
 	}, nil
 }
 

@@ -945,3 +945,78 @@ until this is resolved.
   `JMS_SLASH_COMMAND` should wait on a follow-up derivation pass rather than
   guess.
 
+### §2.0-CORRECTION — the v84 VERSION-ABSENT finding is retracted
+
+Filed as part of `docs/tasks/task-246-maple-life-character-creation/bug-maple-life-v84-registration.md`.
+**§2.0's conclusion above is wrong. `CUICharacterSaleDlg` exists on gms_v84.**
+Every downstream task that honoured "VERSION-ABSENT on gms_v84" was acting on
+a false premise. This subsection does not renumber or rewrite §2.0 — it
+stands as written, retracted here.
+
+§2.0 rested on three findings; two are artifacts of this IDB's symbol
+coverage and the third is not load-bearing:
+
+1. **`func_query` → zero matches (§2.0 finding #1) is a symbol-coverage
+   artifact, not an absence.** `func_query name_regex=CUI` returns 24
+   functions on v84 versus ~280 on v87. The v87 names are full mangled PDB
+   symbols; several of v84's 24 are hand-made RE artifacts from earlier
+   tasks. This IDB carries almost no class symbols, so "no
+   `CUICharacterSaleDlg` symbol" carries no information about the class.
+2. **The RTTI string test (§2.0 finding #2) is void.** `find_regex` for
+   `CharacterSale` on the v87 session — where the class provably exists,
+   with 15 named methods — also returns zero matches. The test cannot
+   distinguish presence from absence on any build. §6.3 of this same
+   document already said so ("no RTTI string on this build, matching every
+   GMS build checked too — expected, not informative either way"),
+   contradicting §2.0's use of the same test as evidence of absence.
+3. **Finding #3's `CField` symbols were misapplied, not absent.** v84's IDB
+   symbol `?OnCharacterSale@CField@@...` at `0x5443af` forwards through
+   `this[135]` (`CField`+0x21C), which task-129 already annotated as
+   `CUIItemUpgrade` (the Vicious Hammer path) — it is not the Maple Life
+   route. v87's real `CField::OnCharacterSale` (`0x55fa2c`) forwards through
+   `this[136]` (`CField`+0x220). The v84 Maple Life route is the *other*
+   member — the IDB-named `CField::OnItemUpgrade` at `0x544395`
+   (`this[134]`), whose task-129 comment records that it "routes 359/360".
+   The two `CField` symbols are swapped on v84, which is what sent §2.0's
+   finding #3 down the wrong path.
+
+`CUICharacterSaleDlg` was located on v84 by structural fingerprint (not by
+symbol), all four functions renamed in session `46c2a2eb`
+(`GMS_v84.1_U_DEVM.i64`):
+
+| v84 addr | new IDB name | v87 counterpart | size |
+|---|---|---|---|
+| `0x7fd86a` | `CUICharacterSaleDlg__SendCheckDuplicateIDPacket_send_0x107` | `0x82e04d` | `0xbf` both |
+| `0x7fd845` | `CUICharacterSaleDlg__OnPacket_recv_0x167_0x168` | (virtual, vtable+0x3C) | `0x25` |
+| `0x7fd949` | `CUICharacterSaleDlg__OnCheckDuplicatedIDResult_recv` | `0x82e12c` | — |
+| `0x7fda6f` | `CUICharacterSaleDlg__OnCreateNewCharacterResult_recv` | `0x82e252` | — |
+
+The v84 sender (`0x7fd86a`) is instruction-for-instruction identical to
+v87's `0x82e04d` (size `0xbf` both), sending `COutPacket::COutPacket(v12,
+263)` (`0x107`). The clientbound opcodes are read directly off
+`CUICharacterSaleDlg__OnPacket` at `0x7fd845`, which decompiles to exactly:
+
+```c
+if ( a2 == 359 )      CUICharacterSaleDlg__OnCheckDuplicatedIDResult_recv(this, a3);
+else if ( a2 == 360 ) sub_7FDA6F(a3);   // OnCreateNewCharacterResult
+```
+
+So on gms_v84: `MAPLELIFE_CHECK_NAME` = 263 (0x107) serverbound,
+`MAPLELIFE_RESULT` = 359 (0x167) clientbound, `MAPLELIFE_ERROR` = 360
+(0x168) clientbound. Field orders and operations tables match v83/v87's
+(`AVAILABLE: 0, TAKEN: 1, UNKNOWN_ERROR: 255` for `MapleLifeResult`;
+`SUCCESS: 52, NAME_TAKEN_AT_SUBMIT: 54, UNKNOWN_ERROR: 255` for
+`MapleLifeError`). Corroborated on the data side: `Item.wz/Cash/0543.img`
+(item `05430000`) is present in the v82-era pack, and v84 is bracketed by
+v83 and v87, both of which ship the dialog.
+
+An earlier prediction of opcodes 349/350 (from a registry-gap argument: on
+v83 and v87 both, `MAPLELIFE_RESULT` sits at `MTS_OPERATION+1`, and v84 has
+a matching two-slot hole at 349/350) **was wrong** — the dispatcher says
+359/360. The gap argument is a lead, never a value.
+
+**Status: retracted.** gms_v84 registers the same three ops as its
+neighbours, at its own opcodes, per the fix landed alongside this
+correction. jms_v185 is unaffected by this correction and remains
+unresolved per §6.3/§6.4 above.
+

@@ -7,7 +7,7 @@ import {
   initialEditorState,
   isDirty,
   picksFor,
-  type PreviewPicks,
+  PICK_KEY_BY_POOL,
   type AppearancePoolKey,
 } from "./editorState";
 import { templateLabels } from "./jobNames";
@@ -221,10 +221,17 @@ export function CharacterTemplatesEditor({
                   key={dimension}
                   dimension={dimension}
                   title={title}
-                  template={template}
-                  picks={picks}
-                  onPick={(pick: keyof PreviewPicks, idx: number) =>
-                    dispatch({ type: "setPreviewPick", pick, value: idx })
+                  pool={template[dimension]}
+                  selectedIndex={picks[PICK_KEY_BY_POOL[dimension]!]}
+                  variantLoadout={(dim, id) =>
+                    buildVariantLoadout(template, picks, dim, id)
+                  }
+                  onPick={(idx) =>
+                    dispatch({
+                      type: "setPreviewPick",
+                      pick: PICK_KEY_BY_POOL[dimension]!,
+                      value: idx,
+                    })
                   }
                   onRemoveEntry={(entryIndex) =>
                     dispatch({

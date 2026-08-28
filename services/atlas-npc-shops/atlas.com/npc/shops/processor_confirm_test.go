@@ -109,11 +109,15 @@ func confirmTestCharacter(t *testing.T, meso uint32, comps ...compartment.Model)
 	for _, c := range comps {
 		ib = ib.SetCompartment(c)
 	}
-	return character.NewModelBuilder().
+	m, err := character.NewBuilder().
 		SetId(testCharacterId).
 		SetMeso(meso).
 		SetInventory(ib.Build()).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	return m
 }
 
 func useCompartment(assets ...asset.Model) compartment.Model {

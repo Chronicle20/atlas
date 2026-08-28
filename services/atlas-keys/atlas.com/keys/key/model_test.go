@@ -5,7 +5,7 @@ import (
 )
 
 func TestModel_Accessors(t *testing.T) {
-	m, _ := NewModelBuilder().
+	m, _ := NewBuilder().
 		SetCharacterId(12345).
 		SetKey(18).
 		SetType(4).
@@ -28,7 +28,7 @@ func TestModel_Accessors(t *testing.T) {
 
 func TestModel_ZeroValues(t *testing.T) {
 	// Model with zero values (except characterId which is required)
-	m, _ := NewModelBuilder().
+	m, _ := NewBuilder().
 		SetCharacterId(1).
 		Build()
 

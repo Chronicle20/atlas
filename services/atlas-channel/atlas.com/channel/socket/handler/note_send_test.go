@@ -48,4 +48,7 @@ func TestBuildNoteSendSaga(t *testing.T) {
 	if np.SenderId != 100 || np.ReceiverId != 200 || np.Message != "hello" || np.Flag != 0 {
 		t.Errorf("create-note payload mismatch: %+v", np)
 	}
+	if np.GiftNote {
+		t.Errorf("create-note payload: GiftNote = true, want false (ordinary player note keeps the discard fame rule)")
+	}
 }

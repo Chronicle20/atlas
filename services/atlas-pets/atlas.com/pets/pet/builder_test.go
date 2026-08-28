@@ -4,15 +4,15 @@ import (
 	"testing"
 )
 
-func TestModelBuilder_Build_Success(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).Build()
+func TestBuilder_Build_Success(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 1).Build()
 	if err != nil {
 		t.Fatalf("Expected successful build, got error: %v", err)
 	}
 }
 
-func TestModelBuilder_Build_MissingTemplateId(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 0, "Test Pet", 1).Build()
+func TestBuilder_Build_MissingTemplateId(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 0, "Test Pet", 1).Build()
 	if err == nil {
 		t.Fatalf("Expected error for missing templateId, got none")
 	}
@@ -21,8 +21,8 @@ func TestModelBuilder_Build_MissingTemplateId(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_MissingOwnerId(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 0).Build()
+func TestBuilder_Build_MissingOwnerId(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 0).Build()
 	if err == nil {
 		t.Fatalf("Expected error for missing ownerId, got none")
 	}
@@ -31,8 +31,8 @@ func TestModelBuilder_Build_MissingOwnerId(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_MissingName(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 5000017, "", 1).Build()
+func TestBuilder_Build_MissingName(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 5000017, "", 1).Build()
 	if err == nil {
 		t.Fatalf("Expected error for missing name, got none")
 	}
@@ -41,8 +41,8 @@ func TestModelBuilder_Build_MissingName(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_InvalidLevel_TooLow(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetLevel(0).Build()
+func TestBuilder_Build_InvalidLevel_TooLow(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetLevel(0).Build()
 	if err == nil {
 		t.Fatalf("Expected error for level too low, got none")
 	}
@@ -51,8 +51,8 @@ func TestModelBuilder_Build_InvalidLevel_TooLow(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_InvalidLevel_TooHigh(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetLevel(31).Build()
+func TestBuilder_Build_InvalidLevel_TooHigh(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetLevel(31).Build()
 	if err == nil {
 		t.Fatalf("Expected error for level too high, got none")
 	}
@@ -61,8 +61,8 @@ func TestModelBuilder_Build_InvalidLevel_TooHigh(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_InvalidFullness(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetFullness(101).Build()
+func TestBuilder_Build_InvalidFullness(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetFullness(101).Build()
 	if err == nil {
 		t.Fatalf("Expected error for fullness too high, got none")
 	}
@@ -71,8 +71,8 @@ func TestModelBuilder_Build_InvalidFullness(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_InvalidSlot_TooLow(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(-2).Build()
+func TestBuilder_Build_InvalidSlot_TooLow(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(-2).Build()
 	if err == nil {
 		t.Fatalf("Expected error for slot too low, got none")
 	}
@@ -81,8 +81,8 @@ func TestModelBuilder_Build_InvalidSlot_TooLow(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_InvalidSlot_TooHigh(t *testing.T) {
-	_, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(3).Build()
+func TestBuilder_Build_InvalidSlot_TooHigh(t *testing.T) {
+	_, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(3).Build()
 	if err == nil {
 		t.Fatalf("Expected error for slot too high, got none")
 	}
@@ -91,7 +91,7 @@ func TestModelBuilder_Build_InvalidSlot_TooHigh(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_Build_ValidBoundaries(t *testing.T) {
+func TestBuilder_Build_ValidBoundaries(t *testing.T) {
 	tests := []struct {
 		name  string
 		build func() (Model, error)
@@ -99,43 +99,43 @@ func TestModelBuilder_Build_ValidBoundaries(t *testing.T) {
 		{
 			name: "level at min (1)",
 			build: func() (Model, error) {
-				return NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetLevel(1).Build()
+				return NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetLevel(1).Build()
 			},
 		},
 		{
 			name: "level at max (30)",
 			build: func() (Model, error) {
-				return NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetLevel(30).Build()
+				return NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetLevel(30).Build()
 			},
 		},
 		{
 			name: "fullness at min (0)",
 			build: func() (Model, error) {
-				return NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetFullness(0).Build()
+				return NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetFullness(0).Build()
 			},
 		},
 		{
 			name: "fullness at max (100)",
 			build: func() (Model, error) {
-				return NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetFullness(100).Build()
+				return NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetFullness(100).Build()
 			},
 		},
 		{
 			name: "slot at -1 (unslotted)",
 			build: func() (Model, error) {
-				return NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(-1).Build()
+				return NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(-1).Build()
 			},
 		},
 		{
 			name: "slot at 0 (lead)",
 			build: func() (Model, error) {
-				return NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(0).Build()
+				return NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(0).Build()
 			},
 		},
 		{
 			name: "slot at 2 (max)",
 			build: func() (Model, error) {
-				return NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(2).Build()
+				return NewBuilder(0, 7000000, 5000017, "Test Pet", 1).SetSlot(2).Build()
 			},
 		},
 	}
@@ -150,8 +150,8 @@ func TestModelBuilder_Build_ValidBoundaries(t *testing.T) {
 	}
 }
 
-func TestModelBuilderSetName(t *testing.T) {
-	m, err := NewModelBuilder(1, 0, 5000000, "Original", 42).SetName("Renamed").Build()
+func TestBuilderSetName(t *testing.T) {
+	m, err := NewBuilder(1, 0, 5000000, "Original", 42).SetName("Renamed").Build()
 	if err != nil {
 		t.Fatalf("Build() = %v", err)
 	}
@@ -161,8 +161,8 @@ func TestModelBuilderSetName(t *testing.T) {
 }
 
 // Build's name-required invariant must still hold through the new setter.
-func TestModelBuilderSetNameEmptyRejected(t *testing.T) {
-	if _, err := NewModelBuilder(1, 0, 5000000, "Original", 42).SetName("").Build(); err == nil {
+func TestBuilderSetNameEmptyRejected(t *testing.T) {
+	if _, err := NewBuilder(1, 0, 5000000, "Original", 42).SetName("").Build(); err == nil {
 		t.Fatal("Build() with empty name = nil error, want error")
 	}
 }

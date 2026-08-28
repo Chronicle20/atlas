@@ -296,7 +296,7 @@ func TestHandleStatusEventCreated_SeedsLiveMirror(t *testing.T) {
 	f := field.NewBuilder(0, 1, 100000000).Build()
 	prev := monsterGetByIdFn
 	monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
-		return monster.NewModelBuilder(uniqueId, f, 100100).
+		return monster.NewBuilder(uniqueId, f, 100100).
 			SetMp(60).
 			SetMaxMp(90).
 			SetControllerHasAggro(true).
@@ -480,7 +480,7 @@ func TestHandleStatusEventStartControl_GrantsThroughSpawnThenControl(t *testing.
 	f := field.NewBuilder(0, 1, 100000000).Build()
 	prev := monsterGetByIdFn
 	monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
-		return monster.NewModelBuilder(uniqueId, f, 100100).
+		return monster.NewBuilder(uniqueId, f, 100100).
 			SetControlCharacterId(42).
 			SetControllerHasAggro(true).
 			Build()
@@ -562,7 +562,7 @@ func TestSpawnThenControlOperator_EmitsSpawnBeforeControl(t *testing.T) {
 	defer func() { announceFn = orig }()
 
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	m := monster.NewModelBuilder(7020, f, 100100).SetControlCharacterId(42).MustBuild()
+	m := monster.NewBuilder(7020, f, 100100).SetControlCharacterId(42).MustBuild()
 
 	if err := spawnThenControlOperator(logrus.New(), ctx, nil, m, false)(session.Model{}); err != nil {
 		t.Fatalf("spawnThenControlOperator: %v", err)
@@ -599,7 +599,7 @@ func TestSpawnThenControlOperator_SpawnFailureSuppressesControl(t *testing.T) {
 	defer func() { announceFn = orig }()
 
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	m := monster.NewModelBuilder(7021, f, 100100).SetControlCharacterId(42).MustBuild()
+	m := monster.NewBuilder(7021, f, 100100).SetControlCharacterId(42).MustBuild()
 
 	if err := spawnThenControlOperator(logrus.New(), ctx, nil, m, false)(session.Model{}); err == nil {
 		t.Fatalf("a failed Spawn must surface as an error")

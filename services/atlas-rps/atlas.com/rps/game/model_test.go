@@ -10,9 +10,9 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-func TestModelBuilderRoundTripsThroughJSON(t *testing.T) {
+func TestBuilderRoundTripsThroughJSON(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(100).SetWorldId(0).SetChannelId(1).SetNpcId(9000019).
 		SetRung(2).SetStatus(game.StatusAwaitingDecision).MustBuild()
 
@@ -30,9 +30,9 @@ func TestModelBuilderRoundTripsThroughJSON(t *testing.T) {
 	}
 }
 
-func TestModelBuilderRejectsZeroCharacter(t *testing.T) {
+func TestBuilderRejectsZeroCharacter(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	if _, err := game.NewModelBuilder(ten).SetCharacterId(0).Build(); err == nil {
+	if _, err := game.NewBuilder(ten).SetCharacterId(0).Build(); err == nil {
 		t.Fatal("expected error for characterId 0")
 	}
 }

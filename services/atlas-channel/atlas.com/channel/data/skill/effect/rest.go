@@ -72,6 +72,86 @@ type RestModel struct {
 	CardStats            cardItemUp         `json:"cardStats"`
 }
 
+// Transform is the inverse of Extract, restricted to the fields Extract
+// reads. RestModel.CardStats is never read by Extract, and Model carries no
+// field for it, so Transform does not populate it.
+func Transform(m Model) (RestModel, error) {
+	su, err := model.SliceMap(statup.Transform)(model.FixedProvider(m.statups))()()
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	var lt *PointRestModel
+	if m.lt != (point.Model{}) {
+		lt = &PointRestModel{X: int16(m.lt.X()), Y: int16(m.lt.Y())}
+	}
+	var rb *PointRestModel
+	if m.rb != (point.Model{}) {
+		rb = &PointRestModel{X: int16(m.rb.X()), Y: int16(m.rb.Y())}
+	}
+
+	return RestModel{
+		WeaponAttack:         m.weaponAttack,
+		MagicAttack:          m.magicAttack,
+		WeaponDefense:        m.weaponDefense,
+		MagicDefense:         m.magicDefense,
+		Accuracy:             m.accuracy,
+		Avoidability:         m.avoidability,
+		Speed:                m.speed,
+		Jump:                 m.jump,
+		Hp:                   m.hp,
+		Mp:                   m.mp,
+		HPR:                  m.hpr,
+		MPR:                  m.mpr,
+		MHPRRate:             m.mhprRate,
+		MMPRRate:             m.mmprRate,
+		MobSkill:             m.mobSkill,
+		MobSkillLevel:        m.mobSkillLevel,
+		MHPR:                 m.mhpR,
+		MMPR:                 m.mmpR,
+		HPConsume:            m.hpCon,
+		MPConsume:            m.mpCon,
+		Duration:             m.duration,
+		Target:               m.target,
+		Barrier:              m.barrier,
+		Mob:                  m.mob,
+		OverTime:             m.overtime,
+		RepeatEffect:         m.repeatEffect,
+		MoveTo:               m.moveTo,
+		CP:                   m.cp,
+		NuffSkill:            m.nuffSkill,
+		Skill:                m.skill,
+		X:                    m.x,
+		Y:                    m.y,
+		MobCount:             m.mobCount,
+		Range:                m.rangeValue,
+		MoneyConsume:         m.moneyCon,
+		Cooldown:             m.cooldown,
+		MorphId:              m.morphId,
+		Ghost:                m.ghost,
+		Fatigue:              m.fatigue,
+		Berserk:              m.berserk,
+		Booster:              m.booster,
+		Prop:                 m.prop,
+		ItemConsume:          m.itemCon,
+		ItemConsumeAmount:    m.itemConNo,
+		Damage:               m.damage,
+		AttackCount:          m.attackCount,
+		FixDamage:            m.fixDamage,
+		Dot:                  m.dot,
+		DotInterval:          m.dotInterval,
+		DotTime:              m.dotTime,
+		LT:                   lt,
+		RB:                   rb,
+		BulletCount:          m.bulletCount,
+		BulletConsume:        m.bulletConsume,
+		MapProtection:        m.mapProtection,
+		CureAbnormalStatuses: m.cureAbnormalStatuses,
+		Statups:              su,
+		MonsterStatus:        m.monsterStatus,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	su, err := model.SliceMap(statup.Extract)(model.FixedProvider(rm.Statups))()()
 	if err != nil {

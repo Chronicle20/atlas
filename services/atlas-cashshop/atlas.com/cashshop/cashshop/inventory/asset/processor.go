@@ -25,12 +25,26 @@ type Processor interface {
 	GetById(id uint32) (Model, error)
 	ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model]
 	GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error)
-	Create(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
-	CreateAndEmit(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
+	Create(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
+	CreateAndEmit(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
+	// CreateGift is Create with the sender's GiftFrom/GiftMessage carried
+	// onto the created row (task-240 task 13) -- everything else (period
+	// lookup, expiration, item-create status event) is identical to Create.
+	CreateGift(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, giftFrom string, giftMessage string) (Model, error)
 	NextCashId() (int64, error)
-	CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
-	CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
+	CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
+	CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
 	UpdateQuantity(id uint32, quantity uint32) error
+	// AcknowledgeGifts marks every asset in compartmentId whose CashId
+	// appears in cashIds as presented (task-240 Defect H) -- draining on
+	// announce, not on the client's acknowledgement, per
+	// buildGiftListEntries' caller.
+	AcknowledgeGifts(compartmentId uuid.UUID, cashIds []int64) error
+	// MarkGiftNoteSent marks the asset in compartmentId whose CashId equals
+	// cashId as having had its gift-forward note sent (task-240 Defect I) --
+	// independent of AcknowledgeGifts, and gates handleNoteGiftForward
+	// against a replayed NOTE_ACTION SEND minting a second free note.
+	MarkGiftNoteSent(compartmentId uuid.UUID, cashId int64) error
 	Delete(mb *message.Buffer) func(id uint32) error
 	DeleteAndEmit(id uint32) error
 	Release(mb *message.Buffer) func(id uint32) error
@@ -77,8 +91,8 @@ func (p *ProcessorImpl) GetByCompartmentId(compartmentId uuid.UUID) ([]Model, er
 	return p.ByCompartmentIdProvider(compartmentId)()
 }
 
-func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
-	return func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
+	return func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
 		var result Model
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			var period uint32 = 30
@@ -94,7 +108,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID,
 			hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
 			expiration := CalculateExpiration(period, templateId, hourlyConfig)
 
-			entity, err := create(tx, p.t.Id(), compartmentId, templateId, commodityId, quantity, petId, purchasedBy, expiration)()
+			entity, err := create(tx, p.t.Id(), compartmentId, templateId, commodityId, currency, quantity, petId, purchasedBy, expiration, "", "")()
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for compartment [%s] template [%d].", compartmentId, templateId)
 				return err
@@ -122,28 +136,20 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID,
 	}
 }
 
-func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
+func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
 	var result Model
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			var e error
-			result, e = NewProcessor(p.l, p.ctx, tx).Create(buf)(compartmentId, templateId, commodityId, quantity, petId, purchasedBy)
+			result, e = NewProcessor(p.l, p.ctx, tx).Create(buf)(compartmentId, templateId, commodityId, currency, quantity, petId, purchasedBy)
 			return e
 		})
 	})
 	return result, txErr
 }
 
-// NextCashId reserves a fresh, collision-checked cash serial without creating
-// an asset. A pet purchase needs the serial BEFORE either row exists, because
-// the pet row and the cash asset row must be created carrying the same value
-// (see asset.PetSerialNumber in libs/atlas-packet).
-func (p *ProcessorImpl) NextCashId() (int64, error) {
-	return generateUniqueCashId(p.db.WithContext(p.ctx))
-}
-
-func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
-	return func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
+func (p *ProcessorImpl) CreateGift(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, giftFrom string, giftMessage string) (Model, error) {
+	return func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, giftFrom string, giftMessage string) (Model, error) {
 		var result Model
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			var period uint32 = 30
@@ -159,7 +165,60 @@ func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(compartmentId 
 			hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
 			expiration := CalculateExpiration(period, templateId, hourlyConfig)
 
-			entity, err := findOrCreateByCashId(tx, p.t.Id(), cashId, compartmentId, templateId, commodityId, quantity, petId, purchasedBy, expiration)()
+			entity, err := create(tx, p.t.Id(), compartmentId, templateId, commodityId, currency, quantity, petId, purchasedBy, expiration, giftFrom, giftMessage)()
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to create gift asset for compartment [%s] template [%d].", compartmentId, templateId)
+				return err
+			}
+
+			m, err := Make(entity)
+			if err != nil {
+				return err
+			}
+			result = m
+
+			return mb.Put(item.EnvStatusTopic, itemProducer.CreateStatusEventProvider(
+				m.Id(),
+				m.CashId(),
+				m.TemplateId(),
+				m.Quantity(),
+				m.PurchasedBy(),
+				m.Flag(),
+			))
+		})
+		if txErr != nil {
+			return Model{}, txErr
+		}
+		return result, nil
+	}
+}
+
+// NextCashId reserves a fresh, collision-checked cash serial without creating
+// an asset. A pet purchase needs the serial BEFORE either row exists, because
+// the pet row and the cash asset row must be created carrying the same value
+// (see asset.PetSerialNumber in libs/atlas-packet).
+func (p *ProcessorImpl) NextCashId() (int64, error) {
+	return generateUniqueCashId(p.db.WithContext(p.ctx))
+}
+
+func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
+	return func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
+		var result Model
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			var period uint32 = 30
+			if commodityId != 0 {
+				c, err := p.cp.GetById(commodityId)
+				if err == nil {
+					period = c.Period()
+				} else {
+					p.l.WithError(err).Warnf("Failed to fetch commodity %d, using default period", commodityId)
+				}
+			}
+
+			hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
+			expiration := CalculateExpiration(period, templateId, hourlyConfig)
+
+			entity, err := findOrCreateByCashId(tx, p.t.Id(), cashId, compartmentId, templateId, commodityId, currency, quantity, petId, purchasedBy, expiration)()
 			if err != nil {
 				return err
 			}
@@ -186,12 +245,12 @@ func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(compartmentId 
 	}
 }
 
-func (p *ProcessorImpl) CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
+func (p *ProcessorImpl) CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error) {
 	var result Model
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			var e error
-			result, e = NewProcessor(p.l, p.ctx, tx).CreateWithCashId(buf)(compartmentId, cashId, templateId, commodityId, quantity, petId, purchasedBy)
+			result, e = NewProcessor(p.l, p.ctx, tx).CreateWithCashId(buf)(compartmentId, cashId, templateId, commodityId, currency, quantity, petId, purchasedBy)
 			return e
 		})
 	})
@@ -200,6 +259,14 @@ func (p *ProcessorImpl) CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId 
 
 func (p *ProcessorImpl) UpdateQuantity(id uint32, quantity uint32) error {
 	return updateQuantity(p.db.WithContext(p.ctx), id, quantity)
+}
+
+func (p *ProcessorImpl) AcknowledgeGifts(compartmentId uuid.UUID, cashIds []int64) error {
+	return updateGiftAcknowledged(p.db.WithContext(p.ctx), compartmentId, cashIds)
+}
+
+func (p *ProcessorImpl) MarkGiftNoteSent(compartmentId uuid.UUID, cashId int64) error {
+	return updateGiftNoteSent(p.db.WithContext(p.ctx), compartmentId, cashId)
 }
 
 func (p *ProcessorImpl) Delete(_ *message.Buffer) func(id uint32) error {
@@ -255,7 +322,7 @@ func (p *ProcessorImpl) Expire(mb *message.Buffer) func(id uint32, replaceItemId
 
 		if replaceItemId > 0 {
 			p.l.Debugf("Creating replacement asset [%d] for expired cash shop asset [%d].", replaceItemId, id)
-			_, err = p.Create(mb)(a.CompartmentId(), replaceItemId, 0, 1, 0, 0)
+			_, err = p.Create(mb)(a.CompartmentId(), replaceItemId, 0, 0, 1, 0, 0)
 			if err != nil {
 				p.l.WithError(err).Warnf("Failed to create replacement asset [%d] for expired cash shop asset.", replaceItemId)
 				return nil

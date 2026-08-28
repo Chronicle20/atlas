@@ -12,17 +12,21 @@ import (
 )
 
 // createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool) character.Model {
+func createTestCharacter(t *testing.T, id uint32, name string, isGm bool) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	return character.NewModelBuilder().
+	m, err := character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
 		SetAccountId(100).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
+	return m
 }
 
 // TestMaxSkillCommandProducer_RegexPatterns tests the max skill command regex
@@ -144,7 +148,7 @@ func TestResetSkillCommandProducer_RegexPatterns(t *testing.T) {
 func TestMaxSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true)
+	gmChar := createTestCharacter(t, 12345, "TestGM", true)
 	f := field.NewBuilder(1, 1, 100000000).Build()
 
 	testCases := []struct {
@@ -189,7 +193,7 @@ func TestMaxSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 func TestResetSkillCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true)
+	gmChar := createTestCharacter(t, 12345, "TestGM", true)
 	f := field.NewBuilder(1, 1, 100000000).Build()
 
 	testCases := []struct {

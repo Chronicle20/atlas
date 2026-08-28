@@ -123,7 +123,7 @@ func Extract(r RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	return NewModelBuilder().
+	return NewBuilder().
 		SetId(world.Id(id)).
 		SetName(r.Name).
 		SetState(State(r.State)).

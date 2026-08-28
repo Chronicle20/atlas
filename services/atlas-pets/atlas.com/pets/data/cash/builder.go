@@ -1,19 +1,19 @@
 package cash
 
-// ModelBuilder constructs a Model. It exists so callers outside this package
+// Builder constructs a Model. It exists so callers outside this package
 // (notably test doubles) can build one without exported fields, per the
 // project's Builder convention.
-type ModelBuilder struct {
+type Builder struct {
 	id   uint32
 	life uint32
 }
 
-func NewModelBuilder(id uint32) *ModelBuilder {
-	return &ModelBuilder{id: id}
+func NewBuilder(id uint32) *Builder {
+	return &Builder{id: id}
 }
 
-func (b *ModelBuilder) SetLife(v uint32) *ModelBuilder { b.life = v; return b }
+func (b *Builder) SetLife(v uint32) *Builder { b.life = v; return b }
 
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	return Model{id: b.id, life: b.life}
 }

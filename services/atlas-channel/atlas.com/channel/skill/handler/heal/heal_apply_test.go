@@ -87,7 +87,7 @@ func installHealSeams(t *testing.T) (
 	})
 
 	loadCasterFunc = func(cp character.Processor, characterId uint32) (character.Model, error) {
-		return character.NewModelBuilder().
+		return character.NewBuilder().
 			SetId(1).
 			SetLevel(30).
 			SetIntelligence(100).

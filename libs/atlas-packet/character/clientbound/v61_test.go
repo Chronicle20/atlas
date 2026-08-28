@@ -252,8 +252,9 @@ func TestStatusMessageCashItemExpireByteOutputV61(t *testing.T) {
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x7cbec7*/
 //
 // As in v72: the marriage if/else has NO trailing unconditional Decode4. Atlas
-// always writes flags=1 (look-only) + three ring markers as 0, so the trailing
-// WriteInt(0) is benign trailing slack. Byte-identical to the v72 fixture.
+// writes flags=1 (look-only) + three ring markers as 0, with no trailing int
+// (task-269 Task 6 frame correction — no export shows the client reading one).
+// Byte-identical to the v72 fixture.
 //
 // packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=gms_v61 ida=0x7cbd86
 func TestCharacterAppearanceUpdateByteOutputV61(t *testing.T) {
@@ -266,7 +267,7 @@ func TestCharacterAppearanceUpdateByteOutputV61(t *testing.T) {
 		0x1E,  // hair
 		nil, nil, nil,
 	)
-	got := NewCharacterAppearanceUpdate(0x12345678, avatar).Encode(nil, ctx)(nil)
+	got := NewCharacterAppearanceUpdate(0x12345678, avatar, model.RingSet{}).Encode(nil, ctx)(nil)
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*dispatch*/
@@ -284,10 +285,11 @@ func TestCharacterAppearanceUpdateByteOutputV61(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // pet 1
 		0x00, 0x00, 0x00, 0x00, // pet 2
 		// --- ring markers ---
-		0x00,                   // couple marker (Decode1)                /*0x7cbe2d*/
-		0x00,                   // friend marker (Decode1)                /*0x7cbe7a*/
-		0x00,                   // marriage marker (Decode1)              /*0x7cbec7*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (trailing slack; unread when marriage==0)
+		0x00, // couple marker (Decode1)                /*0x7cbe2d*/
+		0x00, // friend marker (Decode1)                /*0x7cbe7a*/
+		0x00, // marriage marker (Decode1)              /*0x7cbec7*/
+		// no trailing completed-set int: no export shows the client reading
+		// one (task-269 Task 6 frame correction).
 	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("v61 CharacterAppearanceUpdate wire:\n got %x\nwant %x", got, want)
@@ -321,7 +323,7 @@ func TestCharacterInfoByteOutputV61(t *testing.T) {
 	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
 	mb := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
 	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
-	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount)
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount, false)
 
 	got := in.Encode(nil, ctx)(nil)
 	// == v72 golden (v72_test.go TestCharacterInfoByteOutputV72) MINUS the trailing
@@ -582,7 +584,7 @@ func TestCharacterSpawnByteOutputV61(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 61, 1)
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
 	cts := model.NewCharacterTemporaryStat()
-	in := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, model.Avatar{}, nil, false, 100, 200, 3, 0)
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, model.Avatar{}, nil, false, 100, 200, 3, 0, model.RingSet{})
 	got := in.Encode(nil, ctx)(nil)
 
 	// Prefix through the guild emblem — proves NO level byte follows charId.

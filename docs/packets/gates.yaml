@@ -173,6 +173,20 @@ gates:
     lower_version_key: gms_v87
     upper_version_key: gms_v95
 
+  # ---- boundary v92 / v95 ------------------------------------------------
+  - packet: chat/serverbound/ChatMulti
+    direction: serverbound
+    field: v95 leading Encode4(updateTime) (`GMS && >=95`)
+    boundary: ">=95"
+    lower_version_key: gms_v92
+    upper_version_key: gms_v95
+    expect: partial
+    reason: >-
+      task-146 Task 13: gms_v92 side of the boundary has no verified
+      byte-fixture for ChatMulti yet — no gms_v92 evidence record exists for
+      this packet. Only the gms_v95 side is pinned by this task; the v92
+      fixture is deliberately not fabricated to close the gate.
+
 
 # TODO(task-183 Wave 2, re-diagnosed): cash/clientbound/CashGiftDone and
 # cash/clientbound/CashGiftPackageDone are now fixture-verified on ALL 5

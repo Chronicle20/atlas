@@ -211,10 +211,14 @@ func testCharacter(t *testing.T, etcAssets []asset.Model, useCapacity uint32, us
 		SetCompartment(etcComp).
 		SetCompartment(useComp).
 		Build()
-	return character.NewModelBuilder().
+	m, err := character.NewBuilder().
 		SetId(testCharacterId).
 		SetInventory(inv).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	return m
 }
 
 func testCommodity(t *testing.T, tokenTemplateId uint32, tokenPrice uint32) commodities.Model {

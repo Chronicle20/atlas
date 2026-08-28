@@ -37,6 +37,18 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
+// Transform converts a Model to its RestModel wire shape.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:            m.id,
+		Create:        m.create,
+		MonsterId:     m.monsterId,
+		MonsterHP:     m.monsterHp,
+		BridleProp:    m.bridleProp,
+		BridlePropChg: m.bridlePropChg,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:            rm.Id,

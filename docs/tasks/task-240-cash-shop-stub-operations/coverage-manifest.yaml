@@ -1,0 +1,83 @@
+# coverage-manifest — task-240-cash-shop-stub-operations
+#
+# Declares the op x version surface this task claims. Format follows
+# docs/tasks/task-227-cash-name-change-world-transfer/coverage-manifest.yaml.
+#
+# UNLIKE task-227, this plan added almost no NEW wire surface. Every mode
+# CashShopOperationHandleFunc dispatches (cash_shop_operation.go's 18
+# CashShopOperation* constants) already had a verified codec under the
+# CASHSHOP_OPERATION dispatcher family before this plan started (task-183's
+# arm-catalog sweep and earlier). This plan's job was to replace 15
+# decode-log-return stub arms with real business logic behind those
+# already-verified ops — RequestPurchase, RequestLockerRebate,
+# RequestGiftPurchase (via GIFT event), the ring/package purchase
+# transactions, the equip-slot extension flow, and the pending-change-backed
+# name-change/world-transfer arms — none of which is itself a packet cell.
+#
+# Two cells ARE genuinely new or newly closed by this plan and are the whole
+# of what this manifest declares:
+#
+#   1. SET_CASH_SHOP (CStage::OnSetCashShop) x gms_v95 — Task 1's D1, closed
+#      POSITIVE (0x8F / 143), not the negative outcome the task-24b brief
+#      anticipated needing an n-a proof for. Registered and promoted by plan
+#      Task 2; STATUS.md line 123 already shows gms_v95 0x08F ✅. No n-a
+#      proof is recorded because none is needed.
+#   2. cash/serverbound/CashShopOperationBuyOtherPackage (BUY_OTHER_PACKAGE,
+#      mode 31/33 depending on version) x gms_v95 — the one new codec plan
+#      Task 17 added. Does NOT promote; see "Verification" below.
+#
+# The APPLY_WISHLIST arm (plan Task 8, D2a/D2b) added no new codec: its
+# serverbound body is empty (reuses the base cash/serverbound/ShopOperation
+# mode-byte read, already covered under cash/serverbound/CashShopOperation*
+# rows) and its clientbound replies (CashShopWishListUpdateBody,
+# CashShopSetWishFailedBody) are pre-existing shop_operation_body.go
+# functions predating this plan. So "any codec added in plan tasks 8 and 17"
+# (task-24b brief, Step 3) is exactly one codec: BuyOtherPackage.
+
+ops:
+  - SET_CASH_SHOP
+  - CASHSHOP_OPERATION
+
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+
+fields:
+  - "SET_CASH_SHOP (CStage::OnSetCashShop, clientbound, dispatch CStage::OnPacket 0x71b0b0): gms_v95 opcode 0x8F (143), handler 0x71adf0, dispatch site 0x71b0cd (derivation.md D1, summary table §8). Registered and promoted by plan Task 2, unchanged by this closing task; STATUS.md row 123 shows gms_v95 0x08F ✅ (v92 is the lone ❌ in that row, pre-existing and out of this plan's scope)."
+  - "CASHSHOP_OPERATION (serverbound dispatcher, CCashShop's Send* family): this plan implemented real business logic behind 18 already-registered modes — BUY, GIFT, SET_WISHLIST, INCREASE_INVENTORY, INCREASE_STORAGE, INCREASE_CHARACTER_SLOT, ENABLE_EQUIP_SLOT, MOVE_FROM_CASH_INVENTORY, MOVE_TO_CASH_INVENTORY, BUY_NORMAL, REBATE_LOCKER_ITEM, BUY_COUPLE, BUY_PACKAGE, BUY_OTHER_PACKAGE, APPLY_WISHLIST, BUY_FRIENDSHIP, GET_PURCHASE_RECORD, BUY_NAME_CHANGE, BUY_WORLD_TRANSFER (services/atlas-channel/atlas.com/channel/socket/handler/cash_shop_operation.go:28-48). Every one of these already had a verified per-mode codec (cash/serverbound/CashShopOperation* rows, STATUS.md 'Sub-structs' section) before this plan; only BuyOtherPackage (below) was new."
+  - "cash/serverbound/CashShopOperationBuyOtherPackage (CCashShop::OnGiftPackage 0x4907b0, gms_v95): body spw string, serialNumber uint32, name string, message string -- NOT byte-identical to ShopOperationBuyPackage, which carries pointType/option instead (derivation.md D3a, §4). Reply arm GIFT_PACKAGE_SUCCESS (156) / GIFT_PACKAGE_FAILED (157) (D3b, §5) reuses the pre-existing cash/clientbound/GiftPackageDone and GiftPackageFailed codecs -- not new."
+  - "D4a (option uint32 payment-method selector on BUY_PACKAGE/BUY_COUPLE/BUY_FRIENDSHIP) and D4b (oneADay byte on ShopOperationGift) are RESOLVED (derivation.md §6-7, summary §8) but the server currently only logs/carries them -- no codec change, doc-comment-only per plan Tasks 14/17/20."
+  - "Pre-existing gaps inside the claimed ops x versions cross-product, NOT touched or promoted by this task (git diff over status.json shows no state transitions for any of these six cells): SET_CASH_SHOP x gms_v92 (incomplete, no audit report -- see line above); CASHSHOP_OPERATION / cash/serverbound/CashShopOperationGetPurchaseRecord x gms_v48 (incomplete, tier-1 without fixture), x gms_v61 (incomplete, no audit report), x gms_v92 (incomplete, tier-1 without fixture); CASHSHOP_OPERATION / cash/clientbound/CashBuyFailed x gms_v48 (n-a, legitimately inapplicable) and x gms_v92 (incomplete, tier-1 without fixture). This task's ops x versions claim is broader than what it verified; these six cells are acknowledged pre-existing gaps, not silently unclaimed coverage."
+
+out_of_scope:
+  # libs/atlas-packet/character/data.go: InventoryData.Timestamp renamed to
+  # EquipSlotExtExpire (and re-documented) as a byproduct of this plan's
+  # equip-slot-extension work, but the wire bytes are unchanged -- same
+  # type (int64), same struct position, same version gate, same
+  # Write/ReadInt64 codec calls in encodeInventory/decodeInventory. The
+  # struct is embedded via CharacterData in the two writers below; neither
+  # writer's behavior changed.
+  - libs/atlas-packet/character/data.go
+  - field/clientbound/FieldSetField    # SET_FIELD (set_field.go:21) embeds the renamed InventoryData field; byte-identical wire output, rename only
+  - SET_ITC                            # SET_ITC (set_itc.go:83) embeds the renamed InventoryData field; byte-identical wire output, rename only
+
+  # This task's non-packet surface -- the actual point of the plan. Listed
+  # so a completeness critic does not read these as unclaimed changes.
+  - purchase-record domain             # atlas-cashshop purchaserecord package + backfill worker, plan Tasks 5-7
+  - shared command ledger               # atlas-cashshop idempotency/transaction bookkeeping, plan Task 10
+  - locker rebate transaction           # atlas-cashshop cashshop package RequestLockerRebate + channel secondary-credential gate, plan Tasks 4, 11-12
+  - gift purchase transaction           # atlas-cashshop + channel GIFT event pipeline, plan Tasks 13-14
+  - cash package catalogue              # atlas-data cashpackage ingest/resource, plan Task 15
+  - package purchase transaction        # atlas-cashshop + channel BUY_PACKAGE/BUY_OTHER_PACKAGE business logic, plan Tasks 16-17
+  - ring-pairing domain                 # atlas-cashshop ring package/couple-friendship purchase, plan Tasks 18-20
+  - equip-slot extension domain         # atlas-character equip-slot extension + channel ENABLE_EQUIP_SLOT wiring, plan Tasks 21-23
+  - EQUIP_SLOT_INCREASED / GIFT_PURCHASED / PACKAGE_PURCHASED / RING_PURCHASED / LOCKER_REBATED / extended ERROR  # internal Kafka event contracts, not wire packet ops
+  - name-change / world-transfer pending-change routing  # atlas-channel handleBuyNameChange/handleBuyWorldTransfer against the pre-existing task-227 pendingchange domain; wire codecs (BuyNameChange, BuyWorldTransfer) already verified by task-227

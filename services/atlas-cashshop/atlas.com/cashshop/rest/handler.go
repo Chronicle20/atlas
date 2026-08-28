@@ -62,3 +62,7 @@ func ParseCouponId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) 
 func ParseBatchId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseUUIDId(l, "batchId", next)
 }
+
+func ParseSerialNumber(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "serialNumber", next)
+}

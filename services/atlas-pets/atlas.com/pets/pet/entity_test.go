@@ -17,7 +17,7 @@ func TestToEntityIsInverseOfMake(t *testing.T) {
 	txId := uuid.New()
 	expiration := time.Now().Add(24 * time.Hour).UTC().Truncate(time.Second)
 
-	m, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).
+	m, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 1).
 		SetLevel(3).
 		SetCloseness(41).
 		SetFullness(88).
@@ -89,7 +89,7 @@ func TestToEntityIsInverseOfMake(t *testing.T) {
 // been revived must project a nil pointer, not a zero uuid, or the redelivery
 // gate in Revive would treat uuid.Nil as a real prior transaction.
 func TestToEntityNeverRevivedStaysNil(t *testing.T) {
-	m, err := NewModelBuilder(0, 7000000, 5000017, "Test Pet", 1).
+	m, err := NewBuilder(0, 7000000, 5000017, "Test Pet", 1).
 		SetExpiration(time.Now().Add(time.Hour)).
 		SetSlot(-1).
 		Build()

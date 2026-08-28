@@ -2,6 +2,7 @@ package cashshop
 
 import (
 	"atlas-channel/pendingchange"
+	"atlas-channel/ring"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -414,10 +416,21 @@ var testOperations = map[string]interface{}{
 	cashpkt.CashShopOperationNameChangeBuyDone:                float64(70),
 	cashpkt.CashShopOperationTransferWorldDone:                float64(71),
 	cashpkt.CashShopOperationTransferWorldFailed:              float64(72),
+	// BUY_NORMAL_SUCCESS 141 is template_gms_83_1.json's real value.
+	cashpkt.CashShopOperationBuyNormalDone: float64(141),
 	// POP_UP is the WorldMessageMode key handleStatusEventError's name-change
 	// pink-text fallback resolves (socket/writer/world_message.go's
 	// getWorldMessageMode), not a CashShopOperation* key.
 	"POP_UP": float64(73),
+	// The remaining task-24a seam-trace keys are arbitrary but distinct --
+	// only used to prove the correct code was selected for each new event's
+	// consumer arm, the same convention gachaponOperations above documents.
+	cashpkt.CashShopOperationRebateDone:      float64(150),
+	cashpkt.CashShopOperationGiftDone:        float64(151),
+	cashpkt.CashShopOperationBuyPackageDone:  float64(152),
+	cashpkt.CashShopOperationGiftPackageDone: float64(153),
+	cashpkt.CashShopOperationCoupleDone:      float64(154),
+	cashpkt.CashShopOperationFriendshipDone:  float64(155),
 }
 
 var testErrors = map[string]interface{}{
@@ -454,6 +467,9 @@ type consumerEnv struct {
 	wp          writer.Producer
 	announced   []announcement
 	assets      map[string]string
+	rings       map[uint32]string
+	ringFetches map[uint32]int
+	characters  map[string]uint32
 	walletDoc   string
 	compartment uuid.UUID
 }
@@ -475,6 +491,9 @@ func newConsumerEnv(t *testing.T) *consumerEnv {
 		ctx:         tenant.WithContext(context.Background(), tm),
 		tenant:      tm,
 		assets:      make(map[string]string),
+		rings:       make(map[uint32]string),
+		ringFetches: make(map[uint32]int),
+		characters:  make(map[string]uint32),
 		compartment: uuid.New(),
 	}
 	env.walletDoc = walletDoc(1000, 2000, 3000)
@@ -489,11 +508,31 @@ func newConsumerEnv(t *testing.T) *consumerEnv {
 			_, _ = w.Write([]byte(doc))
 			return
 		}
+		if strings.HasSuffix(r.URL.Path, "/rings") {
+			cid, _ := strconv.Atoi(r.URL.Query().Get("filter[characterId]"))
+			env.ringFetches[uint32(cid)]++
+			if doc, ok := env.rings[uint32(cid)]; ok {
+				_, _ = w.Write([]byte(doc))
+			} else {
+				_, _ = w.Write([]byte(emptyRingsListDoc()))
+			}
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/characters") {
+			name := r.URL.Query().Get("name")
+			if id, ok := env.characters[name]; ok {
+				_, _ = w.Write([]byte(characterByNameDoc(id, name)))
+			} else {
+				_, _ = w.Write([]byte(`{"data":[]}`))
+			}
+			return
+		}
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"errors":[{"status":"404","title":"Not Found"}]}`))
 	}))
 	t.Cleanup(srv.Close)
 	t.Setenv("CASHSHOP_SERVICE_URL", srv.URL+"/")
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
 
 	env.sc = server.NewProcessor(l, context.Background()).Register(tm, channelconst.NewModel(0, 0), "127.0.0.1", 8484)
 
@@ -530,10 +569,72 @@ func (e *consumerEnv) capturingProducer() writer.Producer {
 	}
 }
 
+// addSession registers an additional live session for characterId on this
+// env's tenant/channel -- used to give a ring-purchase partner "a live
+// session on this channel" the way handleStatusEventRingPurchased's own
+// session correlation would see them.
+func (e *consumerEnv) addSession(characterId uint32, accountId uint32) {
+	e.t.Helper()
+	sessionId := uuid.New()
+	s := session.NewSession(sessionId, e.tenant, 0, discardConn{})
+	session.AddSessionToRegistry(e.tenant.Id(), s)
+	sp := session.NewProcessor(e.logger, e.ctx)
+	_ = sp.SetAccountId(sessionId, accountId)
+	_ = sp.SetCharacterId(sessionId, characterId)
+}
+
 func (e *consumerEnv) seedAsset(compartmentId uuid.UUID, assetId uint32) {
 	e.t.Helper()
 	path := fmt.Sprintf("/accounts/%d/cash-shop/inventory/compartments/%s/assets/%d", testAccountId, compartmentId.String(), assetId)
 	e.assets[path] = assetDoc(assetId, compartmentId)
+}
+
+// emptyRingsListDoc is the atlas-cashshop GET /rings response for a
+// character with no ring halves (ring/rest.go's RestModel/Extract shape,
+// mirrored from ring/processor_test.go's ringsDoc).
+func emptyRingsListDoc() string {
+	return `{"data":[],"meta":{"total":0,"page":{"number":1,"size":250,"last":1}}}`
+}
+
+// ringsListDoc is a one-half GET /rings response for characterId, mirroring
+// ring/processor_test.go's ringsDoc.
+func ringsListDoc(characterId uint32, cashId int64) string {
+	return fmt.Sprintf(
+		`{"data":[{"id":"%s","type":"rings","attributes":{"pairId":"%s","characterId":%d,"partnerCharacterId":0,"assetId":1,"itemTemplateId":1112001,"ringType":"COUPLE","state":"ACTIVE","cashId":%d,"partnerCashId":0,"partnerName":"Partner"}}],"meta":{"total":1,"page":{"number":1,"size":250,"last":1}}}`,
+		uuid.New(), uuid.New(), characterId, cashId,
+	)
+}
+
+// characterByNameDoc is the atlas-character GET /characters?name= list
+// response resolving name to id (character/rest.go's RestModel shape).
+func characterByNameDoc(id uint32, name string) string {
+	return fmt.Sprintf(`{"data":[{"type":"characters","id":"%d","attributes":{"name":%q,"accountId":1,"worldId":0}}]}`, id, name)
+}
+
+// seedRingCache populates characterId's ring cache through the real
+// Processor.Populate entry point (not a direct cache write) -- the ring
+// cache is private to the ring package, so this test drives it exactly the
+// way production code would.
+func (e *consumerEnv) seedRingCache(characterId uint32, cashId int64) {
+	e.t.Helper()
+	e.rings[characterId] = ringsListDoc(characterId, cashId)
+	if err := ring.NewProcessor(e.logger, e.ctx).Populate(characterId); err != nil {
+		e.t.Fatalf("seedRingCache: Populate(%d): %v", characterId, err)
+	}
+}
+
+// ringCacheEmpty reports whether characterId's cached ring halves are gone --
+// observed by re-Populate-ing (idempotent: a no-op if still cached, per
+// ring.Processor.Populate's doc comment) and checking whether the upstream
+// GET /rings fixture was hit again, tracked via e.ringFetches. Avoids
+// reaching into the ring package's private cache map.
+func (e *consumerEnv) ringCacheEmpty(characterId uint32) bool {
+	e.t.Helper()
+	before := e.ringFetches[characterId]
+	if err := ring.NewProcessor(e.logger, e.ctx).Populate(characterId); err != nil {
+		e.t.Fatalf("ringCacheEmpty: Populate(%d): %v", characterId, err)
+	}
+	return e.ringFetches[characterId] > before
 }
 
 func (e *consumerEnv) announcedWriters() []string {
@@ -665,6 +766,131 @@ func (e *consumerEnv) decodeCashInventoryPurchaseSuccess(t *testing.T) cashpkt.C
 		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
 	}
 	m := cashpkt.CashShopPurchaseSuccess{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeBuyNormalDone decodes the last announced CashShopOperation body as
+// the BUY_NORMAL_SUCCESS arm.
+func (e *consumerEnv) decodeBuyNormalDone(t *testing.T) cashpkt.BuyNormalDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.BuyNormalDone{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeEnableEquipSlotExtSuccess decodes the last announced
+// CashShopOperation body as the ENABLE_EQUIP_SLOT_EXT_SUCCESS arm.
+func (e *consumerEnv) decodeEnableEquipSlotExtSuccess(t *testing.T) cashpkt.EnableEquipSlotExtSuccess {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.EnableEquipSlotExtSuccess{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeRebateDone decodes the last announced CashShopOperation body as the
+// REBATE_SUCCESS arm.
+func (e *consumerEnv) decodeRebateDone(t *testing.T) cashpkt.RebateDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.RebateDone{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeGiftDone decodes the announced CashShopOperation body as the
+// GIFT_SUCCESS arm. Searches by writer name rather than taking the last
+// announcement: GIFT_SUCCESS is followed by a CashQueryResult announce, so
+// it is not always the last packet on the wire.
+func (e *consumerEnv) decodeGiftDone(t *testing.T) cashpkt.GiftDone {
+	t.Helper()
+	for _, a := range e.announced {
+		if a.writerName != cashpkt.CashShopOperationWriter {
+			continue
+		}
+		m := cashpkt.GiftDone{}
+		req := request.Request(a.body)
+		r := request.NewRequestReader(&req, 0)
+		m.Decode(e.logger, e.ctx)(&r, nil)
+		return m
+	}
+	t.Fatal("no CashShopOperation packet was announced")
+	return cashpkt.GiftDone{}
+}
+
+// decodeBuyPackageDone decodes the last announced CashShopOperation body as
+// the BUY_PACKAGE_SUCCESS arm.
+func (e *consumerEnv) decodeBuyPackageDone(t *testing.T) cashpkt.BuyPackageDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.BuyPackageDone{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeGiftPackageDone decodes the last announced CashShopOperation body as
+// the GIFT_PACKAGE_SUCCESS arm.
+func (e *consumerEnv) decodeGiftPackageDone(t *testing.T) cashpkt.GiftPackageDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.GiftPackageDone{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeCoupleDone decodes the last announced CashShopOperation body as the
+// COUPLE_SUCCESS arm.
+func (e *consumerEnv) decodeCoupleDone(t *testing.T) cashpkt.CoupleDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.CoupleDone{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeFriendshipDone decodes the last announced CashShopOperation body as
+// the FRIENDSHIP_SUCCESS arm.
+func (e *consumerEnv) decodeFriendshipDone(t *testing.T) cashpkt.FriendshipDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.FriendshipDone{}
 	req := request.Request(a.body)
 	r := request.NewRequestReader(&req, 0)
 	m.Decode(e.logger, e.ctx)(&r, nil)
@@ -1010,6 +1236,50 @@ func TestPurchaseSuccessUnrelatedBuyTakesPreExistingPath(t *testing.T) {
 	}
 }
 
+// TestPurchaseSuccessBuyNormalAnnouncesBuyNormalDone pins the BUY_NORMAL
+// success-routing branch (consumer.go's handleStatusEventPurchase): a
+// purchase event discriminated as BUY_NORMAL must be answered with the
+// dedicated BUY_NORMAL_SUCCESS body (mode 141 for this test tenant's GMS
+// 83.1 template), not the generic PURCHASE_SUCCESS body an undiscriminated
+// event still receives.
+func TestPurchaseSuccessBuyNormalAnnouncesBuyNormalDone(t *testing.T) {
+	env := newConsumerEnv(t)
+	assetId := uint32(604)
+	env.seedAsset(env.compartment, assetId)
+
+	handleStatusEventPurchase(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.PurchaseEventBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypePurchase,
+		Body: cashshop2.PurchaseEventBody{
+			CompartmentId: env.compartment,
+			AssetId:       assetId,
+			TransactionId: uuid.Nil,
+			Operation:     cashshop2.ErrorOperationBuyNormal,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeBuyNormalDone(t)
+	if got, want := body.Mode(), env.modeFor(cashpkt.CashShopOperationBuyNormalDone); got != want {
+		t.Errorf("mode = %d, want the BUY_NORMAL_SUCCESS mode %d", got, want)
+	}
+	if unwanted := env.modeFor(cashpkt.CashShopOperationPurchaseSuccess); body.Mode() == unwanted {
+		t.Errorf("mode = %d, must not be the generic PURCHASE_SUCCESS mode %d -- a BUY_NORMAL purchase must not take the generic fallback path", body.Mode(), unwanted)
+	}
+	refs := body.Refs()
+	if len(refs) != 1 {
+		t.Fatalf("refs = %v, want exactly one entry", refs)
+	}
+	if refs[0].ItemId != 5000000 {
+		t.Errorf("ItemId = %d, want 5000000 (assetDoc's fixture templateId)", refs[0].ItemId)
+	}
+	if refs[0].Quantity != 1 {
+		t.Errorf("Quantity = %d, want 1 (assetDoc's fixture quantity)", refs[0].Quantity)
+	}
+}
+
 // TestErrorWithPendingNameChangeCancelsRecordAndAnswersPinkText pins Step
 // 1(c) for the name-change arm: an error event whose TransactionId resolves
 // to a PENDING record releases it via the existing self-scoped cancel path
@@ -1138,4 +1408,357 @@ func TestErrorUnrelatedFailureTakesPreExistingPath(t *testing.T) {
 	if got := env.lastAnnouncedMode(); got != env.modeFor(cashpkt.CashShopOperationInventoryCapacityIncreaseFailed) {
 		t.Errorf("mode = %d, want the generic capacity-increase-failed mode %d", got, env.modeFor(cashpkt.CashShopOperationInventoryCapacityIncreaseFailed))
 	}
+}
+
+// TestEquipSlotIncreasedAnnouncesWireSlotIndexZeroNotTheCanonicalPosition
+// pins the hazard consumer.go:544's doc comment describes: the event's
+// SlotIndex (-59, the Atlas CANONICAL equipped-inventory pendant2 position)
+// must never reach the wire directly. handleStatusEventEquipSlotIncreased
+// must announce the ENABLE_EQUIP_SLOT_EXT_SUCCESS body with wire slotIndex
+// 0 -- a regression that forwards e.Body.SlotIndex straight through would
+// instead encode 65477 (the unsigned view of -59) and this assertion would
+// fail loudly. Days is asserted separately, with a distinct value (30), so
+// the two fields cannot be silently swapped or confused.
+func TestEquipSlotIncreasedAnnouncesWireSlotIndexZeroNotTheCanonicalPosition(t *testing.T) {
+	env := newConsumerEnv(t)
+
+	handleStatusEventEquipSlotIncreased(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.EquipSlotIncreasedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeEquipSlotIncreased,
+		Body: cashshop2.EquipSlotIncreasedBody{
+			TransactionId: uuid.Nil,
+			SlotIndex:     -59,
+			Days:          30,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeEnableEquipSlotExtSuccess(t)
+	if body.SlotIndex() != 0 {
+		t.Errorf("slotIndex = %d, want the WIRE value 0 -- the canonical -59 (65477 unsigned) must never reach the packet", body.SlotIndex())
+	}
+	if body.Days() != 30 {
+		t.Errorf("days = %d, want 30 unchanged", body.Days())
+	}
+}
+
+// TestLockerRebatedAnnouncesDoneWithCashIdAndAmount pins the LOCKER_REBATED
+// producer/consumer seam: LockerRebatedBody.CashId/Amount must land on
+// RebateDone's sn/amount fields unchanged (Currency is mirrored for wire
+// compatibility only -- CashShopRebateDoneBody never reads it, see
+// LockerRebatedBody's doc comment).
+func TestLockerRebatedAnnouncesDoneWithCashIdAndAmount(t *testing.T) {
+	env := newConsumerEnv(t)
+
+	handleStatusEventLockerRebated(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.LockerRebatedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeLockerRebated,
+		Body: cashshop2.LockerRebatedBody{
+			TransactionId: uuid.New(),
+			CashId:        998877,
+			Amount:        4500,
+			Currency:      1,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeRebateDone(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationRebateDone) {
+		t.Errorf("mode = %d, want the REBATE_SUCCESS mode %d", body.Mode(), env.modeFor(cashpkt.CashShopOperationRebateDone))
+	}
+	if body.SN() != 998877 {
+		t.Errorf("sn = %d, want the event's CashId 998877", body.SN())
+	}
+	if body.Amount() != 4500 {
+		t.Errorf("amount = %d, want the event's Amount 4500", body.Amount())
+	}
+}
+
+// TestGiftPurchasedAnnouncesGiftDoneWithRecipientNameAndItem pins the
+// GIFT_PURCHASED producer/consumer seam: GiftPurchasedBody's
+// RecipientName/TemplateId/Quantity must land on GiftDone's
+// recipientName/itemId/quantity unchanged.
+// TestGiftPurchasedAnnouncesGiftDoneWithRecipientNameAndItem pins the client's
+// gift batch state machine ordering (CCashShop::SendGiftsPacket, v83 IDB
+// 0x46f940): GIFT_SUCCESS records the batch confirmation and must land
+// before CASH_QUERY_RESULT drives the batch to its final notice, or the
+// sender sees "The gifts could not be sent." (SP_562) instead of "All the
+// gifts have been sent..." (SP_561).
+func TestGiftPurchasedAnnouncesGiftDoneWithRecipientNameAndItem(t *testing.T) {
+	env := newConsumerEnv(t)
+
+	handleStatusEventGiftPurchased(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.GiftPurchasedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeGiftPurchased,
+		Body: cashshop2.GiftPurchasedBody{
+			TransactionId:        uuid.New(),
+			RecipientName:        "Recipient",
+			TemplateId:           5010000,
+			Quantity:             1,
+			Price:                900,
+			RecipientCharacterId: 99,
+		},
+	})
+
+	// GIFT_SUCCESS first, then CASH_QUERY_RESULT: only this order resolves
+	// the client's gift batch to SP_561 rather than SP_562.
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter, cashpkt.CashQueryResultWriter}) {
+		t.Fatalf("announced %v, want exactly [%s, %s]", got, cashpkt.CashShopOperationWriter, cashpkt.CashQueryResultWriter)
+	}
+	body := env.decodeGiftDone(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationGiftDone) {
+		t.Errorf("mode = %d, want the GIFT_SUCCESS mode %d", body.Mode(), env.modeFor(cashpkt.CashShopOperationGiftDone))
+	}
+	if body.RecipientName() != "Recipient" {
+		t.Errorf("recipientName = %q, want %q", body.RecipientName(), "Recipient")
+	}
+	if body.ItemId() != 5010000 {
+		t.Errorf("itemId = %d, want the event's TemplateId 5010000", body.ItemId())
+	}
+	if body.Quantity() != 1 {
+		t.Errorf("quantity = %d, want 1", body.Quantity())
+	}
+}
+
+// TestPackagePurchasedBuyForSelfProjectsAssetsIntoBuyPackageDone pins the
+// PACKAGE_PURCHASED producer/consumer seam for the buy-for-self path. Unlike
+// the COMMAND body, the STATUS body's RecipientCharacterId echoes the
+// buyer's own identity on a buy-for-self purchase and is never zero
+// (kafka/message/cashshop/kafka.go:372-375), so the fixture here sets it
+// equal to CharacterId -- exactly what atlas-cashshop actually emits (Defect
+// E, bug-cash-shop-live-testing-round-2.md). Each of Body.AssetIds must be
+// resolved and projected into BuyPackageDone's item list.
+func TestPackagePurchasedBuyForSelfProjectsAssetsIntoBuyPackageDone(t *testing.T) {
+	env := newConsumerEnv(t)
+	assetId := uint32(4242)
+	env.seedAsset(env.compartment, assetId)
+
+	handleStatusEventPackagePurchased(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.PackagePurchasedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypePackagePurchased,
+		Body: cashshop2.PackagePurchasedBody{
+			TransactionId:        uuid.New(),
+			CompartmentId:        env.compartment,
+			AssetIds:             []uint32{assetId},
+			PackageTemplateId:    9000000,
+			Price:                5000,
+			RecipientCharacterId: testCharacterId,
+			RecipientName:        "Buyer",
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeBuyPackageDone(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationBuyPackageDone) {
+		t.Errorf("mode = %d, want the BUY_PACKAGE_SUCCESS mode %d", body.Mode(), env.modeFor(cashpkt.CashShopOperationBuyPackageDone))
+	}
+	if len(body.Items()) != 1 {
+		t.Fatalf("items = %d, want 1 — one entry per Body.AssetIds", len(body.Items()))
+	}
+}
+
+// TestPackagePurchasedGiftAnnouncesGiftPackageDone pins the PACKAGE_PURCHASED
+// gift path (RecipientCharacterId != CharacterId): Body.RecipientName/PackageTemplateId
+// must land on GiftPackageDone's recipientName/packageId unchanged, and the
+// asset lookup used by the self path must not run.
+func TestPackagePurchasedGiftAnnouncesGiftPackageDone(t *testing.T) {
+	env := newConsumerEnv(t)
+
+	handleStatusEventPackagePurchased(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.PackagePurchasedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypePackagePurchased,
+		Body: cashshop2.PackagePurchasedBody{
+			TransactionId:        uuid.New(),
+			CompartmentId:        env.compartment,
+			AssetIds:             nil,
+			PackageTemplateId:    9000001,
+			Price:                5000,
+			RecipientCharacterId: 99,
+			RecipientName:        "GiftRecipient",
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeGiftPackageDone(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationGiftPackageDone) {
+		t.Errorf("mode = %d, want the GIFT_PACKAGE_SUCCESS mode %d", body.Mode(), env.modeFor(cashpkt.CashShopOperationGiftPackageDone))
+	}
+	if body.RecipientName() != "GiftRecipient" {
+		t.Errorf("recipientName = %q, want %q", body.RecipientName(), "GiftRecipient")
+	}
+	if body.PackageId() != 9000001 {
+		t.Errorf("packageId = %d, want the event's PackageTemplateId 9000001", body.PackageId())
+	}
+}
+
+// TestRingPurchasedCoupleAnnouncesCoupleDoneWithPartnerName pins the
+// RING_PURCHASED producer/consumer seam for RingType COUPLE:
+// PartnerName/TemplateId/Quantity must land on CoupleDone's
+// recipientName/itemId/quantity, and the buyer's own AssetId is projected
+// into the item blob.
+func TestRingPurchasedCoupleAnnouncesCoupleDoneWithPartnerName(t *testing.T) {
+	env := newConsumerEnv(t)
+	assetId := uint32(6060)
+	env.seedAsset(env.compartment, assetId)
+
+	handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.RingPurchasedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeRingPurchased,
+		Body: cashshop2.RingPurchasedBody{
+			TransactionId: uuid.New(),
+			CompartmentId: env.compartment,
+			AssetId:       assetId,
+			PartnerName:   "Partner",
+			TemplateId:    1112000,
+			Quantity:      1,
+			RingType:      cashshop2.RingTypeCouple,
+			PairId:        uuid.New(),
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeCoupleDone(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationCoupleDone) {
+		t.Errorf("mode = %d, want the COUPLE_SUCCESS mode %d", body.Mode(), env.modeFor(cashpkt.CashShopOperationCoupleDone))
+	}
+	if body.RecipientName() != "Partner" {
+		t.Errorf("recipientName = %q, want the event's PartnerName %q", body.RecipientName(), "Partner")
+	}
+	if body.ItemId() != 1112000 {
+		t.Errorf("itemId = %d, want the event's TemplateId 1112000", body.ItemId())
+	}
+	if body.Quantity() != 1 {
+		t.Errorf("quantity = %d, want 1", body.Quantity())
+	}
+}
+
+// TestRingPurchasedFriendshipAnnouncesFriendshipDone pins the same seam for
+// RingType FRIENDSHIP, the switch's other live arm.
+func TestRingPurchasedFriendshipAnnouncesFriendshipDone(t *testing.T) {
+	env := newConsumerEnv(t)
+	assetId := uint32(6061)
+	env.seedAsset(env.compartment, assetId)
+
+	handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.RingPurchasedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeRingPurchased,
+		Body: cashshop2.RingPurchasedBody{
+			TransactionId: uuid.New(),
+			CompartmentId: env.compartment,
+			AssetId:       assetId,
+			PartnerName:   "Buddy",
+			TemplateId:    1122000,
+			Quantity:      1,
+			RingType:      cashshop2.RingTypeFriendship,
+			PairId:        uuid.New(),
+		},
+	})
+
+	body := env.decodeFriendshipDone(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationFriendshipDone) {
+		t.Errorf("mode = %d, want the FRIENDSHIP_SUCCESS mode %d", body.Mode(), env.modeFor(cashpkt.CashShopOperationFriendshipDone))
+	}
+	if body.RecipientName() != "Buddy" {
+		t.Errorf("recipientName = %q, want the event's PartnerName %q", body.RecipientName(), "Buddy")
+	}
+	if body.ItemId() != 1122000 {
+		t.Errorf("itemId = %d, want the event's TemplateId 1122000", body.ItemId())
+	}
+}
+
+// TestRingPurchasedInvalidatesCache pins task-269 task 12's invalidation
+// path. RingPurchasedBody carries no cashId for either half and no partner
+// character id, so the cache is dropped rather than patched -- the buyer's
+// entry always, and the partner's entry when Body.PartnerName resolves to a
+// known character.
+func TestRingPurchasedInvalidatesCache(t *testing.T) {
+	const buyerId = uint32(100)
+	const partnerId = uint32(200)
+	const buyerCashId = int64(1111)
+	const partnerCashId = int64(2222)
+
+	newEvent := func() cashshop2.StatusEvent[cashshop2.RingPurchasedBody] {
+		return cashshop2.StatusEvent[cashshop2.RingPurchasedBody]{
+			CharacterId: buyerId,
+			Type:        cashshop2.StatusEventTypeRingPurchased,
+			Body: cashshop2.RingPurchasedBody{
+				TransactionId: uuid.New(),
+				CompartmentId: uuid.New(),
+				AssetId:       9999,
+				PartnerName:   "Partner",
+				TemplateId:    1112000,
+				Quantity:      1,
+				RingType:      cashshop2.RingTypeCouple,
+				PairId:        uuid.New(),
+			},
+		}
+	}
+
+	t.Run("buyer invalidated", func(t *testing.T) {
+		env := newConsumerEnv(t)
+		env.seedRingCache(buyerId, buyerCashId)
+
+		handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, env.ctx, newEvent())
+
+		if !env.ringCacheEmpty(buyerId) {
+			t.Fatal("buyer's ring cache entry survived RING_PURCHASED, want it gone")
+		}
+	})
+
+	t.Run("partner invalidated when present", func(t *testing.T) {
+		env := newConsumerEnv(t)
+		env.seedRingCache(buyerId, buyerCashId)
+		env.seedRingCache(partnerId, partnerCashId)
+		env.characters["Partner"] = partnerId
+		env.addSession(partnerId, 4343)
+
+		handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, env.ctx, newEvent())
+
+		if !env.ringCacheEmpty(buyerId) {
+			t.Fatal("buyer's ring cache entry survived RING_PURCHASED, want it gone")
+		}
+		if !env.ringCacheEmpty(partnerId) {
+			t.Fatal("partner's ring cache entry survived RING_PURCHASED, want it gone")
+		}
+	})
+
+	t.Run("partner absent is not an error", func(t *testing.T) {
+		env := newConsumerEnv(t)
+		env.seedRingCache(buyerId, buyerCashId)
+		// No env.characters["Partner"] entry -- GetByName resolves to
+		// atlasmodel.ErrEmptySlice, the "unknown partner" case.
+
+		handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, env.ctx, newEvent())
+
+		if !env.ringCacheEmpty(buyerId) {
+			t.Fatal("buyer's ring cache entry survived RING_PURCHASED, want it gone")
+		}
+	})
+
+	t.Run("wrong tenant untouched", func(t *testing.T) {
+		env := newConsumerEnv(t)
+		env.seedRingCache(buyerId, buyerCashId)
+
+		otherTenant, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+		if err != nil {
+			t.Fatalf("tenant: %v", err)
+		}
+		otherCtx := tenant.WithContext(context.Background(), otherTenant)
+
+		handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, otherCtx, newEvent())
+
+		if env.ringCacheEmpty(buyerId) {
+			t.Fatal("tenant A's ring cache entry was dropped by a tenant B event, want it untouched")
+		}
+	})
 }

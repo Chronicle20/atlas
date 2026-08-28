@@ -1,0 +1,11 @@
+packet: character/clientbound/CharacterSpawn
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CUserPool::OnUserEnterField
+    address: "0x92a4e0"
+    decompile_sha256: 3d23c4a1d02225d42ccf7c5f31f55c8f0250c3c76aa16516c943fc2c51f924cd
+verifies:
+  - libs/atlas-packet/character/clientbound/spawn_test.go#TestCharacterSpawnV92Golden
+  - libs/atlas-packet/character/clientbound/spawn_test.go#TestCharacterSpawnRingBlocks

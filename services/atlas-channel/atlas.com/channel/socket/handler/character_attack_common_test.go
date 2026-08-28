@@ -458,7 +458,7 @@ func TestBeaconTryApply(t *testing.T) {
 func newHandlerTestInventory(t *testing.T, characterId uint32) (inventory.Model, uuid.UUID, asset.Model) {
 	t.Helper()
 	compId := uuid.New()
-	a := asset.NewModelBuilder(9001, compId, 2060000).SetSlot(2).SetQuantity(400).MustBuild()
+	a := asset.NewBuilderWithId(9001, compId, 2060000).SetSlot(2).SetQuantity(400).MustBuild()
 	comp := compartment.NewBuilder(compId, characterId, invconst.TypeValueUse, 96).AddAsset(a).MustBuild()
 	inv := inventory.NewBuilder(characterId).
 		SetEquipable(compartment.NewBuilder(uuid.New(), characterId, invconst.TypeValueEquip, 96).MustBuild()).
@@ -493,7 +493,7 @@ func TestProcessAttack_MonsterResolveDeduped(t *testing.T) {
 	attackMonsterByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
 		calls++
 		f := field.NewBuilder(0, 1, 100000000).Build()
-		return monster.NewModelBuilder(uniqueId, f, 100100).SetMp(50).SetMaxMp(80).SetX(10).SetY(20).Build()
+		return monster.NewBuilder(uniqueId, f, 100100).SetMp(50).SetMaxMp(80).SetX(10).SetY(20).Build()
 	}
 	defer func() { attackMonsterByIdFn = prev }()
 
@@ -550,7 +550,7 @@ func TestBuildMonsterModelResolver_Memoizes(t *testing.T) {
 	attackMonsterByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
 		calls++
 		f := field.NewBuilder(0, 1, 100000000).Build()
-		return monster.NewModelBuilder(uniqueId, f, 100100).SetHp(10).SetMaxHp(100).Build()
+		return monster.NewBuilder(uniqueId, f, 100100).SetHp(10).SetMaxHp(100).Build()
 	}
 	defer func() { attackMonsterByIdFn = prev }()
 
@@ -579,7 +579,7 @@ func TestSnapshotStalenessWindow_SkillLevelChangesBetweenAttacks(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 
 	v := snapshot.GetRegistry().View(tm, 91)
-	core := character.NewModelBuilder().SetId(91).SetLevel(120).MustBuild()
+	core := character.NewBuilder().SetId(91).SetLevel(120).MustBuild()
 	_ = snapshot.GetRegistry().BackfillCore(tm, 91, core, v.CoreGen)
 	_ = snapshot.GetRegistry().BackfillSkills(tm, 91, []skill.Model{
 		skill.NewModelBuilder(skill3.Id(3121004)).SetLevel(10).MustBuild(),
@@ -618,7 +618,7 @@ func TestWriterEquivalence_SnapshotComposedModel(t *testing.T) {
 
 	inv, _, _ := newHandlerTestInventory(t, 92)
 	skills := []skill.Model{skill.NewModelBuilder(skill3.Id(3121004)).SetLevel(10).MustBuild()}
-	base := character.NewModelBuilder().SetId(92).SetLevel(120).SetJobId(322).SetX(5).SetY(-5).MustBuild()
+	base := character.NewBuilder().SetId(92).SetLevel(120).SetJobId(322).SetX(5).SetY(-5).MustBuild()
 
 	// Path A: today's decorator order (GetById -> InventoryDecorator -> SkillModelDecorator).
 	want := base.SetInventory(inv).SetSkills(skills)

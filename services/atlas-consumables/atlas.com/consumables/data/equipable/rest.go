@@ -150,3 +150,24 @@ func Extract(m RestModel) (Model, error) {
 		cash:          m.Cash,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Strength:      m.strength,
+		Dexterity:     m.dexterity,
+		Intelligence:  m.intelligence,
+		Luck:          m.luck,
+		Hp:            m.hp,
+		Mp:            m.mp,
+		WeaponAttack:  m.weaponAttack,
+		MagicAttack:   m.magicAttack,
+		WeaponDefense: m.weaponDefense,
+		MagicDefense:  m.magicDefense,
+		Accuracy:      m.accuracy,
+		Avoidability:  m.avoidability,
+		Speed:         m.speed,
+		Jump:          m.jump,
+		Slots:         m.slots,
+		Cash:          m.cash,
+	}, nil
+}

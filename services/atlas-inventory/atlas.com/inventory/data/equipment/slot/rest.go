@@ -28,3 +28,12 @@ func Extract(m RestModel) (Model, error) {
 		slot: m.Slot,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:   m.id,
+		Name: m.name,
+		WZ:   m.wz,
+		Slot: m.slot,
+	}, nil
+}

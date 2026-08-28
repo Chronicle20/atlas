@@ -10,7 +10,7 @@ Manages per-character mount progression: level, accumulated experience, and tire
 
 #### Mount Model
 
-Immutable representation of a character's mount progression. Constructed via `NewModelBuilder` / `Clone`; mutated through the builder's setters and `Build()`. Fields are private with read-only getters.
+Immutable representation of a character's mount progression. Constructed via `NewBuilder` / `Clone`; mutated through the builder's setters and `Build()`. Fields are private with read-only getters.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -24,7 +24,7 @@ Immutable representation of a character's mount progression. Constructed via `Ne
 
 #### Mount Builder
 
-Constructs mount models. Created via `NewModelBuilder(tenantId, characterId, id)` or `Clone(model)`. Defaults applied by `NewModelBuilder`: level 1, exp 0, tiredness 0, nil lastTirednessTickAt.
+Constructs mount models. Created via `NewBuilder(tenantId, characterId, id)` or `Clone(model)`. Defaults applied by `NewBuilder`: level 1, exp 0, tiredness 0, nil lastTirednessTickAt.
 
 | Method | Description |
 |--------|-------------|

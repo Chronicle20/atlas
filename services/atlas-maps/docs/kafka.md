@@ -46,6 +46,8 @@ Map commands consumed by the service.
 | Type | Body Struct | Description |
 |------|-------------|-------------|
 | WEATHER_START | WeatherStartCommandBody | Start weather effect in a map |
+| SET_ENVIRONMENT_STATE | SetEnvironmentStateCommandBody | Set the state of one named field object |
+| RESET_ENVIRONMENT | ResetEnvironmentCommandBody | Clear all tracked field object state and restore defaults |
 
 ### COMMAND_TOPIC_CHARACTER
 
@@ -84,7 +86,7 @@ Data ingestion events, filtered to the MAP worker. Toggled off via DATA_EVENTS_C
 
 ### EVENT_TOPIC_MAP_STATUS
 
-Map status events emitted when characters enter or exit maps, when weather effects start or end, and when a map-stay timer is started.
+Map status events emitted when characters enter or exit maps, when weather effects start or end, when a map-stay timer is started, and when field environment object state changes or is reset.
 
 | Type | Body Struct | Description |
 |------|-------------|-------------|
@@ -93,6 +95,8 @@ Map status events emitted when characters enter or exit maps, when weather effec
 | WEATHER_START | WeatherStart | Weather effect started in map |
 | WEATHER_END | WeatherEnd | Weather effect ended in map |
 | MAP_TIMER_STARTED | MapTimerStarted | Map-stay timer started for a character |
+| ENVIRONMENT_STATE_CHANGED | EnvironmentStateChanged | A named field object's state changed |
+| ENVIRONMENT_RESET | EnvironmentReset | Field object state was cleared; body carries the cleared objects |
 
 ### COMMAND_TOPIC_CHARACTER
 

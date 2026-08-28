@@ -46,7 +46,7 @@
 | Party Quest Commands | COMMAND_TOPIC_PARTY_QUEST | Command | Party quest operations (REGISTER, LEAVE, UPDATE_CUSTOM_DATA, BROADCAST_MESSAGE, STAGE_CLEAR_ATTEMPT, ENTER_BONUS) |
 | Reactor Commands | COMMAND_TOPIC_REACTOR | Command | Reactor operations (HIT) |
 | Drop Commands | COMMAND_TOPIC_DROP | Command | Drop spawn operations (SPAWN) |
-| Map Commands | COMMAND_TOPIC_MAP | Command | Map operations (WEATHER_START) |
+| Map Commands | COMMAND_TOPIC_MAP | Command | Map operations (WEATHER_START, SET_ENVIRONMENT_STATE, RESET_ENVIRONMENT) |
 | MTS Custody Commands | COMMAND_TOPIC_MTS_CUSTODY | Command | MTS listing/holding custody operations (ACCEPT_TO_MTS_LISTING, RELEASE_FROM_MTS_HOLDING, RESTORE_MTS_HOLDING, MTS_MOVE_LISTING_TO_HOLDING, REMOVE_MTS_LISTING, RESTORE_LISTING_FROM_HOLDING) |
 | Gachapon Reward Won | EVENT_TOPIC_GACHAPON_REWARD_WON | Event | Gachapon reward win announcements |
 | Incubator Result | EVENT_TOPIC_INCUBATOR_RESULT | Event | Incubator use result (item-tag/sealing-lock/incubator sagas) for the channel to announce via packet |
@@ -531,7 +531,7 @@ Command[E]
   body: E
 ```
 
-Command types: WEATHER_START
+Command types: WEATHER_START, SET_ENVIRONMENT_STATE, RESET_ENVIRONMENT
 
 #### WEATHER_START Body
 
@@ -540,6 +540,21 @@ WeatherStartCommandBody
   itemId: uint32
   message: string
   durationMs: uint32
+```
+
+#### SET_ENVIRONMENT_STATE Body
+
+```
+SetEnvironmentStateCommandBody
+  kind: string
+  name: string
+  state: uint32
+```
+
+#### RESET_ENVIRONMENT Body
+
+```
+ResetEnvironmentCommandBody
 ```
 
 ### Gachapon Reward Won Event

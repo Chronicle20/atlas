@@ -154,10 +154,10 @@
 
 ### EVENT_TOPIC_MAP_STATUS
 - Direction: Event
-- Message Type: `StatusEvent[CharacterEnter]`, `StatusEvent[CharacterExit]`, `StatusEvent[WeatherStart]`, `StatusEvent[WeatherEnd]`, `StatusEvent[MapTimerStarted]`
+- Message Type: `StatusEvent[CharacterEnter]`, `StatusEvent[CharacterExit]`, `StatusEvent[WeatherStart]`, `StatusEvent[WeatherEnd]`, `StatusEvent[MapTimerStarted]`, `StatusEvent[EnvironmentStateChanged]`, `StatusEvent[EnvironmentReset]`
 - Envelope Fields: transactionId, worldId, channelId, mapId, instance
-- Type Discriminators: `CHARACTER_ENTER`, `CHARACTER_EXIT`, `WEATHER_START`, `WEATHER_END`, `MAP_TIMER_STARTED`
-- Purpose: Receives character map entry/exit, weather start/end, and map timer started events. MAP_TIMER_STARTED body contains CharacterId (uint32) and Seconds (uint32); the handler targets the single character via `IfPresentByCharacterId` and sends a `ClockWriter` packet built from `NewTimerClock(seconds)`.
+- Type Discriminators: `CHARACTER_ENTER`, `CHARACTER_EXIT`, `WEATHER_START`, `WEATHER_END`, `MAP_TIMER_STARTED`, `ENVIRONMENT_STATE_CHANGED`, `ENVIRONMENT_RESET`
+- Purpose: Receives character map entry/exit, weather start/end, map timer started, and field environment object state events. MAP_TIMER_STARTED body contains CharacterId (uint32) and Seconds (uint32); the handler targets the single character via `IfPresentByCharacterId` and sends a `ClockWriter` packet built from `NewTimerClock(seconds)`. ENVIRONMENT_STATE_CHANGED body contains Kind, Name, and State; the handler broadcasts the new state to every session in the map/instance. ENVIRONMENT_RESET body contains Cleared (the tracked objects being reset); the handler resets the client's own obstacle list where supported and re-announces every cleared object at state 0 to every session in the map/instance.
 
 ### EVENT_TOPIC_MEGAPHONE
 - Direction: Event

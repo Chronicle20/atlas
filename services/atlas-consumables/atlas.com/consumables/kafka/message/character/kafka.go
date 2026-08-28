@@ -13,6 +13,11 @@ const (
 	CommandChangeMap = "CHANGE_MAP"
 	CommandChangeHP  = "CHANGE_HP"
 	CommandChangeMP  = "CHANGE_MP"
+	// CommandCreditStoredExperience banks EXP into the character's stored-EXP
+	// counter. The counter is the client's GW_CharacterStat::nTempEXP; Atlas
+	// persists it in the `gachapon_experience` column, a community misnomer
+	// kept to avoid a migration across atlas-login/-cashshop/-npc-shops.
+	CommandCreditStoredExperience = "CREDIT_STORED_EXPERIENCE"
 )
 
 type Command[E any] struct {
@@ -38,6 +43,12 @@ type ChangeMapBody struct {
 	MapId     _map.Id    `json:"mapId"`
 	Instance  uuid.UUID  `json:"instance"`
 	PortalId  uint32     `json:"portalId"`
+}
+
+type CreditStoredExperienceCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    uint32     `json:"amount"`
+	Reason    string     `json:"reason"`
 }
 
 const (

@@ -8,11 +8,12 @@ import (
 )
 
 type ProcessorMock struct {
-	GetByIdFunc            func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error)
-	InventoryDecoratorFunc func(m character.Model) character.Model
-	ChangeMapFunc          func(f field.Model, characterId uint32, portalId uint32) error
-	ChangeHPFunc           func(f field.Model, characterId uint32, amount int16) error
-	ChangeMPFunc           func(f field.Model, characterId uint32, amount int16) error
+	GetByIdFunc                func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error)
+	InventoryDecoratorFunc     func(m character.Model) character.Model
+	ChangeMapFunc              func(f field.Model, characterId uint32, portalId uint32) error
+	ChangeHPFunc               func(f field.Model, characterId uint32, amount int16) error
+	ChangeMPFunc               func(f field.Model, characterId uint32, amount int16) error
+	CreditStoredExperienceFunc func(f field.Model, characterId uint32, amount uint32, reason string) error
 }
 
 var _ character.Processor = (*ProcessorMock)(nil)
@@ -50,6 +51,13 @@ func (m *ProcessorMock) ChangeHP(f field.Model, characterId uint32, amount int16
 func (m *ProcessorMock) ChangeMP(f field.Model, characterId uint32, amount int16) error {
 	if m.ChangeMPFunc != nil {
 		return m.ChangeMPFunc(f, characterId, amount)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) CreditStoredExperience(f field.Model, characterId uint32, amount uint32, reason string) error {
+	if m.CreditStoredExperienceFunc != nil {
+		return m.CreditStoredExperienceFunc(f, characterId, amount, reason)
 	}
 	return nil
 }

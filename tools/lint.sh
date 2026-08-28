@@ -147,21 +147,47 @@ resolve_base() {
     return 1
 }
 
+# go.work's `use` block, resolved to absolute directories. A module directory
+# under services/ or libs/ that is NOT listed here is a tool module,
+# deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen — see
+# plan.md:18 for task-276): golangci-lint in workspace mode cannot type-check
+# a non-member ("directory prefix . does not contain modules listed in
+# go.work"). It is verified by its own explicit GOWORK=off step instead, so
+# discover_modules below filters it out rather than this script re-adding it
+# to go.work.
+workspace_module_dirs() {
+    awk '
+        /^use \(/ { inuse=1; next }
+        inuse && /^\)/ { inuse=0; next }
+        inuse {
+            gsub(/^[ \t]+|[ \t]+$/, "")
+            if ($0 != "") print
+        }
+    ' "$ROOT/go.work" | while IFS= read -r p; do
+        case "$p" in
+            /*) printf '%s\n' "$p" ;;
+            *)  printf '%s\n' "$ROOT/${p#./}" ;;
+        esac
+    done | sort -u
+}
+
 discover_modules() {
+    local found
     if [ "${#PATHS[@]}" -eq 0 ]; then
-        find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
-            | xargs -0 -n1 dirname | sort -u
+        found="$(find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
+            | xargs -0 -n1 dirname | sort -u)"
     else
         local p target
-        for p in "${PATHS[@]}"; do
+        found="$(for p in "${PATHS[@]}"; do
             case "$p" in
                 /*) target="$p" ;;
                 *)  target="$ROOT/${p#./}" ;;
             esac
             find "$target" -name go.mod -not -path '*/node_modules/*' -print0 2>/dev/null \
                 | xargs -0 -r -n1 dirname
-        done | sort -u
+        done | sort -u)"
     fi
+    comm -12 <(printf '%s\n' "$found") <(workspace_module_dirs)
 }
 
 run_go() {

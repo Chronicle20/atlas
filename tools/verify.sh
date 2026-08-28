@@ -178,9 +178,33 @@ changed_tool_suites() {
 
 # --------------------------------------------------------------- go modules
 
+# go.work's `use` block, resolved to absolute directories. A module directory
+# under services/ or libs/ that is NOT listed here is a tool module,
+# deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen — see
+# plan.md:18 for task-276) and verified by its own explicit GOWORK=off step
+# instead, so all_modules below filters it out rather than folding it into
+# the workspace build/vet sweep, which cannot type-check a non-member.
+workspace_module_dirs() {
+    awk '
+        /^use \(/ { inuse=1; next }
+        inuse && /^\)/ { inuse=0; next }
+        inuse {
+            gsub(/^[ \t]+|[ \t]+$/, "")
+            if ($0 != "") print
+        }
+    ' "$ROOT/go.work" | while IFS= read -r p; do
+        case "$p" in
+            /*) printf '%s\n' "$p" ;;
+            *)  printf '%s\n' "$ROOT/${p#./}" ;;
+        esac
+    done | sort -u
+}
+
 all_modules() {
-    find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
-        | xargs -0 -r -n1 dirname | sort -u
+    comm -12 \
+        <(find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
+            | xargs -0 -r -n1 dirname | sort -u) \
+        <(workspace_module_dirs)
 }
 
 # The one predicate that decides whether this run fans out to every module.

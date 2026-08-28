@@ -1,6 +1,7 @@
 package _map
 
 import (
+	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/playernpc"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -11,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	npcbody "github.com/Chronicle20/atlas/libs/atlas-packet/npc"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
@@ -50,10 +52,17 @@ func PlayerNpcImitatedEntry(n playernpc.Model) npcpkt.ImitatedNpc {
 	return npcpkt.NewImitatedNpc(n.ScriptId(), n.Name(), PlayerNpcAvatar(n))
 }
 
-// spawnPlayerNpcsForSession sends plain SPAWN_NPC (no controller grant --
-// design D-4/FR-7.4) for every Player NPC deployed in f to the entering
-// session s, then one batched IMITATED_NPC_DATA carrying every spawned
-// NPC's avatar data. Ordering is SPAWN_NPC-then-IMITATED_NPC_DATA always
+// PlayerNpcControllerGrant builds the controller-grant body for a deployed
+// Player NPC n -- the same payload as PlayerNpcSpawn, on the client's
+// OnNpcChangeController arm.
+func PlayerNpcControllerGrant(n playernpc.Model) packet.Encode {
+	return npcbody.NpcControllerGrantBody(n.ObjectId(), n.ScriptId(), n.X(), n.Cy(), int32(n.Dir()), n.Fh(), n.RX0(), n.RX1(), true)
+}
+
+// spawnPlayerNpcsForSession sends SPAWN_NPC for every Player NPC deployed
+// in f to the entering session s, then one batched IMITATED_NPC_DATA
+// carrying every spawned NPC's avatar data. Ordering is
+// SPAWN_NPC-then-IMITATED_NPC_DATA always
 // (FR-7.1): the client needs the object in its pool before the avatar data
 // can attach to it.
 //
@@ -64,8 +73,15 @@ func PlayerNpcImitatedEntry(n playernpc.Model) npcpkt.ImitatedNpc {
 // NPC counts per map are small (script-id band capacity), so there is no
 // concurrency benefit worth the synchronization cost.
 //
-// Deliberately never touches npc/controller.TryClaim/ElectFor/ReleaseFor —
-// Player NPC object ids must never enter the controller registry (FR-7.4).
+// Each SPAWN_NPC is followed by a controller grant when this session wins
+// the claim. The grant is not optional decoration (task-251 bug report §5,
+// reversing design D-4): CNpcPool::OnNpcChangeController -> SetLocalNpc is
+// the only path that calls CNpc::SetActive(npc, 1), and SetActive is what
+// populates m_pvcActive, the field CNpc::Update tests before it will call
+// CNpc::DoActionOrChat. Without a grant the NPC renders but never speaks,
+// so the Hall of Fame canned line (String.wz/Npc.img/<scriptId>/n0, "I am
+// /name who had achieved level 200.") never fires. Granting and then
+// revoking does not work either: SetRemoteNpc calls SetActive(npc, 0).
 func spawnPlayerNpcsForSession(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, f field.Model) error {
 	npcs, err := playernpc.NewProcessor(l, ctx).InMapModelProvider(f)()
 	if err != nil {
@@ -74,12 +90,29 @@ func spawnPlayerNpcsForSession(l logrus.FieldLogger, ctx context.Context, wp wri
 	if len(npcs) == 0 {
 		return nil
 	}
+	cp := controllernpc.NewProcessor(l, ctx)
 	entries := make([]npcpkt.ImitatedNpc, 0, len(npcs))
 	for _, n := range npcs {
 		if err := playerNpcAnnounce(l, ctx, wp, npcpkt.NpcSpawnWriter, PlayerNpcSpawn(n).Encode, s); err != nil {
 			return err
 		}
 		entries = append(entries, PlayerNpcImitatedEntry(n))
+
+		// Claim synchronously so SpawnNPC -> grant land on the same session
+		// in order, mirroring spawnNPCForSession. Losing the claim (another
+		// session already controls it) leaves this session with spawn only,
+		// which is correct: exactly one client may control an NPC.
+		claimed, cerr := cp.TryClaim(f, n.ObjectId(), s.CharacterId())
+		if cerr != nil {
+			l.WithError(cerr).Warnf("NPC-controller claim failed for Player NPC [%d]; session [%d] gets spawn only.", n.ObjectId(), s.CharacterId())
+			continue
+		}
+		if !claimed {
+			continue
+		}
+		if gerr := playerNpcAnnounce(l, ctx, wp, npcpkt.NpcSpawnRequestControllerWriter, PlayerNpcControllerGrant(n), s); gerr != nil {
+			return gerr
+		}
 	}
 	return playerNpcAnnounce(l, ctx, wp, npcpkt.NpcImitatedDataWriter, npcpkt.NewImitatedNpcData(entries).Encode, s)
 }

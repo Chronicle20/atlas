@@ -32,13 +32,26 @@ func PlayerNpcObjectIdFor(scriptId uint32) uint32 {
 	return PlayerNpcObjectIdBase + (scriptId - playerNpcScriptIdBase)
 }
 
+// IsPlayerNpcObjectId reports whether objectId was derived by
+// PlayerNpcObjectIdFor from a Player NPC script id in the imitate pool.
+// Callers that receive a bare object id (a controller grant, a movement
+// guard) use it to decide which read client resolves the object: a Player
+// NPC lives in atlas-player-npcs, an ordinary NPC in atlas-data's per-map
+// life list.
+func IsPlayerNpcObjectId(objectId uint32) bool {
+	return objectId >= PlayerNpcObjectIdFor(playerNpcImitateTemplateMin) &&
+		objectId <= PlayerNpcObjectIdFor(playerNpcImitateTemplateMax)
+}
+
 // playerNpcImitateTemplateMin and playerNpcImitateTemplateMax bound the
 // Player NPC imitate pool (design §4.2: 9901000-9906599). WZ Hall of Fame
 // maps carry one placeholder NPC life entry per pool slot, one per possible
 // deployed Player NPC; the client's CNpcPool::OnNpcImitateData overlay is
-// keyed on template id, not oid, so a deployed Player NPC (spawned with its
-// own SPAWN_NPC, outside this pool) and its unoccupied placeholder siblings
-// would otherwise render as duplicates (task-251 bug report §2).
+// keyed on template id, not oid. A deployed Player NPC is spawned with its
+// script id AS its template id -- the same id the placeholder carries -- so
+// without this filter the placeholder and the deployed NPC are two distinct
+// objects that both get painted, rendering as duplicates (task-251 bug
+// report §2).
 const (
 	playerNpcImitateTemplateMin = uint32(9901000)
 	playerNpcImitateTemplateMax = uint32(9906599)

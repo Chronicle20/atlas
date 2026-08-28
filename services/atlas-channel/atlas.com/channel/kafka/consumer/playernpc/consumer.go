@@ -4,6 +4,7 @@ import (
 	_map "atlas-channel/kafka/consumer/map"
 	"atlas-channel/listener"
 	mapProcessor "atlas-channel/map"
+	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/playernpc"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -146,6 +147,26 @@ func broadcastSpawn(l logrus.FieldLogger, ctx context.Context, wp writer.Produce
 	if err != nil {
 		l.WithError(err).Errorf("Unable to broadcast Player NPC [%d] spawn to map [%d].", n.ObjectId(), f.MapId())
 	}
+	electController(l, ctx, wp, f, n.ObjectId())
+}
+
+// electController assigns one live session in f control of npcObjectId and
+// announces the grant. Without it a Player NPC deployed while players are
+// already standing in the map stays mute until someone re-enters, because
+// CNpc::SetActive -- and therefore the client's chat balloon -- is reached
+// only through the controller grant (task-251 bug report §5).
+func electController(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, npcObjectId uint32) {
+	cp := controllernpc.NewProcessor(l, ctx)
+	assignments, err := cp.ElectFor(f, []uint32{npcObjectId})
+	if err != nil {
+		l.WithError(err).Warnf("Unable to elect a controller for Player NPC [%d] in map [%d].", npcObjectId, f.MapId())
+		return
+	}
+	for npcId, winner := range assignments {
+		if gerr := controllernpc.AnnounceGrant(l, ctx, wp)(f, winner, npcId); gerr != nil {
+			l.WithError(gerr).Warnf("Unable to announce Player NPC [%d] controller grant to [%d].", npcId, winner)
+		}
+	}
 }
 
 // broadcastImitatedOnly sends IMITATED_NPC_DATA alone -- no despawn/respawn
@@ -210,6 +231,12 @@ func handleRemoved(sc server.Model, wp writer.Producer) message.Handler[StatusEv
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast Player NPC [%d] removal to map [%d].", e.Body.ObjectId, f.MapId())
 		}
+		// The object is gone; drop its controller entry so the oid cannot be
+		// re-elected (and so a redeploy reusing the same script id claims
+		// cleanly rather than inheriting a dead controller).
+		if rerr := controllernpc.NewProcessor(l, ctx).Release(f, e.Body.ObjectId); rerr != nil {
+			l.WithError(rerr).Warnf("Unable to release controller entry for removed Player NPC [%d].", e.Body.ObjectId)
+		}
 	}
 }
 
@@ -245,6 +272,7 @@ func handleRepositioned(sc server.Model, wp writer.Producer) message.Handler[Sta
 		}
 
 		entries := make([]npcpkt.ImitatedNpc, 0, len(e.Body.Npcs))
+		respawned := make([]uint32, 0, len(e.Body.Npcs))
 		for _, rn := range e.Body.Npcs {
 			n, ok := byObjectId[rn.ObjectId]
 			if !ok {
@@ -263,6 +291,7 @@ func handleRepositioned(sc server.Model, wp writer.Producer) message.Handler[Sta
 				continue
 			}
 			entries = append(entries, _map.PlayerNpcImitatedEntry(n))
+			respawned = append(respawned, rn.ObjectId)
 		}
 		if len(entries) == 0 {
 			return
@@ -270,6 +299,19 @@ func handleRepositioned(sc server.Model, wp writer.Producer) message.Handler[Sta
 		err = mapProcessor.NewProcessor(l, ctx).ForSessionsInMap(f, announceOp(l, ctx, wp, npcpkt.NpcImitatedDataWriter, npcpkt.NewImitatedNpcData(entries).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast repositioned Player NPC avatar data to map [%d].", f.MapId())
+		}
+
+		// The despawn/respawn above destroyed and re-created each object
+		// client-side, so every client's copy is back to inactive and the
+		// old controller entry is stale. Release, then elect afresh, or the
+		// repositioned NPCs go mute (task-251 bug report §5).
+		cp := controllernpc.NewProcessor(l, ctx)
+		if rerr := cp.Release(f, respawned...); rerr != nil {
+			l.WithError(rerr).Warnf("Unable to release controller entries for repositioned Player NPCs in map [%d].", f.MapId())
+			return
+		}
+		for _, objectId := range respawned {
+			electController(l, ctx, wp, f, objectId)
 		}
 	}
 }

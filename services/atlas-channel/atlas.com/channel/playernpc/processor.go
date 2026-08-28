@@ -2,6 +2,7 @@ package playernpc
 
 import (
 	"context"
+	"errors"
 
 	"github.com/sirupsen/logrus"
 
@@ -14,7 +15,12 @@ import (
 type Processor interface {
 	InMapModelProvider(f field.Model) model.Provider[[]Model]
 	ForEachInMap(f field.Model, o model.Operator[Model]) error
+	GetInMapByObjectId(f field.Model, objectId uint32) (Model, error)
 }
+
+// ErrNotFound is returned by GetInMapByObjectId when no Player NPC with
+// that object id is currently deployed in the field.
+var ErrNotFound = errors.New("player npc not found")
 
 // ProcessorImpl implements the Processor interface.
 type ProcessorImpl struct {
@@ -46,4 +52,22 @@ func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model
 
 func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) error {
 	return model.ForEachSlice(p.InMapModelProvider(f), o, model.ParallelExecute())
+}
+
+// GetInMapByObjectId resolves one deployed Player NPC in f by its client
+// object id. atlas-player-npcs exposes no by-object-id endpoint, so this
+// filters the map list -- the same read the map-enter replay already makes,
+// over a set bounded by the map's script-id band capacity. Returns
+// ErrNotFound when the object is not deployed in f.
+func (p *ProcessorImpl) GetInMapByObjectId(f field.Model, objectId uint32) (Model, error) {
+	ns, err := p.InMapModelProvider(f)()
+	if err != nil {
+		return Model{}, err
+	}
+	for _, n := range ns {
+		if n.ObjectId() == objectId {
+			return n, nil
+		}
+	}
+	return Model{}, ErrNotFound
 }

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"atlas-channel/data/npc"
+	"atlas-channel/playernpc"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -9,24 +10,48 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc"
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
 // AnnounceGrant sends the controller grant (OnNpcChangeController flag 1)
 // for npcObjectId to characterId's session, if present on this pod.
+//
+// Player NPC object ids resolve through atlas-player-npcs rather than
+// atlas-data's per-map life list: the two spawn paths are separate, and a
+// Player NPC is not a WZ life entry. The grant body is otherwise identical,
+// because the client materializes both from the same CNpc::Init payload.
 func AnnounceGrant(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model, characterId uint32, npcObjectId uint32) error {
 	return func(f field.Model, characterId uint32, npcObjectId uint32) error {
 		return session.NewProcessor(l, ctx).IfPresentByCharacterId(f.Channel())(characterId, func(s session.Model) error {
-			n, err := npc.NewProcessor(l, ctx).GetInMapByObjectId(f.MapId(), npcObjectId)
+			body, err := grantBody(l, ctx, f, npcObjectId)
 			if err != nil {
 				l.WithError(err).Warnf("Unable to load NPC [%d] for controller grant to [%d].", npcObjectId, characterId)
 				return err
 			}
 			l.Debugf("Granting NPC [%d] control to character [%d] in field [%s].", npcObjectId, characterId, f.Id())
-			return session.Announce(l)(ctx)(wp)(npccb.NpcSpawnRequestControllerWriter)(npcpkt.NpcControllerGrantBody(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true))(s)
+			return session.Announce(l)(ctx)(wp)(npccb.NpcSpawnRequestControllerWriter)(body)(s)
 		})
 	}
+}
+
+// grantBody builds the OnNpcChangeController grant payload for npcObjectId,
+// dispatching on the reserved Player NPC oid band (design D-5).
+func grantBody(l logrus.FieldLogger, ctx context.Context, f field.Model, npcObjectId uint32) (packet.Encode, error) {
+	if objectid.IsPlayerNpcObjectId(npcObjectId) {
+		n, err := playernpc.NewProcessor(l, ctx).GetInMapByObjectId(f, npcObjectId)
+		if err != nil {
+			return nil, err
+		}
+		return npcpkt.NpcControllerGrantBody(n.ObjectId(), n.ScriptId(), n.X(), n.Cy(), int32(n.Dir()), n.Fh(), n.RX0(), n.RX1(), true), nil
+	}
+	n, err := npc.NewProcessor(l, ctx).GetInMapByObjectId(f.MapId(), npcObjectId)
+	if err != nil {
+		return nil, err
+	}
+	return npcpkt.NpcControllerGrantBody(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true), nil
 }
 
 // AnnounceRevoke sends the remove-controller arm (flag 0) for npcObjectId

@@ -352,3 +352,109 @@ not yet add up either.
 
 Not yet determinable. Do not dispatch an implementer against this file until
 the ESI / `dword_CD7590` reading above resolves the null-vs-stale question.
+
+## Round 4 — the pool really is null; narrowed to one binary fact
+
+Second x32dbg capture (user, re-run) settles the null-vs-stale question from
+round 3, and reverses part of round 3's reasoning.
+
+### Registers at the fault
+
+```
+EIP  0044F5E2      cmp dword ptr ds:[esi+4],0
+ESI  00000004      <- this + 1, so this == 0
+ECX  00000004
+EDI  00000000
+dword ptr ds:[esi+04]=[8]=???      (x32dbg: unreadable)
+```
+
+Stack window at the fault:
+
+```
+[esp]    00000116                     <- nType
+[esp+4]  007206B9  return to maplestory.007206B9   (CNpcPool::OnNpcEnterField)
+...      007204A4  return to maplestory.007204A4   (CNpcPool::OnPacket)
+```
+
+So **`dword_CD7590` is null**, confirming the round-1 conclusion by direct
+observation rather than inference. `sub_44F5DF` is a hash-map probe
+(`__lrotr(key,5)` / `div [esi+8]` / bucket array at `[esi+4]`); with `this == 0`
+it faults reading address 8.
+
+This capture faulted on **0x116** (`OnNpcEnterField`); the round-3 capture
+faulted on **0x118** (`OnNpcChangeController` → `SetLocalNpc`). Both handlers
+open with the identical `sub_44F5DF(this + 1, …)`, so whichever NPC packet is
+processed first dies. Round 3's "the 0x116s must have succeeded" argument is
+therefore **withdrawn** — they do not succeed; the crash is on the first NPC
+packet of the burst either way.
+
+User-reported symptom matches: "I can't see anything, the screen is black.
+Sometimes I just see the map background then crash." No pools ⇒ nothing to
+render.
+
+### The pool is never constructed
+
+`CWvsContext::OnEnterGame` @0xae7c9f was decompiled in full. The `CNpcPool`
+allocator `sub_AFA942` is called **unconditionally** at 0xae7d01, in the opening
+run of pool constructions (`sub_AFA8DC` … `sub_AFAAA7` @0xae7ceb–0xae7d4e).
+There is no guard. So if `OnEnterGame` ran, `dword_CD7590` would be non-null.
+It is null ⇒ **`OnEnterGame` did not run**.
+
+`set_stage` @0x7effc0 creates the pools through exactly two mutually exclusive
+arms, keyed on `CWvsContext`'s `CharacterData`:
+
+| incoming stage | condition | pool creator |
+|---|---|---|
+| `CInterStage` (`off_CD7770`) | `GetCharacterData()->p != 0` | `sub_AE8325` @0xae835c |
+| `CField` / `CCashShop` / `CITC` | `GetCharacterData()->p == 0` | `CWvsContext::OnEnterGame` @0xae7d01 |
+
+The two conditions are complementary, so a single `set_stage` always creates
+the pools — **unless** `CharacterData` is null at one `set_stage` and non-null
+at a later one. Skipping both requires that null→non-null flip to land between
+two `set_stage` calls.
+
+### Leading hypothesis (unconfirmed)
+
+A channel enter opens exactly that gap:
+
+1. `CClientSocket::OnMigrateCommand` @0x4b1924 installs a `CInterStage` at
+   0x4b1991 (guarded at 0x4b1954: only if `g_pStage` is not already one), then
+   `CWvsContext::IssueConnect` to the channel. At this `set_stage`,
+   `CharacterData` is null → `sub_AE8325` is **not** called → no pools.
+2. The channel's `SetField` arrives. `CStage::OnSetField` @0x7eea69 decodes
+   `CharacterData` (0x7eebf4) *before* its InterStage guard at 0x7eecc4.
+3. That guard skips creating a second `CInterStage` because `g_pStage` already
+   is one — so `sub_AE8325` is **not** called here either.
+4. `set_stage(field)` @0x7eed4e: if `CharacterData` is now non-null,
+   `OnEnterGame` is **not** called.
+5. `g_pStage` becomes the `CField`, `CField::Init` runs (emitting 0xEA at
+   0x561996 and 0xDA at 0x561a50 — both observed at 13:20:54.171/.178), and
+   `dword_CD7590` is still 0. The first 0x116/0x118 crashes.
+
+The hole in this story: `sub_7F019A` @0x7f019a, the allocation preceding
+`CharacterData::Decode` in `OnSetField`, writes into a **local** `ZRef`, not
+into `CWvsContext`. If nothing installs the decoded `CharacterData` into
+`CWvsContext` before 0x7eed4e, step 4's condition is false and `OnEnterGame`
+should fire. So either something else installs it, or the pool is constructed
+and then destroyed.
+
+### The one experiment that collapses this
+
+Two breakpoints in x32dbg, then log in:
+
+- `0x0071FED9` — `CNpcPool` constructor (writes `dword_CD7590 = this` @0x71fef2)
+- `0x0071FF65` — `CNpcPool` destructor (writes `dword_CD7590 = 0` @0x71ffb8)
+
+Outcomes:
+
+- **Neither hit** → the pool is never created; `OnEnterGame`/`sub_AE8325` were
+  both skipped, and the fix is on the `CharacterData`-polarity path above.
+- **Ctor hit, then dtor hit** → the pool is created and torn down; the call
+  stack at the dtor names what tears it down.
+- **Ctor hit, no dtor** → `dword_CD7590` is being clobbered by something other
+  than the ctor/dtor pair, and the write is a memory-write breakpoint away.
+
+### Fix
+
+Still not determinable; do not dispatch an implementer. The breakpoint result
+above is the gate.

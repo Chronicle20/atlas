@@ -249,7 +249,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-a9856e6
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-a9856e6
+    newTag: main-485e812
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-a9856e6
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
@@ -293,7 +293,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-kites/atlas-kites
     newTag: main-a9856e6
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
-    newTag: main-a9856e6
+    newTag: main-485e812
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-a9856e6
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps

@@ -1,10 +1,16 @@
 package data
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestDataUpdatedEventProvider_KeyIsTenantId(t *testing.T) {
@@ -70,5 +76,39 @@ func TestProducerEnabled_UnparseableTrue(t *testing.T) {
 	t.Setenv("DATA_EVENTS_PRODUCER_ENABLED", "not-a-bool")
 	if !producerEnabled() {
 		t.Fatal("expected default true when unparseable")
+	}
+}
+
+func TestWorkersIncludesItemMake(t *testing.T) {
+	if WorkerItemMake != "ITEM_MAKE" {
+		t.Fatalf("WorkerItemMake = %q, want %q", WorkerItemMake, "ITEM_MAKE")
+	}
+	count := 0
+	for _, w := range Workers {
+		if w == WorkerItemMake {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("Workers contains WorkerItemMake %d times, want 1", count)
+	}
+	if len(Workers) != 18 {
+		t.Fatalf("len(Workers) = %d, want 18", len(Workers))
+	}
+}
+
+func TestStartWorkerDispatchesItemMake(t *testing.T) {
+	t.Setenv("DATA_EVENTS_PRODUCER_ENABLED", "false")
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	l := logrus.New()
+	l.SetLevel(logrus.ErrorLevel)
+	ctx := tenant.WithContext(context.Background(), tn)
+	p := &ProcessorImpl{l: l, ctx: ctx, db: nil}
+	tmp := t.TempDir()
+	if err = p.StartWorker(WorkerItemMake, tmp); err != nil {
+		t.Fatalf("StartWorker(WorkerItemMake, ...) returned error, want nil: %v", err)
 	}
 }

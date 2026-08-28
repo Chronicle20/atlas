@@ -479,6 +479,56 @@ Returns a specific ETC item.
 
 ---
 
+### GET /api/data/item-makes
+
+Returns all item-make (crafting) recipes. Paginated (default 50, max 250).
+
+#### Response Model
+
+```json
+{
+  "data": [{
+    "type": "itemMakes",
+    "id": "4260000",
+    "attributes": {
+      "group": 0,
+      "reqLevel": 0,
+      "reqSkillLevel": 0,
+      "itemNum": 1,
+      "tuc": 0,
+      "meso": 0,
+      "catalyst": 0,
+      "reqItem": 0,
+      "reqEquip": 0,
+      "recipe": [{ "itemId": 4000000, "count": 1 }],
+      "randomReward": [
+        { "itemId": 4260000, "itemNum": 1, "prob": 70 },
+        { "itemId": 4260001, "itemNum": 1, "prob": 25 },
+        { "itemId": 4260002, "itemNum": 1, "prob": 5 }
+      ],
+      "reqQuest": []
+    }
+  }]
+}
+```
+
+---
+
+### GET /api/data/item-makes/{itemId}
+
+Returns a specific item-make recipe by its resulting item ID.
+
+#### Parameters
+
+- itemId (path): Resulting item ID
+
+#### Response Model
+
+- 200: itemMakes resource
+- 404: Not found
+
+---
+
 ### GET /api/data/item-strings
 
 Returns item strings with optional search and filter. Paginated (default 50, max 50 — search-endpoint cap).

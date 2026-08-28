@@ -770,18 +770,27 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 			return outcome.NextState(), nil
 		}
 
-		// Evaluate the condition
-		// TODO
-		passed, err := p.evaluator.EvaluateCondition(ctx.CharacterId(), outcome.Conditions()[0])
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to evaluate condition [%+v] for character [%d]. Cleaning up conversation context.", outcome.Conditions()[0], ctx.CharacterId())
-			// Clean up conversation context before returning error
-			GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
-			return "", err
+		// An outcome's conditions are AND'd together: every condition must pass
+		// for the outcome to be taken. Evaluate in order and short-circuit on
+		// the first false, since EvaluateCondition can perform remote calls.
+		allPassed := true
+		for _, condition := range outcome.Conditions() {
+			passed, err := p.evaluator.EvaluateCondition(ctx.CharacterId(), condition)
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to evaluate condition [%+v] for character [%d]. Cleaning up conversation context.", condition, ctx.CharacterId())
+				// Clean up conversation context before returning error
+				GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
+				return "", err
+			}
+
+			if !passed {
+				allPassed = false
+				break
+			}
 		}
 
-		// If the condition passed, return the next state
-		if passed {
+		// If every condition passed, return the next state
+		if allPassed {
 			return outcome.NextState(), nil
 		}
 	}

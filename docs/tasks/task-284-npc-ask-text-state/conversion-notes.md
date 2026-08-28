@@ -157,3 +157,22 @@ from this file.
   are byte-identical (verified via `md5sum`); one file was authored under
   `gms/83_1` and copied to the other nine paths.
 - Validated with `go run ./tools/catalog-lint deploy/seed` — no errors.
+
+## Engine fix: genericAction outcome conditions now use AND semantics
+
+Task 19's reviewer found that `processGenericActionState` evaluated only
+`outcome.Conditions()[0]` and ignored the rest, with a bare `// TODO` marking
+the missing loop
+(`services/atlas-npc-conversations/atlas.com/npc/conversation/processor.go`).
+The user approved landing this engine fix on this branch. The loop now
+evaluates every condition on an outcome in slice order, short-circuiting on
+the first `false` (conditions can perform remote calls, so this is a
+behavioural requirement), and reports the specific failing condition — not
+`Conditions()[0]` — if evaluation errors. Covered by five new tests in
+`processor_condition_and_test.go`, including a counting-fake-evaluator test
+that fails if the short-circuit is removed.
+
+This tightens every multi-condition outcome already seeded, including
+Tasks 18 and 19's two-condition gates (e.g. `askPassword`'s password match
+plus `checkOccupancy`'s `mapCapacity` check), which previously enforced only
+their first condition and now enforce both.

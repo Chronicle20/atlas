@@ -181,6 +181,79 @@ func TestBuildWriterProducer_WarnsOnUnconfiguredAvailableWriter(t *testing.T) {
 	}
 }
 
+func TestBuildHandlerNames(t *testing.T) {
+	tests := []struct {
+		name     string
+		handlers []HandlerConfig
+		want     map[uint16]string
+	}{
+		{
+			name: "maps opcode to configured name",
+			handlers: []HandlerConfig{
+				{OpCode: "0x0001", Handler: "USER_CHAT"},
+				{OpCode: "0x00FF", Handler: "PONG"},
+			},
+			want: map[uint16]string{0x0001: "USER_CHAT", 0x00ff: "PONG"},
+		},
+		{
+			name: "includes entries with no registered handler",
+			handlers: []HandlerConfig{
+				{OpCode: "0x0002", Handler: "NOT_REGISTERED"},
+			},
+			want: map[uint16]string{0x0002: "NOT_REGISTERED"},
+		},
+		{
+			name: "skips other service entries",
+			handlers: []HandlerConfig{
+				{OpCode: "0x0003", Handler: "LOGIN_ONLY", Services: []string{ServiceLogin}},
+			},
+			want: map[uint16]string{},
+		},
+		{
+			name: "includes untagged entries",
+			handlers: []HandlerConfig{
+				{OpCode: "0x0004", Handler: "SHARED"},
+			},
+			want: map[uint16]string{0x0004: "SHARED"},
+		},
+		{
+			name: "skips unparsable opcode",
+			handlers: []HandlerConfig{
+				{OpCode: "not-hex", Handler: "BROKEN"},
+			},
+			want: map[uint16]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l, h := test.NewNullLogger()
+
+			got := BuildHandlerNames(l, ServiceChannel, tt.handlers)
+
+			if len(got) != len(tt.want) {
+				t.Fatalf("expected map %v, got %v", tt.want, got)
+			}
+			for op, name := range tt.want {
+				if got[op] != name {
+					t.Fatalf("expected op %#x -> %q, got %q", op, name, got[op])
+				}
+			}
+
+			switch tt.name {
+			case "skips unparsable opcode":
+				if !warnContaining(h, "BROKEN", "not-hex") {
+					t.Fatalf("expected warning naming BROKEN and not-hex")
+				}
+			case "skips other service entries":
+				if got := warnCount(h); got != 0 {
+					t.Fatalf("expected zero warnings, got %d", got)
+				}
+			}
+		})
+	}
+}
+
 func TestBuildWriterProducer_NoWarnWhenAllAvailableConfigured(t *testing.T) {
 	l, h := test.NewNullLogger()
 

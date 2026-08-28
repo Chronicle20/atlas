@@ -85,3 +85,24 @@ func BuildHandlerMap(l logrus.FieldLogger, service string, handlers []HandlerCon
 	}
 	return result
 }
+
+// BuildHandlerNames returns the op -> configured handler name map for this
+// service's slice of the tenant socket config. Same service filtering and
+// opcode parsing as BuildHandlerMap, but deliberately separate: the packet
+// trace must be able to name an opcode whose handler is not registered on
+// this pod, which is exactly the case BuildHandlerMap drops (FR-3.4).
+func BuildHandlerNames(l logrus.FieldLogger, service string, handlers []HandlerConfig) map[uint16]string {
+	result := make(map[uint16]string)
+	for _, hc := range handlers {
+		if !appliesToService(hc.Services, service) {
+			continue
+		}
+		op, err := strconv.ParseUint(hc.OpCode, 0, 16)
+		if err != nil {
+			l.WithError(err).Warnf("Unable to configure handler [%s] for opcode [%s].", hc.Handler, hc.OpCode)
+			continue
+		}
+		result[uint16(op)] = hc.Handler
+	}
+	return result
+}

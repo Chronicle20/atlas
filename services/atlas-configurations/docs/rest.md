@@ -96,6 +96,7 @@ JSON:API `templates` resource with attributes:
 - `npcs` (array)
 - `worlds` (array)
 - `cashShop` (object)
+- `diagnostics` (object) - currently holds only `tracePackets` (boolean, default `false`); enabling it writes plaintext credentials to the serving pod's logs
 
 **Response Model**
 
@@ -231,6 +232,7 @@ JSON:API `tenants` resource with attributes:
 - `npcs` (array)
 - `worlds` (array)
 - `cashShop` (object)
+- `diagnostics` (object) - currently holds only `tracePackets` (boolean, default `false`); enabling it writes plaintext credentials to the serving pod's logs
 
 **Response Model**
 

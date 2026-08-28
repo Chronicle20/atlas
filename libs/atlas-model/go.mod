@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	golang.org/x/sync v0.22.0
 )
 

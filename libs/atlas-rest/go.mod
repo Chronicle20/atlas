@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/prometheus/client_golang v1.24.1
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0

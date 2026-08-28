@@ -3,7 +3,7 @@ module github.com/Chronicle20/atlas/libs/atlas-tracing
 go 1.27.0
 
 require (
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.46.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.46.0

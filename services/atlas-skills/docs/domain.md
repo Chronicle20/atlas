@@ -41,6 +41,8 @@ Represents a character's acquired skill with its current level, master level, ex
 | UpdateAndEmit | Updates a skill and emits a status event |
 | SetCooldown | Applies a cooldown to a skill |
 | SetCooldownAndEmit | Applies a cooldown and emits a status event |
+| ResetCooldowns | Clears every active cooldown for a character except a supplied exclusion list, returning the cleared skill ids |
+| ResetCooldownsAndEmit | Runs ResetCooldowns and emits a COOLDOWN_EXPIRED status event per cleared skill |
 | ClearAll | Clears all cooldowns for a character |
 | Delete | Deletes all skills for a character |
 | CooldownDecorator | Decorates a skill model with cooldown information from the registry |

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/account/session"
 	"atlas-channel/battleship"
 	"atlas-channel/character/combo"
+	"atlas-channel/character/snapshot"
 	session2 "atlas-channel/kafka/message/session"
 	"atlas-channel/position"
 	"atlas-channel/ring"
@@ -267,7 +268,14 @@ func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProduce
 							span.SetStatus(codes.Error, err.Error())
 							return err
 						}
-						if err := s.announceEncrypted(w(l, spanCtx)(encoder)); err != nil {
+						b := w(l, spanCtx)(encoder)
+						// Before the write, so a packet the client rejects
+						// fatally is still recorded (FR-4.4). These are the
+						// writer's plaintext bytes, before announceEncrypted
+						// prepends the 4-byte header and applies AES-OFB
+						// (FR-4.2).
+						tracePacketOut(l, t, writerName, s.SessionId(), b)
+						if err := s.announceEncrypted(b); err != nil {
 							span.RecordError(err)
 							span.SetStatus(codes.Error, err.Error())
 							return err
@@ -372,7 +380,9 @@ func (p *ProcessorImpl) Create(ch channel.Model, locale byte) func(sessionId uui
 		s = s.setChannelId(ch.Id())
 		getRegistry().Add(p.t.Id(), s)
 
-		err := s.WriteHello(p.t.MajorVersion(), p.t.MinorVersion())
+		err := s.WriteHello(p.t.MajorVersion(), p.t.MinorVersion(), func(b []byte) {
+			tracePacketOut(fl, p.t, "<hello>", sessionId, b)
+		})
 		if err != nil {
 			fl.WithError(err).Errorf("Unable to write hello packet.")
 		}
@@ -409,6 +419,11 @@ func (p *ProcessorImpl) DestroyById(sessionId uuid.UUID) {
 func (p *ProcessorImpl) Destroy(s Model) error {
 	p.l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 	getRegistry().Remove(p.t.Id(), s.SessionId())
+
+	// The session-scoped character snapshot dies with the session (task-122
+	// FR-3.2): logout, disconnect, and channel change all funnel here.
+	// CharacterId can be 0 for pre-login sessions; Evict no-ops then.
+	snapshot.GetRegistry().Evict(p.t, s.CharacterId())
 
 	// Battleship ride state cannot outlive the session: logout, disconnect,
 	// timeout, and channel change all funnel here (FR-5.1).

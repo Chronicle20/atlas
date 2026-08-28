@@ -96,6 +96,7 @@ Decoded shape of the `attributes` field in the global gachapon pool seed catalog
 
 - Gachapon tenantId cannot be nil UUID
 - Gachapon id cannot be empty
+- Gachapon kind must be one of: gachapon, incubator, cash-surprise
 - Item tenantId cannot be nil UUID
 - Item tier must be one of: common, uncommon, rare
 - Global item tenantId cannot be nil UUID
@@ -142,6 +143,7 @@ CRUD operations for gachapon-specific items.
 | GetByGachaponIdAndTier | Retrieve all items for a gachapon filtered by tier, unpaged |
 | GetByGachaponIdAndTierPaged | Retrieve a page of items for a gachapon filtered by tier |
 | Create | Create a new gachapon item |
+| Update | Update an item's itemId, quantity, tier, weight, and commodityId; the owning gachapon is never re-parented |
 | Delete | Delete a gachapon item by ID |
 | Count | Retrieve total gachapon item row count for tenant |
 
@@ -167,6 +169,7 @@ CRUD operations for global gachapon items.
 | GetByTier | Retrieve all global items for a tier, unpaged |
 | GetByTierPaged | Retrieve a page of global items for a tier |
 | Create | Create a new global item |
+| Update | Update a global item's itemId, quantity, and tier |
 | Delete | Delete a global item by ID |
 | Count | Retrieve total global item row count for tenant |
 

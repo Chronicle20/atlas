@@ -69,6 +69,67 @@ Signals that atlas-data has refreshed data for a worker/tenant. Only events with
 }
 ```
 
+### EVENT_TOPIC_CHARACTER_BUFF_STATUS
+
+Character buff-status events. Every message is decoded, but the handlers react ONLY to the SuperGmHide source (resolved through the tenant's version set: wire 9101004 at v0.62+, wire 5101004 at v0.48); every other buff, including Dark Sight, passes through untouched.
+
+**Consumer Group:** Monster Registry Service
+
+**Message Types:**
+
+#### APPLIED
+
+Relinquishes and reassigns the monsters controlled by a character whose SuperGmHide buff was just applied.
+
+```json
+{
+  "worldId": 0,
+  "characterId": 0,
+  "type": "APPLIED",
+  "body": {
+    "fromId": 0,
+    "sourceId": 0,
+    "level": 0,
+    "duration": 0,
+    "changes": [
+      {
+        "type": "STAT_TYPE",
+        "amount": 0
+      }
+    ],
+    "createdAt": "2024-01-01T00:00:00Z",
+    "expiresAt": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+`sourceId` is a version-specific wire skill id; only messages whose `sourceId` resolves to SuperGmHide are acted on.
+
+#### EXPIRED
+
+Restores controller candidacy for a character whose SuperGmHide buff just expired and re-runs controller election for uncontrolled monsters in their field.
+
+```json
+{
+  "worldId": 0,
+  "characterId": 0,
+  "type": "EXPIRED",
+  "body": {
+    "sourceId": 0,
+    "level": 0,
+    "duration": 0,
+    "changes": [
+      {
+        "type": "STAT_TYPE",
+        "amount": 0
+      }
+    ],
+    "createdAt": "2024-01-01T00:00:00Z",
+    "expiresAt": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
 ### COMMAND_TOPIC_MONSTER
 
 Monster commands for damage, status effects, and skill use.
@@ -178,6 +239,102 @@ Applies the post-conditions (MP deduction, attack-position cooldown) of a basic 
 }
 ```
 
+#### KILL
+
+Kills a non-boss monster outright, credited to the named character (used by the Mortal Blow player passive; the channel has already rolled the threshold and kill chance). The processor re-checks alive/boss state and drops the command if the monster is a boss.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "KILL",
+  "body": {
+    "characterId": 0
+  }
+}
+```
+
+#### SELF_DESTRUCT
+
+Detonates a self-destructing monster with the animation its WZ `selfDestruction` block specifies. `characterId` identifies the character who reported the contact (MONSTER_BOMB), or 0 when there is none.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "SELF_DESTRUCT",
+  "body": {
+    "characterId": 0
+  }
+}
+```
+
+#### CLEAR_AGGRO
+
+Fully wipes a monster's damage-aggro table. Idempotent; a no-op on an already-empty table or a monster that no longer exists.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "CLEAR_AGGRO",
+  "body": {}
+}
+```
+
+#### FORCE_CONTROL
+
+Hands a monster's controller to `characterId` with the aggro flag set, bypassing the picker election.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "FORCE_CONTROL",
+  "body": {
+    "characterId": 0
+  }
+}
+```
+
+#### SET_AGGRO
+
+Grants auto-aggro to `characterId` on a client AUTO_AGGRO claim. Gated by the processor: monster must exist, be alive, and be template-aggressive; the claimant must be present in the monster's field.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "SET_AGGRO",
+  "body": {
+    "characterId": 0
+  }
+}
+```
+
+#### DESTROY_BY_SOURCE
+
+Despawns every monster in the field whose spawn provenance matches `spawnSourceType`/`spawnSourceId`.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "type": "DESTROY_BY_SOURCE",
+  "body": {
+    "spawnSourceType": "EVENT",
+    "spawnSourceId": ""
+  }
+}
+```
+
 #### DRAIN_MP
 
 Requests an MP deduction from a monster in response to a player MP-Eater proc.
@@ -274,10 +431,14 @@ Spawns a monster in a field.
     "x": 0,
     "y": 0,
     "fh": 0,
-    "team": 0
+    "team": 0,
+    "spawnSourceType": "EVENT",
+    "spawnSourceId": ""
   }
 }
 ```
+
+`spawnSourceType`/`spawnSourceId` are optional (omitted when empty) and carry opaque spawn provenance; an absent or empty `spawnSourceType` is normalized to "CYCLIC".
 
 #### USE_SKILL_FIELD
 
@@ -410,6 +571,8 @@ Monster status events emitted during lifecycle and status effect changes.
 
 **Partitioning:** Keyed by mapId
 
+Every message on this topic also carries `spawnSourceType` and `spawnSourceId` at the envelope level (siblings of `type`/`body`), echoing the monster's spawn provenance; both are omitted when empty. They are shown only on the CREATED example below but apply to every message type.
+
 **Message Types:**
 
 #### CREATED
@@ -425,6 +588,8 @@ Emitted when a monster is spawned.
   "uniqueId": 0,
   "monsterId": 0,
   "type": "CREATED",
+  "spawnSourceType": "CYCLIC",
+  "spawnSourceId": "",
   "body": {
     "actorId": 0
   }
@@ -433,7 +598,7 @@ Emitted when a monster is spawned.
 
 #### DESTROYED
 
-Emitted when a monster is manually destroyed.
+Emitted when a monster is manually destroyed (via `DESTROY_FIELD`, `DESTROY_BY_SOURCE`, or a successful catch).
 
 ```json
 {
@@ -445,10 +610,13 @@ Emitted when a monster is manually destroyed.
   "monsterId": 0,
   "type": "DESTROYED",
   "body": {
-    "actorId": 0
+    "actorId": 0,
+    "deathType": ""
   }
 }
 ```
+
+`deathType` is one of "" (unset/fade-out), "DISAPPEAR", "FADE_OUT", "BOMB", "DESTRUCT_BY_MISS", "SWALLOW", "SELF_DESTRUCT". A manual `DESTROY_FIELD`/`DESTROY_BY_SOURCE`/catch destruction always sends `""`.
 
 #### START_CONTROL
 
@@ -540,6 +708,7 @@ or `HEAL` (0-damage HP-bar refresh after a monster heals itself).
     "observerId": 0,
     "actorId": 0,
     "boss": false,
+    "damage": 0,
     "damageSource": "CHARACTER_ATTACK",
     "damageEntries": [
       {
@@ -550,6 +719,8 @@ or `HEAL` (0-damage HP-bar refresh after a monster heals itself).
   }
 }
 ```
+
+`damage` is the amount THIS event applied (0 for a `HEAL` damageSource). `damageEntries` is the monster's running per-character cumulative total; a consumer that wants the number to render must read `damage`, not the last `damageEntries` element.
 
 #### KILLED
 
@@ -574,10 +745,13 @@ Emitted when a monster is killed.
         "characterId": 0,
         "damage": 0
       }
-    ]
+    ],
+    "deathType": "FADE_OUT"
   }
 }
 ```
+
+`deathType` is one of "DISAPPEAR", "FADE_OUT", "BOMB", "DESTRUCT_BY_MISS", "SWALLOW", "SELF_DESTRUCT" — the wire dead-type atlas-channel renders. Ordinary damage-driven kills always send "FADE_OUT"; self-destruct detonations resolve it from the monster's WZ `selfDestruction.action` byte (contact-triggered self-destructs always send "BOMB").
 
 #### STATUS_APPLIED
 
@@ -852,12 +1026,14 @@ Mist (area-effect) creation commands produced when a monster casts an AREA_POISO
     "duration": 0,
     "tickIntervalMs": 1000,
     "sourceSkillId": 0,
-    "sourceSkillLevel": 0
+    "sourceSkillLevel": 0,
+    "targetKind": "CHARACTER",
+    "effectKind": "DISEASE"
   }
 }
 ```
 
-`duration` and `diseaseDuration` are in milliseconds, capped at 60,000 server-side regardless of the skill's configured duration.
+`duration` and `diseaseDuration` are in milliseconds, capped at 60,000 server-side regardless of the skill's configured duration. This service always sends `targetKind` "CHARACTER" and `effectKind` "DISEASE" for its AREA_POISON mists; the shared message contract also defines "MONSTER"/"DAMAGE_OVER_TIME" and a CANCEL command type, neither of which this service produces.
 
 ### COMMAND_TOPIC_CHARACTER_BUFF
 
@@ -1012,6 +1188,10 @@ Runs every 1500ms (`MonsterSkillPickerSweepInterval`). For each live monster acr
 
 Runs every 10s (`MonsterRecoveryInterval`). For each live monster across all tenants whose HP or MP is below maximum: applies HP recovery (gated by a 10s idle-since-last-damage window) and MP recovery (unconditional) using atlas-data's per-monster hpRecovery/mpRecovery values. Emits `DAMAGED` (damageSource `HEAL`, 0 damage) when HP was applied and `MP_CHANGED` (reason `RECOVERY`) when MP was applied. Dead monsters (hp == 0) are skipped.
 
+#### SelfDestructTimerTask
+
+Runs every 1s. Sweeps armed timer-driven self-destruct entries (monsters whose WZ `selfDestruction` block carries no HP predicate) and detonates any whose fire time has elapsed, emitting `KILLED` and `DESTROYED` with the `deathType` resolved from the monster's WZ `selfDestruction.action` byte.
+
 ## Transaction Semantics
 
 - All messages include span and tenant headers for tracing and multi-tenancy
@@ -1021,6 +1201,8 @@ Runs every 10s (`MonsterRecoveryInterval`). For each live monster across all ten
 - Portal commands are keyed by characterId
 - Drop spawn commands are keyed by mapId
 - The EVENT_TOPIC_DATA consumer reads from the topic's latest offset (not replayed from the start) and uses a single shared consumer group across replicas, since the cache it invalidates lives in shared Redis
+- The EVENT_TOPIC_CHARACTER_BUFF_STATUS consumer decodes every message but acts only on APPLIED/EXPIRED events whose `sourceId` resolves to the SuperGmHide skill under the tenant's version set; every other buff passes through untouched
+- The catch-resolved event (EVENT_TOPIC_MONSTER_CATCH) is keyed by characterId, not mapId
 
 ## Headers
 

@@ -1,4 +1,4 @@
-# Parcel
+# Storage
 
 ## Tables
 
@@ -36,6 +36,12 @@ Items and mesos held in Duey's custody in transit between sender and recipient.
 **item_snapshot (AssetData, JSONB)**
 
 Full item stat snapshot: `expiration`, `createdAt`, `quantity`, `ownerId`, `owner`, `flag`, `rechargeable`, equipment stats (`strength`, `dexterity`, `intelligence`, `luck`, `hp`, `mp`, `weaponAttack`, `magicAttack`, `weaponDefense`, `magicDefense`, `accuracy`, `avoidability`, `hands`, `speed`, `jump`, `slots`, `levelType`, `level`, `experience`, `hammersApplied`, `ringId`, `viciousCount`), `equippedSince`, cash fields (`cashId`, `commodityId`, `purchaseBy`), `petId`.
+
+---
+
+## Relationships
+
+- `parcels` has no foreign-key relationships to other tables. Sender and recipient identity (`sender_id`, `sender_account_id`, `recipient_id`, `recipient_account_id`) are opaque uint32 values, not foreign keys enforced at the storage layer.
 
 ---
 

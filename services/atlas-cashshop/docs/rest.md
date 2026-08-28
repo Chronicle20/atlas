@@ -578,3 +578,490 @@ None. Returns 204 No Content.
 | Status | Condition |
 |--------|-----------|
 | 500 Internal Server Error | Failed to delete asset |
+
+---
+
+### GET /api/accounts/{accountId}/purchaseRecords/{serialNumber}
+
+Answers whether an account has ever purchased a given commodity serial number, and how many times. A never-purchased serial returns 200 with `purchased: false`, never 404.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| accountId | path | uint32 | yes | Account ID |
+| serialNumber | path | uint32 | yes | Commodity serial number |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `purchaseRecords`
+
+```json
+{
+  "data": {
+    "type": "purchaseRecords",
+    "id": "67890",
+    "attributes": {
+      "purchased": true,
+      "count": 3
+    }
+  }
+}
+```
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 500 Internal Server Error | Database error |
+
+---
+
+### GET /api/rings
+
+Retrieves ring pair halves for a character. `filter[characterId]` is required; there is no unfiltered listing.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| filter[characterId] | query | uint32 | yes | Character ID |
+| page[number] | query | int | no | Page number, default 1, must be >= 1 |
+| page[size] | query | int | no | Page size, default 250, must be between 1 and 250 |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `rings`
+
+```json
+{
+  "data": [
+    {
+      "type": "rings",
+      "id": "uuid",
+      "attributes": {
+        "pairId": "uuid",
+        "characterId": 12345,
+        "partnerCharacterId": 54321,
+        "assetId": 42,
+        "itemTemplateId": 5000,
+        "ringType": "COUPLE",
+        "state": "ACTIVE",
+        "createdAt": "2025-05-01T00:00:00Z",
+        "cashId": 12345,
+        "partnerCashId": 67890,
+        "partnerName": "Partner"
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": { "number": 1, "size": 250, "last": 1 }
+  }
+}
+```
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 400 Bad Request | `filter[characterId]` missing or not a positive integer, or invalid `page[number]`/`page[size]` |
+| 500 Internal Server Error | Database error |
+
+---
+
+### GET /api/rings/{ringId}
+
+Retrieves a single ring pair half by ID.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| ringId | path | uuid | yes | Ring half ID |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `rings` (same attribute shape as GET /api/rings)
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 404 Not Found | No such ring (including a ring belonging to another tenant) |
+| 500 Internal Server Error | Database error |
+
+---
+
+### GET /api/coupons
+
+Lists coupons for the tenant, with optional filters.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| filter[code] | query | string | no | Exact code match (normalized before comparison) |
+| filter[active] | query | bool | no | `true` or `false` |
+| filter[batchId] | query | uuid | no | Coupons belonging to a batch |
+| filter[expiresBefore] | query | RFC3339 timestamp | no | Coupons expiring before this time |
+| filter[expiresAfter] | query | RFC3339 timestamp | no | Coupons expiring after this time |
+| page[number] | query | int | no | Page number, default 1, must be >= 1 |
+| page[size] | query | int | no | Page size, default 250, must be between 1 and 250 |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `coupons`
+
+```json
+{
+  "data": [
+    {
+      "type": "coupons",
+      "id": "uuid",
+      "attributes": {
+        "batchId": "uuid",
+        "code": "ABCD1234EF",
+        "description": "Launch promo",
+        "active": true,
+        "startsAt": "2025-05-01T00:00:00Z",
+        "expiresAt": "2025-06-01T00:00:00Z",
+        "maxUses": 1,
+        "redemptionCount": 0,
+        "rewards": [{ "type": "CURRENCY", "currency": 1, "amount": 100 }],
+        "createdAt": "2025-05-01T00:00:00Z",
+        "updatedAt": "2025-05-01T00:00:00Z"
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": { "number": 1, "size": 250, "last": 1 }
+  }
+}
+```
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 400 Bad Request | Unparseable `filter[active]`, `filter[batchId]`, `filter[expiresBefore]`/`filter[expiresAfter]`, or invalid `page[number]`/`page[size]` |
+| 500 Internal Server Error | Database error |
+
+---
+
+### POST /api/coupons
+
+Creates a coupon. A blank `code` generates one.
+
+#### Parameters
+None.
+
+#### Request Model
+JSON:API resource type: `coupons`
+
+```json
+{
+  "data": {
+    "type": "coupons",
+    "attributes": {
+      "code": "",
+      "description": "Launch promo",
+      "active": true,
+      "startsAt": null,
+      "expiresAt": "2025-06-01T00:00:00Z",
+      "maxUses": 1,
+      "rewards": [{ "type": "CASH_ITEM", "serialNumber": 67890, "quantity": 1 }]
+    }
+  }
+}
+```
+
+#### Response Model
+JSON:API resource type: `coupons` (same shape as GET /api/coupons/{couponId})
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 422 Unprocessable Entity | Implausible code, malformed/empty reward bundle, `expiresAt` not after `startsAt`, `maxUses` below redemption count, or a `CASH_ITEM` reward referencing an unknown commodity serial |
+| 409 Conflict | A coupon with this (normalized) code already exists |
+| 500 Internal Server Error | Database error |
+
+---
+
+### GET /api/coupons/{couponId}
+
+Retrieves a single coupon.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| couponId | path | uuid | yes | Coupon ID |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `coupons`
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 404 Not Found | No such coupon |
+| 500 Internal Server Error | Database error |
+
+---
+
+### PATCH /api/coupons/{couponId}
+
+Partially updates a coupon. A field omitted from the body preserves its stored value; `startsAt`/`expiresAt`/`maxUses` may be explicitly set to `null` to clear them. `code`, `batchId`, `id`, and `redemptionCount` are not editable.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| couponId | path | uuid | yes | Coupon ID |
+
+#### Request Model
+JSON:API resource type: `coupons`
+
+```json
+{
+  "data": {
+    "type": "coupons",
+    "attributes": {
+      "active": false
+    }
+  }
+}
+```
+
+#### Response Model
+JSON:API resource type: `coupons`
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 404 Not Found | No such coupon |
+| 422 Unprocessable Entity | Malformed reward bundle, `expiresAt` not after `startsAt`, or `maxUses` below the stored redemption count |
+| 500 Internal Server Error | Database error |
+
+---
+
+### DELETE /api/coupons/{couponId}
+
+Deletes a coupon that has never been redeemed.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| couponId | path | uuid | yes | Coupon ID |
+
+#### Request Model
+None.
+
+#### Response Model
+None. Returns 204 No Content.
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 404 Not Found | No such coupon |
+| 409 Conflict | Coupon has redemptions and cannot be deleted |
+| 500 Internal Server Error | Database error |
+
+---
+
+### GET /api/coupon-batches
+
+Lists bulk coupon-generation batches.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| page[number] | query | int | no | Page number, default 1, must be >= 1 |
+| page[size] | query | int | no | Page size, default 250, must be between 1 and 250 |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `coupon-batches`
+
+```json
+{
+  "data": [
+    {
+      "type": "coupon-batches",
+      "id": "uuid",
+      "attributes": {
+        "description": "Anniversary giveaway",
+        "requestedCount": 500,
+        "generatedCount": 500,
+        "redeemedCount": 12,
+        "createdAt": "2025-05-01T00:00:00Z"
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": { "number": 1, "size": 250, "last": 1 }
+  }
+}
+```
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 400 Bad Request | Invalid `page[number]`/`page[size]` |
+| 500 Internal Server Error | Database error |
+
+---
+
+### POST /api/coupon-batches
+
+Generates a batch of coupon codes (whole batch or none). The generated plaintext codes appear only in this response.
+
+#### Parameters
+None.
+
+#### Request Model
+JSON:API resource type: `coupon-batches`
+
+```json
+{
+  "data": {
+    "type": "coupon-batches",
+    "attributes": {
+      "description": "Anniversary giveaway",
+      "count": 500,
+      "prefix": "ANNIV-",
+      "length": 10,
+      "startsAt": null,
+      "expiresAt": "2025-06-01T00:00:00Z",
+      "rewards": [{ "type": "CURRENCY", "currency": 2, "amount": 500 }]
+    }
+  }
+}
+```
+
+#### Response Model
+JSON:API resource type: `coupon-batches`
+
+```json
+{
+  "data": {
+    "type": "coupon-batches",
+    "id": "uuid",
+    "attributes": {
+      "description": "Anniversary giveaway",
+      "requestedCount": 500,
+      "generatedCount": 500,
+      "redeemedCount": 0,
+      "createdAt": "2025-05-01T00:00:00Z",
+      "codes": ["ANNIV-A1B2C3D4E5", "..."]
+    }
+  }
+}
+```
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 422 Unprocessable Entity | Zero/invalid count, prefix+length exceeding the code length limit, malformed reward bundle, `expiresAt` not after `startsAt`, or an unknown commodity serial |
+| 500 Internal Server Error | Database error |
+
+---
+
+### GET /api/coupon-batches/{batchId}
+
+Retrieves a single batch.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| batchId | path | uuid | yes | Batch ID |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `coupon-batches` (no `codes` field on a GET; codes are returned only on creation)
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 404 Not Found | No such coupon batch |
+| 500 Internal Server Error | Database error |
+
+---
+
+### GET /api/coupons/{couponId}/redemptions
+
+Retrieves the redemption audit trail for a single coupon. Read-only.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| couponId | path | uuid | yes | Coupon ID |
+| page[number] | query | int | no | Page number, default 1, must be >= 1 |
+| page[size] | query | int | no | Page size, default 250, must be between 1 and 250 |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `coupon-redemptions`
+
+```json
+{
+  "data": [
+    {
+      "type": "coupon-redemptions",
+      "id": "uuid",
+      "attributes": {
+        "couponId": "uuid",
+        "accountId": 12345,
+        "characterId": 67890,
+        "transactionId": "uuid",
+        "rewardsGranted": [{ "type": "CURRENCY", "currency": 1, "amount": 100 }],
+        "redeemedAt": "2025-05-01T00:00:00Z"
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": { "number": 1, "size": 250, "last": 1 }
+  }
+}
+```
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 400 Bad Request | Invalid `page[number]`/`page[size]` |
+| 500 Internal Server Error | Database error |
+
+---
+
+### GET /api/coupon-redemptions
+
+Retrieves the redemption audit trail for an account. `filter[accountId]` is required; there is no unfiltered listing.
+
+#### Parameters
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| filter[accountId] | query | uint32 | yes | Account ID |
+| page[number] | query | int | no | Page number, default 1, must be >= 1 |
+| page[size] | query | int | no | Page size, default 250, must be between 1 and 250 |
+
+#### Request Model
+None.
+
+#### Response Model
+JSON:API resource type: `coupon-redemptions` (same shape as GET /api/coupons/{couponId}/redemptions)
+
+#### Error Conditions
+| Status | Condition |
+|--------|-----------|
+| 400 Bad Request | `filter[accountId]` missing or not a positive integer, or invalid `page[number]`/`page[size]` |
+| 500 Internal Server Error | Database error |

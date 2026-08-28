@@ -23,6 +23,7 @@ The service manages chair usage for game characters. It tracks which characters 
 | COMMAND_TOPIC_CHAIR | Topic for chair commands |
 | EVENT_TOPIC_CHAIR_STATUS | Topic for chair status events |
 | EVENT_TOPIC_CHARACTER_STATUS | Topic for character status events (consumed) |
+| COMMAND_TOPIC_CHARACTER | Topic for character HP/MP change commands (produced) |
 | DATA | Base URL for data service |
 | QUERY_AGGREGATOR | Base URL for query aggregator service |
 

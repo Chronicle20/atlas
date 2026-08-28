@@ -24,6 +24,10 @@ Drop spawn commands. Each successful drop evaluation produces a SPAWN command.
 
 Character commands. Experience award commands are produced for each character who contributed damage.
 
+### COMMAND_TOPIC_SYSTEM_MESSAGE
+
+System message commands. A SHOW_HINT command is produced for each level-gate-excluded party member, subject to the hint throttle.
+
 ---
 
 ## Message Types
@@ -157,6 +161,29 @@ Experience award command. Produced to COMMAND_TOPIC_CHARACTER.
 - RAINBOW_WEEK
 - PARTY_RING
 - CAKE_PIE
+
+#### Command[ShowHintBody]
+
+Show-hint command. Produced to COMMAND_TOPIC_SYSTEM_MESSAGE.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| transactionId | uuid | Transaction identifier |
+| worldId | byte | World identifier |
+| channelId | byte | Channel identifier |
+| characterId | uint32 | Character identifier |
+| type | string | Command type ("SHOW_HINT") |
+| body | ShowHintBody | Command body |
+
+**Message key**: Character ID
+
+#### ShowHintBody
+
+| Field | Type | Description |
+|-------|------|-------------|
+| hint | string | Hint text to display |
+| width | uint16 | Width of the hint box (0 for auto-calculation) |
+| height | uint16 | Height of the hint box (0 for auto-calculation) |
 
 ---
 

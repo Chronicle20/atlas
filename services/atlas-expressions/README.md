@@ -21,6 +21,7 @@ A service that manages character facial expressions. It tracks active expression
 - REDIS_PASSWORD - Redis authentication password
 - TRACE_ENDPOINT - OpenTelemetry collector endpoint for distributed tracing
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+- ATLAS_ENVIRONMENT - This pod's own environment identity, attached to the tenant context of each expiration before its revert event is emitted
 
 ## Documentation
 

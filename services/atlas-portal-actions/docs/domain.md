@@ -45,6 +45,7 @@ Represents the result of processing a portal script.
 | Allow | bool | Whether portal entry was allowed |
 | MatchedRule | string | ID of the matched rule |
 | Operations | []operation.Model | Operations that were executed |
+| CharacterMoved | bool | Whether a moving operation was successfully dispatched |
 | Error | error | Any error that occurred |
 
 ## Invariants
@@ -196,7 +197,7 @@ Validates character state via HTTP POST to the query aggregator service.
 
 ## Responsibility
 
-The action domain tracks pending portal actions that require saga completion. Used for operations like `start_instance_transport` where the result of the saga determines whether a failure message needs to be sent to the character.
+The action domain tracks pending portal actions that require saga completion. Used for operations like `warp`, `warp_to_saved_location`, and `start_instance_transport` where the result of the saga determines whether a failure message needs to be sent to the character.
 
 ## Core Models
 
@@ -210,6 +211,7 @@ Represents a pending portal action awaiting saga completion.
 | WorldId | world.Id | World identifier |
 | ChannelId | channel.Id | Channel identifier |
 | FailureMessage | string | Message to display on saga failure |
+| Kind | string | Which portal operation created the pending action (`warp` or `transport`); empty means written before Kind existed |
 
 ## Invariants
 
@@ -226,9 +228,48 @@ Thread-safe in-memory registry for pending actions.
 
 | Method | Description |
 |--------|-------------|
-| Add | Registers a pending action for a saga |
+| Add | Registers a pending action for a saga with no expiry |
+| AddWithTTL | Registers a pending action for a saga that self-expires after the given duration |
 | Get | Retrieves a pending action by saga ID |
 | Remove | Removes a pending action by saga ID |
+
+---
+
+# Dedupe Domain
+
+## Responsibility
+
+The dedupe domain gates duplicate portal ENTER commands for the same character, map instance, and portal within a short time window.
+
+## Core Models
+
+### Key
+
+Identifies one portal entry attempt.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| CharacterId | uint32 | Character identifier |
+| MapId | map.Id | Map identifier |
+| Instance | uuid.UUID | Map instance identifier |
+| PortalId | uint32 | Portal identifier |
+
+## Invariants
+
+- The gate closes for 2 seconds (`enterGateTTL`) after a portal ENTER is allowed through
+- The gate is keyed by tenant, character ID, map ID, instance, and portal ID via Redis
+- A Redis error is treated as an open gate (fails open); the command is processed
+- `GetGate` never returns nil; a gate that was never initialized via `InitGate` allows every command
+
+## Processors
+
+### Gate
+
+Decides whether a portal ENTER command should be processed.
+
+| Method | Description |
+|--------|-------------|
+| Allow | Reports whether a portal ENTER should be processed; false for a duplicate inside the TTL window |
 
 ---
 

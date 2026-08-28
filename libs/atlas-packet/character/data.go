@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -68,7 +69,7 @@ type SkillEntry struct {
 	MasterLevel uint32
 	// NeedsMasterLevel mirrors the client's is_skill_need_master_level for this
 	// skill id. It is derived, never supplied: both Encode and Decode recompute
-	// it from Id via skill.NeedsMasterLevel so the two cannot disagree, and so a
+	// it from Id via job.NeedsMasterLevel so the two cannot disagree, and so a
 	// caller cannot reintroduce the per-JOB approximation that closed the client
 	// with error 38 on a preset Evan (task-218).
 	NeedsMasterLevel bool
@@ -265,22 +266,6 @@ func (m *CharacterData) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 
 // Stats encoding/decoding
 
-// isEvanJob reports whether the job uses the Evan extended-SP block (a per-master-level
-// SP list) instead of a single SP short. Matches the v84 client (GW_CharacterStat::Decode):
-// jobId == 2001 (Evan beginner) || jobId/100 == 22 (Evan growths 2200-2299).
-func isEvanJob(jobId uint16) bool {
-	return jobId == 2001 || jobId/100 == 22
-}
-
-// isJmsExtendedSpJob reports whether JMS 185's GW_CharacterStat::Decode gates
-// the extended-SP block for this job. JMS 185's gate is sub_5163A2 @0x5163a2:
-// jobId/1000 == 3 (Resistance 3xxx) || jobId/100 == 22 (Evan growths) ||
-// jobId == 2001 (Evan beginner) — Resistance too, not just Evan as on GMS.
-// IDA-verified; distinct from isEvanJob, which is the GMS-only gate.
-func isJmsExtendedSpJob(jobId uint16) bool {
-	return jobId/1000 == 3 || jobId/100 == 22 || jobId == 2001
-}
-
 func (m *CharacterData) encodeStats(w *response.Writer, t tenant.Model) {
 	w.WriteInt(m.Stats.Id)
 
@@ -322,12 +307,12 @@ func (m *CharacterData) encodeStats(w *response.Writer, t tenant.Model) {
 	w.WriteShort(m.Stats.Mp)
 	w.WriteShort(m.Stats.MaxMp)
 	w.WriteShort(m.Stats.Ap)
-	useExtendedSp := (t.IsRegion("GMS") && t.MajorAtLeast(84) && isEvanJob(m.Stats.JobId)) ||
-		(t.Region() == "JMS" && isJmsExtendedSpJob(m.Stats.JobId))
-	if useExtendedSp {
-		// Extended SP: byte count + count×(masterLevelIdx, sp) byte-pairs
-		// (GW_CharacterStat::DecodeExtendSP). 0 for a freshly-created character
-		// of the gated job (no SP allocated).
+	if job.UsesExtendedSP(job.Id(m.Stats.JobId), t.Region(), t.MajorVersion()) {
+		// Extended SP: byte count + count x (masterLevelIdx, sp) byte-pairs
+		// (GW_CharacterStat::DecodeExtendSP; JMS 185 sub_50E8B0 @0x50e8b0,
+		// count @0x50e8c6, pair @0x50e8de/@0x50e8e0). Atlas has no
+		// per-master-level SP allocation model, so the count is always 0.
+		// See job.UsesExtendedSP for the per-version predicate.
 		w.WriteByte(0)
 	} else {
 		w.WriteShort(m.Stats.Sp)
@@ -406,10 +391,8 @@ func (m *CharacterData) decodeStats(r *request.Reader, t tenant.Model) {
 	m.Stats.Mp = r.ReadUint16()
 	m.Stats.MaxMp = r.ReadUint16()
 	m.Stats.Ap = r.ReadUint16()
-	useExtendedSp := (t.IsRegion("GMS") && t.MajorAtLeast(84) && isEvanJob(m.Stats.JobId)) ||
-		(t.Region() == "JMS" && isJmsExtendedSpJob(m.Stats.JobId))
-	if useExtendedSp {
-		// Extended SP (mirror of Encode): byte count + count×(masterLevelIdx, sp).
+	if job.UsesExtendedSP(job.Id(m.Stats.JobId), t.Region(), t.MajorVersion()) {
+		// Mirror of encodeStats — one authority, so the two cannot diverge.
 		count := r.ReadByte()
 		for i := byte(0); i < count; i++ {
 			_ = r.ReadByte() // master-level index
@@ -680,8 +663,8 @@ func (m *CharacterData) encodeSkills(w *response.Writer, t tenant.Model) {
 		// The master level is per-SKILL, not per-job: the client asks
 		// is_skill_need_master_level(nSkillID) here. Deriving it from the id
 		// rather than trusting s.NeedsMasterLevel keeps Encode and Decode on one
-		// authority. See skill.NeedsMasterLevel.
-		if skill.NeedsMasterLevel(skill.Id(s.Id), t.Region() == "GMS") {
+		// authority. See job.NeedsMasterLevel.
+		if job.NeedsMasterLevel(skill.Id(s.Id), t.Region(), t.MajorVersion()) {
 			w.WriteInt(s.MasterLevel)
 		}
 	}
@@ -705,9 +688,9 @@ func (m *CharacterData) decodeSkills(r *request.Reader, t tenant.Model) {
 		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			m.Skills[i].Expiration = r.ReadInt64()
 		}
-		// Mirror of encodeSkills — see skill.NeedsMasterLevel for the client
+		// Mirror of encodeSkills — see job.NeedsMasterLevel for the client
 		// rule and its per-version evidence.
-		m.Skills[i].NeedsMasterLevel = skill.NeedsMasterLevel(skill.Id(m.Skills[i].Id), t.Region() == "GMS")
+		m.Skills[i].NeedsMasterLevel = job.NeedsMasterLevel(skill.Id(m.Skills[i].Id), t.Region(), t.MajorVersion())
 		if m.Skills[i].NeedsMasterLevel {
 			m.Skills[i].MasterLevel = r.ReadUint32()
 		}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
@@ -196,8 +197,14 @@ func TestCharacterDataByteOutputJMS185(t *testing.T) {
 }
 
 // TestIsJmsExtendedSpJob pins sub_5163A2 @0x5163a2: job/1000 == 3 (Resistance)
-// || job/100 == 22 (Evan growths) || job == 2001 (Evan beginner). Distinct from
-// isEvanJob (the GMS-only gate), which does not accept Resistance.
+// || job/100 == 22 (Evan growths) || job == 2001 (Evan beginner).
+//
+// The predicate itself lives in atlas-constants (job.UsesExtendedSP), which
+// main added in #1549 and which already carries this exact JMS arm — derived
+// independently there, and identical to what sub_5163A2 reads. This test keeps
+// the JMS cell pinned from the codec side, so a later edit to the shared
+// predicate cannot silently change what JMS 185 puts on the wire. The GMS arm
+// (v84..91, Evan-only, no Resistance) is asserted below to stay distinct.
 func TestIsJmsExtendedSpJob(t *testing.T) {
 	for _, c := range []struct {
 		job  uint16
@@ -216,8 +223,13 @@ func TestIsJmsExtendedSpJob(t *testing.T) {
 		{2300, false},
 		{4000, false},
 	} {
-		if got := isJmsExtendedSpJob(c.job); got != c.want {
-			t.Errorf("isJmsExtendedSpJob(%d) = %v, want %v", c.job, got, c.want)
+		if got := job.UsesExtendedSP(job.Id(c.job), "JMS", 185); got != c.want {
+			t.Errorf("UsesExtendedSP(%d, JMS, 185) = %v, want %v", c.job, got, c.want)
+		}
+		// The GMS v84..91 arm is Evan-only: Resistance must NOT use extended SP there.
+		if wantGMS := c.job/100 == 22 || c.job == 2001; job.UsesExtendedSP(job.Id(c.job), "GMS", 84) != wantGMS {
+			t.Errorf("UsesExtendedSP(%d, GMS, 84) = %v, want %v", c.job,
+				job.UsesExtendedSP(job.Id(c.job), "GMS", 84), wantGMS)
 		}
 	}
 }
@@ -227,7 +239,7 @@ func TestIsJmsExtendedSpJob(t *testing.T) {
 // Resistance character (job 3xxx) always wrote the plain 2-byte nSP short even
 // though JMS 185's GW_CharacterStat::Decode (sub_5163A2 @0x5163a2) reads the
 // 1-byte ExtendSP count for that job too — desyncing the stat block. The GMS
-// Evan-only gate must stay unchanged (isEvanJob does not accept Resistance).
+// Evan-only gate must stay unchanged (GMS v84..91 does not accept Resistance).
 func TestJmsResistanceExtendedSP(t *testing.T) {
 	mk := func(jobId uint16) CharacterData {
 		return CharacterData{

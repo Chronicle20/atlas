@@ -4,7 +4,7 @@ Configuration management service for the Atlas platform.
 
 ## Overview
 
-This service provides centralized management of configuration templates, tenants, and service configurations. Templates define version-specific configuration schemas that tenants derive from. The service supports automatic seeding of template data on startup.
+This service provides centralized management of configuration templates, tenants, and service configurations. Templates define version-specific configuration schemas that tenants derive from. The service supports automatic seeding of template data on startup. Templates, tenants, services, and a list of execution environments are each scoped to an execution environment (e.g. the main deployment, or a per-PR environment), with an `ENVIRONMENT` request header selecting the caller's environment.
 
 ## External Dependencies
 
@@ -30,7 +30,9 @@ This service provides centralized management of configuration templates, tenants
 | `BOOTSTRAP_SERVERS` | Comma-separated Kafka broker list used by the outbox drainer |
 | `EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS` | Kafka topic service config CRUD events are published to; publish is skipped when unset |
 | `EVENT_TOPIC_CONFIGURATION_TENANT_STATUS` | Kafka topic tenant config CRUD events are published to; publish is skipped when unset |
+| `EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS` | Kafka topic environment CRUD and heartbeat events are published to; publish is skipped when unset |
 | `DATA_SERVICE_URL` | Base URL for the atlas-data service, used by character preset validation; falls back to `BASE_SERVICE_URL` |
+| `ATLAS_ENVIRONMENT` | Baseline execution environment existing rows are backfilled to on startup (default: `main`) |
 
 ## Documentation
 

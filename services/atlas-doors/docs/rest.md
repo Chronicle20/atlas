@@ -50,7 +50,7 @@ Retrieves all doors owned by a character for the tenant in context. Paginated; r
 **Parameters:**
 - `characterId` (path, character.Id): the owner character id.
 - `page[number]` (query, int, optional): 1-based page number. Default 1. Must be >= 1.
-- `page[size]` (query, int, optional): page size. Default 50. Must be between 1 and 250.
+- `page[size]` (query, int, optional): page size. Default 250. Must be between 1 and 250.
 - `limit` (query): rejected outright; use `page[size]` instead.
 
 **Request model:** none.
@@ -71,7 +71,7 @@ Retrieves all doors whose area field matches the given world, channel, map, and 
 - `mapId` (path, _map.Id): the map id.
 - `instanceId` (path, uuid.UUID): the instance id.
 - `page[number]` (query, int, optional): 1-based page number. Default 1. Must be >= 1.
-- `page[size]` (query, int, optional): page size. Default 50. Must be between 1 and 250.
+- `page[size]` (query, int, optional): page size. Default 250. Must be between 1 and 250.
 - `limit` (query): rejected outright; use `page[size]` instead.
 
 **Request model:** none.

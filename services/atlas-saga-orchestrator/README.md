@@ -85,6 +85,15 @@ This service makes REST calls to:
 | COMMAND_TOPIC_DROP | Drop spawn commands |
 | COMMAND_TOPIC_MAP | Map commands |
 | COMMAND_TOPIC_MTS_CUSTODY | MTS listing/holding custody commands |
+| COMMAND_TOPIC_NOTE | Note (memo) commands |
+| COMMAND_TOPIC_NPC | NPC conversation start/continue/end commands |
+| COMMAND_TOPIC_NPC_CONVERSATION | NPC conversation dialogue box commands |
+| COMMAND_TOPIC_NPC_SHOP | NPC shop commands |
+| COMMAND_TOPIC_PARCEL | Duey parcel dialog display commands |
+| COMMAND_TOPIC_PARCEL_CUSTODY | Duey parcel custody commands |
+| COMMAND_TOPIC_PARTY | Party leave commands |
+| COMMAND_TOPIC_TRADE_CUSTODY | Trade escrow custody commands |
+| COMMAND_TOPIC_WORLD_BROADCAST | World broadcast (megaphone/Maple TV) queue commands |
 | EVENT_TOPIC_SAGA_STATUS | Saga status output |
 | EVENT_TOPIC_ASSET_STATUS | Asset status input |
 | EVENT_TOPIC_BUDDY_LIST_STATUS | Buddy list status input |
@@ -104,6 +113,14 @@ This service makes REST calls to:
 | EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS | Storage compartment status input |
 | EVENT_TOPIC_GACHAPON_REWARD_WON | Gachapon reward win events output |
 | EVENT_TOPIC_CONVERSATION_REWARD_NOTICE | Conversation-sourced item gain/loss notice output |
+| EVENT_TOPIC_INCUBATOR_RESULT | Incubator use result output |
+| EVENT_TOPIC_MEGAPHONE | Megaphone broadcast output |
+| EVENT_TOPIC_NOTE_STATUS | Note status input |
+| EVENT_TOPIC_NPC_CONVERSATION_STATUS | NPC conversation status input |
+| EVENT_TOPIC_NPC_SHOP_STATUS | NPC shop status input |
+| EVENT_TOPIC_PARCEL_CUSTODY_STATUS | Parcel custody status input |
+| EVENT_TOPIC_PARTY_STATUS | Party status input |
+| EVENT_TOPIC_TRADE_CUSTODY_STATUS | Trade custody status input |
 
 ## Documentation
 

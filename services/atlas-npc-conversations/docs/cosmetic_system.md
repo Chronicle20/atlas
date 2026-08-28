@@ -177,6 +177,29 @@ Generates available face/eye color variations for the character's current face (
 
 **Use Case**: Cosmetic lens NPCs like Dr. Rhomes (NPC 9200101) that change eye/face color.
 
+#### local:generate_face_colors_for_onetime_lens
+
+Checks which one-time lens items (5152100–5152107) the character owns and generates the corresponding face colors for the owned items.
+
+**Parameters**:
+- `validateExists` (string, optional): Set to "true" to validate colors exist in WZ data
+- `excludeEquipped` (string, optional): Set to "true" to exclude current face color
+- `outputContextKey` (string, optional, default `"onetimeLensColors"`): Context key to store the generated colors array
+
+**Example**:
+```json
+{
+  "type": "local:generate_face_colors_for_onetime_lens",
+  "params": {
+    "validateExists": "true",
+    "excludeEquipped": "true",
+    "outputContextKey": "onetimeLensColors"
+  }
+}
+```
+
+**Use Case**: One-time cosmetic lens flows (NPC 9200101), where each item 5152100–5152107 grants exactly one specific color and eligibility is determined by inventory ownership rather than player choice.
+
 #### local:select_random_cosmetic
 
 Randomly selects a cosmetic style from a pre-populated styles array.

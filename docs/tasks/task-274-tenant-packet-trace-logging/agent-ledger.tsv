@@ -1,0 +1,36 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-28T01:29:51Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	42f660228	-	-	-	-
+2026-08-28T01:31:04Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	42f660228	APPROVED	no	-	-
+2026-08-28T01:31:28Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	2582867d8	-	-	-	-
+2026-08-28T01:32:43Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	2582867d8	APPROVED	no	-	-
+2026-08-28T01:33:36Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	55e9ef81f	-	-	-	-
+2026-08-28T01:35:22Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	55e9ef81f	APPROVED	no	-	-
+2026-08-28T01:36:23Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	50b0773	-	-	-	-
+2026-08-28T01:38:42Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	50b07731f	APPROVED	no	-	-
+2026-08-28T01:38:42Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	75000
+2026-08-28T01:57:57Z	agent	Task 1	task-verifier	haiku	-	-	-	-	PASS	42f660228	-	-	-	-
+2026-08-28T10:48:25Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	7c21365e0	-	-	-	-
+2026-08-28T10:50:22Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	7c21365e0	APPROVED	no	-	-
+2026-08-28T10:51:00Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	3c95e82ed	-	-	-	-
+2026-08-28T10:53:07Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	3c95e82ed	APPROVED	no	-	-
+2026-08-28T10:54:35Z	agent	Task 7a	task-implementer	sonnet	-	-	-	-	DONE	292b7f782	-	-	-	-
+2026-08-28T10:56:16Z	agent	Task 7b	task-implementer	sonnet	-	-	-	-	DONE	c5ee1f897	-	-	-	-
+2026-08-28T10:57:03Z	agent	Task 7a	task-reviewer	sonnet	-	-	-	-	DONE	292b7f782	APPROVED	no	-	-
+2026-08-28T10:58:12Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DONE	3532060	-	-	-	-
+2026-08-28T10:58:26Z	agent	Task 7b	task-reviewer	sonnet	-	-	-	-	DONE	c5ee1f897	APPROVED	no	-	-
+2026-08-28T11:00:27Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	35320607c	APPROVED	no	-	-
+2026-08-28T11:09:56Z	agent	Task 8a	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	fe6b0fa3a	-	-	-	-
+2026-08-28T11:11:00Z	agent	Task 8b	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	e5af3cf	-	-	-	-
+2026-08-28T11:11:30Z	agent	Task 8a	task-reviewer	sonnet	-	-	-	-	DONE	fe6b0fa3a	APPROVED	no	.superpowers/sdd/plan/task-8a-review.md	-
+2026-08-28T11:12:58Z	agent	Task 8b	task-reviewer	sonnet	-	-	-	-	DONE	e5af3cf	APPROVED	no	.superpowers/sdd/plan/task-8b-review.md	-
+2026-08-28T11:15:00Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE	b1b1dc1	-	-	-	-
+2026-08-28T11:17:02Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	b1b1dc1	APPROVED	no	.superpowers/sdd/plan/task-10-review.md	-
+2026-08-28T11:20:34Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	b1b1dc1	APPROVED	no	.superpowers/sdd/plan/plan-adherence-audit.md	-
+2026-08-28T11:22:25Z	agent	pre-PR	frontend-guidelines-reviewer	sonnet	-	-	-	-	DONE	b1b1dc1	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/frontend-audit.md	-
+2026-08-28T11:24:15Z	agent	fix: frontend audit	task-implementer	sonnet	-	-	-	-	DONE	946dd67e2	-	-	-	-
+2026-08-28T11:26:03Z	agent	fix: frontend audit	task-reviewer	sonnet	-	-	-	-	DONE	946dd67e2	APPROVED	no	.superpowers/sdd/plan/fix-frontend-review.md	-
+2026-08-28T11:26:52Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	b1b1dc1	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/backend-audit/audit.md	-
+2026-08-28T11:28:42Z	agent	fix: backend DOM-10 configurations	task-implementer	sonnet	-	-	-	-	DONE	b8db47847	-	-	-	-
+2026-08-28T11:30:09Z	agent	fix: backend DOM-20 channel	task-implementer	sonnet	-	-	-	-	DONE	3e8bac41f	-	-	-	-
+2026-08-28T11:30:51Z	agent	fix: backend DOM-20 login	task-implementer	sonnet	-	-	-	-	DONE	d7c5fb711	-	-	-	-
+2026-08-28T11:33:39Z	agent	fix: backend audit	task-reviewer	sonnet	-	-	-	-	DONE	d7c5fb711	APPROVED	no	.superpowers/sdd/plan/fix-backend-review.md	-

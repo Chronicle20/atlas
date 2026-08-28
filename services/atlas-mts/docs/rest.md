@@ -68,6 +68,18 @@ transition).
   exist; 409 if the cancel lost the cancel-vs-buy race (the listing was no
   longer active); 204 on success.
 
+### GET /characters/{characterId}/mts/listings
+
+A seller's active listings across all worlds.
+
+- Parameters: `characterId` (path, uint32). Query: `page[number]`/
+  `page[size]` (default and cap both `paginate.MaxPageSize`).
+- Request model: none.
+- Response model: a paginated JSON:API list of listing `RestModel`
+  (resource type `listings`), restricted to the seller's `state=active`
+  rows.
+- Error conditions: 400 invalid paging params; 500 on a read failure.
+
 ### GET /characters/{characterId}/mts/holding
 
 List a character's take-home holdings.

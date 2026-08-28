@@ -21,6 +21,12 @@
 | Skill Status | EVENT_TOPIC_SKILL_STATUS | Event | Skill service status events (CREATED, UPDATED) |
 | Storage Status | EVENT_TOPIC_STORAGE_STATUS | Event | Storage service status events (DEPOSITED, WITHDRAWN, MESOS_UPDATED, ERROR) |
 | Storage Compartment Status | EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS | Event | Storage compartment status events (ACCEPTED, RELEASED, ERROR) |
+| Note Status | EVENT_TOPIC_NOTE_STATUS | Event | Note service status events (CREATED, CREATE_FAILED) |
+| NPC Conversation Status | EVENT_TOPIC_NPC_CONVERSATION_STATUS | Event | NPC conversation start status events (STARTED, START_ERROR) |
+| NPC Shop Status | EVENT_TOPIC_NPC_SHOP_STATUS | Event | NPC shop status events (ENTERED, EXITED, ERROR, ENTER_ERROR) |
+| Parcel Custody Status | EVENT_TOPIC_PARCEL_CUSTODY_STATUS | Event | Parcel custody status events (ACCEPTED, RELEASED, ERROR) |
+| Party Status | EVENT_TOPIC_PARTY_STATUS | Event | Party status events (LEFT, DISBAND) |
+| Trade Custody Status | EVENT_TOPIC_TRADE_CUSTODY_STATUS | Event | Trade escrow custody status events (ACCEPTED, RELEASED, RESTORED, REMOVED, ERROR) |
 
 ## Topics Produced
 
@@ -51,6 +57,16 @@
 | Gachapon Reward Won | EVENT_TOPIC_GACHAPON_REWARD_WON | Event | Gachapon reward win announcements |
 | Incubator Result | EVENT_TOPIC_INCUBATOR_RESULT | Event | Incubator use result (item-tag/sealing-lock/incubator sagas) for the channel to announce via packet |
 | Conversation Reward Notice | EVENT_TOPIC_CONVERSATION_REWARD_NOTICE | Event | Item gain/loss notice for conversation-sourced saga steps |
+| Note Commands | COMMAND_TOPIC_NOTE | Command | Note (memo) creation operations (CREATE) |
+| NPC Commands | COMMAND_TOPIC_NPC | Command | NPC conversation start/continue/end operations (START_CONVERSATION, START_ITEM_CONVERSATION, CONTINUE_CONVERSATION, END_CONVERSATION) |
+| NPC Conversation Commands | COMMAND_TOPIC_NPC_CONVERSATION | Command | NPC conversation dialogue box operations (SIMPLE, TEXT, STYLE, NUMBER, SLIDE_MENU) |
+| NPC Shop Commands | COMMAND_TOPIC_NPC_SHOP | Command | NPC shop operations (ENTER, EXIT, BUY, SELL, RECHARGE) |
+| Parcel Commands | COMMAND_TOPIC_PARCEL | Command | Duey parcel dialog display operations (SHOW_PARCEL) |
+| Parcel Custody Commands | COMMAND_TOPIC_PARCEL_CUSTODY | Command | Parcel custody operations (ACCEPT_TO_PARCEL, RELEASE_FROM_PARCEL, RESTORE_PARCEL, REMOVE_PARCEL) |
+| Party Commands | COMMAND_TOPIC_PARTY | Command | Party leave operations (LEAVE) |
+| Trade Custody Commands | COMMAND_TOPIC_TRADE_CUSTODY | Command | Trade escrow custody operations (ACCEPT_TO_TRADE, RELEASE_FROM_TRADE, RESTORE_TRADE_ESCROW, REMOVE_TRADE_ESCROW) |
+| World Broadcast Commands | COMMAND_TOPIC_WORLD_BROADCAST | Command | Megaphone/Maple TV broadcast queue operations |
+| Megaphone | EVENT_TOPIC_MEGAPHONE | Event | Stateless megaphone tier broadcast announcements |
 
 ## Message Types
 
@@ -531,7 +547,7 @@ Command[E]
   body: E
 ```
 
-Command types: WEATHER_START
+Command types: WEATHER_START, PLAY_JUKEBOX
 
 #### WEATHER_START Body
 
@@ -540,6 +556,257 @@ WeatherStartCommandBody
   itemId: uint32
   message: string
   durationMs: uint32
+```
+
+#### PLAY_JUKEBOX Body
+
+```
+PlayJukeboxCommandBody
+  itemId: uint32
+  playerName: string
+  durationMs: uint32
+```
+
+### Note Command
+
+Produced to create a note (memo) for a receiving character.
+
+```
+Command[E]
+  transactionId: uuid.UUID (uuid.Nil when not saga-driven)
+  worldId: world.Id
+  channelId: channel.Id
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Command types: CREATE
+
+#### CREATE Body
+
+```
+CommandCreateBody
+  senderId: uint32
+  message: string
+  flag: byte
+  giftNote: bool (omitempty)
+```
+
+### Note Status Event (Consumed)
+
+```
+StatusEvent[E]
+  transactionId: uuid.UUID (uuid.Nil when not saga-driven)
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Status types: CREATED, CREATE_FAILED
+
+### NPC Command
+
+Produced to start, continue, or end an NPC or item conversation.
+
+```
+Command[E]
+  transactionId: uuid.UUID (uuid.Nil when not saga-driven)
+  npcId: uint32
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Command types: START_CONVERSATION, START_ITEM_CONVERSATION, CONTINUE_CONVERSATION, END_CONVERSATION
+
+### NPC Conversation Command
+
+Produced on the separate dialogue-box topic to render a conversation step.
+
+```
+ConversationCommand[E]
+  worldId: world.Id
+  channelId: channel.Id
+  mapId: _map.Id
+  instance: uuid.UUID
+  characterId: uint32
+  npcId: uint32
+  speaker: string
+  endChat: bool
+  secondaryNpcId: uint32
+  message: string
+  type: string
+  body: E
+```
+
+Command types: SIMPLE, TEXT, STYLE, NUMBER, SLIDE_MENU
+
+### NPC Conversation Status Event (Consumed)
+
+```
+ConversationStatusEvent[E]
+  transactionId: uuid.UUID
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Status types: STARTED, START_ERROR
+
+### NPC Shop Command
+
+Produced to enter, exit, buy from, sell to, or recharge at an NPC shop.
+
+```
+Command[E]
+  transactionId: uuid.UUID (uuid.Nil when not saga-driven)
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Command types: ENTER, EXIT, BUY, SELL, RECHARGE
+
+### NPC Shop Status Event (Consumed)
+
+```
+StatusEvent[E]
+  transactionId: uuid.UUID
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Status types: ENTERED, EXITED, ERROR, ENTER_ERROR
+
+### Parcel Command
+
+Produced to display the Duey parcel dialog for a character.
+
+```
+ShowParcelCommand
+  transactionId: uuid.UUID
+  worldId: world.Id
+  channelId: channel.Id
+  characterId: uint32
+  npcId: uint32
+  quick: bool
+  type: string (SHOW_PARCEL)
+```
+
+### Parcel Custody Command
+
+Produced to perform Duey parcel custody operations against atlas-parcel.
+
+```
+Command[E]
+  transactionId: uuid.UUID
+  type: string
+  body: E
+```
+
+Command types: ACCEPT_TO_PARCEL, RELEASE_FROM_PARCEL, RESTORE_PARCEL, REMOVE_PARCEL
+
+### Parcel Custody Status Event (Consumed)
+
+```
+StatusEvent[E]
+  transactionId: uuid.UUID
+  type: string
+  body: E
+```
+
+Status types: ACCEPTED, RELEASED, ERROR
+
+### Party Command
+
+Produced to remove a character from a party during a world transfer.
+
+```
+Command[E]
+  actorId: uint32
+  type: string (LEAVE)
+  body: E
+  transactionId: uuid.UUID (omitempty)
+```
+
+### Party Status Event (Consumed)
+
+```
+StatusEvent[E]
+  actorId: uint32
+  worldId: world.Id
+  partyId: uint32
+  type: string
+  body: E
+  transactionId: uuid.UUID (omitempty)
+```
+
+Status types: LEFT, DISBAND
+
+### Trade Custody Command
+
+Produced to perform trade escrow custody operations against atlas-trades.
+
+```
+Command[E]
+  transactionId: uuid.UUID
+  type: string
+  body: E
+```
+
+Command types: ACCEPT_TO_TRADE, RELEASE_FROM_TRADE, RESTORE_TRADE_ESCROW, REMOVE_TRADE_ESCROW
+
+### Trade Custody Status Event (Consumed)
+
+```
+StatusEvent[E]
+  transactionId: uuid.UUID
+  type: string
+  body: E
+```
+
+Status types: ACCEPTED, RELEASED, RESTORED, REMOVED, ERROR
+
+### World Broadcast Command
+
+Produced to enqueue a megaphone/Maple TV broadcast for a world/family queue.
+
+```
+EnqueueCommand
+  family: string
+  worldId: byte
+  channelId: byte
+  characterId: uint32
+  senderName: string
+  senderMedal: string
+  messages: []string
+  whispersOn: bool
+  itemId: uint32
+  tvMessageType: string
+  durationSeconds: uint32
+  senderLook: AvatarSnapshot
+  receiverName: string
+  receiverLook: *AvatarSnapshot (omitempty)
+```
+
+### Megaphone Event
+
+Produced for the stateless megaphone tiers (MEGAPHONE/SUPER/ITEM/TRIPLE); the channel renders the broadcast immediately.
+
+```
+BroadcastEvent
+  tier: string
+  scope: string
+  worldId: byte
+  channelId: byte
+  characterId: uint32
+  senderName: string
+  senderMedal: string
+  messages: []string
+  whispersOn: bool
+  item: *AssetSnapshot (omitempty)
 ```
 
 ### Gachapon Reward Won Event
@@ -669,7 +936,7 @@ EventBody
 - Step completion is tracked by consuming status events with matching transactionId
 - Status events without matching transactionId are ignored (saga not found in store)
 - Failed status events trigger step failure and compensation
-- Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, field_effect, ui_lock, block_portal, unblock_portal, emit_gachapon_win, send_message, field_effect_weather) complete immediately after command emission
+- Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, field_effect, ui_lock, block_portal, unblock_portal, emit_gachapon_win, send_message, field_effect_weather, play_jukebox, show_parcel, emit_megaphone, enqueue_world_broadcast, start_rps_game, validate_character_state, validate_world_transfer, cancel_consumable_effect, show_storage) complete immediately after command emission
 - REST-based synchronous actions (start_instance_transport, save_location, warp_to_saved_location, select_gachapon_reward, spawn_monster) complete after the REST call returns
 - Fire-and-forget actions (register_party_quest, leave_party_quest, warp_party_quest_members_to_map, update_pq_custom_data, hit_reactor, broadcast_pq_message, stage_clear_attempt_pq, enter_party_quest_bonus, incubator_result) produce commands/events and complete immediately
 - Terminal failure actions (register_party_quest, warp_party_quest_members_to_map, enter_party_quest_bonus) remove the saga from cache and emit a FAILED event on error, with no compensation

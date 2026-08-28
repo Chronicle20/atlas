@@ -15,6 +15,9 @@ The service coordinates with external services for skill management, drop handli
 - atlas-data service (via REST for portal and skill data)
 - atlas-effective-stats service (via REST)
 - atlas-maps service (via REST for character location lookup)
+- atlas-tenants service (via REST, for per-tenant pending-change configuration and tenant resolution during the expiry sweep)
+- atlas-world, atlas-account, atlas-ban, atlas-guilds, atlas-families, atlas-trades, atlas-merchant, atlas-mts, atlas-parcel, atlas-parties, atlas-buddies services (via REST, world-transfer eligibility gates and saga snapshotting)
+- Saga orchestration (via Kafka, cash-shop coupon consume/refund and world-transfer saga)
 - Session status events (via Kafka)
 
 ## Runtime Configuration
@@ -42,7 +45,12 @@ The service coordinates with external services for skill management, drop handli
 | EVENT_TOPIC_SESSION_STATUS | Session status events topic |
 | EVENT_TOPIC_DROP_STATUS | Drop status events topic |
 | EVENT_TOPIC_ACCOUNT_STATUS | Account status events topic (consumed) |
+| COMMAND_TOPIC_TELEPORT_ROCK | Teleport rock commands topic |
+| EVENT_TOPIC_TELEPORT_ROCK_STATUS | Teleport rock status events topic |
+| EVENT_TOPIC_CHARACTER_PENDING_CHANGE | Character pending-change events topic |
+| COMMAND_TOPIC_SAGA | Saga commands topic |
 | SERVICE_MODE | Service mode (READ_ONLY or MIXED, default MIXED) |
+| \<DOMAIN\>_SERVICE_URL | Per-domain override of BASE_SERVICE_URL for a specific outbound REST dependency (for example EFFECTIVE_STATS_SERVICE_URL, DATA_SERVICE_URL, MAPS_SERVICE_URL, SKILLS_SERVICE_URL, TENANTS_SERVICE_URL, WORLDS_SERVICE_URL, ACCOUNTS_SERVICE_URL, BANS_SERVICE_URL, GUILDS_SERVICE_URL, FAMILIES_SERVICE_URL, TRADES_SERVICE_URL, MERCHANT_SERVICE_URL, MTS_SERVICE_URL, PARCEL_SERVICE_URL, PARTIES_SERVICE_URL, BUDDIES_SERVICE_URL) |
 
 ## Documentation
 

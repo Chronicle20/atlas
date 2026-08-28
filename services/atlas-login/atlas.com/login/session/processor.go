@@ -164,7 +164,9 @@ func (p *ProcessorImpl) Create(locale byte) func(sessionId uuid.UUID, conn net.C
 		s := NewSession(sessionId, p.t, locale, conn)
 		getRegistry().Add(p.t.Id(), s)
 
-		err := s.WriteHello(p.t.MajorVersion(), p.t.MinorVersion())
+		err := s.WriteHello(p.t.MajorVersion(), p.t.MinorVersion(), func(b []byte) {
+			tracePacketOut(fl, p.t, "<hello>", sessionId, b)
+		})
 		if err != nil {
 			fl.WithError(err).Errorf("Unable to write hello packet.")
 		}
@@ -212,11 +214,17 @@ func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProduce
 			return func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
 				return func(encoder packet.Encode) model.Operator[Model] {
 					return func(s Model) error {
+						t := tenant.MustFromContext(ctx)
 						w, err := writerProducer(writerName)
 						if err != nil {
 							return err
 						}
-						return s.announceEncrypted(w(l, ctx)(encoder))
+						b := w(l, ctx)(encoder)
+						// Before the write, so a packet the client rejects
+						// fatally is still recorded (FR-4.4). Plaintext, before
+						// announceEncrypted's header prepend and AES-OFB (FR-4.2).
+						tracePacketOut(l, t, writerName, s.SessionId(), b)
+						return s.announceEncrypted(b)
 					}
 				}
 			}

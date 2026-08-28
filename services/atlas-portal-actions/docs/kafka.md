@@ -129,6 +129,7 @@ Saga messages are produced for operations including warp, play_portal_sound, dro
 ## Transaction Semantics
 
 - Portal entry commands are processed with tenant context from Kafka headers
-- Character actions are enabled after processing completes (success or failure)
+- A duplicate portal enter command for the same character, map instance, and portal within the dedupe gate window is dropped before any script load, condition evaluation, or operation dispatch
+- Character actions are enabled after processing completes, unless a moving operation (`warp`, `warp_to_saved_location`, `start_instance_transport`) was successfully dispatched, in which case actions are enabled by the resulting saga outcome instead
 - Operations are executed via saga messages for coordination
-- For `start_instance_transport` operations, a pending action is registered in the action registry; saga completion removes the entry, and saga failure sends a failure message to the character before cleanup
+- For `warp`, `warp_to_saved_location`, and `start_instance_transport` operations, a pending action is registered in the action registry; saga completion removes the entry, and saga failure sends a failure message to the character and enables their actions before cleanup

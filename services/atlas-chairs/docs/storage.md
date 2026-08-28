@@ -12,7 +12,7 @@ Redis key-value store via `atlas.TenantRegistry`.
 |----------|-------|
 | Namespace | `chair` |
 | Key | Character ID (`uint32` as string) |
-| Value | JSON `{"id": uint32, "chairType": string}` |
+| Value | JSON `{"id": uint32, "chairType": string, "lastHpRecoveryAt": int64, "lastMpRecoveryAt": int64}` (lastHpRecoveryAt/lastMpRecoveryAt omitted when zero) |
 
 Scoped per tenant.
 

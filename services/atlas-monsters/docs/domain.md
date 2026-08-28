@@ -34,6 +34,20 @@ Represents an active monster instance in a map.
 | statusEffects | []StatusEffect | Active status effects on this monster |
 | nextSkillDecision | nextSkillDecision | Picker's current next-skill decision (skill choice is in-memory only; see Skill Picker) |
 | lastDamageTakenMs | int64 | Unix millis of the last damage applied to this monster (drives HP recovery gating) |
+| aggroRefreshedMs | int64 | Unix millis of the last accepted/renewed SET_AGGRO (auto-aggro) claim; drives the auto-aggro lease expiry (see Invariants) |
+| spawnSourceType | string | Opaque spawn provenance type ("CYCLIC", "EVENT", "SCRIPT", "GM", or another producer-defined value); empty means the producer omitted it |
+| spawnSourceId | string | Opaque spawn provenance identifier, never interpreted by this service |
+
+### SpawnSourceType constants
+
+The spawn-provenance type set is open (this service never interprets a value beyond equality); the following constants are defined:
+
+| Constant | Value | Description |
+|----------|-------|--------------|
+| SpawnSourceTypeCyclic | "CYCLIC" | Ordinary map-cycle spawn; the normalization target for an absent/empty `spawnSourceType` on `SPAWN_FIELD` |
+| SpawnSourceTypeEvent | "EVENT" | Event-driven spawn |
+| SpawnSourceTypeScript | "SCRIPT" | Script-driven spawn |
+| SpawnSourceTypeGM | "GM" | GM-command spawn |
 
 ### StatusEffect
 
@@ -200,6 +214,19 @@ Mob skill definition retrieved from atlas-data.
 | summonEffect | uint32 | Summon visual effect |
 | summons | []uint32 | Monster IDs to summon |
 
+### consumable.Model
+
+Catch item (bridle) definition retrieved from atlas-data, used to resolve a CATCH command.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Item identifier |
+| create | uint32 | Reward item/effect created on a successful catch |
+| monsterId | uint32 | Monster type this item is allowed to catch |
+| monsterHp | uint32 | Maximum HP percentage of the target monster for the catch to be eligible |
+| bridleProp | uint32 | Base catch probability (0-100); 0 means deterministic (no roll) once species and HP gates pass |
+| bridlePropChg | float64 | One-shot multiplier applied to bridleProp to compute the effective catch chance |
+
 ## Invariants
 
 - Monster uniqueId values are allocated from the shared per-tenant object-id pool, range 1,000,000 to 2,147,483,647 (see docs/storage.md ID Allocation)
@@ -237,6 +264,15 @@ Mob skill definition retrieved from atlas-data.
 - A player's puppet biases controller-candidate selection toward the puppet's owner when the puppet lies within squared-distance 177777 of the monster being assigned
 - HP recovery applies only when more than 10 seconds (AggroIdleThresholdMs) have elapsed since the monster's last damage taken; MP recovery is unconditional; recovery is skipped entirely for dead monsters (hp == 0)
 - Non-boss monsters' idle damage entries (no hit for 10 seconds) decay by 15% per 1.5-second sweep tick and are pruned once their value falls below 1; boss monsters are excluded from aggro decay and retain their damage table until death
+- KILL (Mortal Blow) is refused for boss monsters and for monsters that are not alive; when accepted it is applied as damage equal to math.MaxUint32
+- SELF_DESTRUCT is refused for monsters that do not exist, are not alive, or whose template carries no WZ `selfDestruction` block; a contact-triggered detonation always resolves to deathType BOMB regardless of the WZ action byte, while threshold- and timer-triggered detonations use the WZ action byte's mapped deathType
+- A self-destructing monster with no HP predicate in its `selfDestruction` block arms a one-shot timer (SelfDestructTimerRegistry) that detonates it at a computed fire time; a self-destructing monster whose damage crosses its threshold detonates immediately via the threshold trigger instead
+- CLEAR_AGGRO is idempotent: wiping an already-empty damage table emits nothing; a command naming a monster that no longer exists is dropped, not retried
+- FORCE_CONTROL is a no-op if the named character already controls the monster; it is dropped if the character is not present in the monster's field or is GM-hidden
+- SET_AGGRO (auto-aggro) is granted only if the monster exists, is alive, its template is aggressive (firstAttack), and the claimant is present in the monster's field; it writes no damage entry and confers no drop ownership or kill credit; the claim renews `aggroRefreshedMs` and expires after AutoAggroLeaseTtlMs (15,000ms) if not refreshed
+- A GM-hidden character (active SuperGmHide buff) is excluded from controller-candidate selection and from being granted control by FORCE_CONTROL or SET_AGGRO; going hidden relinquishes and reassigns every monster the character currently controls, and reappearing re-runs controller election for uncontrolled monsters in the character's field
+- CATCH (bridle capture) requires the monster to be alive and match the catch item's target monsterId, the monster's HP percentage to be at or below the item's configured gate, and — when the item's bridleProp is non-zero — a probability roll (bridleProp × bridlePropChg, clamped to 100) to succeed; a successful catch claims the monster exactly once (races resolve to a single winner), clears its drop timer and attack cooldowns, and removes it
+- DESTROY_BY_SOURCE removes every monster in a field whose (spawnSourceType, spawnSourceId) matches the command exactly
 
 ## State Transitions
 
@@ -324,6 +360,16 @@ Interface defining monster processing operations.
 - `DrainMp`: Emits an MP_CHANGED event for a player MP-Eater proc, deducting MP from the monster when possible; no-op for boss monsters or monsters with MaxMp == 0
 - `Destroy`: Removes monster from registry, clears its drop timer and attack cooldowns, emits destroyed status event
 - `DestroyInField`: Destroys all monsters in a field
+- `DestroyBySource`: Destroys every monster in a field whose spawn provenance (spawnSourceType, spawnSourceId) matches exactly
+- `Kill`: Kills a non-boss, alive monster outright as maximum damage, credited to the named character (Mortal Blow)
+- `SelfDestruct`: Detonates a self-destructing monster with the animation its WZ `selfDestruction` block specifies, resolving and emitting a deathType
+- `ClearAggro`: Wipes a monster's damage-aggro table; idempotent
+- `ForceControl`: Assigns a controller with the aggro flag set, bypassing the picker election
+- `SetAggro`: Grants (or renews) an auto-aggro claim for a character present in the monster's field, subject to the aggressive-template and GM-hidden gates
+- `Catch`: Resolves a bridle (catch-item) capture attempt against a monster; emits the presentation and economic outcomes
+- `Banish`: Warps a character out of a field via a live monster's WZ banish configuration, honoring only a client-supplied template id that is both alive and banish-configured in the field
+- `RelinquishControlOnHide`: Marks a character GM-hidden and relinquishes/reassigns the monsters it currently controls
+- `RestoreCandidacyOnReveal`: Unmarks a character GM-hidden and re-runs controller election for uncontrolled monsters in its field
 
 ### Registry
 
@@ -392,6 +438,15 @@ Singleton Redis-backed store for friendly monster drop timers.
 - `UpdateLastDrop`: Updates the last drop timestamp for a friendly monster
 - `GetAll`: Returns all registered drop timer entries
 
+### SelfDestructTimerRegistry
+
+Singleton Redis-backed store for armed timer-driven self-destruct entries (a self-destructing monster whose WZ `selfDestruction` block carries no HP predicate).
+
+**Operations:**
+- `Register`: Arms a timer-driven detonation for a monster at a computed fire time, carrying the WZ `selfDestruction` action byte
+- `Unregister`: Disarms the timer for a monster
+- `GetAll`: Returns all armed entries, grouped by monster key
+
 ### IdAllocator
 
 Wraps the shared per-tenant object-id allocator (`libs/atlas-object-id`) used for monster unique IDs. Allocates sequential IDs starting at 1,000,000, reuses released IDs via a LIFO free pool once the counter approaches the 2,147,483,647 ceiling (see docs/storage.md ID Allocation).
@@ -416,6 +471,48 @@ Periodic task (1.5-second interval, `AggroSweepInterval`) that decays idle damag
 
 Periodic task (10-second interval, `MonsterRecoveryInterval`) that applies HP/MP recovery to all live monsters whose HP or MP is below maximum, using atlas-data's hpRecovery/mpRecovery values, per the gating rules in Invariants.
 
+### SelfDestructTimerTask
+
+Periodic task (1-second interval) that sweeps armed self-destruct timer entries and detonates any whose fire time has elapsed, driving the monster through the same kill/destroy transition as a threshold- or contact-triggered self-destruct.
+
 ### RegistryAudit
 
 Periodic task (30-second interval) that logs registry statistics (maps tracked, monsters tracked).
+
+## Hidden Character Tracking
+
+### Responsibility
+
+Tracks which characters are currently GM-hidden (an active SuperGmHide buff), shared across all atlas-monsters replicas via Redis, so controller election and control-granting commands (FORCE_CONTROL, SET_AGGRO) observe the same excluded set on any pod.
+
+### Core Models
+
+Hidden-character state is a per-tenant set of character IDs; there is no exposed model beyond the character ID itself.
+
+### Invariants
+
+- A character is hidden exactly when it is a member of the tenant's hidden set
+- Adding or removing a character from the hidden set is idempotent
+- The hidden set is one-way authoritative from atlas-monsters' own APPLIED/EXPIRED buff-event handling; the reconciliation task only removes stale entries (hidden here, no longer hidden upstream), never adds missing ones — the inverse drift self-heals on the next APPLIED/EXPIRED event
+
+### State Transitions
+
+1. **Hidden**: A character's SuperGmHide buff is applied (EVENT_TOPIC_CHARACTER_BUFF_STATUS `APPLIED` resolving to the SuperGmHide skill identity) — the character is added to the hidden set, and every monster it currently controls is relinquished and reassigned
+2. **Revealed**: The character's SuperGmHide buff expires (`EXPIRED` resolving to the same identity) — the character is removed from the hidden set, and controller election re-runs for uncontrolled monsters in its field
+3. **Reconciled**: Periodically, a hidden character whose SuperGmHide buff no longer exists upstream is removed from the hidden set without triggering reassignment (drift repair for a lost EXPIRED event)
+
+### Processors
+
+- `RelinquishControlOnHide` / `RestoreCandidacyOnReveal` (on the monster Processor): see Monster Domain Processors
+- `Registry`: Redis-backed store of hidden character IDs per tenant
+
+**Operations:**
+- `Add`: Marks a character GM-hidden
+- `Remove`: Clears a character's hidden mark
+- `MemberSet`: Returns the hidden character IDs for one tenant
+- `GetAll`: Returns every hidden character grouped by tenant, for the reconciliation sweep
+- `Clear`: Removes all hidden-character state
+
+### ReconciliationTask
+
+Periodic task (5-minute interval) that, for each tenant's hidden set, fetches each hidden character's buffs from atlas-buffs and removes any entry whose SuperGmHide buff is no longer active.

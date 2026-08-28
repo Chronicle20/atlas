@@ -15,8 +15,10 @@ Expression change commands.
 | mapId | map.Id |
 | instance | uuid.UUID |
 | expression | uint32 |
+| duration | int32 |
+| byItemOption | bool |
 
-Consumer group: `Expression Service`. Header parsers: span, tenant.
+Consumer group: `Expression Service`. Header parsers: span, tenant, env.
 
 ### EVENT_TOPIC_MAP_STATUS
 
@@ -38,7 +40,7 @@ Map status events. Only `CHARACTER_EXIT` type is handled.
 |-------|------|
 | characterId | uint32 |
 
-Consumer group: `Expression Service`. Header parsers: span, tenant.
+Consumer group: `Expression Service`. Header parsers: span, tenant, env.
 
 On CHARACTER_EXIT, the expression for the exiting character is cleared.
 
@@ -57,6 +59,8 @@ Expression status events. Emitted on expression change and on expiration revert.
 | mapId | map.Id |
 | instance | uuid.UUID |
 | expression | uint32 |
+| duration | int32 |
+| byItemOption | bool |
 
 Partition key: characterId.
 

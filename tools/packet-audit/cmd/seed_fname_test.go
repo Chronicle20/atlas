@@ -349,6 +349,70 @@ func TestSeedFName_FailsLoudlyOnUnknownSocketKey(t *testing.T) {
 	}
 }
 
+// TestSeedFName_PreservesUnsupportedSocketSection pins the one socket key
+// besides "handlers"/"writers" that atlas-configurations really does model:
+// "unsupported" (socket.UnsupportedRestModel - the audited-and-absent list,
+// two arrays of implementation names). seed-fname does not resolve fnames for
+// it, so it must survive a --write round-trip verbatim rather than tripping
+// the unknown-socket-key guard.
+func TestSeedFName_PreservesUnsupportedSocketSection(t *testing.T) {
+	withUnsupported := strings.Replace(testTemplate83, "\n  },\n  \"characters\"",
+		",\n    \"unsupported\": {\n      \"handlers\": [\"MapleLifeCheckNameHandle\"],\n"+
+			"      \"writers\": [\"MapleLifeResult\", \"MapleLifeError\"]\n    }\n  },\n  \"characters\"", 1)
+	if withUnsupported == testTemplate83 {
+		t.Fatal("test fixture did not gain an unsupported section")
+	}
+	regDir, tplDir := setupSeedFName(t,
+		map[string]string{"gms_v83": testRegistryV83},
+		map[string]string{"gms_83_1": withUnsupported})
+	path := filepath.Join(tplDir, "template_gms_83_1.json")
+
+	var stderr bytes.Buffer
+	if code := runSeedFName([]string{"--write", "--registry-dir", regDir, "--template-dir", tplDir}, &stderr); code != 0 {
+		t.Fatalf("exit = %d, want 0. stderr:\n%s", code, stderr.String())
+	}
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got seedDoc
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Socket.Unsupported.Handlers) != 1 || got.Socket.Unsupported.Handlers[0] != "MapleLifeCheckNameHandle" {
+		t.Errorf("unsupported.handlers = %v, want [MapleLifeCheckNameHandle]", got.Socket.Unsupported.Handlers)
+	}
+	want := []string{"MapleLifeResult", "MapleLifeError"}
+	if !reflect.DeepEqual(got.Socket.Unsupported.Writers, want) {
+		t.Errorf("unsupported.writers = %v, want %v", got.Socket.Unsupported.Writers, want)
+	}
+}
+
+// TestSeedFName_OmitsAbsentUnsupportedSection is the other half of the
+// round-trip contract: a template with no "unsupported" key must not grow an
+// empty one. Normalizing absent -> {"handlers":[],"writers":[]} is
+// atlas-configurations' job at its REST boundary, not the seed generator's.
+func TestSeedFName_OmitsAbsentUnsupportedSection(t *testing.T) {
+	regDir, tplDir := setupSeedFName(t,
+		map[string]string{"gms_v83": testRegistryV83},
+		map[string]string{"gms_83_1": testTemplate83})
+	path := filepath.Join(tplDir, "template_gms_83_1.json")
+
+	var stderr bytes.Buffer
+	if code := runSeedFName([]string{"--write", "--registry-dir", regDir, "--template-dir", tplDir}, &stderr); code != 0 {
+		t.Fatalf("exit = %d, want 0. stderr:\n%s", code, stderr.String())
+	}
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "unsupported") {
+		t.Errorf("write invented an unsupported section:\n%s", b)
+	}
+}
+
 func TestSeedFName_WithoutWriteLeavesFilesUntouched(t *testing.T) {
 	regDir, tplDir := setupSeedFName(t,
 		map[string]string{"gms_v83": testRegistryV83},

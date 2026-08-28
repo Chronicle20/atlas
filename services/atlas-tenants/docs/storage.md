@@ -11,6 +11,7 @@
 | region | string | NOT NULL |
 | major_version | uint16 | NOT NULL |
 | minor_version | uint16 | NOT NULL |
+| environment | string | NOT NULL, default '' |
 | created_at | timestamp | (GORM managed) |
 | updated_at | timestamp | (GORM managed) |
 | deleted_at | timestamp | (GORM managed, soft delete) |
@@ -38,3 +39,7 @@ Default GORM indexes on primary keys.
 ## Migration Rules
 
 Tables are auto-migrated using GORM AutoMigrate.
+
+A migration backfills `tenants.environment`: every row with an empty or
+NULL `environment` is set to a baseline value. The migration is idempotent
+and runs after AutoMigrate creates the column.

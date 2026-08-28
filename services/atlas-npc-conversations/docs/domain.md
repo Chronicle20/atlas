@@ -10,13 +10,14 @@ Shared domain models and processing logic for NPC and quest conversation state m
 
 - **StateContainer** — Interface for state machine containers. Provides `StartState()` and `FindState(stateId)`. Implemented by `npc.Model` and `quest.StateMachine`.
 - **NpcConversation** — Extends `StateContainer` with `NpcId()` and `States()`. Implemented by `npc.Model`.
-- **StateModel** — A state in a conversation. Has `id`, `stateType`, and exactly one type-specific model (dialogue, genericAction, craftAction, transportAction, gachaponAction, partyQuestAction, partyQuestBonusAction, listSelection, askNumber, askStyle, askSlideMenu).
+- **StateModel** — A state in a conversation. Has `id`, `stateType`, and exactly one type-specific model (dialogue, genericAction, craftAction, transportAction, gachaponAction, rpsAction, partyQuestAction, partyQuestBonusAction, listSelection, askNumber, askStyle, askSlideMenu).
 - **DialogueModel** — Dialogue state. Has `dialogueType`, `text`, `speaker`, `endChat`, `secondaryNpcId`, and `choices`. Speaker is `"NPC"` or `"CHARACTER"`. EndChat defaults to true.
 - **ChoiceModel** — A choice in a dialogue or list selection. Has `text`, `nextState`, and `context` (key-value map merged into conversation context on selection).
 - **GenericActionModel** — Executes operations and evaluates outcomes. Has `operations` and `outcomes`.
 - **CraftActionModel** — Crafting via saga. Has `itemId`, `materials`, `quantities`, `mesoCost`, `stimulatorId`, `stimulatorFailChance`, `successState`, `failureState`, `missingMaterialsState`.
 - **TransportActionModel** — Instance transport via saga. Has `routeName`, `failureState`, `capacityFullState`, `alreadyInTransitState`, `routeNotFoundState`, `serviceErrorState`.
 - **GachaponActionModel** — Gachapon via saga. Has `gachaponId`, `ticketItemId`, `failureState`.
+- **RPSActionModel** — Rock-Paper-Scissors entry via saga. Has `npcId`, `entryCostMeso`, `failureState`.
 - **PartyQuestActionModel** — Party quest registration via saga. Has `questId`, `failureState`, `notInPartyState`, `notLeaderState`.
 - **PartyQuestBonusActionModel** — Party quest bonus entry via saga. Has `failureState`.
 - **ListSelectionModel** — List selection. Has `title` and `choices`.
@@ -37,6 +38,7 @@ Shared domain models and processing logic for NPC and quest conversation state m
 - CraftActionModel requires non-empty `itemId`, at least one material, quantities matching materials length, and non-empty `successState`, `failureState`, `missingMaterialsState`.
 - TransportActionModel requires non-empty `routeName` and `failureState`.
 - GachaponActionModel requires non-empty `gachaponId`, non-zero `ticketItemId`, and non-empty `failureState`.
+- RPSActionModel requires non-zero `npcId`, non-zero `entryCostMeso`, and non-empty `failureState`.
 - PartyQuestActionModel requires non-empty `questId` and `failureState`.
 - PartyQuestBonusActionModel requires non-empty `failureState`.
 - AskNumberModel requires `minValue <= defaultValue <= maxValue` and `maxValue > 0`.
@@ -49,7 +51,7 @@ Shared domain models and processing logic for NPC and quest conversation state m
 
 ### State Transitions
 
-State types are: `dialogue`, `genericAction`, `craftAction`, `transportAction`, `gachaponAction`, `partyQuestAction`, `partyQuestBonusAction`, `listSelection`, `askNumber`, `askStyle`, `askSlideMenu`.
+State types are: `dialogue`, `genericAction`, `craftAction`, `transportAction`, `gachaponAction`, `rpsAction`, `partyQuestAction`, `partyQuestBonusAction`, `listSelection`, `askNumber`, `askStyle`, `askSlideMenu`.
 
 Dialogue types are: `sendOk`, `sendYesNo`, `sendAcceptDecline`, `sendNext`, `sendNextPrev`, `sendPrev`.
 
@@ -58,6 +60,7 @@ Dialogue types are: `sendOk`, `sendYesNo`, `sendAcceptDecline`, `sendNext`, `sen
 - **craftAction** — Builds a saga with validation, material destruction, meso deduction, and item award steps. Stores saga ID and state references in context. Waits for saga completion/failure.
 - **transportAction** — Builds a saga with a single `start_instance_transport` step. Stores failure state variants in context. Waits for saga completion/failure. On success, conversation ends (player is warped).
 - **gachaponAction** — Builds a saga to destroy ticket and select reward. Waits for saga completion/failure. On success, conversation ends.
+- **rpsAction** — Builds a saga to deduct the entry cost meso and open the RPS game session. Stores failure state in context. Waits for saga completion/failure. On success, conversation ends (client dialog takes over).
 - **partyQuestAction** — Builds a saga with a single `register_party_quest` step. Waits for saga completion/failure. On success, conversation ends (party is warped).
 - **partyQuestBonusAction** — Builds a saga with a single `enter_party_quest_bonus` step. Waits for saga completion/failure.
 - **listSelection** — Sends list to client. Waits for player selection.
@@ -95,6 +98,28 @@ NPC conversation definitions. Each definition associates an NPC ID with a conver
 - **Processor** (npc) — Interface: `Create`, `Update`, `Delete`, `ByIdProvider`, `ByNpcIdProvider`, `AllByNpcIdProvider`, `AllProvider`, `DeleteAllForTenant`, `ReindexAllRecipes`, `Count`.
 - **ProcessorImpl** (npc) — Implements Processor. Tenant-scoped CRUD operations. `Create`, `Update`, `Delete`, and `DeleteAllForTenant` rebuild the conversation's derived Recipe rows inside the same transaction as the write. `ReindexAllRecipes` clears and re-derives Recipe rows for every NPC conversation belonging to the tenant. `Count` returns the row count and max `updated_at` timestamp for the tenant.
 
+## Item Conversation
+
+### Responsibility
+
+Scripted item conversation definitions (the 243xxxx item family). Each definition associates an item ID with a conversation state machine. Resolution is by item ID; `npcId` names only the avatar the dialogue renders with, and `scriptName` records the WZ spec/script value for authoring traceability — neither is a lookup key.
+
+### Core Models
+
+- **Model** — An item conversation definition. Has `id` (UUID), `itemId` (uint32), `npcId` (uint32, metadata), `scriptName` (string, metadata), `startState` (string), `states` ([]conversation.StateModel), `createdAt`, `updatedAt`. Implements `FindState`.
+
+### Invariants
+
+- `itemId` must be non-zero.
+- `startState` must be non-empty.
+- At least one state is required.
+- Unique on `(tenantId, itemId)`: an item has at most one dialogue.
+
+### Processors
+
+- **Processor** (item) — Interface: `Create`, `Update`, `Delete`, `ByIdProvider`, `ByItemIdProvider`, `AllProvider`, `DeleteAllForTenant`, `Count`.
+- **ProcessorImpl** (item) — Implements Processor. Tenant-scoped CRUD operations. `Count` returns the row count and max `updated_at` timestamp for the tenant.
+
 ## Quest Conversation
 
 ### Responsibility
@@ -115,7 +140,7 @@ Quest conversation definitions. Each definition associates a quest ID with dual 
 ### Processors
 
 - **Processor** (quest) — Interface: `Create`, `Update`, `Delete`, `ByIdProvider`, `ByQuestIdProvider`, `AllProvider`, `DeleteAllForTenant`, `GetStateMachineForCharacter`, `Count`.
-- **ProcessorImpl** (quest) — Implements Processor. Tenant-scoped CRUD operations. `GetStateMachineForCharacter` routes to startStateMachine (quest NOT_STARTED) or endStateMachine (quest STARTED) based on quest status queried from atlas-query-aggregator. `Count` returns the row count and max `updated_at` timestamp for the tenant.
+- **ProcessorImpl** (quest) — Implements Processor. Tenant-scoped CRUD operations. `GetStateMachineForCharacter` routes to startStateMachine (quest NOT_STARTED) or endStateMachine (quest STARTED) based on quest status queried from atlas-quest. `Count` returns the row count and max `updated_at` timestamp for the tenant.
 
 ## Recipe
 
@@ -145,8 +170,8 @@ Saga model types and saga creation for distributed operations.
 
 ### Core Models
 
-- Re-exports types from `atlas-script-core/saga`: `Type`, `Saga`, `Status`, `Action`, and payload types.
-- Local payload types: `ShowGuideHintPayload`, `ShowIntroPayload`, `SetHPPayload`, `ResetStatsPayload`, `StartQuestPayload`, `StartInstanceTransportPayload`, `RegisterPartyQuestPayload`, `WarpPartyQuestMembersToMapPayload`, `LeavePartyQuestPayload`, `StageClearAttemptPqPayload`, `EnterPartyQuestBonusPayload`, `ValidateCharacterStatePayload`.
+- Re-exports types from the shared `atlas-saga` library: `Type`, `Saga`, `Status`, `Action`, and payload types — `AwardItemActionPayload`, `ItemPayload`, `WarpToRandomPortalPayload`, `WarpToPortalPayload`, `AwardExperiencePayload`, `AwardLevelPayload`, `AwardMesosPayload`, `DestroyAssetPayload`, `DestroyAssetFromSlotPayload`, `ChangeJobPayload`, `CancelAllBuffsPayload`, `CreateSkillPayload`, `UpdateSkillPayload`, `IncreaseBuddyCapacityPayload`, `GainClosenessPayload`, `ChangeHairPayload`, `ChangeFacePayload`, `ChangeSkinPayload`, `SpawnMonsterPayload`, `CompleteQuestPayload`, `QuestRewardItem`, `StartQuestPayload`, `ForfeitQuestPayload`, `SetQuestProgressPayload`, `ApplyConsumableEffectPayload`, `SendMessagePayload`, `AwardFamePayload`, `ShowStoragePayload`, `ShowParcelPayload`, `ExperienceDistributions`, `PlayPortalSoundPayload`, `UpdateAreaInfoPayload`, `ShowInfoPayload`, `ShowInfoTextPayload`, `ShowHintPayload`, `ShowGuideHintPayload`, `ShowIntroPayload`, `SetHPPayload`, `ResetStatsPayload`, `RebalanceAPPayload`, `RebalanceTarget`, `RebalanceStat`, `SaveLocationPayload`, `WarpToSavedLocationPayload`, `SelectGachaponRewardPayload`, `StartRPSGamePayload`, `RegisterPartyQuestPayload`, `WarpPartyQuestMembersToMapPayload`, `LeavePartyQuestPayload`, `StageClearAttemptPqPayload`, `EnterPartyQuestBonusPayload`, `StartInstanceTransportPayload`, `EvolvePetPayload`.
+- Local payload types: `ValidateCharacterStatePayload` — wraps the local `validation.ConditionInput` and converts to the shared `ValidateCharacterStatePayload` via `ToSharedPayload`.
 
 ### Processors
 

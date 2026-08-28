@@ -1,6 +1,6 @@
 # atlas-monster-death
 
-A Kafka consumer service that handles monster death events. When a monster is killed, this service evaluates and creates item/meso drops based on monster drop tables and distributes experience to characters who damaged the monster.
+A Kafka consumer service that handles monster death events. When a monster is killed, this service evaluates and creates item/meso drops based on monster drop tables, distributes experience to characters who damaged the monster, and notifies level-gated party members with a hint.
 
 This service has no REST endpoints and no persistent storage. It operates purely through Kafka message consumption and production.
 
@@ -15,10 +15,10 @@ This service makes REST calls to:
 
 - **Character Service** (`CHARACTERS`): Retrieve character information (level)
 - **Map Service** (`MAPS`): Get character IDs currently in a map
-- **Data Service** (`DATA`): Get monster information (HP, experience), calculate drop positions, and retrieve base equipment statistics
+- **Data Service** (`DATA`): Get monster information (HP, experience, level, name), calculate drop positions, and retrieve base equipment statistics
 - **Drop Information Service** (`DROPS_INFORMATION`): Get monster drop tables
 - **Quest Service** (`QUESTS`): Get started quests for quest-aware drop filtering
-- **Party Service** (`PARTIES`): Get party membership for drop ownership
+- **Party Service** (`PARTIES`): Get party membership for drop ownership and party experience distribution
 - **Rate Service** (`RATES`): Get character rate multipliers (exp, meso, item drop)
 
 ## Runtime Configuration
@@ -32,6 +32,7 @@ This service makes REST calls to:
 | `EVENT_TOPIC_MONSTER_STATUS` | Topic for monster status events |
 | `COMMAND_TOPIC_DROP` | Topic for drop spawn commands |
 | `COMMAND_TOPIC_CHARACTER` | Topic for character commands |
+| `COMMAND_TOPIC_SYSTEM_MESSAGE` | Topic for system message commands |
 | `CHARACTERS` | Base URL for character service |
 | `MAPS` | Base URL for map service |
 | `DATA` | Base URL for data service |
@@ -39,6 +40,9 @@ This service makes REST calls to:
 | `PARTIES` | Base URL for party service |
 | `QUESTS` | Base URL for quest service |
 | `RATES` | Base URL for rate service |
+| `USE_ENFORCE_MOB_LEVEL_RANGE` | Whether the party experience level gate is enforced (default true) |
+| `LEVEL_INTERVAL` | Level band width around the monster's level admitted by the level gate (default 5) |
+| `LEACH_INTERVAL` | Level band width around each contributor's level admitted by the level gate (default 5) |
 
 ## Multi-Tenancy
 

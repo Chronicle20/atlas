@@ -158,14 +158,19 @@ func TestUseSkill_Seal_StillRejects(t *testing.T) {
 	}
 
 	found := false
+	var matched string
 	for _, e := range hook.AllEntries() {
 		if strings.Contains(e.Message, "SEAL") {
 			found = true
+			matched = e.Message
 			break
 		}
 	}
 	if !found {
 		t.Errorf("expected a logged message naming SEAL, got entries: %+v", hook.AllEntries())
+	}
+	if strings.Contains(matched, "SEAL_SKILL") {
+		t.Errorf("expected the SEAL rejection log message to not name SEAL_SKILL, got: %s", matched)
 	}
 }
 

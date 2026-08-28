@@ -7430,6 +7430,28 @@
         }
       ]
     },
+    "CScriptMan::OnAskText": {
+      "address": "0x6cfcf0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        }
+      ]
+    },
     "CScriptMan::OnAskText#AskText": {
       "address": "",
       "direction": "clientbound",

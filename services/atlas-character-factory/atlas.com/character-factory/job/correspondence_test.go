@@ -159,6 +159,69 @@ func TestCarouselMatchesSeedTemplates(t *testing.T) {
 	}
 }
 
+// gms95ExpectedStartMap is one v95 Slot's expected mapId plus the findings.md citation that
+// establishes it. Every value here is transcribed from
+// docs/tasks/task-283-race-index-job-mapping/findings.md -- none is read out of
+// template_gms_95_1.json, the file this test checks. Sourcing an expected value from the file
+// under test would make the assertion untautologizable-proof only by construction, which is
+// exactly the failure this test exists to close.
+type gms95ExpectedStartMap struct {
+	mapId  uint32
+	reason string
+}
+
+// gms95StartMaps is the PRD §10 "verified start map" half of the v95 acceptance criterion.
+var gms95StartMaps = map[Slot]gms95ExpectedStartMap{
+	{RaceIndex: 0, SubJobIndex: 0}: {310010000, "findings.md 'Seed rows to add (Task 7, FR-19)': " +
+		"the (0,0) Resistance/Citizen row's mapId is 310010000 -- human-supplied, not IDA-derived " +
+		"(task-283 execution session, 2026-08-28); the client carries no map ids on this path."},
+	{RaceIndex: 1, SubJobIndex: 0}: {10000, "findings.md 'Seed rows to correct (Task 7, FR-20)': " +
+		"the shift-by-one audit names the (0,0), (2,0) and (3,0) rows as wrong and the (4,0) row " +
+		"as missing, and separately confirms the (1,1) row is correct as a slot; the (1,0)/(1,1) " +
+		"Explorer mapId 10000 is never named among the errors, so the audit leaves it standing."},
+	{RaceIndex: 1, SubJobIndex: 1}: {10000, "findings.md 'Seed rows to correct (Task 7, FR-20)': " +
+		"same citation as (1,0) -- Explorer's mapId does not vary by sub-job, and the (1,1) row " +
+		"is explicitly confirmed correct as a slot."},
+	{RaceIndex: 2, SubJobIndex: 0}: {130010220, "findings.md 'Seed rows to correct (Task 7, FR-20)': " +
+		"130010220 is the map the same file gives to index 0 on every pre-v95 column, where index " +
+		"0 is Cygnus; on v95, Cygnus is index 2 (CLogin::Update 0x5dee90), so (2,0)'s mapId is " +
+		"130010220."},
+	{RaceIndex: 3, SubJobIndex: 0}: {140090000, "findings.md 'Seed rows to correct (Task 7, FR-20)': " +
+		"140090000 is the map the same file gives to index 2 on the pre-v95 columns, where index 2 " +
+		"is Aran; on v95, Aran is index 3 (CLogin::Update 0x5dee90), so (3,0)'s mapId is 140090000."},
+	{RaceIndex: 4, SubJobIndex: 0}: {100030100, "findings.md 'Seed rows to add (Task 7, FR-19)': the " +
+		"missing (4,0) Evan row's mapId is unknown from IDA -- the client carries no map ids; " +
+		"100030100, the value mis-filed under (3,0) before the shift correction, is the reuse " +
+		"findings.md names as one sanctioned source."},
+}
+
+// TestGms95SeedStartMapsMatchFindings is the PRD §10 v95 acceptance criterion's "verified start
+// map" half: every seeded v95 slot's mapId must equal the value findings.md establishes for that
+// race, not merely the value the seed template happens to carry.
+func TestGms95SeedStartMapsMatchFindings(t *testing.T) {
+	tpl := loadSeedTemplate(t, "template_gms_95_1.json")
+
+	seen := map[Slot]bool{}
+	for _, row := range tpl.Characters.Templates {
+		slot := Slot{RaceIndex: row.JobIndex, SubJobIndex: row.SubJobIndex}
+		expected, ok := gms95StartMaps[slot]
+		if !ok {
+			t.Fatalf("template_gms_95_1.json row %+v has no findings.md-sourced expected mapId "+
+				"in gms95StartMaps -- add one with a citation, or explain why this slot is exempt", slot)
+		}
+		if row.MapId != expected.mapId {
+			t.Errorf("slot %+v mapId = %d, want %d (%s)", slot, row.MapId, expected.mapId, expected.reason)
+		}
+		seen[slot] = true
+	}
+
+	for slot := range gms95StartMaps {
+		if !seen[slot] {
+			t.Errorf("expected slot %+v not present in template_gms_95_1.json", slot)
+		}
+	}
+}
+
 // loadSeedTemplate locates and decodes a seed template by filename, using
 // runtime.Caller(0) to find the repo root the way
 // tools/packet-audit/internal/template/real_test.go does.

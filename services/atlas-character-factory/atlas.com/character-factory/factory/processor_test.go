@@ -399,9 +399,10 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 		if payload.WorldId != input.WorldId {
 			t.Errorf("WorldId mismatch: expected %d, got %d", input.WorldId, payload.WorldId)
 		}
-		// task-283: literal expectation. JobIndex 500 falls outside the seeded
-		// (0,1,2,3) rows and lands in the mapper's default branch -> BeginnerId (0)
-		// on every verified carousel; see docs/tasks/task-283-race-index-job-mapping/findings.md.
+		// task-283: literal expectation. buildCharacterCreationSaga does not run the
+		// carousel mapper itself -- job.BeginnerId is passed in directly as the
+		// already-resolved job id, so the payload is expected to carry it unchanged
+		// regardless of JobIndex 500's carousel status.
 		const expectedJobId = job.BeginnerId
 		if payload.JobId != expectedJobId {
 			t.Errorf("JobId mismatch: expected %d, got %d", expectedJobId, payload.JobId)
@@ -1130,9 +1131,10 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			if payload.WorldId != input.WorldId {
 				t.Errorf("WorldId mismatch: expected %d, got %d", input.WorldId, payload.WorldId)
 			}
-			// task-283: literal expectation. JobIndex 100 falls outside the seeded
-			// (0,1,2,3) rows and lands in the mapper's default branch -> BeginnerId (0)
-			// on every verified carousel; see docs/tasks/task-283-race-index-job-mapping/findings.md.
+			// task-283: literal expectation. buildCharacterCreationSaga does not run the
+			// carousel mapper itself -- job.BeginnerId is passed in directly as the
+			// already-resolved job id, so the payload is expected to carry it unchanged
+			// regardless of JobIndex 100's carousel status.
 			const expectedJobId = job.BeginnerId
 			if payload.JobId != expectedJobId {
 				t.Errorf("JobId mismatch: expected %d, got %d", expectedJobId, payload.JobId)

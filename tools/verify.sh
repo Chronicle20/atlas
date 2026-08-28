@@ -30,6 +30,13 @@ NO_UI=0
 QUICK=0
 FACTS=0
 
+# Bounded parallelism for the Go layer. The default is the per-slot CPU budget
+# from the build broker (tools/lib/build-slot.sh, K=4 slots on 24 threads).
+GO_JOBS="${ATLAS_VERIFY_GO_JOBS:-4}"
+case "$GO_JOBS" in
+    ''|*[!0-9]*|0) echo "verify.sh: ATLAS_VERIFY_GO_JOBS must be a positive integer (got '$GO_JOBS')" >&2; exit 2 ;;
+esac
+
 usage() {
     cat <<'EOF'
 usage: tools/verify.sh [options]
@@ -249,12 +256,54 @@ go_layer() {
     )
 }
 
+# launch_go_layers runs go_layer for every changed module through a bounded
+# worker pool (GO_JOBS concurrent), each writing its output and exit code to
+# its own file under GO_LOG_DIR. replay_go_layer then feeds those files back
+# through step() in module order, so concurrency changes wall time only —
+# PASSED/FAILED/SELECTED bookkeeping and per-module output order are exactly
+# what a serial run would produce.
+GO_LOG_DIR=""
+launch_go_layers() {
+    GO_LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/verify-go.XXXXXX")"
+    trap 'rm -rf "$GO_LOG_DIR"' EXIT
+    local i=0
+    for mod in "${MODULES[@]}"; do
+        while [ "$(jobs -rp | wc -l)" -ge "$GO_JOBS" ]; do wait -n; done
+        (
+            # `cmd; rc=$?` would abort the subshell under set -e before the rc
+            # file is written, and the replay would then read an empty rc and
+            # report a pass. The `if` is load-bearing.
+            if go_layer "$mod" >"$GO_LOG_DIR/$i.log" 2>&1; then
+                echo 0 >"$GO_LOG_DIR/$i.rc"
+            else
+                echo $? >"$GO_LOG_DIR/$i.rc"
+            fi
+        ) &
+        i=$((i + 1))
+    done
+    wait
+}
+
+replay_go_layer() {
+    cat "$GO_LOG_DIR/$1.log"
+    return "$(cat "$GO_LOG_DIR/$1.rc")"
+}
+
 if [ "${#MODULES[@]}" -eq 0 ]; then
     skip "go build/vet/test (no Go module changed)"
 else
-    info "verify.sh: ${#MODULES[@]} changed Go module(s)"
+    info "verify.sh: ${#MODULES[@]} changed Go module(s), ${GO_JOBS} job(s)"
+    # Under --facts step() executes nothing, so launching the work would be
+    # pure waste and would break the "--facts runs no check" contract that
+    # verify_test.sh:168-177 times.
+    if [ "$FACTS" -eq 0 ]; then
+        launch_go_layers
+    fi
+    i=0
     for mod in "${MODULES[@]}"; do
-        step "go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race')  ${mod#"$ROOT"/}" go_layer "$mod"
+        step "go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race')  ${mod#"$ROOT"/}" \
+            replay_go_layer "$i"
+        i=$((i + 1))
     done
 fi
 

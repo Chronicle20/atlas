@@ -103,7 +103,8 @@ probe_account_dir="$HERE/../services/atlas-account/zz-verify-probe"
 probe_bake_ban="$probe_ban_dir/go.mod"
 probe_bake_account="$probe_account_dir/go.mod"
 cleanup() {
-  rm -f "$probe_suite" "$probe_deploy" "$probe_bake_ban" "$probe_bake_account"
+  rm -f "$probe_suite" "$probe_deploy" "$probe_bake_ban" "$probe_bake_account" \
+    "$HERE/zz-verify-jobs0.err"
   rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -194,6 +195,37 @@ assert_eq "no probes, no bake gate" "0" "$no_bake_lines"
 
 assert_eq "no per-target bake loop remains" "0" \
   "$(grep -c 'for t in .\{0,4\}TARGETS' "$VERIFY")"
+
+# --- pool: GO_JOBS changes wall time, not what is reported -----------------
+#
+# The claim under test: a bounded worker pool must be observably identical to
+# the serial loop it replaces — same gate labels, same module count, same
+# ordering guarantees — for every job count. Only wall time may differ.
+
+labels_j1="$(ATLAS_VERIFY_GO_JOBS=1 real_selected --quick --base HEAD)"
+labels_j4="$(ATLAS_VERIFY_GO_JOBS=4 real_selected --quick --base HEAD)"
+assert_eq "gate labels are job-count invariant (1 vs 4)" "$labels_j1" "$labels_j4"
+
+mods_j1="$(ATLAS_VERIFY_GO_JOBS=1 facts_key modules_selected --quick --base HEAD)"
+mods_j4="$(ATLAS_VERIFY_GO_JOBS=4 facts_key modules_selected --quick --base HEAD)"
+assert_eq "module count is job-count invariant (1 vs 4)" "$mods_j1" "$mods_j4"
+
+probe_jobs0_err="$HERE/zz-verify-jobs0.err"
+ATLAS_VERIFY_GO_JOBS=0 "$VERIFY" --quick --base HEAD >/dev/null 2>"$probe_jobs0_err"
+job0_rc=$?
+assert_eq "GO_JOBS=0 is rejected (exit 2)" "2" "$job0_rc"
+assert_true "GO_JOBS=0 rejection names ATLAS_VERIFY_GO_JOBS" \
+  "$(grep 'ATLAS_VERIFY_GO_JOBS' "$probe_jobs0_err" >/dev/null && echo true)"
+rm -f "$probe_jobs0_err"
+
+ATLAS_VERIFY_GO_JOBS=x "$VERIFY" --quick --base HEAD >/dev/null 2>/dev/null
+jobx_rc=$?
+assert_eq "a non-numeric GO_JOBS is rejected (exit 2)" "2" "$jobx_rc"
+
+assert_true "the Go layer's log dir is created under TMPDIR and cleaned up on exit" \
+  "$(grep -F 'mktemp -d "${TMPDIR:-/tmp}/verify-go.XXXXXX"' "$VERIFY" >/dev/null \
+     && grep -F "trap 'rm -rf \"\$GO_LOG_DIR\"' EXIT" "$VERIFY" >/dev/null \
+     && echo true)"
 
 # --- --facts runs nothing --------------------------------------------------
 #

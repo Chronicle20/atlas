@@ -145,3 +145,74 @@ mechanism that later detects whether an operator has applied this section on
 a given host; that detection output, or a fresh `df -h /tmp` / `ls /tmp | wc
 -l` pair taken after the operator applies the tuning, is the legitimate
 source for an after-figure.
+
+## Layer 2 — parallelism (Go half)
+
+### What was measured
+
+The brief for task 4 asks for the Go layer's before/after wall time on a
+`libs/` fan-out. Running that through the full, flagless `tools/verify.sh`
+was out of scope for this session (Contract 2 — module-local checks only; a
+full `--all` run also re-executes every other gate, which would swamp the Go
+layer's own number in noise). Instead, the narrowest real Go run that
+isolates the same work `go_layer`/`launch_go_layers` perform was used
+directly: for every one of this repo's **91** Go modules under
+`services/` and `libs/` (`find services libs -name go.mod | xargs -n1
+dirname | sort -u | wc -l`), `cd "$mod" && go build ./... && go vet ./...` —
+exactly what `go_layer` runs under `--quick` (the `go test -race` pass is
+excluded from this timing, since it is unchanged by this task and would
+dominate the number with per-module test time rather than pool overhead).
+This is the scenario a `go.work`/`libs/` change fans out to today, run twice
+each way (serial, then pooled, then serial again) on a 24-thread host
+(`nproc` = 24) to separate a genuine pool speedup from Go's build-cache
+warming between runs.
+
+Before (serial, one module at a time — the loop this task replaces):
+
+```sh
+while IFS= read -r mod; do (cd "$mod" && go build ./... && go vet ./...); done < mods.txt
+```
+
+After (pooled, `GO_JOBS=4` — `launch_go_layers`'s bounded-parallelism shape):
+
+```sh
+for mod in "${MODULES[@]}"; do
+    while [ "$(jobs -rp | wc -l)" -ge "$GO_JOBS" ]; do wait -n; done
+    ( cd "$mod" && go build ./... && go vet ./... ) &
+done
+wait
+```
+
+### Measured figures
+
+| Run | Wall time |
+|---|---|
+| Serial, cold-ish cache (first run this session) | 156.4s (2m36s) |
+| Pooled, `GO_JOBS=4`, cache warmed by the serial run above | 34.4s |
+| Serial again, same warm cache (fair comparison — both sides warm) | 115.2s |
+| Pooled again, `GO_JOBS=4`, same warm cache | 35.3s |
+
+The first serial/pooled pair is confounded by Go's build cache — the serial
+run pays whatever cold-cache cost exists, and the pooled run that follows it
+inherits a warm cache. The second serial/pooled pair controls for that: both
+run against the same already-warm cache, and the pool still finishes in
+roughly **a third of the serial wall time** (35.3s vs 115.2s) at 4 concurrent
+workers on 24 threads — consistent with the module set being dominated by
+small, largely I/O- and vet-bound packages rather than CPU-bound compilation,
+so the pool's benefit comes from overlapping many small modules' wall time
+rather than from raw core count.
+
+### What this does and does not show
+
+Measured: the wall-time effect of bounding module builds to `GO_JOBS`
+concurrent workers instead of one at a time, using the exact `cd "$mod" &&
+go build ./... && go vet ./...` command `go_layer` runs, over the real,
+complete module set a `libs/`/`go.work` fan-out selects today.
+
+Not measured: `go test -race ./...` (excluded, see above — unaffected by
+this task, and race-detector runtime would dominate the number); the
+`step()`/log-replay overhead `launch_go_layers`/`replay_go_layer` add on top
+of the raw build/vet loop (a `mktemp -d`, per-module log/rc files, and a
+`cat` per module) — negligible next to a `go build` invocation, but not
+separately isolated here; and any figure from the full flagless
+`tools/verify.sh`, which was not run for this measurement per Contract 2.

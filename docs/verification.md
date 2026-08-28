@@ -196,6 +196,17 @@ lib edit can break a service with no changed file of its own.
 diff-gated (`--new-from-rev`), so it will not see a pre-existing vet failure in
 a file you happened to touch.
 
+Modules build through a bounded worker pool: `ATLAS_VERIFY_GO_JOBS` workers run
+concurrently (default `4`), not one `go build`/`vet`/`test -race` at a time —
+significant on a `libs/`/`go.work` fan-out, where the change set can be every
+module in the workspace. Each worker's output is captured to a per-module log
+and replayed through the same `step()` bookkeeping in module order once the
+pool drains, so a failure still reads as one labelled block naming its module,
+and the summary's `PASSED`/`FAILED` counts are exactly what a serial run would
+report — concurrency changes wall time only, never what gets reported or in
+what order. Override the worker count with `ATLAS_VERIFY_GO_JOBS=<n>`; `0` or
+a non-numeric value is rejected at startup.
+
 ## The docker layer
 
 The repo-root `.dockerignore` is an allowlist (`*` then `!libs`, `!services`),

@@ -677,3 +677,10 @@ carried forward, not fixed" note in `docs/tasks/task-219-cash-morph-coupons/desi
 - [ ] **If confirmed as a defect, fix the three `TypeValueUse` call sites in `ConsumeCashPetFood`
   to `TypeValueCash`**, matching the function's own first `ConsumeError` call and the pattern
   `ConsumeMorphCoupon` (task-219) follows.
+
+## task-277 follow-up: tenant Item.wz re-ingest for `spec/exp` and `info/maxLevel`
+
+`atlas-data` now parses the consumable `info/maxLevel` field and the `spec/exp` spec. Tenants
+whose `Item.wz` was ingested before task-277 will serve neither, so every Writ of Solomon use is
+rejected (the item is returned, never destroyed) until re-ingest. Same class as task-219's morph
+coupon. Owner: operations.

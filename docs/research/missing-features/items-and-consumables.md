@@ -24,8 +24,7 @@ Legend for scope: S = one handler/branch, M = handler + service logic + events, 
 - **Atlas absence:** both clientbound writers are verified (`CATCH_MONSTER`/`CATCH_MONSTER_WITH_ITEM` ✅, STATUS.md 338–339; `BRIDLE_MOB_CATCH_FAIL` ✅ 104) and `atlas-data` parses `bridleMsgType/bridleProp/bridlePropChg/mobHP` (`reader.go:68-70,81`) — but grep `CatchMonster` outside `socket/writer`: only `main.go` writer registration. Serverbound `USE_CATCH_ITEM` ❌ all versions (569). Scope: **M**.
 
 ### 5. Solomon's Blessing / gach EXP tickets (stored-EXP items)
-- **Expected:** Cosmic `UseSolomonHandler.java`, `UseGachaExpHandler.java`.
-- **Atlas absence:** grep `solomon|GachaExp|gacha_exp` over `services/`+`libs/`: only the `gachExp` stat field encode in `libs/atlas-packet/character/data.go`. STATUS.md `USE_SOLOMON_ITEM` ❌ (664), `USE_GACHA_EXP` ❌ (666). Scope: **S/M**.
+Implemented (task-277), formerly a row here — see Present-but-partial #8.
 
 ### 6. Water of Life (pet revive)
 - **Expected:** Cosmic `UseWaterOfLifeHandler.java` (revives an expired pet).
@@ -70,7 +69,7 @@ Enumerated every `spec` child across all v83 `Item.wz/Consume/*.img.xml` (counts
 | `mesoupbyitem` | 45 | 2022124, 2022459-2022461, 2022529 | meso-drop-up potions do nothing |
 | `itemupbyitem` | 61 | 2022462, 2022463, 2022530, 2022531 | item-drop-up potions do nothing |
 | `expinc` | 4 | 2022442, 2022450-2022452 | instant-EXP items give 0 EXP |
-| `exp` | 13 | 2370000-2370012 (EXP potions) | no effect |
+| `exp` | 13 | 2370000-2370012 (Writ of Solomon) | now parsed/applied (task-277) — banks the amount to `gachapon_experience`, not an instant-EXP grant; see Present-but-partial #8 |
 | `mhpR`/`mmpR` (+`mhpRRate`/`mmpRRate`) | 10/9 | 2022198, 2022337, 2022366+ | max-HP/MP % buff items do nothing |
 | `padRate`/`madRate`/`speedRate`/`accRate`/`evaRate`/`pddRate`/`mddRate` | 7 ea | 2022359, 2022365, 2022368+ | %-based buff items do nothing |
 | `berserk`, `booster`, `repeatEffect` | 6 ea | 2022585-2022588, 2022616-2022617 | special combat buff items dead |
@@ -142,6 +141,11 @@ Works: success/curse rolls, stat lines, slot/level bookkeeping, white scroll pro
 
 ### 7. Pet name tag: implemented in task-224, across all ten GMS/JMS templates
 `CharacterCashItemUseHandle` now routes classification-517 items (`Cash/0517.img.xml`, item `5170000`) into a rename saga (`PetNameTagUse`): the client-supplied name is validated (4–12 characters, trimmed), the lead pet's name is updated via atlas-pets' `RENAME` command, and `pet/clientbound/PetNameChanged` (`libs/atlas-packet/pet/clientbound/name_changed.go`) broadcasts the new name to the map. Unlike the morph coupon (#6), this feature reads no WZ `spec` value at all — `Cash/0517.img.xml` carries only `z`/`slotMax`/`cash`/icon canvases — so there is no ingest-order caveat. `PetNameChanged` is registered in all ten seed templates that carry a `PET_NAMECHANGE` matrix column (`gms_48`, `gms_61`, `gms_72`, `gms_79`, `gms_83`, `gms_84`, `gms_87`, `gms_92`, `gms_95`, `jms_185` — `gms_12` is outside this feature's version set entirely, unrelated to the separate gms_12 `CharacterCashItemUseHandle` gap in Present-but-partial #1). `PET_NAMECHANGE` is ✅ on all ten matrix columns (STATUS.md row 205) — including `gms_48`, where the opcode is present in the client (`CUser::OnPetPacket` case `'q'` / opcode 0x071 → `CPet::OnNameChanged`), contrary to an earlier plan-time assumption that v48 lacked it. See `docs/tasks/task-224-pet-name-tag/rollout.md` for the required live-tenant socket-config reconciliation step before enabling this on any existing tenant.
+
+### 8. Stored-EXP items (Writ of Solomon): implemented in task-277
+Both Cosmic ops are implemented and verified on the eight in-scope columns (`gms_v72`, `gms_v79`, `gms_v83`, `gms_v84`, `gms_v87`, `gms_v92`, `gms_v95`, `jms_185`): classification 237 (Writ of Solomon, `2370000`–`2370012`) credits `gachapon_experience` via the `CREDIT_STORED_EXPERIENCE` command, and `USE_GACHA_EXP` redeems the banked amount via `REDEEM_STORED_EXPERIENCE`. `atlas-data` now parses the consumable `spec/exp` field (the amount a Writ banks, not an instant-EXP potion — see Wholly-missing §8's `exp` row) and `info/maxLevel`. `gms_v12`, `gms_v48`, and `gms_v61` carry committed positive-absence evidence: the ops do not exist on those client versions. Design: `docs/tasks/task-277-stored-exp-items/design.md`.
+
+Tenants whose `Item.wz` was ingested before task-277 will serve neither `spec/exp` nor `info/maxLevel`, so every Writ of Solomon use is rejected (the item is returned, never destroyed) until re-ingest — same class as task-219's morph coupon (Present-but-partial #6). Tracked in `docs/TODO.md`.
 
 ---
 

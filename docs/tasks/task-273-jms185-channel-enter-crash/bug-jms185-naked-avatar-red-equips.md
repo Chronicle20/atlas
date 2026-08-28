@@ -250,6 +250,16 @@ this round with byte-length fixtures.
   the GMS gate (`>= 84 && isEvanJob`) is unchanged. Add a JMS fixture for a
   job-3xxx character asserting the extended-SP byte replaces the `nSP` short.
 
+- `libs/atlas-packet/parcel/clientbound/v185_test.go` — **added to this
+  inventory after the fact.** Its hand-built JMS golden `wantEquipItemBytesV185`
+  pins the same shared `encodeEquipableInfo` output and labels the int32 after
+  `experience` as `hammersApplied = 0`, citing an earlier IDA session. That is
+  the same wire address (@0x5100e1) this fix reinterprets as `nDurability` via
+  the typed GMS v95 cross-reference — a corrected field *name* at an unchanged
+  offset, not a competing measurement. The fixture and its comment must be
+  updated to say so rather than silently re-baselined. Missing this file was an
+  omission in the original inventory, not a scope expansion by the implementer.
+
 Every module-local `go build ./...` / `go test ./...` in `libs/atlas-packet`
 must pass, and no GMS fixture may change by a single byte.
 

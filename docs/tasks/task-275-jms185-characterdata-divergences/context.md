@@ -68,23 +68,26 @@ the final gate from the last change it gates.
 
 ## Evidence re-pin
 
-**Finding (Task 8 Step 2) — to be confirmed by the implementer and recorded
-here.** The planning read of the artifacts says no re-pin is owed:
+**Finding (Task 8 Step 2) — confirmed by the implementer.** No re-pin is
+owed:
 
 - `docs/packets/evidence/gms_v95/field.clientbound.FieldSetField.yaml` pins
   only `ida.function` (`CStage::OnSetField`), `ida.address` (`0x71a0a0`) and
   `decompile_sha256` — a client-side hash no server change can move. There is
   no byte fixture in the record.
 - `libs/atlas-packet/field/clientbound/set_field_test.go` carries the
-  `packet-audit:verify` markers for all seven SET_FIELD cells (`:13-19`,
-  `:151`), and each golden asserts the CharacterData middle as an **opaque
-  span** re-derived by calling `cd.Encode` (`:76`) rather than as a byte
-  literal. Its fixtures are job 312 with **no skills**, so neither the ignore
-  list nor any 43x arm can reach them.
+  `packet-audit:verify` markers for all seven SET_FIELD cells (`:13-19`),
+  and each golden asserts the CharacterData middle as an **opaque
+  span** re-derived by calling `cd.Encode` (`:75`) rather than as a byte
+  literal. Its fixtures (`TestSetFieldByteOutputV79/V72/V61/V48`) all build
+  `charpkt.CharacterData` literals for job 312 with the `Skills` field left
+  unset (nil slice), so neither the ignore list nor any 43x arm can reach
+  them.
 
-If the implementer finds otherwise — a hard-coded CharacterData byte literal,
-or a fixture holding one of the sixteen ignore-list ids — that is a
-`packet-verifier` re-derivation, not a comment edit. Stop and report.
+Confirmed: no hard-coded CharacterData byte literal exists anywhere in
+`set_field_test.go`, and no fixture carries a skill id at all, let alone one
+of the sixteen ignore-list ids. No `packet-verifier` re-derivation is
+required for this task.
 
 ## Out of scope, recorded (design §9)
 

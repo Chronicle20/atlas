@@ -81,8 +81,21 @@ Command:
 docker buildx bake --set '*.output=type=cacheonly' all-services
 ```
 
-Result: exit `0`. Wall time: `31:47.62` (31 minutes 47.62 seconds), from a
-worktree with an already-warm builder cache from the atlas-ban runs above.
-This builds all 67 Go services plus `atlas-ui`, `atlas-pr-bootstrap` and
+Run from this worktree (`.worktrees/task-286-build-verify-concurrency/`)
+with the new allowlist `.dockerignore` in place.
+
+Result: exit `0`. Wall time: `1829` seconds (30m29s) — start
+`2026-08-28T17:11:32-04:00`, end `2026-08-28T17:42:01-04:00`. This builds
+all 67 Go services plus `atlas-ui`, `atlas-pr-bootstrap` and
 `atlas-kafka-precreate`; no target failed, so the allowlist did not drop any
 file any bake target needed.
+
+`grep -icE 'error|failed'` over the full build log returns `215` lines.
+Every one of those 215 lines is the literal string `ERROR:` appearing
+inside the shared Dockerfile's own `go.work`-synthesis `RUN` command text,
+as echoed verbatim by BuildKit's step header for that command (not a build
+failure) — the process's exit code (`0`) is the acceptance signal, not the
+grep count.
+
+Full log retained at `.superpowers/sdd/plan/logs/task1-all-services-bake.log`
+(git-ignored scratch; not committed).

@@ -70,11 +70,13 @@ associated interactions with the Bid, Holding, and Transaction domains.
 ### Processors
 
 - `Processor` (`listing/processor.go`, `listing/processor_custody.go`):
-  `GetAll`/`GetById`/`GetBySerial`/`Create`, `Browse`/`CountBrowse`,
-  `TransitionState`, `UpdateAuction`, `Cancel`/`CancelForSeller`/
-  `CancelBySerial`, `Expire`, `List` (validates a list request against
-  tenant configuration — price floor, active-listing cap, auction
-  duration, sell-level gate, item tradability guards — and emits a
+  `GetAll`/`GetById`/`GetBySerial`/`Create`, `ByCharacterActivePagedProvider`
+  (a seller's active listings across worlds), `Browse`/`CountBrowse`,
+  `TransitionState`, `UpdateAuction`, `RenameSeller` (updates `seller_name`
+  on every listing row for a seller, regardless of `state`), `Cancel`/
+  `CancelForSeller`/`CancelBySerial`, `Expire`, `List` (validates a list
+  request against tenant configuration — price floor, active-listing cap,
+  auction duration, sell-level gate, item tradability guards — and emits a
   `TransferToMts` saga), `Buy` (settles a buy/buy-now: computes the
   marked-up price, pre-checks the buyer's prepaid balance, emits a
   debit-first `MtsSettlePurchase` saga), `PlaceBid` (validates and

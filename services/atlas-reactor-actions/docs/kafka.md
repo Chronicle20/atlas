@@ -47,12 +47,12 @@ Command message for reactor hit or trigger events.
 | reactorState | int8 | Current reactor state |
 | x | int16 | X coordinate |
 | y | int16 | Y coordinate |
-| type | string | Command type: `HIT` or `TRIGGER` |
+| type | string | Command type: `HIT`, `TRIGGER`, or `TOUCH` |
 | body | object | Command body; decoded generically, only `characterId` is read |
 
-### Command Type: HIT and TRIGGER
+### Command Type: HIT, TRIGGER, and TOUCH
 
-The `body` field is decoded generically; only `characterId` is read from it, for both command types.
+The `body` field is decoded generically; only `characterId` is read from it, for all three command types.
 
 ```json
 {

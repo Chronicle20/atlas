@@ -2,7 +2,7 @@
 
 ## Overview
 
-Atlas Consumables manages consumable item usage in the game. It handles consumption of potions, scrolls, pet food, summoning sacks, equipment enhancement scrolls, Vega's Spell boosted scrolls, vicious hammers, and taming-mob (mount) revitalizer food. It also relays pickup-time item consumption (e.g. monster cards) to the monster book service. The service processes item effects including HP/MP recovery, temporary stat buffs, teleportation, pet feeding, and equipment stat modifications.
+Atlas Consumables manages consumable item usage in the game. It handles consumption of potions, scrolls, pet food, summoning sacks, equipment enhancement scrolls, Vega's Spell boosted scrolls, vicious hammers, taming-mob (mount) revitalizer food, reward boxes, skill/mastery books, pet skill pouches, transformation coupons, and bridle (monster catch item) usage. It also relays pickup-time item consumption (e.g. monster cards) to the monster book service. The service processes item effects including HP/MP recovery, temporary stat buffs, teleportation, pet feeding, and equipment stat modifications.
 
 The service is Kafka-driven and does not expose any REST endpoints. It maintains a Redis-backed character location registry built from character status events, which is used to resolve a character's current field context when applying location-dependent effects such as teleportation and buff application.
 
@@ -17,6 +17,7 @@ The service is Kafka-driven and does not expose any REST endpoints. It maintains
 - atlas-pets (REST): Pet data
 - atlas-data (REST): Consumable, equipable, map, portal, cash item, and drop position reference data
 - atlas-monsters (REST): Monster creation for summoning sacks
+- atlas-skills (REST): Character skill data for skill/mastery book use
 
 ## Runtime Configuration
 
@@ -42,6 +43,9 @@ The service is Kafka-driven and does not expose any REST endpoints. It maintains
 | `COMMAND_TOPIC_PET` | Topic for pet commands |
 | `COMMAND_TOPIC_MONSTER` | Topic for monster commands (produces CATCH only) |
 | `EVENT_TOPIC_MONSTER_CATCH` | Topic for bridle (catch-item) capture outcomes (consumed) |
+| `COMMAND_TOPIC_SAGA` | Topic for saga commands (produces skill-book use saga) |
+| `EVENT_TOPIC_SAGA_STATUS` | Topic for saga status events (consumed for skill-book use completion) |
+| `EVENT_TOPIC_ASSET_STATUS` | Topic for asset status events (consumed for reward-box creation confirmation) |
 
 ## Documentation
 

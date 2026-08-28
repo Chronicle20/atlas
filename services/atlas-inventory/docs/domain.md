@@ -54,8 +54,10 @@ Manages a typed inventory slot container with capacity limits. Handles asset ope
 - Destination asset must not already be at slotMax to be eligible for merge
 - Recharge operations are restricted to Use compartment type only
 - Equipment slot conflicts (overall vs. pants, top) are resolved during equip operations
-- Reservations have a 30-second timeout and are tracked in a Redis-backed registry
+- Reservations have a 30-second timeout by default; a `REQUEST_RESERVE` command may specify a longer TTL via `expirySeconds`
 - Inventory operations acquire per-character, per-inventory-type Redis-backed distributed locks to prevent concurrent modification
+- A locked asset (`FlagLock` set) whose expiration has passed has its lock cleared rather than being deleted when `ExpireAsset` runs
+- Extending an asset's expiration (`ExtendAssetExpiration`) or resetting a pet's expiration (`ResetPetExpiration`) rejects a target date beyond a cap re-derived from the consumed extender/source item's own cash data; the requested expiration must not move backwards
 
 ### State Transitions
 
@@ -66,7 +68,7 @@ Manages a typed inventory slot container with capacity limits. Handles asset ope
 - Asset drop: slot freed, drop command emitted
 - Asset consume: reservation removed, quantity decremented or asset deleted
 - Asset destroy: quantity decremented or asset deleted
-- Asset expire: asset deleted, optional replacement item created
+- Asset expire: locked asset has its lock cleared instead of being deleted; otherwise asset deleted, optional replacement item created
 - Accept: asset created in next free slot, or merged into existing stack
 - Release: asset deleted (full release) or quantity reduced (partial release)
 
@@ -95,6 +97,12 @@ Manages a typed inventory slot container with capacity limits. Handles asset ope
 - `Processor.AttemptItemPickUp` - Picks up a stackable item from a drop, merging into existing stacks when possible; cancels drop reservation on failure. Items flagged consumeOnPickup never enter the inventory; instead an item-consumed-on-pickup command is emitted and the drop reservation is completed
 - `Processor.ModifyEquipment` - Updates equipment stats for an existing asset
 - `Processor.ChangeTemplate` - Resolves the Cash-compartment pet asset matching a given petId and swaps only its templateId in place, preserving slot, cashId, expiration, and petId
+- `Processor.SetAssetOwner` - Stamps the owner field onto the asset at a given slot
+- `Processor.ApplyAssetLock` - Sets FlagLock and an expiration on the asset at a given slot; rejects an unlocked asset that already carries a non-zero (time-limited) expiration
+- `Processor.ApplyAssetKarma` - Applies or, when clearing, removes the one-free-trade karma mark on the asset at a given slot, re-checking pet-class, lock, scissors-eligibility, and already-marked/already-tradeable gates
+- `Processor.ExtendAssetExpiration` - Extends a time-limited (non-locked) asset's expiration to an absolute value, capped by the consumed extender item's maxDays
+- `Processor.ResetPetExpiration` - Resolves the Cash-compartment pet asset matching a given petId and sets its expiration to an absolute value, capped by the consumed source item's life
+- `Processor.CanAccommodate` - For each requested (templateId, quantity) independently, reports whether creating that item would currently succeed: true if the target compartment has a free slot, or if full, whether the item is a mergeable stackable that fully fits into an existing stack of the same template. Equipment, bullets, and throwing stars never merge
 
 ---
 
@@ -125,6 +133,8 @@ Represents a unified inventory item in a compartment slot. All item types (equip
 - `IsPet()` is true for cash items with petId > 0
 - Equipment stats are randomized within +/-10% of base stats (capped at a per-stat maximum range) when created via `Processor.Create`
 - Quantity cannot be updated for non-HasQuantity assets
+- `Locked()` is true when the flag bitmask has `FlagLock` set
+- The karma flag bit applicable to an asset is derived from its templateId (`af.KarmaFlagFor`); not every templateId has an applicable karma bit
 
 ### State Transitions
 
@@ -152,6 +162,12 @@ Represents a unified inventory item in a compartment slot. All item types (equip
 - `Processor.DeleteAndEmit` - Looks up asset by ID and deletes with event emission
 - `Processor.GetSlotMax` - Retrieves maximum slot capacity for a templateId from the appropriate data service (consumable, setup, or etc); returns 1 for equipment and other types
 - `Processor.ChangeTemplate` - Swaps only the templateId of a pet asset in place, preserving its slot, compartment, cashId, petId, expiration, and quantity; only supported for pet assets
+- `Processor.UpdateOwner` - Sets the owner field on an asset; emits UPDATED event
+- `Processor.ApplyLock` - Sets FlagLock and an expiration on an asset in place; rejects an asset that is not already locked but carries a non-zero expiration; emits UPDATED event
+- `Processor.ExtendExpiration` - Sets the expiration on a non-locked, already time-limited asset without touching its flags; rejects a locked asset, a permanent (zero-expiration) asset, or a target date before the current expiration; a no-op write (still emits UPDATED) if the target date equals the current expiration
+- `Processor.ClearLock` - Clears FlagLock and zeroes the expiration on an asset in place; emits UPDATED event
+- `Processor.ApplyKarma` - Sets the karma flag bit applicable to an asset's templateId, after checking pet-class applicability, lock, scissors-karma eligibility, already-marked, and already-tradeable conditions; emits UPDATED event
+- `Processor.ClearKarma` - Removes the karma flag bit applicable to an asset's templateId without gating; no-op if the templateId has no applicable karma bit; emits UPDATED event
 
 ---
 

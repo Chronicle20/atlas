@@ -9,7 +9,10 @@ Consumable command topic.
 | Command | Description |
 |---------|-------------|
 | REQUEST_ITEM_CONSUME | Consume item from inventory |
+| REQUEST_ITEM_REWARD | Use a reward box item |
+| REQUEST_CATCH_MONSTER | Use a bridle (monster catch item) |
 | REQUEST_SCROLL | Use scroll on equipment |
+| REQUEST_SKILL_BOOK_USE | Use a skill book or mastery book |
 | REQUEST_VEGA_SCROLL | Apply a scroll at a Vega's Spell boosted rate |
 | REQUEST_VICIOUS_HAMMER | Use a vicious hammer on equipment |
 | APPLY_CONSUMABLE_EFFECT | Apply item effects without consuming |
@@ -50,6 +53,17 @@ Compartment status events for transaction handling. Consumed via dynamically reg
 |-------|-------------|
 | RESERVED | Item reservation confirmed |
 | RESERVATION_CANCELLED | Item reservation cancelled |
+| CREATED | Compartment creation confirmed |
+| CREATION_FAILED | Asset creation failed (e.g. reward-box grant could not be placed) |
+
+### EVENT_TOPIC_ASSET_STATUS
+
+Asset status events emitted by atlas-inventory. Consumed via a dynamically registered one-time handler to await the CREATED confirmation that marks a reward-box grant as successful. Subscribed from the latest offset.
+
+| Event | Description |
+|-------|-------------|
+| CREATED | Asset created (reward-box grant success signal) |
+| QUANTITY_CHANGED | Asset quantity changed |
 
 ### EVENT_TOPIC_MONSTER_CATCH
 
@@ -58,6 +72,15 @@ Dedicated, low-volume monster catch-outcome topic owned by atlas-monsters. Consu
 | Event | Description |
 |-------|-------------|
 | CATCH_RESOLVED | Bridle (catch-item) capture attempt resolved (success or failure) |
+
+### EVENT_TOPIC_SAGA_STATUS
+
+Saga status events. Consumed via a dynamically registered one-time handler per skill-book use transaction (no persistent handlers).
+
+| Event | Description |
+|-------|-------------|
+| COMPLETED | Saga completed |
+| FAILED | Saga failed |
 
 ## Topics Produced
 
@@ -71,7 +94,10 @@ Consumable status events.
 | SCROLL | Scroll usage result |
 | VEGA_SCROLL | Vega's Spell scroll usage result |
 | EFFECT_APPLIED | Consumable effect applied |
+| REWARD_EFFECT | Reward-box grant presentation effect |
+| REWARD_WON | Reward-box grant world-message announcement |
 | VICIOUS_HAMMER | Vicious hammer usage result |
+| SKILL_BOOK_RESULT | Skill/mastery book use result |
 | CATCH_FAILED | Pre-reserve bridle (catch-item) rejection (use-delay, inventory full, or invalid item) |
 
 ### EVENT_TOPIC_TAMING_MOB_FOOD
@@ -120,6 +146,7 @@ Compartment commands.
 | DESTROY | Destroy item |
 | CANCEL_RESERVATION | Cancel item reservation |
 | MODIFY_EQUIPMENT | Update equipment stats |
+| CREATE_ASSET | Create an asset (reward-box grant) |
 
 ### COMMAND_TOPIC_PET
 
@@ -128,6 +155,7 @@ Pet commands.
 | Command | Description |
 |---------|-------------|
 | AWARD_FULLNESS | Increase pet fullness |
+| SET_SKILL | Grant or remove a pet skill (pet skill pouch) |
 
 ### COMMAND_TOPIC_MONSTER
 
@@ -136,6 +164,14 @@ Monster commands. Shared topic owned by atlas-monsters; this service produces on
 | Command | Description |
 |---------|-------------|
 | CATCH | Resolve a bridle (catch-item) capture attempt against a monster |
+
+### COMMAND_TOPIC_SAGA
+
+Saga commands.
+
+| Command | Description |
+|---------|-------------|
+| (saga envelope) | Submits a saga (e.g. skill_book_use) |
 
 ## Message Types
 
@@ -154,6 +190,61 @@ Monster commands. Shared topic owned by atlas-monsters; this service produces on
     "source": 0,
     "itemId": 0,
     "quantity": 0
+  }
+}
+```
+
+### REQUEST_ITEM_REWARD Command
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "characterId": 0,
+  "type": "REQUEST_ITEM_REWARD",
+  "body": {
+    "source": 0,
+    "itemId": 0
+  }
+}
+```
+
+### REQUEST_CATCH_MONSTER Command
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "characterId": 0,
+  "type": "REQUEST_CATCH_MONSTER",
+  "body": {
+    "source": 0,
+    "itemId": 0,
+    "monsterUniqueId": 0
+  }
+}
+```
+
+### REQUEST_SKILL_BOOK_USE Command
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "characterId": 0,
+  "type": "REQUEST_SKILL_BOOK_USE",
+  "body": {
+    "slot": 0,
+    "itemId": 0
   }
 }
 ```
@@ -262,7 +353,7 @@ Monster commands. Shared topic owned by atlas-monsters; this service produces on
 }
 ```
 
-`error` is one of `PET_CANNOT_CONSUME` or `VEGA_INVALID`, or empty for unclassified errors.
+`error` is one of `PET_CANNOT_CONSUME`, `PET_CANNOT_LEARN`, `CONSUME_FAILED`, `INVENTORY_FULL`, or `VEGA_INVALID`, or empty for unclassified pre-reserve errors.
 
 ### SCROLL Event
 
@@ -319,6 +410,55 @@ Monster commands. Shared topic owned by atlas-monsters; this service produces on
   }
 }
 ```
+
+### REWARD_EFFECT Event
+
+```json
+{
+  "characterId": 0,
+  "type": "REWARD_EFFECT",
+  "body": {
+    "boxItemId": 0,
+    "effect": ""
+  }
+}
+```
+
+Emitted after a reward-box grant is confirmed, only when the won reward entry declares an effect path.
+
+### REWARD_WON Event
+
+```json
+{
+  "characterId": 0,
+  "type": "REWARD_WON",
+  "body": {
+    "boxItemId": 0,
+    "itemId": 0,
+    "message": ""
+  }
+}
+```
+
+Emitted after a reward-box grant is confirmed, only when the won reward entry declares a world message. `message` has the `/name` and `/item` tokens substituted with the character name and reward item name.
+
+### SKILL_BOOK_RESULT Event
+
+```json
+{
+  "characterId": 0,
+  "type": "SKILL_BOOK_RESULT",
+  "body": {
+    "isMasteryBook": false,
+    "skillId": 0,
+    "masterLevel": 0,
+    "canUse": true,
+    "success": false
+  }
+}
+```
+
+Emitted once per REQUEST_SKILL_BOOK_USE request. `canUse: false` reports a pre-saga validation rejection or saga failure. `canUse: true` reports the saga outcome, with `success` carrying the roll result.
 
 ### CHANGE_HP Command
 
@@ -446,6 +586,61 @@ Note: sourceId uses negative item ID for consumable buffs.
 }
 ```
 
+### CREATE_ASSET Compartment Command
+
+```json
+{
+  "transactionId": "uuid",
+  "characterId": 0,
+  "inventoryType": 0,
+  "type": "CREATE_ASSET",
+  "body": {
+    "templateId": 0,
+    "quantity": 0,
+    "expiration": "2006-01-02T15:04:05Z",
+    "ownerId": 0,
+    "flag": 0,
+    "rechargeable": 0,
+    "useAverageStats": false
+  }
+}
+```
+
+Produced to grant a reward-box win. Success is confirmed by a CREATED event on `EVENT_TOPIC_ASSET_STATUS`; failure is reported by a CREATION_FAILED event on `EVENT_TOPIC_COMPARTMENT_STATUS`.
+
+### CREATION_FAILED Compartment Status Event (consumed)
+
+```json
+{
+  "transactionId": "uuid",
+  "characterId": 0,
+  "compartmentId": "uuid",
+  "type": "CREATION_FAILED",
+  "body": {
+    "errorCode": "",
+    "message": ""
+  }
+}
+```
+
+`errorCode` is one of `CREATE_ASSET_TEMPLATE_NOT_FOUND`, `CREATE_ASSET_INVENTORY_FULL`, or `CREATE_ASSET_UNKNOWN_ERROR`.
+
+### CREATED Asset Status Event (consumed)
+
+```json
+{
+  "transactionId": "uuid",
+  "characterId": 0,
+  "compartmentId": "uuid",
+  "assetId": 0,
+  "templateId": 0,
+  "slot": 0,
+  "type": "CREATED"
+}
+```
+
+Consumed from `EVENT_TOPIC_ASSET_STATUS` as the reward-box grant success confirmation. The body is opaque; correlation is by the envelope's `transactionId`.
+
 ### REQUEST_FEED Command (consumed)
 
 ```json
@@ -518,6 +713,22 @@ Flat struct (no envelope wrapper) on `COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP`.
   }
 }
 ```
+
+### SET_SKILL Command
+
+```json
+{
+  "actorId": 0,
+  "petId": 0,
+  "type": "SET_SKILL",
+  "body": {
+    "skill": "",
+    "enabled": true
+  }
+}
+```
+
+Produced when a pet skill pouch (cash classification 519) is consumed; one command per skill key the item's data carries.
 
 ### REQUEST_RESERVE Command
 
@@ -724,6 +935,31 @@ Consumed from `EVENT_TOPIC_MONSTER_CATCH` via a one-time handler correlated by `
 
 Emitted on `EVENT_TOPIC_CONSUMABLE_STATUS` when a catch request is rejected before the item is reserved. `cause` is one of `USE_DELAY`, `INVENTORY_FULL`, or `INVALID_ITEM`.
 
+### Saga Command (produced)
+
+```json
+{
+  "transactionId": "uuid",
+  "sagaType": "skill_book_use",
+  "initiatedBy": "SKILL_BOOK",
+  "steps": []
+}
+```
+
+Produced on `COMMAND_TOPIC_SAGA` to submit a saga (shared `atlas-saga` envelope). Used by the skill-book use flow to sequence book destruction and skill grant/update.
+
+### Saga Status Event (consumed)
+
+```json
+{
+  "transactionId": "uuid",
+  "type": "COMPLETED",
+  "body": {}
+}
+```
+
+Consumed from `EVENT_TOPIC_SAGA_STATUS` via a one-time handler keyed to the transactionId. `type` is `COMPLETED` or `FAILED`; the `FAILED` body carries `errorCode`, `reason`, and `failedStep`.
+
 ## Transaction Semantics
 
 Item consumption uses saga-style transactions:
@@ -736,3 +972,9 @@ Item consumption uses saga-style transactions:
 The one-time handler is registered dynamically on the compartment status event topic. It validates that the incoming RESERVED event matches the expected transactionId and itemId before invoking the item consumer callback.
 
 REQUEST_VEGA_SCROLL uses a chained two-reservation variant of the same transactionId: a one-time handler is registered for both the vega (CASH) item and the scroll (USE) item before the first REQUEST_RESERVE (for the vega item) is sent. The vega item's RESERVED confirmation triggers the second REQUEST_RESERVE (for the scroll); the scroll's RESERVED confirmation runs the terminal consumer. REQUEST_FEED and REQUEST_VICIOUS_HAMMER follow the single-reservation pattern above.
+
+REQUEST_ITEM_REWARD reserves the box, then on RESERVED (`ConsumeReward`) rolls a reward and issues CREATE_ASSET, registering one-time handlers on both `EVENT_TOPIC_ASSET_STATUS` (CREATED success) and `EVENT_TOPIC_COMPARTMENT_STATUS` (CREATION_FAILED failure) before the command is sent; exactly one fires and it deregisters its sibling. Success commits the box via CONSUME and emits REWARD_EFFECT/REWARD_WON; failure cancels the box reservation and preserves the box.
+
+REQUEST_CATCH_MONSTER reserves the catch item, then on RESERVED (`ConsumeCatch`) sends a CATCH command to atlas-monsters on `COMMAND_TOPIC_MONSTER` and awaits CATCH_RESOLVED on `EVENT_TOPIC_MONSTER_CATCH`, correlated by `(characterId, itemId)`. Both the CATCH_RESOLVED handler and the RESERVED handler are registered before the reserve request is sent. Success commits the reservation and grants the reward item via CREATE_ASSET; failure cancels the reservation and leaves the catch item untouched.
+
+REQUEST_SKILL_BOOK_USE validates eligibility synchronously (no reservation), then builds and submits a `skill_book_use` saga (COMMAND_TOPIC_SAGA) with a one-time handler registered on `EVENT_TOPIC_SAGA_STATUS` before submission. The saga's terminal COMPLETED or FAILED status drives a single SKILL_BOOK_RESULT event.

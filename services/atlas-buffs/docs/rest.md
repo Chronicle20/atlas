@@ -42,6 +42,7 @@ JSON:API `meta` block:
 | Changes | []StatChange | changes |
 | CreatedAt | time.Time | createdAt |
 | ExpiresAt | time.Time | expiresAt |
+| NoExpiry | bool | noExpiry |
 
 Resource type: `buffs`
 

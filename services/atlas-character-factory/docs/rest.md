@@ -126,3 +126,62 @@ JSON:API resource type: `characters`
 | 409         | Character name is a duplicate                                      |
 | 502         | atlas-data unreachable during skill batch lookup                   |
 | 500         | Other failure (e.g. tenant config lookup failure, saga creation failure) |
+
+### POST /api/factory/characters/maple-life
+
+Creates a new character from the tenant's configured Maple Life class table using saga-based orchestration.
+
+#### Parameters
+
+None.
+
+#### Request Headers
+
+| Header        | Required | Description              |
+|---------------|----------|---------------------------|
+| TENANT_ID     | Yes      | Tenant identifier (UUID) |
+| REGION        | Yes      | Region identifier        |
+| MAJOR_VERSION | Yes      | Major version number     |
+| MINOR_VERSION | Yes      | Minor version number     |
+
+#### Request Model
+
+JSON:API resource type: `maple-life-create`
+
+| Field        | Type   | Required | Description                                  |
+|--------------|--------|----------|-----------------------------------------------|
+| accountId    | uint32 | Yes      | Account ID                                   |
+| worldId      | byte   | Yes      | World ID                                     |
+| name         | string | Yes      | Character name                               |
+| classOrdinal | uint32 | Yes      | Maple Life class ordinal                     |
+| gender       | byte   | Yes      | Gender (0 or 1)                              |
+| face         | uint32 | Yes      | Face template ID                             |
+| hair         | uint32 | Yes      | Hair template ID                             |
+| hairColor    | uint32 | Yes      | Hair color                                   |
+| skinColor    | byte   | Yes      | Skin color                                   |
+| sp           | byte   | No       | SP level (0-10) chosen for the class's SP skill |
+
+#### Response Model
+
+HTTP 202 Accepted.
+
+JSON:API resource type: `characters`
+
+| Field         | Type   | Description                     |
+|---------------|--------|----------------------------------|
+| transactionId | string | UUID for tracking saga progress |
+
+#### Error Conditions
+
+| Status Code | Condition                                                          |
+|-------------|------------------------------------------------------------------------|
+| 400         | Class ordinal not configured for the chosen gender                     |
+| 400         | Gender not 0 or 1                                                      |
+| 400         | Look selection (face, hair, hair color, skin color) not offered for the class |
+| 400         | SP selection invalid (nonzero SP for a class with no SP skill, SP > 10, or SP exceeds the class's remaining pool) |
+| 400         | Character name invalid (rejected by name-validity check, non-duplicate reason) |
+| 400         | Class validation failed (equipment not equipable, equipment slot collision, or item/skill not found in atlas-data) |
+| 409         | Character name is a duplicate                                          |
+| 502         | atlas-data unreachable during skill lookup                             |
+| 500         | Maple Life not configured for tenant (no classes or no look options for gender) |
+| 500         | Other failure (e.g. tenant config lookup failure, saga creation failure) |

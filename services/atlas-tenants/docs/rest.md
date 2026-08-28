@@ -4,7 +4,7 @@
 
 ### GET /tenants
 
-Retrieves all tenants (paginated).
+Retrieves all tenants (paginated). Results are scoped to the caller's environment; a caller with no environment sees every tenant.
 
 **Parameters**:
 - `page[number]` (query, int, optional): Page number, 1-based. Default 1.
@@ -23,7 +23,8 @@ Retrieves all tenants (paginated).
         "name": "string",
         "region": "string",
         "majorVersion": 0,
-        "minorVersion": 0
+        "minorVersion": 0,
+        "environment": "string"
       }
     }
   ],
@@ -53,7 +54,7 @@ Retrieves all tenants (paginated).
 
 ### GET /tenants/{tenantId}
 
-Retrieves a tenant by ID.
+Retrieves a tenant by ID. Scoped to the caller's environment; a caller with no environment sees every tenant.
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier
@@ -70,7 +71,8 @@ Retrieves a tenant by ID.
       "name": "string",
       "region": "string",
       "majorVersion": 0,
-      "minorVersion": 0
+      "minorVersion": 0,
+      "environment": "string"
     }
   }
 }
@@ -84,7 +86,7 @@ Retrieves a tenant by ID.
 
 ### POST /tenants
 
-Creates a new tenant.
+Creates a new tenant. The `environment` attribute is not accepted from the request; the created tenant's environment is derived from the caller's context.
 
 **Parameters**: None
 
@@ -113,7 +115,8 @@ Creates a new tenant.
       "name": "string",
       "region": "string",
       "majorVersion": 0,
-      "minorVersion": 0
+      "minorVersion": 0,
+      "environment": "string"
     }
   }
 }
@@ -158,7 +161,8 @@ Updates an existing tenant.
       "name": "string",
       "region": "string",
       "majorVersion": 0,
-      "minorVersion": 0
+      "minorVersion": 0,
+      "environment": "string"
     }
   }
 }
@@ -166,6 +170,7 @@ Updates an existing tenant.
 
 **Error Conditions**:
 - 400: Invalid request body or tenant ID format
+- 403: Caller's environment does not match the target tenant's environment
 - 500: Internal server error (includes tenant not found)
 
 ---
@@ -183,6 +188,7 @@ Deletes a tenant.
 
 **Error Conditions**:
 - 400: Invalid tenant ID format
+- 403: Caller's environment does not match the target tenant's environment
 - 500: Internal server error (includes tenant not found)
 
 ---
@@ -985,6 +991,259 @@ Retrieves seed catalog status for the instance-routes seed group. Response is a 
 
 ---
 
+### GET /tenants/{tenantId}/configurations/rps-rewards
+
+Retrieves all rps-rewards for a tenant (paginated).
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": [
+    {
+      "type": "rps-rewards",
+      "id": "string",
+      "attributes": {
+        "entryCostMeso": 0,
+        "consolationMeso": 0,
+        "ladder": [
+          {
+            "rung": 0,
+            "itemId": 0,
+            "quantity": 0,
+            "meso": 0
+          }
+        ]
+      }
+    }
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
+}
+```
+
+If no rps-rewards exist for the tenant, an empty array is returned instead of an error.
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or invalid page[number]/page[size]
+- 500: Internal server error
+
+---
+
+### GET /tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}
+
+Retrieves an rps-reward by ID.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `rpsRewardId` (path, string): RPS reward identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "rps-rewards",
+    "id": "string",
+    "attributes": {
+      "entryCostMeso": 0,
+      "consolationMeso": 0,
+      "ladder": [
+        {
+          "rung": 0,
+          "itemId": 0,
+          "quantity": 0,
+          "meso": 0
+        }
+      ]
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing rps-reward ID
+- 404: RPS reward not found
+
+---
+
+### POST /tenants/{tenantId}/configurations/rps-rewards
+
+Creates a new rps-reward.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "rps-rewards",
+    "attributes": {
+      "entryCostMeso": 0,
+      "consolationMeso": 0,
+      "ladder": [
+        {
+          "rung": 0,
+          "itemId": 0,
+          "quantity": 0,
+          "meso": 0
+        }
+      ]
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "rps-rewards",
+    "id": "string",
+    "attributes": {
+      "entryCostMeso": 0,
+      "consolationMeso": 0,
+      "ladder": [
+        {
+          "rung": 0,
+          "itemId": 0,
+          "quantity": 0,
+          "meso": 0
+        }
+      ]
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}
+
+Updates an existing rps-reward.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `rpsRewardId` (path, string): RPS reward identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "rps-rewards",
+    "id": "string",
+    "attributes": {
+      "entryCostMeso": 0,
+      "consolationMeso": 0,
+      "ladder": [
+        {
+          "rung": 0,
+          "itemId": 0,
+          "quantity": 0,
+          "meso": 0
+        }
+      ]
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "rps-rewards",
+    "id": "string",
+    "attributes": {
+      "entryCostMeso": 0,
+      "consolationMeso": 0,
+      "ladder": [
+        {
+          "rung": 0,
+          "itemId": 0,
+          "quantity": 0,
+          "meso": 0
+        }
+      ]
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body, tenant ID format, or missing rps-reward ID
+- 500: Internal server error (includes rps-reward not found)
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}
+
+Deletes an rps-reward.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `rpsRewardId` (path, string): RPS reward identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing rps-reward ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/rps-rewards/seed
+
+Deletes all existing rps-rewards for a tenant and loads them from seed files.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "deletedCount": 0,
+  "createdCount": 0,
+  "failedCount": 0,
+  "errors": ["string"]
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 500: Internal server error
+
+---
+
 ### GET /tenants/{tenantId}/configurations/mts-configs
 
 Retrieves the MTS configuration for a tenant.
@@ -1212,6 +1471,362 @@ Deletes all existing MTS configurations for a tenant and loads them from seed fi
 
 ---
 
+### GET /tenants/{tenantId}/configurations/trade-configs
+
+Retrieves the player-to-player trade configuration for a tenant. One configuration per tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "trade-configs",
+    "id": "string",
+    "attributes": {
+      "taxEnabled": true,
+      "taxTiers": [
+        {
+          "threshold": 0,
+          "rate": 0.0
+        }
+      ],
+      "maxStagedItems": 0,
+      "minTradeLevel": 0,
+      "attestationTimeoutSeconds": 0
+    }
+  }
+}
+```
+
+Every attribute is optional. On PATCH, an attribute omitted from the request body is left unchanged.
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 404: No trade configuration found for tenant
+
+---
+
+### GET /tenants/{tenantId}/configurations/trade-configs/{tradeConfigId}
+
+Retrieves a trade configuration by ID.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `tradeConfigId` (path, string): Trade configuration identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "trade-configs",
+    "id": "string",
+    "attributes": {
+      "taxEnabled": true,
+      "taxTiers": [
+        {
+          "threshold": 0,
+          "rate": 0.0
+        }
+      ],
+      "maxStagedItems": 0,
+      "minTradeLevel": 0,
+      "attestationTimeoutSeconds": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing trade configuration ID
+- 404: Trade configuration not found
+
+---
+
+### POST /tenants/{tenantId}/configurations/trade-configs
+
+Creates a new trade configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "trade-configs",
+    "attributes": {
+      "taxEnabled": true,
+      "taxTiers": [
+        {
+          "threshold": 0,
+          "rate": 0.0
+        }
+      ],
+      "maxStagedItems": 0,
+      "minTradeLevel": 0,
+      "attestationTimeoutSeconds": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "trade-configs",
+    "id": "string",
+    "attributes": {
+      "taxEnabled": true,
+      "taxTiers": [
+        {
+          "threshold": 0,
+          "rate": 0.0
+        }
+      ],
+      "maxStagedItems": 0,
+      "minTradeLevel": 0,
+      "attestationTimeoutSeconds": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/trade-configs/{tradeConfigId}
+
+Updates an existing trade configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `tradeConfigId` (path, string): Trade configuration identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "trade-configs",
+    "id": "string",
+    "attributes": {
+      "taxEnabled": true,
+      "taxTiers": [
+        {
+          "threshold": 0,
+          "rate": 0.0
+        }
+      ],
+      "maxStagedItems": 0,
+      "minTradeLevel": 0,
+      "attestationTimeoutSeconds": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "trade-configs",
+    "id": "string",
+    "attributes": {
+      "taxEnabled": true,
+      "taxTiers": [
+        {
+          "threshold": 0,
+          "rate": 0.0
+        }
+      ],
+      "maxStagedItems": 0,
+      "minTradeLevel": 0,
+      "attestationTimeoutSeconds": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body, tenant ID format, or missing trade configuration ID
+- 500: Internal server error (includes trade configuration not found)
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/trade-configs/{tradeConfigId}
+
+Deletes a trade configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `tradeConfigId` (path, string): Trade configuration identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing trade configuration ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/trade-configs/seed
+
+Deletes all existing trade configurations for a tenant and loads them from seed files.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "deletedCount": 0,
+  "createdCount": 0,
+  "failedCount": 0,
+  "errors": ["string"]
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 500: Internal server error
+
+---
+
+### GET /tenants/{tenantId}/configurations/rankings
+
+Retrieves the rankings configuration for a tenant. One configuration per tenant — there is no `/seed` endpoint and no `{rankingsId}` sub-resource.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "rankings",
+    "id": "string",
+    "attributes": {
+      "recomputeIntervalMinutes": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 404: No rankings configuration found for tenant
+
+---
+
+### POST /tenants/{tenantId}/configurations/rankings
+
+Creates the rankings configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "rankings",
+    "attributes": {
+      "recomputeIntervalMinutes": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "rankings",
+    "id": "string",
+    "attributes": {
+      "recomputeIntervalMinutes": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/rankings
+
+Updates the existing rankings configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "rankings",
+    "attributes": {
+      "recomputeIntervalMinutes": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "rankings",
+    "id": "string",
+    "attributes": {
+      "recomputeIntervalMinutes": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 404: No rankings configuration found for tenant
+- 500: Internal server error
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/rankings
+
+Deletes the rankings configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 500: Internal server error
+
+---
+
 ### GET /tenants/{tenantId}/configurations/kite-configs
 
 Retrieves the kite (cash-shop item category 508 message-box) placement
@@ -1348,6 +1963,172 @@ Deletes the kite-configs configuration for a tenant.
 **Request Model**: None
 
 **Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 500: Internal server error
+
+---
+
+### GET /tenants/{tenantId}/configurations/imprint-configs
+
+Retrieves the imprint configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "imprint-configs",
+    "id": "string",
+    "pendingExpiryHours": 0
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 404: No imprint configuration found for tenant
+
+---
+
+### GET /tenants/{tenantId}/configurations/imprint-configs/{imprintConfigId}
+
+Retrieves an imprint configuration by ID.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `imprintConfigId` (path, string): Imprint configuration identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "imprint-configs",
+    "id": "string",
+    "pendingExpiryHours": 0
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing imprint configuration ID
+- 404: Imprint configuration not found
+
+---
+
+### POST /tenants/{tenantId}/configurations/imprint-configs
+
+Creates a new imprint configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "imprint-configs",
+    "pendingExpiryHours": 0
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "imprint-configs",
+    "id": "string",
+    "pendingExpiryHours": 0
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/imprint-configs/{imprintConfigId}
+
+Updates an existing imprint configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `imprintConfigId` (path, string): Imprint configuration identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "imprint-configs",
+    "id": "string",
+    "pendingExpiryHours": 0
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "imprint-configs",
+    "id": "string",
+    "pendingExpiryHours": 0
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body, tenant ID format, or missing imprint configuration ID
+- 500: Internal server error (includes imprint configuration not found)
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/imprint-configs/{imprintConfigId}
+
+Deletes an imprint configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `imprintConfigId` (path, string): Imprint configuration identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing imprint configuration ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/imprint-configs/seed
+
+Deletes all existing imprint configurations for a tenant and loads them from seed files.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "deletedCount": 0,
+  "createdCount": 0,
+  "failedCount": 0,
+  "errors": ["string"]
+}
+```
 
 **Error Conditions**:
 - 400: Invalid tenant ID format

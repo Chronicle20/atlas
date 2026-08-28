@@ -36,6 +36,9 @@ Compartment operation commands.
 | MODIFY_EQUIPMENT | Updates equipment stats on an asset |
 | SET_OWNER | Stamps the owner field onto an asset in a given slot |
 | APPLY_LOCK | Applies a permanent or timed lock (FlagLock + expiration) to an asset in a given slot; rejects a non-locked asset that already has a non-zero expiration |
+| APPLY_KARMA | Applies or, when clear is set, removes the one-free-trade karma mark on an asset in a given slot |
+| EXTEND_EXPIRATION | Extends a time-limited asset's expiration in a given slot to an absolute value |
+| RESET_PET_EXPIRATION | Sets a pet asset's expiration to an absolute value, resolved by petId within the Cash compartment |
 | CHANGE_TEMPLATE | Swaps a pet asset's templateId in place, resolved by petId within the Cash compartment |
 
 ### EVENT_TOPIC_DROP_STATUS
@@ -159,7 +162,7 @@ Body types:
 - `UnequipCommandBody` - source (int16), destination (int16)
 - `MoveCommandBody` - source (int16), destination (int16)
 - `DropCommandBody` - worldId, channelId, mapId, instance (UUID), source (int16), quantity (int16), x (int16), y (int16)
-- `RequestReserveCommandBody` - transactionId (UUID), items ([]ItemBody{source, itemId, quantity})
+- `RequestReserveCommandBody` - transactionId (UUID), expirySeconds (uint32, 0 = default 30s), items ([]ItemBody{source, itemId, quantity})
 - `ConsumeCommandBody` - transactionId (UUID), slot (int16)
 - `DestroyCommandBody` - slot (int16), quantity (uint32), removeAll (bool)
 - `CancelReservationCommandBody` - transactionId (UUID), slot (int16)
@@ -173,6 +176,11 @@ Body types:
 - `ExpireCommandBody` - assetId (uint32), templateId (uint32), slot (int16), replaceItemId (uint32), replaceMessage (string)
 - `ModifyEquipmentCommandBody` - assetId (uint32), all equipment stat fields, flag (uint16), expiration (time)
 - `ChangeTemplateCommandBody` - petId (uint32), newTemplateId (uint32)
+- `SetOwnerCommandBody` - slot (int16), owner (string)
+- `ApplyLockCommandBody` - slot (int16), expiration (time, zero = permanent lock)
+- `ApplyKarmaCommandBody` - slot (int16), scissorsKarma (int32), clear (bool)
+- `ExtendExpirationCommandBody` - slot (int16), expiration (time), extenderTemplateId (uint32)
+- `ResetPetExpirationCommandBody` - petId (uint32), expiration (time), sourceTemplateId (uint32)
 
 ### Compartment Status Event
 

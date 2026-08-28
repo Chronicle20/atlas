@@ -115,6 +115,7 @@ Subset of character data retrieved from external character service.
 - ChangeMap: Updates mapId
 - ChangeChannel: Updates channelId
 - ChangeLevel: Updates level
+- ChangeName: Updates name
 - ChangeJob: Updates jobId
 - ChangeGm: Updates gm level
 
@@ -131,6 +132,8 @@ Subset of character data retrieved from external character service.
 | ChannelChange | Updates character channel |
 | LevelChangeAndEmit | Updates level and emits event if in party |
 | LevelChange | Updates character level |
+| NameChangeAndEmit | Updates name and emits event if in party |
+| NameChange | Updates character name |
 | JobChangeAndEmit | Updates job and emits event if in party |
 | JobChange | Updates character job |
 | GmChange | Refreshes character GM level from foreign character service |

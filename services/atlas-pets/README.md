@@ -14,6 +14,7 @@ The service consumes character status events, asset status events, and pet comma
 - atlas-inventory service (REST)
 - atlas-maps service (REST) - character field/location lookup
 - Pet reference data service (REST)
+- Cash item reference data service (REST) - pet revival lifespan data
 - Foothold / position reference data service (REST)
 - Skill reference data service (REST)
 

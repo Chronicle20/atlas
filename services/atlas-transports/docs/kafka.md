@@ -160,6 +160,8 @@ Transport route status events for scheduled routes.
 
 - `ARRIVED`: Route has arrived (transition to open_entry state)
 - `DEPARTED`: Route has departed (transition to in_transit state)
+- `VOYAGE_DEPARTED`: A concrete trip on the route has departed
+- `VOYAGE_ARRIVED`: A concrete trip on the route has arrived
 
 **ARRIVED Body:**
 
@@ -173,7 +175,22 @@ Transport route status events for scheduled routes.
 |-------|------|-------------|
 | mapId | map.Id | Observation map ID |
 
-**Partition Key:** Route ID string
+**VOYAGE_DEPARTED / VOYAGE_ARRIVED Body (VoyageStatusEventBody):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| voyageId | uuid.UUID | Derived identity of the trip (`transport.VoyageId`) |
+| worldId | world.Id | World identifier |
+| channelId | channel.Id | Channel identifier |
+| stagingMapId | map.Id | Staging map ID |
+| enRouteMapIds | []map.Id | En-route map IDs |
+| destinationMapId | map.Id | Destination map ID |
+| observationMapId | map.Id | Observation map ID |
+| departedAt | time.Time | Departure instant of the voyage |
+
+One VOYAGE_DEPARTED/VOYAGE_ARRIVED event is emitted per (world, channel).
+
+**Partition Key:** Route ID string for ARRIVED/DEPARTED. Voyage ID string for VOYAGE_DEPARTED/VOYAGE_ARRIVED.
 
 ### EVENT_TOPIC_INSTANCE_TRANSPORT
 
@@ -288,6 +305,10 @@ itself, and CANCEL's field reaches atlas-buffs' `Cancel`, which reads only
 ### StatusEvent[E] (kafka/message/transport/kafka.go)
 
 Generic transport status event.
+
+### VoyageStatusEventBody (kafka/message/transport/kafka.go)
+
+Body used for both VOYAGE_DEPARTED and VOYAGE_ARRIVED; the envelope's `type` discriminates.
 
 ### Command[E] (kafka/message/character/kafka.go)
 

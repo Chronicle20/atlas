@@ -30,7 +30,7 @@ Delegates to three internal functions:
 - `checkStorage`: Iterates all storage assets for the account and world
 - `checkCashshop`: Iterates all cash shop items across compartments for the account
 
-Each emits a service-specific expire command via Kafka for every expired item found.
+Each function emits a service-specific expire command via Kafka for every asset that is both expired (`expiration.IsExpired`) and reapable (`expiration.IsReapable`).
 
 ---
 
@@ -48,6 +48,7 @@ None.
 
 - Zero time value means no expiration (item never expires)
 - Item is expired if current time is after expiration time
+- An expired pet (item classification `ClassificationPet`) is not reapable; every other classification is reapable
 
 ### Processors
 
@@ -58,6 +59,10 @@ Returns true if expiration time is set and current time is after expiration.
 #### HasExpiration
 
 Returns true if expiration time is not zero.
+
+#### IsReapable
+
+Returns true if the item's classification (looked up via `item.GetClassification`) is not `ClassificationPet`.
 
 ---
 
@@ -163,8 +168,8 @@ Runs periodic expiration checks at configurable intervals for all online session
 ### Invariants
 
 - Default interval is 60 seconds if not configured or invalid
-- Iterates all sessions from the Tracker on each tick
-- Reconstructs tenant context per session for Kafka header propagation
+- Takes a snapshot of all sessions from the Tracker once per tick
+- Builds a unique tenant list from the session snapshot, then runs the check once per owned environment/tenant pair via `service.ForEachOwnedEnvironment`, checking only sessions matching that tenant
 
 ### Processors
 

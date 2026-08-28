@@ -13,6 +13,7 @@ A stateful, multi-tenant, multi-version login service for a mushroom game. This 
 - atlas-channel service (REST)
 - atlas-inventory service (REST)
 - atlas-guild service (REST)
+- atlas-rankings service (REST)
 - atlas-configurations service (Kafka config projection: service + tenant configuration is consumed from Kafka, not fetched via REST)
 
 ## Runtime Configuration
@@ -35,6 +36,7 @@ A stateful, multi-tenant, multi-version login service for a mushroom game. This 
 | CHANNELS | Base URL for channel service |
 | INVENTORY | Base URL for inventory service |
 | GUILDS | Base URL for guild service |
+| RANKINGS | Base URL for ranking service |
 | COMMAND_TOPIC_ACCOUNT_SESSION | Kafka topic for account session commands |
 | EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Kafka topic for account session status events |
 | EVENT_TOPIC_ACCOUNT_STATUS | Kafka topic for account status events |

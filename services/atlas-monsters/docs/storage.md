@@ -11,7 +11,7 @@ This service uses Redis for all state storage. There is no SQL or relational dat
 | `atlas:monster:{tenantId}:{uniqueId}` | String (JSON) | Monster instance data |
 | `atlas:monster-map:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` | Set | Set of monster uniqueId values in a field |
 
-The monster JSON structure contains all model fields (including `controllerHasAggro`, `nextEligibleRepickAtMs`, and `lastDamageTakenMs`), damage entries as an array (each carrying a per-character `lastHitMs`), and status effects with timing fields serialized as milliseconds (including the reflect fields `reflectKind`, `reflectPercent`, `reflectLtX/Y`, `reflectRbX/Y`, `reflectMaxDamage`, omitted when zero/empty).
+The monster JSON structure contains all model fields (including `controllerHasAggro`, `nextEligibleRepickAtMs`, `lastDamageTakenMs`, `aggroRefreshedMs`, `spawnSourceType`, and `spawnSourceId`), damage entries as an array (each carrying a per-character `lastHitMs`), and status effects with timing fields serialized as milliseconds (including the reflect fields `reflectKind`, `reflectPercent`, `reflectLtX/Y`, `reflectRbX/Y`, `reflectMaxDamage`, omitted when zero/empty).
 
 Updates to monster instances use the shared atlas-redis `Registry.Update` optimistic-lock helper (`WATCH`/`GET`/`TxPipelined SET`), retried up to 1000 times on contention. Damage application, HP/MP recovery, and aggro decay are applied as pure Go closures under this same optimistic-lock update (no Lua scripts).
 
@@ -61,6 +61,21 @@ Cooldown checks use `EXISTS`. Clearing all attack cooldowns for a monster uses `
 
 The drop timer JSON contains monsterId, field, dropPeriod, weaponAttack, maxHp, lastDropAt, and lastHitAt (timing as milliseconds). Updates use the shared atlas-redis `Registry.Update` optimistic-lock helper.
 
+### Self-Destruct Timers
+
+| Key Pattern | Redis Type | Description |
+|-------------|------------|-------------|
+| `atlas:self-destruct-timer:{tenantId}:{region}:{major}.{minor}:{uniqueId}` | String (JSON) | Armed timer-driven self-destruct entry |
+
+The entry JSON contains tenant identity, uniqueId, monsterId, field, the WZ `selfDestruction.action` byte, and fireAtMs (Unix milliseconds).
+
+### Hidden Characters
+
+| Key Pattern | Redis Type | Description |
+|-------------|------------|-------------|
+| `atlas:hidden-character:{tenantId}:{characterId}` | String (JSON) | GM-hidden character payload (tenant identity plus characterId) |
+| `atlas:hidden-characters:{tenantId}:all` | Set | Set of GM-hidden character IDs for the tenant |
+
 ## Relationships
 
 Monster instances are indexed by field via the `atlas:monster-map` Set keys. The Set contains string representations of uniqueId values that correspond to `atlas:monster` keys.
@@ -69,12 +84,17 @@ Drop timer entries reference monster uniqueId values that correspond to `atlas:m
 
 Puppet entries are indexed by field via the `atlas:monster-puppet-field` Set keys, containing owner character IDs that correspond to `atlas:monster-puppet` keys for the same field.
 
+Self-destruct timer entries reference monster uniqueId values that correspond to `atlas:monster` keys.
+
+Hidden-character entries are indexed per tenant via the `atlas:hidden-characters` Set keys, containing character IDs that correspond to `atlas:hidden-character` keys for the same tenant.
+
 ## Indexes
 
 | Index Key Pattern | Points To |
 |-------------------|-----------|
 | `atlas:monster-map:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` | `atlas:monster:{tenantId}:{uniqueId}` |
 | `atlas:monster-puppet-field:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` | `atlas:monster-puppet:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}:{ownerCharacterId}` |
+| `atlas:hidden-characters:{tenantId}:all` | `atlas:hidden-character:{tenantId}:{characterId}` |
 
 ## Migration Rules
 

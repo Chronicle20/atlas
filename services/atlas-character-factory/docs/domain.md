@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-The character factory domain handles character creation through saga-based orchestration. It supports two creation paths — validating requests against tenant-configured templates, and creating characters from tenant-configured presets — and builds a unified saga containing character creation, item awards, equipment creation, and skill creation steps for either path.
+The character factory domain handles character creation through saga-based orchestration. It supports three creation paths — validating requests against tenant-configured templates, creating characters from tenant-configured presets, and creating characters from a tenant-configured Maple Life class table — and builds a unified saga containing character creation, item awards, equipment creation, and skill creation steps for all three paths. Maple Life creation resolves the player's class, look, and SP choices against the tenant's Maple Life class table and projects the result onto the same preset shape used by preset-based creation.
 
 ## Core Models
 
@@ -93,8 +93,10 @@ Re-exported from `atlas-saga` shared library.
 | MapId        | map.Id   |
 | Gm           | int      |
 | Meso         | uint32   |
+| AP           | uint16   |
+| SP           | string   |
 
-Gm and Meso are only populated by preset-based creation (`CreateFromPreset`); template-based creation (`Create`) always sends zero values.
+Gm, Meso, AP, and SP are only populated by preset-based creation (`CreateFromPreset`, `CreateMapleLife`); template-based creation (`Create`) always sends zero/empty values. SP is the ten-slot comma-separated skill-point pool in the form atlas-character persists it.
 
 ### AwaitInventoryCreatedPayload
 
@@ -166,6 +168,23 @@ Input model for preset-based character creation requests.
 | WorldId   | byte   |
 | Name      | string |
 
+### MapleLifeCreateRestModel
+
+Input model for Maple Life class-based character creation requests.
+
+| Field        | Type   |
+|--------------|--------|
+| AccountId    | uint32 |
+| WorldId      | byte   |
+| Name         | string |
+| ClassOrdinal | uint32 |
+| Gender       | byte   |
+| Face         | uint32 |
+| Hair         | uint32 |
+| HairColor    | uint32 |
+| SkinColor    | byte   |
+| SP           | byte   |
+
 ### Preset RestModel
 
 Tenant-configured character-creation preset.
@@ -193,10 +212,14 @@ Attributes:
 | Meso        | uint32          |
 | Gm          | int             |
 | Stats       | StatBlock       |
+| AP          | uint16          |
+| SP          | string          |
 | DefaultName | string          |
 | Equipment   | []EquipmentEntry |
 | Inventory   | []InventoryEntry |
 | Skills      | []SkillEntry    |
+
+AP and SP are the unspent ability/skill points the created character starts with. SP is the ten-slot comma-separated pool in the form atlas-character persists it.
 
 StatBlock:
 
@@ -230,6 +253,57 @@ SkillEntry:
 | SkillId | uint32 |
 | Level   | uint8 |
 
+### Maple Life RestModel
+
+Tenant-configured Maple Life class table.
+
+| Field   | Type          |
+|---------|---------------|
+| Looks   | []LookOptions |
+| Classes | []ClassEntry  |
+
+LookOptions is one gender's set of selectable appearance values:
+
+| Field      | Type     |
+|------------|----------|
+| Gender     | byte     |
+| Faces      | []uint32 |
+| Hairs      | []uint32 |
+| HairColors | []uint32 |
+| SkinColors | []uint32 |
+
+ClassEntry is one (class ordinal, gender) row of the Maple Life creation table:
+
+| Field     | Type            |
+|-----------|-----------------|
+| Ordinal   | uint32          |
+| Gender    | byte            |
+| JobId     | uint32          |
+| Level     | byte            |
+| MapId     | uint32          |
+| Stats     | StatBlock       |
+| AP        | uint16          |
+| SP        | string          |
+| SpSkillId | uint32          |
+| Meso      | uint32          |
+| Equipment | []EquipmentEntry |
+| Inventory | []InventoryEntry |
+
+StatBlock (Maple Life):
+
+| Field | Type   |
+|-------|--------|
+| Str   | uint16 |
+| Dex   | uint16 |
+| Int   | uint16 |
+| Luk   | uint16 |
+| Hp    | uint16 |
+| Mp    | uint16 |
+
+EquipmentEntry and InventoryEntry have the same shape as the Preset RestModel's EquipmentEntry and InventoryEntry above.
+
+SpSkillId is zero when the class offers no SP step at creation. SP is the ten-slot comma-separated pool in the form atlas-character persists it, representing what the class has left unspent at Level. AP is the ability points left unspent at Level; StatBlock carries the AP already spent to meet the class's first-job requirement.
+
 ### NameValidityResult
 
 Result of a character name-validity check against atlas-character.
@@ -253,11 +327,14 @@ Result of an item existence/attribute lookup against atlas-data.
 
 Result of a skill lookup against atlas-data.
 
-| Field    | Type   |
-|----------|--------|
-| Id       | uint32 |
-| Name     | string |
-| MaxLevel | uint8  |
+| Field    | Type    |
+|----------|---------|
+| Id       | uint32  |
+| Name     | string  |
+| MaxLevel | uint8   |
+| EffectX  | []int16 |
+
+EffectX is the per-level HP/MP gain bonus (index 0 == level 1).
 
 ### Validation ConditionInput
 
@@ -298,11 +375,28 @@ Result of a skill lookup against atlas-data.
 - Preset-based creation uses the preset's JobId directly (not mapped via `JobFromIndex`)
 - Preset-based creation's legacy top/bottom/shoes/weapon fields in `CharacterCreatePayload` are always 0; equipment is conveyed entirely through `create_and_equip_asset` steps
 
+### Maple Life creation invariants
+
+- The tenant must have at least one configured Maple Life class; otherwise the request is rejected
+- The (ClassOrdinal, Gender) combination must match a configured class entry
+- Gender must be 0 or 1
+- The tenant must have look options configured for the chosen gender
+- Face, hair, hair color, and skin color must each be present in the matched look options' lists for the chosen gender; a selection of 0 is always valid
+- If the class has no SP skill (`SpSkillId` is 0), the request's SP must be 0
+- If the class has an SP skill, requested SP must not exceed 10 and must not exceed the class's remaining SP pool (slot 0), including a +5 cost when the SP skill has a level-5 prerequisite skill
+- Character name must pass the atlas-character name-validity check; a `"duplicate"` reason is a distinct error from other invalid-name reasons
+- Class equipment and inventory entries are re-validated against atlas-data using the same rules as preset-based creation (equipable, no slot collisions, existence)
+- The Warrior SP skill (Improved Max HP Increase) requires the Improved HP Recovery skill as a level-5 prerequisite; the Magician SP skill (Improved Max MP Increase) requires Improved MP Recovery. Other SP skills have no known prerequisite.
+- When SP is spent on a skill with a known prerequisite, both the prerequisite (level 5) and the chosen skill (level = requested SP) are added as saga skill steps, and the prerequisite's cost (5) is added to the SP spent from the pool
+- The resulting character's Hp or Mp (for the Warrior/Magician SP skills only) is increased by `29 * effectX` where `effectX` is the SP skill's atlas-data-sourced per-level effect value at the requested SP level; other classes' seeded stats pass through unchanged
+- The class's SP pool (slot 0 of the ten-slot string) is reduced by the total spent SP before being carried into the projected preset
+- Maple Life creation projects the resolved class entry and the player's look/SP choices onto a `preset.RestModel` and is built into a saga using the same construction as preset-based creation; the `characters.Templates` matching rules do not apply to this path
+
 ## Processors
 
 ### Factory Processor
 
-Creates unified character creation sagas with validation. Exposes two operations:
+Creates unified character creation sagas with validation. Exposes three operations:
 
 `Create` (template-based, `POST /api/characters/seed`):
 
@@ -323,14 +417,23 @@ Creates unified character creation sagas with validation. Exposes two operations
 - Saga timeout scales with step count: `10s + 1s * (2 + inventory count + equipment count + skill count)`
 - Emits saga to orchestrator via Kafka
 
-For both operations, all steps after `create_character` use `CharacterId=0` as a sentinel value; the saga orchestrator injects the actual character ID via result forwarding. The `await_inventory_created` step is a passive step advanced by the orchestrator once the character's inventory compartments are committed.
+`CreateMapleLife` (Maple Life class-based, `POST /api/factory/characters/maple-life`):
+
+- Resolves the tenant's Maple Life class table and validates the player's class ordinal, gender, look, and SP choices against it (see Maple Life creation invariants)
+- Validates the character name via the atlas-character name-validity check
+- Validates the resolved class's equipment/inventory items against atlas-data, and its SP skill (if any) against atlas-data for its per-level effect value
+- Projects the resolved class entry and the player's choices onto a `preset.RestModel` via `toPreset`
+- Builds and emits the same `CharacterCreation` saga structure as `CreateFromPreset`, using the step-count-scaled timeout
+- Emits saga to orchestrator via Kafka
+
+For all three operations, all steps after `create_character` use `CharacterId=0` as a sentinel value; the saga orchestrator injects the actual character ID via result forwarding. The `await_inventory_created` step is a passive step advanced by the orchestrator once the character's inventory compartments are committed.
 
 ### Data Processor
 
-Validates item and skill existence/attributes against atlas-data for preset-based creation.
+Validates item and skill existence/attributes against atlas-data for preset-based and Maple Life class-based creation.
 
 - `GetItemById` resolves an item's inventory type via `atlas-constants`; equip-type items are additionally checked for existence against atlas-data, non-equip items are presumed to exist
-- `GetSkillsByIds` batch-fetches skill name and max level from atlas-data
+- `GetSkillsByIds` batch-fetches skill name, max level, and per-level HP/MP effect values (`EffectX`) from atlas-data
 
 ### Saga Processor
 
@@ -358,7 +461,7 @@ Reacts to saga status events for the `CharacterCreation` saga type.
 | 3        | any         | EvanId          |
 | other    | any         | BeginnerId      |
 
-`JobFromIndex` is used only by template-based creation (`Create`). Preset-based creation (`CreateFromPreset`) uses the preset's configured JobId directly.
+`JobFromIndex` is used only by template-based creation (`Create`). Preset-based creation (`CreateFromPreset`) and Maple Life creation (`CreateMapleLife`) use the preset's/class's configured JobId directly.
 
 ## Saga Actions
 

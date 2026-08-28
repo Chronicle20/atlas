@@ -127,6 +127,7 @@ None locally. State changes are delegated via Kafka commands.
 - `ConsumeItem`: Sends CONSUME command to compartment topic
 - `DestroyItem`: Sends DESTROY command to compartment topic
 - `CancelItemReservation`: Sends CANCEL_RESERVATION command to compartment topic
+- `RequestCreateItem`: Sends CREATE_ASSET command to compartment topic (used to grant reward-box and catch-item rewards)
 - `Consume`: Creates a handler for compartment RESERVED events that delegates to an ItemConsumer callback
 
 ## consumable
@@ -153,6 +154,19 @@ Callback invoked after item reservation is confirmed.
 - Equipment cursed by a failed scroll is destroyed
 - White scrolls prevent slot loss on scroll failure (but do not prevent curse)
 - Items not matching any classification-specific branch of `RequestItemConsume` fall through to `ConsumeBare`, which commits the reservation with no further side-effects (e.g. Magic Rock for Priest Doom, summon items for Mystic Door)
+- A transformation coupon (classification 530) always routes to `ConsumeMorphCoupon` (CASH compartment) ahead of the reward-table fallback, regardless of whether it also carries a reward table
+- An item whose consumable data declares a non-empty, non-zero-probability reward table, and that arrives via `REQUEST_ITEM_CONSUME` rather than the dedicated `REQUEST_ITEM_REWARD` opcode, is routed to `RequestItemReward` instead of being bare-consumed
+- Zombify (an active buff state) halves HP restoration amounts (flat and percentage) via integer truncation; a failed buff read is treated as not-zombified and logged at Warn
+- `RequestItemReward` requires the target item's reward table to be non-empty and to sum to a non-zero probability; it pre-checks that every possible reward can be accommodated in inventory before reserving the box
+- `ConsumeReward` rolls exactly one reward via a CSPRNG-weighted pick over the table and requests its creation; the box is committed only on the asset CREATED confirmation, and reservation is cancelled (box preserved) on CREATION_FAILED
+- A reward entry's `count` of zero still grants a quantity of 1; a `period` <= 0 grants no expiration
+- `RequestCatchMonster` (bridle/catch-item use) requires item classification `ClassificationConsumableCatchItem` and a non-zero `Create()` reward on the consumable data; the item's WZ `useDelay` is enforced server-side via the `catchdelay` registry (Redis-backed, per character+item)
+- A catch attempt rejected before reservation (use-delay, inventory-full, or invalid item) consumes nothing; only `CATCH_RESOLVED(success=true)` (from atlas-monsters) commits the reservation and grants the reward item
+- `RequestSkillBookUse` requires item classification `ClassificationConsumableSkillBook` or `ClassificationConsumableMasteryBook`, a living (non-zero HP) character, a non-empty skill list on the book, the requested slot to hold the book, and a job-matching target skill
+- A mastery book (229) requires the target skill to already be learned (level >= 1); a skill book (228) may target an unlearned skill only when its `reqSkillLevel` is 0; the current skill level must meet `reqSkillLevel`; and the current master level must be below the book's granted master level
+- The skill-book roll uses strict `<` (a 0% success rate never passes, a 100% rate always passes), distinct from the scroll path's `<=`
+- The skill-book saga destroys the book from its slot on both outcomes (pass or fail); a passing roll additionally creates or updates the target skill
+- A pet skill pouch (cash classification 519) requires a non-zero, valid `petId` owned by and spawned for the requesting character, and non-empty pet skill data on the cash item; one `SET_SKILL` command is issued per skill key the item carries
 - `RequestFeed` (taming-mob food) requires the item to be `ClassificationRevitalizer` (226); non-revitalizer items are rejected
 - `ConsumeFeed` emits a fixed tiredness heal (`foodmsg.RevitalizerTirednessHeal` = 30) regardless of item; heal → exp → level math is not performed by this service
 - A Vega's Spell (`RequestVegaScroll`) requires the target scroll's natural success rate to exactly match the vega's required rate (10% vega requires a 10%-rate scroll boosted to 30%; 60% vega requires a 60%-rate scroll boosted to 90%); non-matching scrolls or non-vega items are rejected
@@ -170,6 +184,10 @@ Callback invoked after item reservation is confirmed.
 3. On error -> sends CANCEL_RESERVATION -> emits ERROR event (or VICIOUS_HAMMER / VEGA_SCROLL failure event for those flows)
 4. `RequestVegaScroll` -> validates rate/slot up front -> reserves the CASH vega item first; its RESERVED confirmation (`ReserveVegaScrollStage`) reserves the USE scroll; the scroll's RESERVED confirmation (`ConsumeVegaScroll`) re-validates, applies the scroll at the boosted rate, consumes both items, and emits VEGA_SCROLL
 5. `RequestViciousHammer` -> validates target eligibility -> reserves the hammer -> on RESERVED (`ConsumeViciousHammer`) re-validates, applies `AddSlots(1)` + `AddHammersApplied(1)` via one MODIFY_EQUIPMENT, consumes the hammer, and emits VICIOUS_HAMMER
+6. `RequestItemReward` -> validates reward table and inventory accommodation -> reserves the box -> on RESERVED (`ConsumeReward`) rolls a reward, registers once-handlers on both the asset and compartment status topics, and sends CREATE_ASSET -> the asset CREATED confirmation commits the box and emits REWARD_EFFECT/REWARD_WON; the compartment CREATION_FAILED event cancels the reservation instead
+7. `RequestCatchMonster` -> validates item/use-delay/inventory -> registers a CATCH_RESOLVED once-handler and a RESERVED once-handler -> reserves the catch item -> on RESERVED (`ConsumeCatch`) sends CATCH to atlas-monsters -> on CATCH_RESOLVED, success commits the reservation and grants the reward item via CREATE_ASSET, failure cancels the reservation
+8. `RequestSkillBookUse` -> validates eligibility synchronously -> builds and submits a `skill_book_use` saga, registering a one-time saga-status handler first -> the saga's terminal COMPLETED/FAILED status emits a single SKILL_BOOK_RESULT event
+9. `ConsumeMorphCoupon` (transformation coupon, classification 530) -> fetches field and cash data -> commits the CASH-compartment reservation -> resolves zombify state -> applies HP heal and/or MORPH statup buff (both independent; failures after commit are logged, not rolled back)
 
 ### Processors
 
@@ -179,6 +197,10 @@ Callback invoked after item reservation is confirmed.
   - ClassificationConsumablePetFood: Pet food (ConsumePetFood)
   - ClassificationPetConsumable: Cash pet food (ConsumeCashPetFood)
   - ClassificationConsumableSummoningSack: Summoning sacks (ConsumeSummoningSack)
+  - ClassificationPetSkill: Pet skill pouches (ConsumePetSkillPouch)
+  - ClassificationConsumableMonsterCard: Monster cards (ConsumeMonsterCard)
+  - Transformation coupon (classification 530, via `routesToMorphCoupon`): CASH-compartment morph coupons (ConsumeMorphCoupon)
+  - Item with a valid reward table (fallback, non-classification-based): re-routed to `RequestItemReward`
   - Unmatched classifications: bare reservation commit (ConsumeBare)
 - `RequestScroll`: Processes equipment enhancement scroll usage
 - `RequestFeed`: Validates a taming-mob food (revitalizer) request, reserves the item, and on confirm (`ConsumeFeed`) commits the reservation and emits a TamingMobFed event
@@ -186,7 +208,12 @@ Callback invoked after item reservation is confirmed.
 - `VegaScrollError`: Cancels any reservations already made on the vega path and emits a VEGA_INVALID error event
 - `RequestViciousHammer`: Validates and reserves a vicious hammer use; on confirm (`ConsumeViciousHammer`) applies the slot/hammer-count change and consumes the hammer
 - `ViciousHammerError`: Cancels the hammer reservation and emits a VICIOUS_HAMMER failure event
-- `ApplyItemEffects`: Applies cure → HP/MP recovery → status buffs from consumable data. Cure is dispatched first via a single `CANCEL_BY_TYPES` buff command when any disease cure spec (`poison`, `darkness`, `weakness`, `seal`, `curse`) is non-zero, so a queued poison tick cannot eat part of the heal.
+- `RequestItemReward`: Validates the reward table and inventory accommodation, then reserves the box; on confirm (`ConsumeReward`) rolls a reward, requests its creation, and grants or cancels based on the asset/compartment status outcome
+- `emitRewardPresentation`: Emits REWARD_EFFECT and/or REWARD_WON after a successful grant, substituting `/name` and `/item` tokens in the world message
+- `RequestCatchMonster`: Validates the catch item, arms the use-delay window, confirms reward accommodation, then reserves the item; on confirm (`ConsumeCatch`) sends CATCH to atlas-monsters and awaits CATCH_RESOLVED (`catchResolutionHandler`) to commit/grant or cancel
+- `RequestSkillBookUse`: Validates skill/mastery book eligibility (classification, character alive, book data, slot contents, job-matching skill, skill-state gates), rolls success, and submits a `skill_book_use` saga; the saga's terminal status drives the SKILL_BOOK_RESULT event
+- `ConsumeMorphCoupon`: Commits a reserved transformation coupon from the CASH compartment and applies its morph statup and/or HP heal (zombify-halved)
+- `ApplyItemEffects`: Applies cure → HP/MP recovery → status buffs from consumable data. Cure is dispatched first via a single `CANCEL_BY_TYPES` buff command when any disease cure spec (`poison`, `darkness`, `weakness`, `seal`, `curse`) is non-zero, so a queued poison tick cannot eat part of the heal. HP/MP recovery amounts are halved (integer truncation) when the character is zombified.
 - `ApplyConsumableEffect`: Applies effects without consuming an inventory item (NPC-initiated)
 - `CancelConsumableEffect`: Cancels buff effects using sourceId = -int32(itemId)
 - `ConsumeError`: Cancels reservation and emits error event
@@ -512,6 +539,7 @@ None locally. Emits AWARD_FULLNESS command to pet topic.
 - `HungryByOwnerProvider`: Filters to hungry spawned pets
 - `HungriestByOwnerProvider`: Selects hungriest pet
 - `AwardFullness`: Emits AWARD_FULLNESS command
+- `SetSkill`: Emits SET_SKILL command (grants or removes a pet skill; used by pet skill pouch consumption)
 
 ## portal
 
@@ -710,7 +738,7 @@ None. Read-only data.
 
 ### Responsibility
 
-Creates monster instances via REST for summoning sack consumables.
+Creates monster instances via REST for summoning sack consumables, and issues bridle (catch-item) capture commands via Kafka.
 
 ### Core Models
 
@@ -722,11 +750,12 @@ None.
 
 ### State Transitions
 
-Sends POST request to monster service.
+`CreateMonster` sends a POST request to the monster service. `RequestCatch` emits a CATCH command keyed on the monster's unique id so concurrent catch attempts on one mob land on a single partition and are resolved in order.
 
 ### Processors
 
 - `CreateMonster`: Creates a monster instance via REST POST
+- `RequestCatch`: Emits a CATCH command to the monster command topic for a bridle (catch-item) attempt
 
 ## monster/drop/position
 
@@ -754,3 +783,80 @@ None. Read-only data.
 ### Processors
 
 - `GetInMap`: Fetches drop position from REST given map ID and initial/fallback coordinates
+
+## skill
+
+### Responsibility
+
+Fetches character skill data from the skills service via REST. Used to resolve a character's current skill level and master level for skill/mastery book validation.
+
+### Core Models
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Skill identifier |
+| level | byte | Current skill level |
+| masterLevel | byte | Current master level |
+| expiration | time.Time | Skill expiration timestamp |
+
+### Invariants
+
+None.
+
+### State Transitions
+
+None. Read-only data.
+
+### Processors
+
+- `ByCharacterIdProvider` / `GetByCharacterId`: Fetches every skill for a character, draining the paginated upstream list
+
+## saga
+
+### Responsibility
+
+Submits sagas to the saga service via Kafka. Used to sequence the skill-book use flow (book destruction and skill grant/update as one saga).
+
+### Core Models
+
+None used locally; consumes the shared `atlas-saga` `Saga` type.
+
+### Invariants
+
+None.
+
+### State Transitions
+
+None locally. Emits a saga creation command; the saga service drives step execution and emits a terminal COMPLETED or FAILED status event.
+
+### Processors
+
+- `Create`: Emits a saga to the saga command topic
+
+## catchdelay
+
+### Responsibility
+
+Enforces a catch item's WZ `useDelay` server-side via a Redis-backed per-tenant registry, keyed by `(characterId, itemId)`.
+
+### Core Models
+
+#### Registry
+
+Redis-backed tenant registry mapping `(characterId, itemId)` to a boolean cooldown marker. Initialized via `InitRegistry(client)` with a Redis client, using key prefix `consumable-catch-delay`.
+
+### Invariants
+
+- A zero delay always admits and arms nothing.
+- The cooldown window is armed on every admitted attempt, success or failure.
+- All access is scoped per tenant via `tenant.MustFromContext`.
+
+### State Transitions
+
+- `Allow` checks whether an entry exists for the `(characterId, itemId)` key; if not, it admits the attempt and arms a TTL-bound entry for the given delay.
+
+### Processors
+
+None. The package exposes a `Registry` with an `Allow` method rather than a processor.

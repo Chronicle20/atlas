@@ -140,6 +140,53 @@ JSON:API single weather resource.
 | 404 | No active weather effect in map |
 | 500 | Failed to create REST model |
 
+### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/jukebox
+
+Returns the active jukebox entry in the specified map instance.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| worldId | path | byte | yes | World identifier |
+| channelId | path | byte | yes | Channel identifier |
+| mapId | path | uint32 | yes | Map identifier |
+| instanceId | path | uuid | yes | Instance identifier (use 00000000-0000-0000-0000-000000000000 for non-instanced maps) |
+
+#### Request Headers
+
+| Name | Required | Description |
+|------|----------|-------------|
+| TENANT_ID | yes | Tenant UUID |
+| REGION | yes | Region code |
+| MAJOR_VERSION | yes | Major version |
+| MINOR_VERSION | yes | Minor version |
+
+#### Response Model
+
+JSON:API single jukebox resource.
+
+```
+{
+    "data": {
+        "type": "jukebox",
+        "id": "<itemId>",
+        "attributes": {
+            "itemId": 5150000,
+            "playerName": "Bob"
+        }
+    }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid worldId, channelId, mapId, or instanceId |
+| 404 | No active jukebox entry in map instance |
+| 500 | Failed to create REST model |
+
 ### GET /characters/{characterId}/visits
 
 Returns all map visit records for a character.
@@ -266,7 +313,8 @@ JSON:API single character-locations resource.
             "worldId": 0,
             "channelId": 0,
             "mapId": 100000000,
-            "instance": "00000000-0000-0000-0000-000000000000"
+            "instance": "00000000-0000-0000-0000-000000000000",
+            "state": "IN_FIELD"
         }
     }
 }

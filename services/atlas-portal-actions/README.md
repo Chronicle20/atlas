@@ -7,7 +7,7 @@ The `atlas-portal-actions` service manages portal scripts that determine whether
 ## External Dependencies
 
 - PostgreSQL (GORM)
-- Redis (pending action registry)
+- Redis (pending action registry, portal enter dedupe gate)
 - Kafka
 - OpenTelemetry (tracing)
 - Character validation service (HTTP)

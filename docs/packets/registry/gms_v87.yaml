@@ -716,6 +716,7 @@
   direction: clientbound
   opcode: 136
   fname: CMapLoadable::OnSetBackEffect
+  packet: field/clientbound/FieldSetBackEffect
   provenance: csv-import
 - op: SET_MAP_OBJECT_VISIBLE
   direction: clientbound
@@ -726,6 +727,7 @@
   direction: clientbound
   opcode: 138
   fname: CMapLoadable::OnClearBackEffect
+  packet: field/clientbound/FieldClearBackEffect
   provenance: csv-import
 - op: BLOCKED_MAP
   direction: clientbound

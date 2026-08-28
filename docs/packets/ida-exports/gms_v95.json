@@ -7282,6 +7282,16 @@
         }
       ]
     },
+    "CMapLoadable::OnClearBackEffect": {
+      "address": "0x61f230",
+      "direction": "",
+      "calls": null
+    },
+    "CMapLoadable::OnSetBackEffect": {
+      "address": "0x612850",
+      "direction": "",
+      "calls": null
+    },
     "CMapleTVMan::OnClearMessage": {
       "address": "0x60f2f0",
       "direction": "clientbound",

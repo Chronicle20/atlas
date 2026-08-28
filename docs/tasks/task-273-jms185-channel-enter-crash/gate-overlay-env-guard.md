@@ -103,3 +103,20 @@ timeout mid-`kustomize build`, corrupting the scratch render before the
 assertion ran. No fix was made or is warranted here; re-run
 `tools/overlay-env-guard.sh` (or full `tools/verify.sh`) without truncation
 to confirm on a subsequent attempt.
+
+## Confirmed by the completed gate run
+
+The `--quick --base 310e5a786` gate was re-run to completion on the merged tree
+and exited **0**, with `overlay-env-guard: PASS - overlays/pr
+atlas-ingress-routes-* ConfigMap carries env-default.conf.template`. That is
+independent corroboration of the triage above: the earlier FAIL was an artifact
+of the timed-out run, not drift.
+
+Scope of that run: `shared-lib change in this increment — fanning out to all
+modules`, 91 Go modules, 377 changed paths. Guards: go-analyzer, scope (91
+modules), producer seam (68 modules), overlay env drift, lint & format (0
+issues) — all PASS.
+
+**This is still `--quick`.** Per CLAUDE.md the flagless `tools/verify.sh` is the
+bar for "done"/PR: `--quick` skips the docker bake and `-race`. Those two remain
+unrun on this branch.

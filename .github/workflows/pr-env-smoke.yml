@@ -80,6 +80,19 @@ jobs:
           echo "pr_number=$n" >> "$GITHUB_OUTPUT"
           echo "Opened PR #$n on $BRANCH"
 
+      # Failsafe: if anything after the push fails (a missing label, a
+      # rate-limited gh pr create), delete the branch here rather than
+      # relying on cleanup-synthetic-pr, so the branch never outlives the
+      # run that pushed it.
+      - name: Delete smoke branch if PR creation failed
+        if: failure() && steps.branch.outputs.branch != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH:   ${{ steps.branch.outputs.branch }}
+        run: |
+          git push origin --delete "$BRANCH" ||
+            echo "::warning::could not delete orphaned smoke branch $BRANCH"
+
   wait-for-healthy:
     name: Wait for Application Healthy
     needs: open-synthetic-pr
@@ -210,5 +223,11 @@ jobs:
           if [ -n "$PR_NUMBER" ]; then
             gh pr close "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --delete-branch || true
           fi
-          gh api --method DELETE \
-            "/repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH}" >/dev/null 2>&1 || true
+          if gh api --method DELETE \
+               "/repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH}" >/dev/null 2>&1; then
+            echo "Deleted $BRANCH"
+          elif gh api "/repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH}" >/dev/null 2>&1; then
+            echo "::warning::smoke branch $BRANCH still exists and could not be deleted"
+          else
+            echo "$BRANCH already gone"
+          fi

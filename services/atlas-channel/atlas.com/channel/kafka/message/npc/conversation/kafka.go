@@ -41,6 +41,12 @@ type CommandNumberBody struct {
 	MaxValue     uint32 `json:"maxValue"`
 }
 
+type CommandTextBody struct {
+	DefaultValue string `json:"defaultValue"`
+	MinLength    uint16 `json:"minLength"`
+	MaxLength    uint16 `json:"maxLength"`
+}
+
 type CommandStyleBody struct {
 	Styles []uint32 `json:"styles"`
 }

@@ -448,3 +448,17 @@ Retrieves character ranking data via REST.
 
 - ByCharacterIdsProvider: Provides rankings for the given character IDs in a single bulk call.
 - GetByCharacterIds: Bulk-fetches rankings for the given characters. Characters with no computed ranking are absent from the result.
+
+## Packet Trace Logging
+
+Logs the full plaintext bytes of every inbound and outbound packet on a session, on demand, for short diagnostic windows. Implemented in `socket/trace.go` (inbound, installed as the `atlas-socket` listener's `PacketTracer`) and `session/trace.go` (outbound, called before `announceEncrypted`).
+
+The switch is `diagnostics.tracePackets` on the tenant configuration document, owned by `atlas-configurations` and edited from the atlas-ui tenant Diagnostics page. It reaches this service through the configuration projection: the apply loop republishes the package-level snapshot every tick (250ms default), and `configuration.TracePacketsEnabled` reads that snapshot without blocking. A flag change takes effect on the next packet — no pod or session restart required.
+
+**Both** conditions are required: the tenant flag AND the pod running at `LOG_LEVEL=Debug` or `Trace`. Flipping the flag on a pod running at `Info` produces nothing; the operator must also raise the pod's log level.
+
+Output is one log entry per packet: a header line (`[PKT IN ]` for inbound / `[PKT OUT]` for outbound, handler/writer name, opcode, length, session id) followed by a full hex+ASCII dump. The dump is never truncated, and header plus dump are emitted as a single log entry so concurrent sessions cannot interleave.
+
+**Security:** the dump is deliberately unredacted. Login packets carry account passwords, PICs/PINs, and HWIDs in plaintext. Any log captured while tracing is enabled is credential-bearing material and must be handled as such.
+
+**Volume:** an active session produces tens of packets per second. Intended for short reproduction windows only, not for continuous production logging.

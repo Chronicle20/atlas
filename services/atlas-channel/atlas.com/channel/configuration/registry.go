@@ -78,6 +78,22 @@ func GetTenantConfig(tenantId uuid.UUID) (tenant.RestModel, error) {
 	return val, nil
 }
 
+// TracePacketsEnabled reports whether the tenant has packet trace logging
+// switched on. Unlike GetTenantConfig it NEVER blocks and never returns an
+// error: this runs on the socket send and receive paths, where a 60-second
+// waitReady would be a hang, not a diagnostic (FR-2.4). A snapshot that has
+// not been published yet, and a tenant absent from the snapshot, both mean
+// "off".
+func TracePacketsEnabled(tenantId uuid.UUID) bool {
+	configMu.RLock()
+	defer configMu.RUnlock()
+	tc, ok := tenantConfig[tenantId]
+	if !ok {
+		return false
+	}
+	return tc.Diagnostics.TracePackets
+}
+
 // PublishSnapshot replaces the package-level service+tenant config with
 // the snapshot taken from the kafka-backed projection. Called by main.go
 // after CaughtUp fires (and again from the projection apply loop on each

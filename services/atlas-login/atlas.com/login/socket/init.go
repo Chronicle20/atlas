@@ -34,9 +34,9 @@ func NewListenerContext(ctx context.Context, t tenant.Model) context.Context {
 	return env.WithContext(tctx, env.Self())
 }
 
-func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, port int) {
+func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, port int, names map[uint16]string) {
 	t := tenant.MustFromContext(ctx)
-	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, port int) {
+	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, port int, names map[uint16]string) {
 		routine.Go(l, ctx, func(_ context.Context) {
 			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region(), t.MajorVersion(), t.MinorVersion(), port)
 
@@ -66,6 +66,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetMessageDecryptor(sp.Decrypt(true, hasMapleEncryption)),
 					socket.SetDestroyer(sp.DestroyByIdWithSpan),
 					socket.SetReadWriter(rw),
+					socket.SetPacketTracer(NewPacketTracer(l, t, names)),
 					socket.SetIdleNotifier(session.SendPing(l, ctx, wp), idleThreshold),
 				)
 				if err != nil {

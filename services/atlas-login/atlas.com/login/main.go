@@ -269,10 +269,7 @@ func buildListener(
 			WithField("region", t.Region()).
 			WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()))
 
-		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
-		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
-			rw = socket2.ByteReadWriter{}
-		}
+		rw := opcodes.OpReadWriterFor(t.Region(), t.MajorVersion())
 
 		wp := produceWriterProducer(fl)(tenantCfg.Socket.Writers, writerList, rw)
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantCfg.Socket.Handlers, validatorMap, handlerMap)
@@ -297,7 +294,8 @@ func buildListener(
 			return nil, err
 		}
 
-		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, cfg.Port)
+		handlerNames := opcodes.BuildHandlerNames(fl, opcodes.ServiceLogin, tenantCfg.Socket.Handlers)
+		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, cfg.Port, handlerNames)
 
 		return handles, nil
 	}

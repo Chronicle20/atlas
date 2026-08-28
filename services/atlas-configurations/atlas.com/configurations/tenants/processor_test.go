@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 
@@ -67,6 +68,8 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to get underlying sql.DB: %v", err)
 	}
 	sqlDB.SetMaxOpenConns(1)
+
+	database.RegisterTenantCallbacks(testLogger(), db)
 
 	// Use SQLite-compatible schema
 	err = db.AutoMigrate(&testEntity{}, &testHistoryEntity{})
@@ -698,6 +701,9 @@ type outboxTenantEnvelope struct {
 	Id            string `json:"id"`
 	Config        struct {
 		Environment string `json:"environment"`
+		Diagnostics struct {
+			TracePackets bool `json:"tracePackets"`
+		} `json:"diagnostics"`
 	} `json:"config"`
 	EmittedAt string `json:"emitted_at"`
 }
@@ -783,6 +789,42 @@ func TestProcessor_UpdateById_OutboxMessageNeverCarriesClientSuppliedEnvironment
 	env := latestOutboxTenantEnvelope(t, db, "tenant-status")
 	if env.Config.Environment != "pr-100" {
 		t.Errorf("expected outbox message environment to stay the persisted 'pr-100', got %q (client-supplied value leaked onto the wire)", env.Config.Environment)
+	}
+}
+
+// TestProcessor_UpdateById_OutboxMessageCarriesDiagnostics pins FR-1.5: the
+// outbox message published on update carries the tenant's
+// diagnostics.tracePackets flag, since UpdateById marshals the whole
+// RestModel unchanged onto the wire.
+func TestProcessor_UpdateById_OutboxMessageCarriesDiagnostics(t *testing.T) {
+	t.Setenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS", "tenant-status")
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := env.WithContext(context.Background(), env.Id("pr-100"))
+	p := NewProcessor(l, ctx, db)
+
+	id := uuid.New()
+	seed := testEntity{
+		Id:           id,
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+		Data:         json.RawMessage(`{}`),
+		Environment:  "pr-100",
+	}
+	if err := db.Create(&seed).Error; err != nil {
+		t.Fatalf("failed to seed entity: %v", err)
+	}
+
+	updated := createTestRestModel("SEA", 84, 2)
+	updated.Diagnostics.TracePackets = true
+	if err := p.UpdateById(id, updated); err != nil {
+		t.Fatalf("failed to update tenant: %v", err)
+	}
+
+	env := latestOutboxTenantEnvelope(t, db, "tenant-status")
+	if env.Config.Diagnostics.TracePackets != true {
+		t.Errorf("expected outbox message diagnostics.tracePackets true, got %v", env.Config.Diagnostics.TracePackets)
 	}
 }
 

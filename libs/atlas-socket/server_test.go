@@ -166,3 +166,112 @@ func writeAll(t *testing.T, c net.Conn, b []byte) {
 		t.Fatalf("write: %v", err)
 	}
 }
+
+// TestHandle_NilTracerIsSafe asserts the nil check is the entire cost when
+// tracing is off (FR-2.1): a config with no tracer installed must not panic
+// and must still dispatch to the registered handler.
+func TestHandle_NilTracerIsSafe(t *testing.T) {
+	l := logrus.New()
+	l.SetOutput(nopWriter{})
+
+	called := false
+	cfg := &config{
+		rw: ShortReadWriter{},
+		handlers: map[uint16]request.Handler{
+			0x0001: func(uuid.UUID, request.Reader) { called = true },
+		},
+	}
+
+	handle(l)(cfg, uuid.New(), request.Request{0x01, 0x00, 0xaa})
+
+	if !called {
+		t.Fatal("handler did not run")
+	}
+}
+
+// TestHandle_TracerSeesFullFrameBeforeHandler asserts the tracer receives
+// the full decrypted frame -- including for an unregistered opcode
+// (FR-3.4) -- and runs before the handler (FR-3.3).
+func TestHandle_TracerSeesFullFrameBeforeHandler(t *testing.T) {
+	tests := []struct {
+		name        string
+		registered  bool
+		frame       request.Request
+		wantOp      uint16
+		wantPayload []byte
+		wantHandled bool
+	}{
+		{
+			name:        "registered handler",
+			registered:  true,
+			frame:       request.Request{0x01, 0x00, 0xaa, 0xbb},
+			wantOp:      0x0001,
+			wantPayload: []byte{0x01, 0x00, 0xaa, 0xbb},
+			wantHandled: true,
+		},
+		{
+			name:        "unregistered opcode",
+			registered:  false,
+			frame:       request.Request{0xff, 0x00, 0x11},
+			wantOp:      0x00ff,
+			wantPayload: []byte{0xff, 0x00, 0x11},
+			wantHandled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := logrus.New()
+			l.SetOutput(nopWriter{})
+
+			var order []string
+			handled := false
+
+			handlers := map[uint16]request.Handler{}
+			if tt.registered {
+				handlers[0x0001] = func(uuid.UUID, request.Reader) {
+					order = append(order, "handle")
+					handled = true
+				}
+			}
+
+			var tracedSessionId uuid.UUID
+			var tracedOp uint16
+			var tracedPayload []byte
+			tracer := PacketTracer(func(sessionId uuid.UUID, op uint16, payload []byte) {
+				order = append(order, "trace")
+				tracedSessionId = sessionId
+				tracedOp = op
+				tracedPayload = payload
+			})
+
+			cfg := &config{
+				rw:       ShortReadWriter{},
+				handlers: handlers,
+				tracer:   tracer,
+			}
+
+			sessionId := uuid.New()
+			handle(l)(cfg, sessionId, tt.frame)
+
+			if tracedOp != tt.wantOp {
+				t.Fatalf("traced op = 0x%04X, want 0x%04X", tracedOp, tt.wantOp)
+			}
+			if string(tracedPayload) != string(tt.wantPayload) {
+				t.Fatalf("traced payload = % X, want % X", tracedPayload, tt.wantPayload)
+			}
+			if tracedSessionId != sessionId {
+				t.Fatalf("traced sessionId = %s, want %s", tracedSessionId, sessionId)
+			}
+			if handled != tt.wantHandled {
+				t.Fatalf("handled = %v, want %v", handled, tt.wantHandled)
+			}
+			if tt.wantHandled {
+				want := []string{"trace", "handle"}
+				if len(order) != len(want) || order[0] != want[0] || order[1] != want[1] {
+					t.Fatalf("order = %v, want %v", order, want)
+				}
+			}
+		})
+	}
+}

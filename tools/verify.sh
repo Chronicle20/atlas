@@ -388,8 +388,9 @@ else
     elif [ "${#TARGETS[@]}" -eq 0 ]; then
         skip "docker buildx bake (no go.mod touched)"
     else
+        step "buildx builder" ./tools/buildx-bootstrap.sh --check
         step "docker buildx bake (${#TARGETS[@]} target(s))" \
-            docker buildx bake --set "$BAKE_OUTPUT" "${TARGETS[@]}"
+            docker buildx bake --builder "${ATLAS_BUILDER:-atlas}" --set "$BAKE_OUTPUT" "${TARGETS[@]}"
     fi
 fi
 

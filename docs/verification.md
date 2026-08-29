@@ -250,6 +250,36 @@ in the mod-only block, one in the source block) and one `./libs/<name>` line in
 For large refactors expect several fix-and-rebuild cycles. Do not shortcut the
 bake step.
 
+### The builder
+
+`docker buildx bake` runs against a pinned `atlas` builder
+(`docker-container` driver), not the default `docker` driver — the default
+driver's build cache is unbounded and its parallelism is ungoverned.
+`tools/buildx-bootstrap.sh` creates and selects it, from
+`deploy/buildkit/buildkitd.toml`, which caps solve parallelism at 8 and
+enforces a two-tier GC policy: aggressively-reclaimable cache (local
+sources, cache mounts, git checkouts) is evicted first at a 40 GB/7-day
+threshold, then a hard 60 GB ceiling applies regardless of type. `verify.sh`
+asserts the builder exists (`tools/buildx-bootstrap.sh --check`) before its
+bake step and fails closed if it does not.
+
+Editing `deploy/buildkit/buildkitd.toml` requires
+`tools/buildx-bootstrap.sh --force` to take effect — buildx cannot update an
+existing builder's config in place; `--force` removes and recreates it.
+
+The `docker-container` driver does not write to the local image store by
+default, unlike `docker`. `tools/build-services.sh` — whose entire purpose is
+producing runnable `<svc>:local` images — therefore always passes `--load`.
+`verify.sh`'s own bake stays `--set '*.output=type=cacheonly'` and needs no
+`--load`, since it never intends to produce an image.
+
+Switching to the `atlas` builder means a brand-new BuildKit instance with an
+empty cache. The first bake after `tools/buildx-bootstrap.sh` runs — for
+either `verify.sh` or `tools/build-services.sh` — is a cold cache, including
+the `/go/pkg/mod` and `/root/.cache/go-build` cache mounts the Dockerfile
+relies on. That is expected, not a regression; subsequent bakes warm the new
+builder's cache same as before.
+
 ## Adding a new service
 
 Follow [`docs/adding-a-new-service.md`](adding-a-new-service.md) in full. It

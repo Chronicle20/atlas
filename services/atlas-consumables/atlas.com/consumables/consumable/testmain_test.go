@@ -3,6 +3,7 @@ package consumable
 import (
 	"atlas-consumables/kafka/message/consumable"
 	"atlas-consumables/kafka/message/monsterbook"
+	"log"
 	"os"
 	"testing"
 
@@ -15,6 +16,7 @@ import (
 	sagamsg "atlas-consumables/kafka/message/saga"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // emitted captures everything this package's tests produce to Kafka. Installed
@@ -23,14 +25,19 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
-	os.Setenv(string(assetMsg.EnvEventTopicStatus), string(assetMsg.EnvEventTopicStatus))
-	os.Setenv(string(compartmentmsg.EnvCommandTopic), string(compartmentmsg.EnvCommandTopic))
-	os.Setenv(string(consumable.EnvEventTopic), string(consumable.EnvEventTopic))
-	os.Setenv(string(foodmsg.EnvEventTopic), string(foodmsg.EnvEventTopic))
-	os.Setenv(string(monsterMsg.EnvCommandTopic), string(monsterMsg.EnvCommandTopic))
-	os.Setenv(string(monsterMsg.EnvEventTopicCatch), string(monsterMsg.EnvEventTopicCatch))
-	os.Setenv(string(monsterbook.EnvCommandTopic), string(monsterbook.EnvCommandTopic))
-	os.Setenv(string(sagamsg.EnvStatusEventTopic), string(sagamsg.EnvStatusEventTopic))
+	setEnv := func(k topic.Token) {
+		if err := os.Setenv(string(k), string(k)); err != nil {
+			log.Fatalf("failed to set %s: %v", k, err)
+		}
+	}
+	setEnv(assetMsg.EnvEventTopicStatus)
+	setEnv(compartmentmsg.EnvCommandTopic)
+	setEnv(consumable.EnvEventTopic)
+	setEnv(foodmsg.EnvEventTopic)
+	setEnv(monsterMsg.EnvCommandTopic)
+	setEnv(monsterMsg.EnvEventTopicCatch)
+	setEnv(monsterbook.EnvCommandTopic)
+	setEnv(sagamsg.EnvStatusEventTopic)
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

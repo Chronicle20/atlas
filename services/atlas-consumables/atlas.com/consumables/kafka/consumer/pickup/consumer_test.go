@@ -3,6 +3,7 @@ package pickup
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"testing"
 
@@ -22,7 +23,9 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
-	os.Setenv(string(mbmsg.EnvCommandTopic), string(mbmsg.EnvCommandTopic))
+	if err := os.Setenv(string(mbmsg.EnvCommandTopic), string(mbmsg.EnvCommandTopic)); err != nil {
+		log.Fatalf("failed to set %s: %v", mbmsg.EnvCommandTopic, err)
+	}
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

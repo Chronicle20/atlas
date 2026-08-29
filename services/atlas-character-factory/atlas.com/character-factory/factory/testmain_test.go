@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"log"
 	"os"
 	"testing"
 
@@ -10,7 +11,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	os.Setenv(string(sagaMessage.EnvCommandTopic), string(sagaMessage.EnvCommandTopic))
+	if err := os.Setenv(string(sagaMessage.EnvCommandTopic), string(sagaMessage.EnvCommandTopic)); err != nil {
+		log.Fatalf("failed to set %s: %v", sagaMessage.EnvCommandTopic, err)
+	}
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

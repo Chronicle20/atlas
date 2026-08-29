@@ -5,6 +5,7 @@ import (
 	seedMessage "atlas-character-factory/kafka/message/seed"
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"testing"
 
@@ -23,7 +24,9 @@ var emitted *producertest.Capture
 // this package can inspect what the saga-status bridge emitted on
 // EVENT_TOPIC_SEED_STATUS, without a broker.
 func TestMain(m *testing.M) {
-	os.Setenv(string(seedMessage.EnvEventTopicStatus), string(seedMessage.EnvEventTopicStatus))
+	if err := os.Setenv(string(seedMessage.EnvEventTopicStatus), string(seedMessage.EnvEventTopicStatus)); err != nil {
+		log.Fatalf("failed to set %s: %v", seedMessage.EnvEventTopicStatus, err)
+	}
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

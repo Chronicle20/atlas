@@ -1,6 +1,7 @@
 package movement
 
 import (
+	"log"
 	"os"
 	"testing"
 
@@ -22,9 +23,15 @@ import (
 var sharedCapture *producertest.Capture
 
 func TestMain(m *testing.M) {
-	os.Setenv(string(movementMsg.EnvCommandCharacterMovement), string(movementMsg.EnvCommandCharacterMovement))
-	os.Setenv(string(movementMsg.EnvCommandPetMovement), string(movementMsg.EnvCommandPetMovement))
-	os.Setenv(string(movementMsg.EnvCommandMonsterMovement), string(movementMsg.EnvCommandMonsterMovement))
+	if err := os.Setenv(string(movementMsg.EnvCommandCharacterMovement), string(movementMsg.EnvCommandCharacterMovement)); err != nil {
+		log.Fatalf("failed to set %s: %v", movementMsg.EnvCommandCharacterMovement, err)
+	}
+	if err := os.Setenv(string(movementMsg.EnvCommandPetMovement), string(movementMsg.EnvCommandPetMovement)); err != nil {
+		log.Fatalf("failed to set %s: %v", movementMsg.EnvCommandPetMovement, err)
+	}
+	if err := os.Setenv(string(movementMsg.EnvCommandMonsterMovement), string(movementMsg.EnvCommandMonsterMovement)); err != nil {
+		log.Fatalf("failed to set %s: %v", movementMsg.EnvCommandMonsterMovement, err)
+	}
 	sharedCapture = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

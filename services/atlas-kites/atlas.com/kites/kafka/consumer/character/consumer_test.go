@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"os"
 	"sync"
 	"testing"
@@ -83,7 +84,9 @@ func nullLogger() logrus.FieldLogger {
 }
 
 func TestMain(m *testing.M) {
-	os.Setenv(string(kiteMsg.EnvEventTopicStatus), string(kiteMsg.EnvEventTopicStatus))
+	if err := os.Setenv(string(kiteMsg.EnvEventTopicStatus), string(kiteMsg.EnvEventTopicStatus)); err != nil {
+		log.Fatalf("failed to set %s: %v", kiteMsg.EnvEventTopicStatus, err)
+	}
 	os.Exit(m.Run())
 }
 

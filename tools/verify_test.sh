@@ -103,11 +103,25 @@ probe_account_dir="$HERE/../services/atlas-account/zz-verify-probe"
 probe_bake_ban="$probe_ban_dir/go.mod"
 probe_bake_account="$probe_account_dir/go.mod"
 probe_broken_dir="$HERE/../services/zz-verify-probe-broken"
+# The broken-module run below is a real `verify.sh --quick` invocation, so the
+# Go toolchain resolves the workspace and appends hash lines to go.work.sum.
+# That file must come back byte-identical no matter how the run ends, or every
+# later gate misclassifies it as a shared-lib change and rebuilds all modules
+# (see the comment at the broken-module block). Snapshot/restore is folded
+# into the same EXIT trap as the rest of the probe cleanup.
+gowork_sum="$HERE/../go.work.sum"
+gowork_sum_backup="$HERE/zz-verify-probe-broken.go.work.sum.bak"
+gowork_sum_backup_absent="$HERE/zz-verify-probe-broken.go.work.sum.absent"
 cleanup() {
   rm -f "$probe_suite" "$probe_deploy" "$probe_bake_ban" "$probe_bake_account" \
     "$HERE/zz-verify-jobs0.err"
   rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
   rm -rf "$probe_broken_dir"
+  if [ -f "$gowork_sum_backup" ]; then
+    mv -f "$gowork_sum_backup" "$gowork_sum"
+  elif [ -f "$gowork_sum_backup_absent" ]; then
+    rm -f "$gowork_sum" "$gowork_sum_backup_absent"
+  fi
 }
 trap cleanup EXIT
 cleanup
@@ -233,8 +247,18 @@ assert_true "the Go layer's log dir is created under TMPDIR and cleaned up on ex
 # real_selected() strips the ✓/✗ glyph before comparing labels, so a
 # regression in the pool's per-worker .rc propagation that silently turned a
 # FAILED module into a reported PASS would not show up in the label-agreement
-# assertions above — only in the module's own build failing and the overall
-# run's exit status going non-zero. Assert both, on the unstripped output.
+# assertions above. Of the two assertions below, only the second — the broken
+# module still showing up as FAILED on the unstripped output — actually guards
+# that regression class; a sabotaged `.rc` read can still leave the overall
+# exit status non-zero for unrelated reasons, so the first assertion alone
+# would not catch it.
+rm -f "$gowork_sum_backup" "$gowork_sum_backup_absent"
+if [ -f "$gowork_sum" ]; then
+  cp -p "$gowork_sum" "$gowork_sum_backup"
+else
+  : > "$gowork_sum_backup_absent"
+fi
+
 mkdir -p "$probe_broken_dir"
 cat > "$probe_broken_dir/go.mod" <<'EOF'
 module zz.verify.probe.broken
@@ -252,6 +276,11 @@ EOF
 broken_out="$("$VERIFY" --quick --base HEAD 2>&1)"
 broken_rc=$?
 rm -rf "$probe_broken_dir"
+if [ -f "$gowork_sum_backup" ]; then
+  mv -f "$gowork_sum_backup" "$gowork_sum"
+elif [ -f "$gowork_sum_backup_absent" ]; then
+  rm -f "$gowork_sum" "$gowork_sum_backup_absent"
+fi
 
 assert_eq "a genuinely broken module makes the run exit non-zero" "1" "$broken_rc"
 assert_true "the broken module is reported FAILED, unstripped" \

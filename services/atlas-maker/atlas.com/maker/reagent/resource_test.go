@@ -67,7 +67,7 @@ func TestResourceIsReadOnly(t *testing.T) {
 				req := requestWithTenant(method, srv.URL+path, tenantId)
 				resp, err := (&http.Client{}).Do(req)
 				require.NoError(t, err)
-				defer resp.Body.Close()
+				defer func() { _ = resp.Body.Close() }()
 				assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 			})
 		}
@@ -96,14 +96,14 @@ func TestResourceStaysReadOnlyBesideTheSeedRoutes(t *testing.T) {
 		req := requestWithTenant(http.MethodPost, srv.URL+path, tenantId)
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode, "POST %s", path)
 	}
 
 	req := requestWithTenant(http.MethodPost, srv.URL+"/reagents/seed", tenantId)
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusAccepted, resp.StatusCode, "the seed route must stay reachable")
 }
 
@@ -118,7 +118,7 @@ func TestGetReagentReturnsTheSeededRow(t *testing.T) {
 	req := requestWithTenant(http.MethodGet, srv.URL+"/reagents/4251202", tenantId)
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	var doc jsonapi.Document
@@ -147,7 +147,7 @@ func TestGetReagentNotFound(t *testing.T) {
 	req := requestWithTenant(http.MethodGet, srv.URL+"/reagents/2000000", tenantId)
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
@@ -166,7 +166,7 @@ func TestGetAllReagentsPaginates(t *testing.T) {
 		req := requestWithTenant(http.MethodGet, url, tenantId)
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var doc jsonapi.Document
@@ -182,7 +182,7 @@ func TestGetAllReagentsPaginates(t *testing.T) {
 		req := requestWithTenant(http.MethodGet, url, tenantId)
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }

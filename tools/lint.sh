@@ -147,51 +147,17 @@ resolve_base() {
     return 1
 }
 
-# go.work's `use` entries (both the single-line `use ./path` form and the
-# parenthesized `use ( ... )` block form), resolved to absolute directories. A
-# module directory under services/ or libs/ that is NOT listed here is a tool
-# module, deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen —
-# see plan.md:18 for task-276): golangci-lint in workspace mode cannot
+# workspace_module_dirs() — go.work `use`-entry membership. A module directory
+# under services/ or libs/ that is NOT a go.work member is a tool module,
+# deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen — see
+# plan.md:18 for task-276): golangci-lint in workspace mode cannot
 # type-check a non-member ("directory prefix . does not contain modules
 # listed in go.work"). It is verified by its own explicit GOWORK=off step
 # instead, so discover_modules below filters it out rather than this script
-# re-adding it to go.work.
-#
-# Fails loudly (non-zero, naming go.work) rather than returning an empty set:
-# an unreadable go.work or a parse with zero `use` entries must stop the
-# sweep, never silently verify nothing while reporting success.
-workspace_module_dirs() {
-    if [ ! -r "$ROOT/go.work" ]; then
-        echo "lint.sh: ERROR — cannot read $ROOT/go.work" >&2
-        return 1
-    fi
-    local entries
-    entries="$(awk '
-        /^use \(/ { inuse=1; next }
-        inuse && /^\)/ { inuse=0; next }
-        inuse {
-            gsub(/^[ \t]+|[ \t]+$/, "")
-            if ($0 != "") print
-            next
-        }
-        /^use[ \t]+/ {
-            line = $0
-            sub(/^use[ \t]+/, "", line)
-            gsub(/^[ \t]+|[ \t]+$/, "", line)
-            if (line != "") print line
-        }
-    ' "$ROOT/go.work")"
-    if [ -z "$entries" ]; then
-        echo "lint.sh: ERROR — $ROOT/go.work parsed to zero 'use' entries" >&2
-        return 1
-    fi
-    printf '%s\n' "$entries" | while IFS= read -r p; do
-        case "$p" in
-            /*) printf '%s\n' "$p" ;;
-            *)  printf '%s\n' "$ROOT/${p#./}" ;;
-        esac
-    done | sort -u
-}
+# re-adding it to go.work. Shared with verify.sh and analyzer-guard.sh in
+# tools/lib/go-work.sh.
+# shellcheck source=tools/lib/go-work.sh
+source "$ROOT/tools/lib/go-work.sh"
 
 discover_modules() {
     local found workspace result
@@ -209,7 +175,7 @@ discover_modules() {
                 | xargs -0 -r -n1 dirname
         done | sort -u)"
     fi
-    workspace="$(workspace_module_dirs)" || exit 1
+    workspace="$(workspace_module_dirs "lint.sh")" || exit 1
     result="$(comm -12 <(printf '%s\n' "$found") <(printf '%s\n' "$workspace"))"
     if [ -n "$found" ] && [ -z "$result" ]; then
         echo "lint.sh: ERROR — workspace filter produced zero modules from a non-empty candidate set;" >&2

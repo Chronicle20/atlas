@@ -62,3 +62,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-29T12:59:57Z	agent	Task 17 fix 2	task-implementer	sonnet	-	-	-	-	DONE	450879b45	-	-	-	-
 2026-08-29T13:00:43Z	agent	Task 17 range	gate	-	-	-	-	-	PASS	450879b45	-	-	-	-
 2026-08-29T13:00:44Z	handoff	after Task 17	-	-	-	-	-	-	-	-	-	-	-	140000
+2026-08-29T22:01:19Z	agent	Reagent v72/v79 open item	general-purpose	opus	-	-	-	-	DONE	2bf4370ec	-	-	-	-

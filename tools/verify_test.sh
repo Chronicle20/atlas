@@ -187,6 +187,67 @@ want_mods="${want_mods:-0}"
 got_mods="$(facts_key modules_selected --quick --base HEAD)"
 assert_eq "module count agrees" "$want_mods" "$got_mods"
 
+# --- preflight: capacity gate (Task 7) --------------------------------------
+#
+# The starved-run case is the important one: it must prove the gate FAILS
+# rather than proceeding, which is the whole point of the preflight.
+
+assert_true "preflight is selected on a full run" \
+  "$(facts_selected --base HEAD --no-ui | grep -x 'preflight (capacity)' >/dev/null && echo true)"
+assert_true "preflight is NOT selected under --quick" \
+  "$(facts_selected --quick --base HEAD | grep -x 'preflight (capacity)' >/dev/null && echo false || echo true)"
+
+starved_out="$(ATLAS_MIN_FREE_MB=99999999 "$VERIFY" --base HEAD --no-ui --no-docker 2>&1)"
+starved_rc=$?
+sane_out="$("$VERIFY" --base HEAD --no-ui --no-docker 2>&1)"
+sane_rc=$?
+
+assert_true "a starved run fails rather than proceeding (non-zero exit)" \
+  "$([ "$starved_rc" -ne 0 ] && echo true)"
+assert_true "the same command without the override exits 0 (preflight is not permanently on)" \
+  "$([ "$sane_rc" -eq 0 ] && echo true)"
+assert_true "the starved run's summary reports a preflight failure" \
+  "$(printf '%s\n' "$starved_out" | grep '✗' | grep -i preflight >/dev/null && echo true)"
+assert_true "the preflight message names the free-RAM shortfall" \
+  "$(printf '%s\n' "$starved_out" | grep 'free RAM' | grep -E '[0-9]+ MiB' >/dev/null && echo true)"
+
+tuning_out="$(TMPDIR=/tmp ATLAS_MIN_FREE_MB=1 ATLAS_MIN_TMP_MB=1 "$VERIFY" --base HEAD --no-docker --no-ui 2>&1)"
+assert_true "an un-tuned host is reported, not assumed (names Host tuning)" \
+  "$(printf '%s\n' "$tuning_out" | grep 'Host tuning' >/dev/null && echo true)"
+assert_true "the un-tuned-host report points at docs/verification.md" \
+  "$(printf '%s\n' "$tuning_out" | grep 'docs/verification.md' >/dev/null && echo true)"
+
+# --- per-slot budgets: applied in go_layer, and only there ------------------
+
+go_layer_body="$(awk '/^go_layer\(\) \{/,/^\}$/' "$VERIFY")"
+assert_true "go_layer exports GOMAXPROCS" \
+  "$(printf '%s\n' "$go_layer_body" | grep -F 'export GOMAXPROCS' >/dev/null && echo true)"
+assert_true "go build and go test take distinct -p budgets" \
+  "$(printf '%s\n' "$go_layer_body" | grep -F 'go build -p "${ATLAS_GO_P' >/dev/null \
+     && printf '%s\n' "$go_layer_body" | grep -F 'go test -p "${ATLAS_GO_TEST_P' >/dev/null \
+     && echo true)"
+assert_true "go vet takes no -p (not a valid go vet flag)" \
+  "$(printf '%s\n' "$go_layer_body" | grep -F 'go vet -p' >/dev/null && echo false || echo true)"
+
+# --- heavy phases are slotted; cheap phases are not --------------------------
+#
+# Sectioned by the file's own "# ---" banner comments: the docker layer
+# (bake) and the go-modules layer (the pool) must each hold exactly one slot
+# reference; nothing from guards through the facts printer may hold one.
+
+docker_section="$(sed -n '/^# ----*.*docker$/,/^# ----*.*guards$/p' "$VERIFY")"
+go_modules_section="$(sed -n '/^# ----*.*go modules$/,/^# ----*.*docker$/p' "$VERIFY")"
+guards_through_facts="$(sed -n '/^# ----*.*guards$/,/^# ----*.*summary$/p' "$VERIFY")"
+
+assert_eq "the bake (docker layer) holds exactly one slot reference" "1" \
+  "$(printf '%s\n' "$docker_section" | grep -cE 'acquire_build_slot|with-build-slot\.sh')"
+assert_eq "the Go pool (go-modules layer) holds exactly one slot reference" "1" \
+  "$(printf '%s\n' "$go_modules_section" | grep -c 'acquire_build_slot')"
+assert_eq "acquire_build_slot/with-build-slot.sh appears exactly twice total (bake + Go pool)" "2" \
+  "$(grep -cE 'acquire_build_slot|with-build-slot\.sh' "$VERIFY")"
+assert_eq "no slot acquisition on the guard, lint, --facts, or summary paths" "0" \
+  "$(printf '%s\n' "$guards_through_facts" | grep -cE 'acquire_build_slot|with-build-slot\.sh')"
+
 # --- bake selection: one solve, not one per target --------------------------
 #
 # bake_targets() matches a changed path against each service's `path` from

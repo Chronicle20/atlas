@@ -209,6 +209,15 @@ oversubscribing it, and each slot's peak memory footprint (a `go build`, a
 gate would either wait for a slot or blow through both budgets at once —
 that's the failure mode this broker exists to prevent.
 
+**What's slotted.** Exactly two phases of `verify.sh` acquire a machine-wide
+slot: the bake (`docker buildx bake`, through the CLI wrapper, since it runs
+as an external process) and the Go pool (`launch_go_layers`, held around the
+function itself, and only when `-race` is actually running — a `--quick` pass
+never competes for a slot). Everything else in `verify.sh` is deliberately
+NOT slotted: `go vet` (part of the unslotted half of `go_layer`, cheap next to
+`go build`/`go test -race`), the analyzer/lint/format guards, and the
+`--facts` path, which executes no check at all.
+
 **Usage.** A caller that runs the guarded work as a subprocess should use the
 CLI wrapper:
 
@@ -235,9 +244,34 @@ release_build_slot
 until a slot frees. The wait itself is a blocking `flock`, not a polling
 loop, so it costs no inference turns while it waits.
 
+### Capacity preflight
+
+Before the Go-module block, a non-`--quick` run gates on a `preflight
+(capacity)` check: free RAM and free space under `TMPDIR` must clear a floor
+before the heavy phases are allowed to start. This fails CLOSED — a starved
+host fails the gate rather than proceeding into a slow, possibly-flaky build
+— and it is off the `--quick` path entirely, so the fast inner loop is never
+blocked by it.
+
+| threshold | env override | default |
+|---|---|---|
+| free RAM | `ATLAS_MIN_FREE_MB` | 4096 (MiB) |
+| free space under `TMPDIR` | `ATLAS_MIN_TMP_MB` | 8192 (MiB) |
+
+The preflight also reports — never assumes — the un-tuned WSL2 condition from
+"Host tuning (WSL2)" above: when `TMPDIR` resolves under `/tmp`, it prints a
+pointer back to that section, because `/tmp` being tmpfs on this host is host
+state that checking out this branch cannot apply.
+
 ## The Go layer
 
 Per changed module: `go build ./...`, `go vet ./...`, `go test -race ./...`.
+The build and test steps carry the per-slot budgets from "Build slots" above
+— `GOMAXPROCS=6`, `go build -p 6`, `go test -p 2` (each overridable via
+`ATLAS_GOMAXPROCS`, `ATLAS_GO_P`, `ATLAS_GO_TEST_P`) — so a module's own
+internal parallelism stays inside the slot it is running in rather than
+oversubscribing the host. `go vet` takes no `-p`; it is not a valid flag for
+that subcommand.
 
 A change to `go.work` or a shared lib fans out to every module, and the script
 expands the set accordingly: services consume libs through the workspace, so a

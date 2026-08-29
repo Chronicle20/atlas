@@ -216,3 +216,68 @@ of the raw build/vet loop (a `mktemp -d`, per-module log/rc files, and a
 `cat` per module) — negligible next to a `go build` invocation, but not
 separately isolated here; and any figure from the full flagless
 `tools/verify.sh`, which was not run for this measurement per Contract 2.
+
+## Layer 3 — concurrency
+
+Task 7 wires the Task 6 build-slot broker and a capacity preflight into
+`tools/verify.sh`. Two of the three acceptance measurements below were run
+directly; the third (four concurrent `--quick` runs from four different
+worktrees) is deferred — see "What this does and does not show".
+
+### Preflight fails closed, and is not permanently on
+
+```sh
+env -u ATLAS_MIN_FREE_MB -u ATLAS_MIN_TMP_MB tools/verify.sh --base HEAD --no-ui --no-docker
+```
+
+Exit `0`. Immediately after, same command with the override:
+
+```sh
+ATLAS_MIN_FREE_MB=99999999 tools/verify.sh --base HEAD --no-ui --no-docker
+```
+
+Exit non-zero (`1`), with:
+
+```
+verify.sh: insufficient free RAM — 19778 MiB available, 99999999 MiB required.
+✗ preflight (capacity) FAILED
+...
+✗ preflight (capacity)
+2 check(s) FAILED — the branch is not ready.
+```
+
+This is the pair acceptance criterion 2 asks for: the override makes the
+gate fail closed, and the same command without it exits 0 — the preflight
+is a real gate, not a permanent block.
+
+### `--quick --base HEAD` exits 0
+
+```sh
+tools/verify.sh --quick --base HEAD
+```
+
+Exit `0`. Summary ends `All checks passed, but docker bake was skipped — not
+a pre-PR pass.` — the preflight step does not even appear in the summary
+(skipped, per `[ "$QUICK" -eq 0 ]`), confirming it is off the `--quick` path.
+
+### What this does and does not show
+
+**The four-concurrent-worktree run (acceptance criterion 3) is deferred, not
+run.** At the time this task was implemented, `.worktrees/` contained only
+this task's own worktree (`.worktrees/task-286-build-verify-concurrency/`) —
+`ls -d .worktrees/*/` returns exactly one entry. The acceptance criterion
+needs three *additional* worktrees running `--quick` concurrently alongside
+this one; creating three worktrees solely to produce this measurement was
+explicitly out of scope for this dispatch (per the controller's resolution:
+"attempt only if three other worktrees already exist; if they do not, do NOT
+create them and do NOT fabricate a result"). No `dmesg`/OOM or `go` cache
+error evidence is recorded here because the run that would produce it did
+not happen. This measurement belongs to the branch-end pass, once whatever
+worktrees exist at that point (or are deliberately created for the purpose)
+make a genuine 4-way concurrent run possible.
+
+What *was* exercised concurrency-wise: the build-slot broker's own test
+suites (`tools/lib/build-slot_test.sh`, `tools/with-build-slot_test.sh`,
+both from Task 6) already cover slot contention, timeout, and release
+behavior with real concurrent `flock` holders — see those suites' own
+passing output for that evidence. This session did not re-derive it.

@@ -23,6 +23,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=lib/build-slot.sh
+. "$ROOT/tools/lib/build-slot.sh"
+
 BASE=""
 ALL=0
 NO_DOCKER=0
@@ -36,6 +39,14 @@ GO_JOBS="${ATLAS_VERIFY_GO_JOBS:-4}"
 case "$GO_JOBS" in
     ''|*[!0-9]*|0) echo "verify.sh: ATLAS_VERIFY_GO_JOBS must be a positive integer (got '$GO_JOBS')" >&2; exit 2 ;;
 esac
+
+# Capacity preflight thresholds (Task 7). Not a guess at what the host needs —
+# the floor below which the heavy phases (the Go pool, the bake) are known to
+# starve rather than merely slow down. See docs/verification.md, "Build slots"
+# for how these relate to the per-slot budget, and "Host tuning (WSL2)" for why
+# TMPDIR matters on this host.
+MIN_FREE_MB="${ATLAS_MIN_FREE_MB:-4096}"
+MIN_TMP_MB="${ATLAS_MIN_TMP_MB:-8192}"
 
 usage() {
     cat <<'EOF'
@@ -115,6 +126,37 @@ step() {
 
 skip() {
     SKIPPED+=("$1")
+}
+
+# preflight — capacity gate for the heavy phases (the Go pool, the bake).
+# Fails CLOSED: a starved host must fail the gate rather than let a build
+# proceed into a slow, possibly-flaky run. Also reports (never assumes) the
+# un-tuned WSL2 TMPDIR condition from docs/verification.md, "Host tuning
+# (WSL2)" — host state cannot be inferred from repo state.
+preflight() {
+    local free_mb tmp_mb tmpdir="${TMPDIR:-/tmp}" rc=0
+    free_mb="$(free -m | awk '/^Mem:/ {print $NF}')"
+    tmp_mb="$(df -Pm "$tmpdir" | awk 'NR==2 {print $4}')"
+
+    # Not a failure — a report. The host tuning in docs/verification.md is host
+    # state, not repo state, so the gate detects the un-tuned condition rather
+    # than assuming it was applied.
+    case "$tmpdir" in
+        /tmp|/tmp/*)
+            echo "verify.sh: TMPDIR is ${tmpdir} — on this WSL2 host /tmp is tmpfs (RAM)." >&2
+            echo "           See docs/verification.md, 'Host tuning (WSL2)'." >&2
+            ;;
+    esac
+
+    if [ "$free_mb" -lt "$MIN_FREE_MB" ]; then
+        echo "verify.sh: insufficient free RAM — ${free_mb} MiB available, ${MIN_FREE_MB} MiB required." >&2
+        rc=1
+    fi
+    if [ "$tmp_mb" -lt "$MIN_TMP_MB" ]; then
+        echo "verify.sh: insufficient free space under TMPDIR (${tmpdir}) — ${tmp_mb} MiB free, ${MIN_TMP_MB} MiB required." >&2
+        rc=1
+    fi
+    return "$rc"
 }
 
 resolve_base() {
@@ -242,6 +284,12 @@ changed_modules() {
     done
 }
 
+if [ "$QUICK" -eq 0 ]; then
+    step "preflight (capacity)" preflight
+else
+    skip "preflight (capacity) (--quick)"
+fi
+
 MODULES=()
 while IFS= read -r m; do [ -n "$m" ] && MODULES+=("$m"); done < <(changed_modules | sort -u)
 
@@ -249,9 +297,14 @@ go_layer() {
     local mod="$1" rel="${1#"$ROOT"/}"
     (
         cd "$mod"
-        go build ./... && go vet ./... || exit 1
+        # Per-slot CPU budget from the build broker (tools/lib/build-slot.sh,
+        # docs/verification.md "Build slots"): GOMAXPROCS=6, go build -p 6,
+        # go test -p 2 — four slots at 6 threads apiece cover a 24-thread host
+        # without oversubscribing it.
+        export GOMAXPROCS="${ATLAS_GOMAXPROCS:-6}"
+        go build -p "${ATLAS_GO_P:-6}" ./... && go vet ./... || exit 1
         if [ "$QUICK" -eq 0 ]; then
-            go test -race ./... || exit 1
+            go test -p "${ATLAS_GO_TEST_P:-2}" -race ./... || exit 1
         fi
     )
 }
@@ -289,6 +342,7 @@ replay_go_layer() {
     return "$(cat "$GO_LOG_DIR/$1.rc")"
 }
 
+GO_POOL_SLOT_OK=1
 if [ "${#MODULES[@]}" -eq 0 ]; then
     skip "go build/vet/test (no Go module changed)"
 else
@@ -296,15 +350,34 @@ else
     # Under --facts step() executes nothing, so launching the work would be
     # pure waste and would break the "--facts runs no check" contract that
     # verify_test.sh:168-177 times.
+    #
+    # One build slot covers the whole parallel phase, held around the
+    # launch_go_layers *function* rather than as a subprocess — a slot held by
+    # a subprocess would release the instant that subprocess exits, before the
+    # build it guards even starts (docs/verification.md, "Build slots"). Only
+    # acquired when -race is actually running: a --quick pass is the cheap
+    # inner loop and must not compete for machine-wide capacity.
     if [ "$FACTS" -eq 0 ]; then
-        launch_go_layers
+        if [ "$QUICK" -eq 0 ]; then
+            if acquire_build_slot "go test -race"; then
+                launch_go_layers
+                release_build_slot
+            else
+                FAILED+=("build slot (go test -race)")
+                GO_POOL_SLOT_OK=0
+            fi
+        else
+            launch_go_layers
+        fi
     fi
-    i=0
-    for mod in "${MODULES[@]}"; do
-        step "go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race')  ${mod#"$ROOT"/}" \
-            replay_go_layer "$i"
-        i=$((i + 1))
-    done
+    if [ "$FACTS" -eq 1 ] || [ "$GO_POOL_SLOT_OK" -eq 1 ]; then
+        i=0
+        for mod in "${MODULES[@]}"; do
+            step "go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race')  ${mod#"$ROOT"/}" \
+                replay_go_layer "$i"
+            i=$((i + 1))
+        done
+    fi
 fi
 
 # ------------------------------------------------------------------- docker
@@ -389,7 +462,11 @@ else
         skip "docker buildx bake (no go.mod touched)"
     else
         step "buildx builder" ./tools/buildx-bootstrap.sh --check
+        # The bake is an external process, so the CLI wrapper is the right
+        # tool (unlike the Go pool below, which holds a slot around a shell
+        # function and must source the library directly).
         step "docker buildx bake (${#TARGETS[@]} target(s))" \
+            ./tools/with-build-slot.sh "bake" -- \
             docker buildx bake --builder "${ATLAS_BUILDER:-atlas}" --set "$BAKE_OUTPUT" "${TARGETS[@]}"
     fi
 fi

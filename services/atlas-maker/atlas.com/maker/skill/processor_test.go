@@ -33,7 +33,7 @@ func skillDoc(from, to int, total, number, size, last int) string {
 		if b.Len() > 0 {
 			b.WriteString(",")
 		}
-		b.WriteString(fmt.Sprintf(`{"id":"%d","type":"skills","attributes":{"level":5}}`, id))
+		_, _ = fmt.Fprintf(&b, `{"id":"%d","type":"skills","attributes":{"level":5}}`, id)
 	}
 	return fmt.Sprintf(
 		`{"data":[%s],"meta":{"total":%d,"page":{"number":%d,"size":%d,"last":%d}}}`,

@@ -31,7 +31,7 @@ func questDoc(from, to int, total, number, size, last int) string {
 		if b.Len() > 0 {
 			b.WriteString(",")
 		}
-		b.WriteString(fmt.Sprintf(`{"id":"%d","type":"quest-status","attributes":{"characterId":1001,"questId":%d,"state":2}}`, id, id))
+		_, _ = fmt.Fprintf(&b, `{"id":"%d","type":"quest-status","attributes":{"characterId":1001,"questId":%d,"state":2}}`, id, id)
 	}
 	return fmt.Sprintf(
 		`{"data":[%s],"meta":{"total":%d,"page":{"number":%d,"size":%d,"last":%d}}}`,

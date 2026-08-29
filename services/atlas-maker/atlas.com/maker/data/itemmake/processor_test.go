@@ -110,10 +110,10 @@ func itemMakeDoc(from, to int, total, number, size, last int) string {
 		if b.Len() > 0 {
 			b.WriteString(",")
 		}
-		b.WriteString(fmt.Sprintf(
+		_, _ = fmt.Fprintf(&b,
 			`{"id":"%d","type":"itemMakes","attributes":{"group":1,"reqLevel":10,"reqSkillLevel":1,"itemNum":1,"tuc":0,"meso":100,"catalyst":0,"reqItem":0,"reqEquip":0,"recipe":[],"randomReward":[],"reqQuest":[]}}`,
 			id,
-		))
+		)
 	}
 	return fmt.Sprintf(
 		`{"data":[%s],"meta":{"total":%d,"page":{"number":%d,"size":%d,"last":%d}}}`,

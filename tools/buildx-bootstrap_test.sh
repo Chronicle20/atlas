@@ -4,6 +4,11 @@
 # Cases that would touch docker (create/use/rm a real builder) are gated on
 # `command -v docker >/dev/null` so this suite still runs somewhere without
 # docker, at the cost of skipping the cases that matter most there.
+#
+# The docker-gated block saves/restores the host's ambient buildx builder
+# selection: this is a shared host, `docker buildx use` is a machine-wide
+# side effect, and the suite must not silently steal the ambient builder back
+# to `default` when it removes its own throwaway test builder.
 
 set -uo pipefail
 
@@ -57,9 +62,21 @@ assert_has "config declares keepBytes = 60000000000" "keepBytes = 60000000000" "
 
 # -- docker-gated cases ---------------------------------------------------------
 if command -v docker >/dev/null 2>&1; then
+    # Capture the builder selected before this suite touches anything, so the
+    # trap can restore it. `docker buildx ls` marks the ambient selection with
+    # a `*` suffix on its NAME column; fall back to no-op restore (today's
+    # existing behaviour, "leave it on default") if nothing was selected or
+    # the query fails, rather than erroring the suite over it.
+    PREV_BUILDER="$(docker buildx ls 2>/dev/null | awk '$1 ~ /\*$/ {print $1; exit}' | sed 's/\*$//')"
+
     TEST_BUILDER="zz-atlas-test-$$"
     export ATLAS_BUILDER="$TEST_BUILDER"
-    cleanup() { docker buildx rm "$TEST_BUILDER" >/dev/null 2>&1 || true; }
+    cleanup() {
+        docker buildx rm "$TEST_BUILDER" >/dev/null 2>&1 || true
+        if [ -n "$PREV_BUILDER" ]; then
+            docker buildx use "$PREV_BUILDER" >/dev/null 2>&1 || true
+        fi
+    }
     trap cleanup EXIT
 
     "$SCRIPT" >/tmp/zz-bootstrap-out.$$ 2>&1

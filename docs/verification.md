@@ -184,6 +184,57 @@ Enable with:
 systemctl --user enable --now atlas-scratch-sweep.timer
 ```
 
+### Build slots
+
+`tools/lib/build-slot.sh` is a machine-wide counting semaphore: K slots,
+shared by every worktree and every session on the host, so N concurrent
+sessions cannot all run a heavy build gate at once and thrash the box. Task 7
+wires it into `tools/verify.sh` itself; it also works standalone through the
+CLI wrapper, `tools/with-build-slot.sh`.
+
+**Why K=4.** The host measured earlier in this section has 24 logical CPUs
+and, after the `.wslconfig` bump above, 52 GiB of VM memory. The per-slot
+budget one heavy gate run actually uses is:
+
+| resource | value |
+|---|---|
+| `GOMAXPROCS` | 6 |
+| `go build -p` | 6 |
+| `go test -p` | 2 |
+| BuildKit `max-parallelism` | 8 (`deploy/buildkit/buildkitd.toml`) |
+
+Four slots at 6 threads apiece cover the 24-thread budget without
+oversubscribing it, and each slot's peak memory footprint (a `go build`, a
+`go test`, and a BuildKit solve) fits inside 52 GiB / 4. A fifth concurrent
+gate would either wait for a slot or blow through both budgets at once —
+that's the failure mode this broker exists to prevent.
+
+**Usage.** A caller that runs the guarded work as a subprocess should use the
+CLI wrapper:
+
+```sh
+tools/with-build-slot.sh verify -- tools/verify.sh
+```
+
+A caller that needs to hold the slot around a shell *function* — as
+`tools/verify.sh` does around `launch_go_layers` — cannot use the wrapper (a
+slot held by a subprocess releases the instant that subprocess exits, before
+the guarded work even starts) and instead sources the library directly:
+
+```sh
+. tools/lib/build-slot.sh
+acquire_build_slot "verify" || exit $?
+...
+release_build_slot
+```
+
+**The exit-75 contract.** Both the library and the CLI use exit code 75
+(`EX_TEMPFAIL` from `sysexits.h`) to mean "gave up waiting for a slot," never
+"the guarded command itself failed." Pass `--timeout SEC` (CLI) or set
+`ATLAS_BUILD_SLOT_TIMEOUT` (library) to bound the wait; unset/absent blocks
+until a slot frees. The wait itself is a blocking `flock`, not a polling
+loop, so it costs no inference turns while it waits.
+
 ## The Go layer
 
 Per changed module: `go build ./...`, `go vet ./...`, `go test -race ./...`.

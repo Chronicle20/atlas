@@ -401,3 +401,32 @@ with very few consumers (not needed to establish the win — `atlas-tenant`
 was chosen because it is a stress case, not a favorable one); a `go.work`
 change (the `go.work` branch is unchanged by Task 9 and is covered
 structurally in `tools/verify_test.sh`, not re-measured here).
+
+
+## Task 7 acceptance 4 — WAIVED BY USER DECISION (not measured, not fabricated)
+
+Task 7's acceptance criterion 4 called for four concurrent `tools/verify.sh --quick`
+runs launched from four different worktrees, to demonstrate the machine-wide build-slot
+broker serialising real contention.
+
+**This was never run, and is consciously waived — it is NOT recorded as passed.**
+
+Reason: only one worktree for this branch exists on this host. Producing the measurement
+would have required creating three additional throwaway worktrees and running four
+concurrent builds on a shared machine. Session 2 declined to do that and recorded the
+criterion as deferred rather than fabricating a result; the user was asked directly at
+branch end and chose to drop it explicitly rather than run it.
+
+What the build-slot broker's correctness therefore rests on instead:
+- `tools/lib/build-slot_test.sh` — 7/7, including a deliberate-breakage check by the
+  Task 6 reviewer confirming the assertions are load-bearing.
+- Static assertions in `tools/verify_test.sh` that the bake layer and the Go pool each
+  hold exactly one slot reference, and that no slot is acquired on the guard, lint,
+  `--facts`, or summary paths.
+- Incidental live concurrency observed during the Task 8b review: a genuinely separate
+  top-level `verify_test.sh` instance ran concurrently with the reviewer's own runs and
+  both completed exit 0 with a clean tree.
+
+The 4-way saturation case named by the criterion remains **unproven by direct
+measurement**. Anyone relying on the broker under heavy multi-worktree contention should
+treat that as an open question.

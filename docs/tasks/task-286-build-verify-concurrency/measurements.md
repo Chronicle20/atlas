@@ -282,6 +282,137 @@ both from Task 6) already cover slot contention, timeout, and release
 behavior with real concurrent `flock` holders — see those suites' own
 passing output for that evidence. This session did not re-derive it.
 
+## Layer 4 — builder
+
+Task 5 acceptance criterion 4: capture `docker system df` before and after a
+real bake and establish whether the 60 GB builder ceiling binds.
+
+### How this was obtained, and how it differs from a gated run
+
+The branch-end flagless `tools/verify.sh` does **not** bake. task-286 changes
+only `tools/*.sh`, `tools/lib/*`, and docs — no `go.mod` — so the run reports
+`- docker buildx bake (no go.mod touched)` and skips the whole Go layer too.
+`docker system df` taken around that run is byte-for-byte identical before and
+after, which is recorded here as the positive evidence that no bake ran:
+
+```
+# immediately before AND immediately after the passing flagless run
+Images          18   15   1.475GB   465.2MB (31%)
+Containers      15    1   241.7kB   184.3kB (76%)
+Local Volumes   35    1   1.578GB   48.38MB (3%)
+Build Cache    256  256   2.644GB   0B
+```
+
+The measurement below therefore comes from a bake forced **out of band**, by
+explicit user decision, rather than from the gate. It mirrors
+`tools/verify.sh:567-569` — same builder, same `*.output=type=cacheonly`, same
+`tools/with-build-slot.sh` wrapper — over the full `all-go-services` group:
+
+```
+./tools/with-build-slot.sh "bake" -- \
+  docker buildx bake --builder atlas --progress=plain \
+  --set '*.output=type=cacheonly' all-go-services
+```
+
+Two deliberate deviations, disclosed so the number is not read as something it
+is not:
+
+1. `--progress=plain` was added so the solve output could be inspected for the
+   layer-sharing question below. It changes log verbosity only, not the build.
+2. `all-go-services` is the whole group. A gated bake builds only the targets
+   whose `go.mod` changed, so this is an upper bound on one run's cost, not a
+   typical one.
+
+Result: `rc=0`, wall clock 3m45s (18:45:04 -> 18:48:49). Near-cold for these
+targets — 73 `CACHED` vertices out of ~4231 total.
+
+### The df delta, and why the "Build Cache" row is the wrong place to look
+
+```
+                    BEFORE                          AFTER
+Images          18  15   1.475GB   465.2MB    18  15   1.475GB   465.2MB
+Containers      15   1   241.7kB   184.3kB    15   1   249.9kB   184.3kB
+Local Volumes   35   1   1.578GB   48.38MB    35   1   11.75GB   48.38MB
+Build Cache    256 256   2.644GB   0B        256 256   2.644GB   0B
+```
+
+Two rows that did **not** move are the point:
+
+- **Images is flat**, as designed. verify.sh bakes with
+  `*.output=type=cacheonly` (`tools/verify.sh:512`), which never writes the
+  image store. Any write-up that presented an Images delta as bake output
+  would be wrong.
+- **`Build Cache` is flat at 2.644GB / 256 entries across a bake that consumed
+  ~10 GB.** That row describes the default docker driver's cache. The `atlas`
+  builder is a *container-driver* builder, and its cache lives in a Docker
+  volume, so `docker system df`'s Build Cache row is blind to it.
+
+The growth landed entirely in **Local Volumes: 1.578GB -> 11.75GB (+10.17GB)**.
+Attributed directly:
+
+```
+$ docker volume ls --format '{{.Name}}' | grep buildx
+buildx_buildkit_atlas0_state
+$ docker system df -v   # after
+buildx_buildkit_atlas0_state    1    11.72GB
+```
+
+Honest limit on this number: only the Local Volumes **total** was captured
+before the bake, not that volume individually. Since the post-bake total is
+11.75GB with the buildx volume at 11.72GB, the other 34 volumes account for
+~0.03GB, which puts the volume's pre-bake size at ~1.55GB. The +10.17GB delta
+is measured; the ~1.55GB starting point is inferred from the totals.
+
+### Does the 60 GB ceiling bind?
+
+One near-cold full `all-go-services` bake adds ~10.2 GB of builder state. The
+ceiling therefore binds after roughly five to six such bakes without a prune —
+it is a real bound, not a theoretical one, but it is not reached by any single
+gated run. A gated bake builds only changed targets and so costs a fraction of
+this. This is the measured basis for the ceiling; it was not exercised to
+exhaustion, and no run in this branch drove the builder to 60 GB.
+
+### Cross-target layer sharing — the claim does NOT hold as written
+
+`docs/verification.md` claimed BuildKit shares the `libs/` mod-only and source
+layers across bake targets within one solve. This solve's output does not
+support that, so the doc has been softened to what was observed.
+
+Every target got its **own** vertex for byte-identical steps — 67 distinct
+vertex ids for one identical `COPY`, one per service target:
+
+```
+$ grep -E 'COPY libs/atlas-constants   libs/atlas-constants' bake.log \
+    | grep -oE '^#[0-9]+' | sort -u | wc -l
+67
+#152  [atlas-ban build-env 28/53] COPY libs/atlas-constants   libs/atlas-constants
+#1817 [atlas-drops build-env 28/53] COPY libs/atlas-constants   libs/atlas-constants
+#1820 [atlas-character build-env 28/53] COPY libs/atlas-constants   libs/atlas-constants
+```
+
+Same for the go-build step: 67 distinct vertices. With only 73 `CACHED`
+vertices out of ~4231, there was no meaningful cross-target reuse either.
+
+The mechanism is structural in the shared root `Dockerfile`, and it is not
+BuildKit failing to dedup:
+
+- `Dockerfile:27-28` declares `ARG SERVICE` and then runs
+  `RUN test -n "${SERVICE}" || ...`. That step's digest differs per target and
+  it sits **above every `libs/` COPY**, so every downstream layer inherits a
+  per-target parent digest. Cross-target sharing is impossible from that line
+  onward.
+- `Dockerfile:64` copies `services/${SERVICE}/` **before** the full-source
+  `libs/` COPYs at `Dockerfile:68-89` — an independent second defeater for the
+  source layers specifically.
+
+Follow-up worth its own task, deliberately NOT done here (it is a build
+restructuring, out of task-286's scope): hoisting the `SERVICE` validation
+below the `libs/` mod-only COPYs, and moving the `services/${SERVICE}/` COPY
+below the `libs/` source COPYs, would let the mod-only and libs-source layers
+be shared across all 67 targets in one solve. This measurement is the evidence
+that the sharing does not happen today; it is not a measurement of what the
+reordering would save, which remains unmeasured.
+
 ## Layer 5 — fan-out
 
 Task 9 narrows `changed_modules()`'s `libs/` branch from "any `libs/` change

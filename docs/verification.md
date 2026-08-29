@@ -338,10 +338,23 @@ check this before adding one.
 
 `docker buildx bake` over every target whose `go.mod` changed — all selected
 targets in a **single** invocation, not one bake per target: one context
-transfer instead of one per target, and BuildKit shares the `libs/` mod-only
-and source layers across targets within the solve instead of resolving them
-once per invocation. A failure is BuildKit's own solve output naming the
-failing target and step. **This is mandatory, not optional.**
+transfer instead of one per target. A failure is BuildKit's own solve output
+naming the failing target and step. **This is mandatory, not optional.**
+
+This paragraph previously also claimed that BuildKit shares the `libs/`
+mod-only and source layers across targets within the solve. **Measured on
+task-286, it does not.** A full `all-go-services` bake produced 67 distinct
+vertices for one byte-identical `COPY libs/atlas-constants` step — one per
+target — and 73 `CACHED` vertices out of ~4231 overall. The cause is
+structural in the shared root `Dockerfile`, not a BuildKit limitation:
+`Dockerfile:27-28` runs `RUN test -n "${SERVICE}"` above every `libs/` COPY, so
+each target's chain diverges before the first shared layer, and `Dockerfile:64`
+copies `services/${SERVICE}/` above the full-source `libs/` COPYs. The single
+invocation is still worth it for the one-context-transfer reason above; the
+cross-target layer saving is simply not something this Dockerfile currently
+gets. See `docs/tasks/task-286-build-verify-concurrency/measurements.md`,
+"Layer 4 - builder", for the raw evidence and for the reordering that would
+enable the sharing (unmeasured, not yet done).
 
 The shared root `Dockerfile` is parameterized by `ARG SERVICE`; `docker-bake.hcl`
 enumerates one target per Go service, driven by `.github/config/services.json`

@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 func TestRequestCreateAndEquipAssetFlow(t *testing.T) {
@@ -334,4 +335,100 @@ func TestRequestCreateAssetCommandProvider_UseAverageStats(t *testing.T) {
 
 		assert.False(t, command.Body.UseAverageStats)
 	})
+}
+
+// TestRequestCreateItemWithExplicitStatsCarriesEveryField pins that a fully
+// populated saga.AwardCraftedAssetPayload survives, stat by stat, from the
+// provider into the emitted CreateAssetCommandBody. Slots is asserted
+// specifically because it is the one field without omitempty on the wire.
+func TestRequestCreateItemWithExplicitStatsCarriesEveryField(t *testing.T) {
+	transactionId := uuid.New()
+	characterId := uint32(12345)
+	templateId := uint32(1082002)
+	quantity := uint32(1)
+	inventoryType := inventory.Type(1)
+
+	stats := saga.AwardCraftedAssetPayload{
+		Slots:         7,
+		Strength:      1,
+		Dexterity:     2,
+		Intelligence:  3,
+		Luck:          4,
+		HP:            5,
+		MP:            6,
+		WeaponAttack:  7,
+		MagicAttack:   8,
+		WeaponDefense: 9,
+		MagicDefense:  10,
+		Accuracy:      11,
+		Avoidability:  12,
+		Hands:         13,
+		Speed:         14,
+		Jump:          15,
+	}
+
+	provider := RequestCreateAssetWithStatsCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, false, stats)
+	require.NotNil(t, provider)
+
+	messages, err := provider()
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+
+	var command compartment.Command[compartment.CreateAssetCommandBody]
+	err = json.Unmarshal(messages[0].Value, &command)
+	require.NoError(t, err)
+
+	assert.Equal(t, uint16(7), command.Body.Slots)
+	assert.Equal(t, stats.Strength, command.Body.Strength)
+	assert.Equal(t, stats.Dexterity, command.Body.Dexterity)
+	assert.Equal(t, stats.Intelligence, command.Body.Intelligence)
+	assert.Equal(t, stats.Luck, command.Body.Luck)
+	assert.Equal(t, stats.HP, command.Body.HP)
+	assert.Equal(t, stats.MP, command.Body.MP)
+	assert.Equal(t, stats.WeaponAttack, command.Body.WeaponAttack)
+	assert.Equal(t, stats.MagicAttack, command.Body.MagicAttack)
+	assert.Equal(t, stats.WeaponDefense, command.Body.WeaponDefense)
+	assert.Equal(t, stats.MagicDefense, command.Body.MagicDefense)
+	assert.Equal(t, stats.Accuracy, command.Body.Accuracy)
+	assert.Equal(t, stats.Avoidability, command.Body.Avoidability)
+	assert.Equal(t, stats.Hands, command.Body.Hands)
+	assert.Equal(t, stats.Speed, command.Body.Speed)
+	assert.Equal(t, stats.Jump, command.Body.Jump)
+}
+
+// TestRequestCreateItemIsUnchanged pins that the legacy
+// RequestCreateAssetCommandProvider path is byte-identical to before the
+// explicit-stat widening: every new stat field, and Slots, decode to zero.
+func TestRequestCreateItemIsUnchanged(t *testing.T) {
+	transactionId := uuid.New()
+	characterId := uint32(12345)
+	templateId := uint32(1302000)
+	quantity := uint32(1)
+	inventoryType := inventory.Type(1)
+
+	provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, false)
+	messages, err := provider()
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+
+	var command compartment.Command[compartment.CreateAssetCommandBody]
+	err = json.Unmarshal(messages[0].Value, &command)
+	require.NoError(t, err)
+
+	assert.Equal(t, uint16(0), command.Body.Slots)
+	assert.Equal(t, uint16(0), command.Body.Strength)
+	assert.Equal(t, uint16(0), command.Body.Dexterity)
+	assert.Equal(t, uint16(0), command.Body.Intelligence)
+	assert.Equal(t, uint16(0), command.Body.Luck)
+	assert.Equal(t, uint16(0), command.Body.HP)
+	assert.Equal(t, uint16(0), command.Body.MP)
+	assert.Equal(t, uint16(0), command.Body.WeaponAttack)
+	assert.Equal(t, uint16(0), command.Body.MagicAttack)
+	assert.Equal(t, uint16(0), command.Body.WeaponDefense)
+	assert.Equal(t, uint16(0), command.Body.MagicDefense)
+	assert.Equal(t, uint16(0), command.Body.Accuracy)
+	assert.Equal(t, uint16(0), command.Body.Avoidability)
+	assert.Equal(t, uint16(0), command.Body.Hands)
+	assert.Equal(t, uint16(0), command.Body.Speed)
+	assert.Equal(t, uint16(0), command.Body.Jump)
 }

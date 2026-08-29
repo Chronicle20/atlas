@@ -96,6 +96,67 @@ func TestCreateAssetCommandBody_LegacyPayloadDecodesWithZeroStats(t *testing.T) 
 	}
 }
 
+// createAssetCommandBodyGoldenJSON is the shared golden literal for
+// CreateAssetCommandBody. It is duplicated verbatim in
+// atlas-saga-orchestrator's copy of this package
+// (kafka/message/compartment/kafka_test.go) because the two live in separate
+// Go modules with no shared compile-time contract. If you add, rename, or
+// retag a field on CreateAssetCommandBody, update the struct AND this
+// literal in BOTH modules together.
+const createAssetCommandBodyGoldenJSON = `{"templateId":1082002,"quantity":1,"expiration":"2026-09-12T00:00:00Z","ownerId":9001,"flag":1,"rechargeable":100,"useAverageStats":true,"slots":7,"strength":1,"dexterity":2,"intelligence":3,"luck":4,"hp":5,"mp":6,"weaponAttack":7,"magicAttack":8,"weaponDefense":9,"magicDefense":10,"accuracy":11,"avoidability":12,"hands":13,"speed":14,"jump":15}`
+
+// TestCreateAssetCommandBody_GoldenJSON_AgreesWithSagaOrchestrator pins this
+// module's CreateAssetCommandBody to the shared golden literal, so a field
+// rename or json tag drift against atlas-saga-orchestrator's copy is caught
+// here rather than silently dropping stats on the wire at runtime.
+func TestCreateAssetCommandBody_GoldenJSON_AgreesWithSagaOrchestrator(t *testing.T) {
+	in := CreateAssetCommandBody{
+		TemplateId:      1082002,
+		Quantity:        1,
+		Expiration:      time.Date(2026, 9, 12, 0, 0, 0, 0, time.UTC),
+		OwnerId:         9001,
+		Flag:            1,
+		Rechargeable:    100,
+		UseAverageStats: true,
+		Slots:           7,
+		Strength:        1,
+		Dexterity:       2,
+		Intelligence:    3,
+		Luck:            4,
+		HP:              5,
+		MP:              6,
+		WeaponAttack:    7,
+		MagicAttack:     8,
+		WeaponDefense:   9,
+		MagicDefense:    10,
+		Accuracy:        11,
+		Avoidability:    12,
+		Hands:           13,
+		Speed:           14,
+		Jump:            15,
+	}
+
+	bs, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if string(bs) != createAssetCommandBodyGoldenJSON {
+		t.Fatalf("marshalled = %s, want %s", bs, createAssetCommandBodyGoldenJSON)
+	}
+
+	var out CreateAssetCommandBody
+	if err := json.Unmarshal([]byte(createAssetCommandBodyGoldenJSON), &out); err != nil {
+		t.Fatalf("unmarshal golden: %v", err)
+	}
+	if !out.Expiration.Equal(in.Expiration) {
+		t.Errorf("Expiration = %v, want %v", out.Expiration, in.Expiration)
+	}
+	out.Expiration = in.Expiration
+	if out != in {
+		t.Fatalf("round-tripped = %+v, want %+v", out, in)
+	}
+}
+
 // TestExtendExpirationCommandBody_JsonTags pins the wire shape of
 // ExtendExpirationCommandBody. This body is hand-duplicated in
 // atlas-saga-orchestrator's copy of this package; a field rename or json tag

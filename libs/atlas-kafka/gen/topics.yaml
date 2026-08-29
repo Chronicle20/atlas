@@ -2,10 +2,6 @@
 # Source of truth: topic.Token constants in services/ and libs/.
 # Regenerate: tools/gen-topics.sh    Drift check: tools/gen-topics.sh --check
 topics:
-  - token: COMMAND_TOPIC_
-    cleanup: delete
-    packages:
-      - atlas.com/kafka-precreate/internal/discover
   - token: COMMAND_TOPIC_ACCOUNT
     cleanup: delete
     packages:
@@ -465,10 +461,6 @@ topics:
     packages:
       - atlas-saga-orchestrator/kafka/message/broadcast
       - atlas-world/kafka/message/broadcast
-  - token: EVENT_TOPIC_
-    cleanup: delete
-    packages:
-      - atlas.com/kafka-precreate/internal/discover
   - token: EVENT_TOPIC_ACCOUNT_SESSION_STATUS
     cleanup: delete
     packages:

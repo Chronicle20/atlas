@@ -18,13 +18,15 @@ how many topics an environment declares.
 | Variable | Required | Meaning |
 | --- | --- | --- |
 | `BOOTSTRAP_SERVERS` | yes | Comma-separated `host:port` list of Kafka brokers. Empty or unset fails the Job immediately, before any Kafka client is constructed. |
-| `COMMAND_TOPIC_*`, `EVENT_TOPIC_*` | no | Every variable with one of these prefixes and a non-empty value names a topic to create. Three specific `EVENT_TOPIC_*` variables (the configuration-projection topics) are created and converged with the compacted topic configuration — `cleanup.policy=compact`, `max.compaction.lag.ms=600000`, `segment.ms=600000`, `min.cleanable.dirty.ratio=0.01` (see [Compacted topics](#compacted-topics)); every other topic is created plain. |
+| `KAFKA_TOPIC_MANIFEST_PATH` | no | Path to the topic manifest YAML. Defaults to `/etc/atlas/topics/topics.yaml`, the mount point of the `atlas-kafka-topics` ConfigMap. Not part of the Job's `env:` — see `deploy/k8s/base/atlas-kafka-precreate.yaml`. |
+| Every environment variable token the manifest names | yes (per token) | The manifest (`libs/atlas-kafka/gen`, task-276) lists every `topic.Token` constant declared across `services/` and `libs/` and its cleanup policy. Each token must resolve to a non-empty value in the process environment — normally the envFrom-injected `atlas-env` ConfigMap — or the tool fails before any Kafka client is constructed. Three specific tokens (the configuration-projection topics) resolve to topics created and converged with the compacted topic configuration — `cleanup.policy=compact`, `max.compaction.lag.ms=600000`, `segment.ms=600000`, `min.cleanable.dirty.ratio=0.01` (see [Compacted topics](#compacted-topics)); every other topic is created plain. |
 | `KAFKA_CONSUMER_GROUP` | no | Newline-delimited list of override consumer group IDs (one per line). Unset or empty means no groups to seed — the tool creates topics and exits, running exactly two RPCs. |
 
 ## Phases
 
-1. **Discover** — scrape the process environment for topic-shaped
-   variables and classify each into plain vs. compacted, and parse
+1. **Discover** — load the mounted topic manifest, resolve each token to
+   its per-environment topic name via the process environment, and
+   classify each result into plain vs. compacted. Parse
    `KAFKA_CONSUMER_GROUP` into a group ID list.
 2. **Create/Alter** — create the full topic union in one `CreateTopics`
    request, then apply the compacted topic configuration to the compacted

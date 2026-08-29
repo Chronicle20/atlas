@@ -17,8 +17,6 @@ metadata:
 data:
   topics.yaml: |
     topics:
-      - token: COMMAND_TOPIC_
-        cleanup: delete
       - token: COMMAND_TOPIC_ACCOUNT
         cleanup: delete
       - token: COMMAND_TOPIC_ACCOUNT_SESSION
@@ -164,8 +162,6 @@ data:
       - token: COMMAND_TOPIC_WALLET
         cleanup: delete
       - token: COMMAND_TOPIC_WORLD_BROADCAST
-        cleanup: delete
-      - token: EVENT_TOPIC_
         cleanup: delete
       - token: EVENT_TOPIC_ACCOUNT_SESSION_STATUS
         cleanup: delete

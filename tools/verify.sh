@@ -610,6 +610,13 @@ else
     skip "tenant tables drift (no audit, DB_NAME manifest, or generator change)"
 fi
 
+if touched '^(libs/atlas-kafka/gen/|tools/gen-topics(_test)?\.sh|deploy/k8s/base/env-configmap\.yaml|deploy/k8s/base/kafka-topics-configmap\.yaml|deploy/k8s/overlays/[a-z-]+/kustomization\.yaml|deploy/compose/\.env\.example)'; then
+    step "topic manifest drift"      ./tools/gen-topics.sh --check
+    step "topic generator tests"     bash -c 'cd libs/atlas-kafka/gen && GOWORK=off go test ./...'
+else
+    skip "topic manifest drift (no manifest or topic deploy surface changed)"
+fi
+
 if touched '^(deploy/k8s/overlays/pr/|deploy/k8s/overlays/pr-sparse/|tools/pr-sparse-mirror-guard\.sh)'; then
     step "pr-sparse mirror drift" ./tools/pr-sparse-mirror-guard.sh
 else

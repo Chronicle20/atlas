@@ -111,6 +111,36 @@ out="$(ATLAS_SCRATCH_ROOT="$HOME" "$SWEEP" --dry-run 2>&1)"; rc=$?
 assert_eq "refuses home dir: exit 2" "2" "$rc"
 assert_has "refuses home dir: stderr says refusing" "refusing" "$out"
 
+# --- refuses a `..`-segment root that resolves to a dangerous path ----------
+#
+# These name a real system path via literal `.`/`..` segments — the guard
+# must canonicalize before comparing, or a root like this walks straight past
+# every case above. Kept outside the mktemp fixture (same reasoning as the
+# dangerous-root block above) and asserted under --dry-run only.
+
+out="$(ATLAS_SCRATCH_ROOT="/tmp/decoy/../../tmp" "$SWEEP" --dry-run 2>&1)"; rc=$?
+assert_eq "refuses ..-segment resolving to /tmp: exit 2" "2" "$rc"
+assert_has "refuses ..-segment resolving to /tmp: stderr says refusing" "refusing" "$out"
+
+out="$(ATLAS_SCRATCH_ROOT="$HOME/../$(basename "$HOME")" "$SWEEP" --dry-run 2>&1)"; rc=$?
+assert_eq "refuses ..-segment resolving to home dir: exit 2" "2" "$rc"
+assert_has "refuses ..-segment resolving to home dir: stderr says refusing" "refusing" "$out"
+
+# --- a `..`-segment root that resolves to a safe path is swept normally -----
+#
+# Fixture-scoped (the resolved destination is inside $tmp), so --now is safe
+# here: this proves the canonical root, not the literal string, drives both
+# the guard and the actual sweep.
+
+root="$tmp/decoy/../real"
+mkdir -p "$tmp/decoy" "$tmp/real"
+touch -d '10 days ago' "$tmp/real/old.txt"
+out="$(ATLAS_SCRATCH_ROOT="$root" "$SWEEP" --now)"; rc=$?
+assert_eq "..-segment root resolving inside the fixture: exit 0" "0" "$rc"
+[ ! -e "$tmp/real/old.txt" ] && echo "ok   - old.txt gone via canonical ..-segment root" || { echo "FAIL - old.txt still present" >&2; fails=$((fails+1)); }
+assert_has "summary names the canonical root, not the literal string" "$tmp/real" "$out"
+assert_lacks "summary does not name the literal ..-segment root" "decoy/.." "$out"
+
 # --- refuses a relative root --------------------------------------------------
 
 out="$(cd "$tmp" && ATLAS_SCRATCH_ROOT="relative/scratch" "$SWEEP" --dry-run 2>&1)"; rc=$?

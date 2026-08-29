@@ -43,28 +43,42 @@ done
 
 [[ "$age_days" =~ ^[0-9]+$ ]] || die "--age-days must be a non-negative integer"
 
+# A relative root resolves against the caller's cwd, which is not something
+# this script controls. Check this against the raw value, before
+# canonicalizing below — `realpath -m` would otherwise silently absolutize a
+# relative root against $PWD, defeating this guard entirely.
+case "$root" in
+    /*) ;;
+    *) die "refusing to sweep dangerous root: $root (not an absolute path)" ;;
+esac
+
+# Canonicalize the root before any further guard runs. `realpath -m` resolves
+# `.` and `..` segments lexically without requiring the path to exist (the
+# script creates the root below when it is absent), so a value like
+# "$tmp/decoy/../real" can't walk past the dangerous-root checks below under
+# an unresolved literal string. Every check from here on runs against this
+# canonical value, and the rest of the script uses it too.
+root="$(realpath -m -- "$root")"
+
 # Refuse a dangerous root before any deletion happens. `/`, `/tmp`, `/var/tmp`,
 # and the home directory are all plausible values a broken $ATLAS_SCRATCH_ROOT
 # could resolve to, and sweeping any of them would be catastrophic — this
-# guard runs before the root is even created.
+# guard runs before the root is even created, against the canonical root so
+# a `.`/`..` segment can't hide a dangerous destination from these checks.
 case "$root" in
-    /|/tmp|/tmp/|/var/tmp|/var/tmp/) die "refusing to sweep dangerous root: $root" ;;
+    /|/tmp|/var/tmp) die "refusing to sweep dangerous root: $root" ;;
 esac
-if [ -n "${HOME:-}" ] && { [ "$root" = "$HOME" ] || [ "$root" = "${HOME}/" ]; }; then
-    die "refusing to sweep dangerous root: $root (the home directory)"
+if [ -n "${HOME:-}" ]; then
+    home_canonical="$(realpath -m -- "$HOME")"
+    if [ "$root" = "$home_canonical" ]; then
+        die "refusing to sweep dangerous root: $root (the home directory)"
+    fi
 fi
 # Fewer than two path components (e.g. "/foo") is too shallow to trust.
 components="$(echo "$root" | tr -s '/' '\n' | sed '/^$/d' | wc -l | tr -d ' ')"
 if [ "$components" -lt 2 ]; then
     die "refusing to sweep dangerous root: $root (fewer than two path components)"
 fi
-# A relative root resolves against the caller's cwd, which is not something
-# this script controls — require an absolute path so the resolved root is
-# always exactly what was configured.
-case "$root" in
-    /*) ;;
-    *) die "refusing to sweep dangerous root: $root (not an absolute path)" ;;
-esac
 
 if [ ! -d "$root" ]; then
     mkdir -p "$root"

@@ -290,3 +290,231 @@ spelling and the seed should too.
 - `randOption` and `randStat` are not `stat += value` — §1.6.
 - The `(tenant_id, reagent_item_id)` unique index is safe: all 45 ids are distinct.
 - Item-id range is `4250000`–`4251402`, all within `0425.img` (the Etc "gem" block).
+
+---
+
+## 5. Monster crystal level bands
+
+Task 285, Task 18 Step 1. Derived from `CItemMakerInfo::Load_MonsterCrystalLevel`.
+
+**Status: complete for the table; one semantic question left explicitly unverified
+(§5.7).** The node the client reads *is* present in the local reference dump. 9 bands
+derived. No behavioural divergence between `gms_v72` and `gms_v83`.
+
+### 5.1 The client loader
+
+| Version | IDB | Session | Address |
+|---|---|---|---|
+| `gms_v72` | `GMS_v72.1_U_DEVM.exe.i64` | `99e435d8` | `0x5a3033` |
+| `gms_v83` | `MapleStory_dump.exe.i64` (v83_Me) | `754107bf` | `0x5e728a` |
+
+Symbol in both: `?Load_MonsterCrystalLevel@CItemMakerInfo@@QAEHXZ`, size `0x3fd` in both
+binaries. Called from `CItemMakerInfo::Load` (v72 `0x5a27cd`) as the third of four
+loaders.
+
+### 5.2 The node path
+
+Both versions load exactly one archive object, from the same string literal:
+
+| Version | String symbol | Address | Value |
+|---|---|---|---|
+| `gms_v72` | `aItemEtc0426Img` | `0xa5bf90` | `Item/Etc/0426.img` |
+| `gms_v83` | `aItemEtc0426Img` | `0xaf67fc` | `Item/Etc/0426.img` |
+
+**Node path: `Item.wz/Etc/0426.img`.** Loaded via
+`IWzResMan::GetObjectA("Item/Etc/0426.img")` (v72 `0x5a307e`/`0x5a3095`,
+v83 `0x5e72d5`/`0x5e72f3`).
+
+Per-child read path, from the same two decompilations:
+
+```
+Item.wz/Etc/0426.img/<crystalItemIdName>/info/lvMin
+Item.wz/Etc/0426.img/<crystalItemIdName>/info/lvMax
+```
+
+| Sub-node | v72 string addr | v83 string addr |
+|---|---|---|
+| `info` | `0xa5bdc0` (`aInfo`) | `0xaf63a0` (`aInfo`) |
+| `lvMin` | `0xa5bf88` (`aLvmin`) | `0xaf67f4` (`aLvmin`) |
+| `lvMax` | `0xa5bf80` (`aLvmax`) | `0xaf67ec` (`aLvmax`) |
+
+**The table is WZ-driven, not hard-coded.** There is no immediate-operand band table
+anywhere in either function; every boundary comes out of the archive.
+
+### 5.3 The enumeration and the stored record
+
+Structurally identical in both binaries:
+
+1. `GetObjectA("Item/Etc/0426.img")` → `QueryInterface(IWzProperty)`. If the object is
+   null the function returns `0` (v72 `0x5a3128`–`0x5a312d`; v83 `0x5e737f`–`0x5e7384`).
+2. `IWzProperty::Get_NewEnum` → `IEnumVARIANT`, iterated one child at a time
+   (`Next(1, &pvarg, &fetched)` — v72 `0x5a3182`, v83 `0x5e73d9`).
+3. The child's **name** is converted with `atoi` (v72 `0x5a31c1`, v83 `0x5e7418`).
+   Names are zero-padded decimal item ids (`"04260000"`); `atoi` is base 10, so
+   `atoi("04260000") == 4260000`. **The crystal item id is the node name.**
+4. The child is re-fetched by name, then its `info` subnode is fetched
+   (v72 `0x5a31ee`/`0x5a3267`; v83 `0x5e744c`/`0x5e74c5`).
+5. `lvMin` and `lvMax` are read with `get_int32` — v72 `sub_41303A` at call sites
+   `0x5a3307` and `0x5a335b`; v83 `?get_int32@@YAJAAVZtl_variant_t@@J@Z` (`0x414d40`)
+   at call sites `0x5e755e` and `0x5e75b2`. Signed 32-bit (`J` = MSVC `long`).
+6. A **three-`DWORD`** record is appended to a vector member of `CItemMakerInfo`:
+
+```
+rec[0] = lvMin      // v72 0x5a3396 (*v34 = v51)      | v83 0x5e75ed (*v34 = v50)
+rec[1] = lvMax      // v72 0x5a3397 (v34[1] = v52)    | v83 0x5e75ee (v34[1] = v51)
+rec[2] = itemId     // v72 0x5a3398 (v34[2] = v53)    | v83 0x5e75ef (v34[2] = v52)
+```
+
+The container is at byte offset `0x60` of `CItemMakerInfo` in **both** versions:
+v72 `sub_5A4E1A((char *)this + 96)` at `0x5a338c`; v83 `lea ecx, [eax+60h]` at
+`0x5e75da` immediately before `call sub_5E9286` at `0x5e75e3`. (Hex-Rays prints the v83
+call as `sub_5E9286(v55 + 24)` because it types `this` as `char *`; the disassembly at
+`0x5e75da` is the ground truth — `0x60`, same as v72.) Both destructors confirm the slot:
+v72 `sub_8F68B5` `this[24] → sub_5A4E58`, v83 `sub_9FA654` `this[24] → sub_5E92C4`.
+
+**There is no count field.** The record is exactly `(lvMin, lvMax, itemId)`. Nothing in
+`Load_MonsterCrystalLevel` reads a quantity, and `info` carries no such node beyond
+`price`/`slotMax`/`icon`/`iconRaw`, none of which this function reads.
+
+### 5.4 The derived table
+
+**Source archive:** `Item.wz/Etc/0426.img` from the local reference dump,
+`<ZIP_DIR>/<tenant-uuid>/GMS/83.1/Item.wz/Etc/0426.img.xml`. **Present locally.**
+
+Found under all three provisioned tenants (`ed65dc23-167a-4d27-85be-5a1778838a69`,
+`ec876921-c363-4cc6-9c51-5bb8d57f9553`, `083839c6-c47c-42a6-9585-76492795d123`).
+Extracted all three with the client's algorithm from §5.3 (enumerate `imgdir` children,
+`int(name)` for the id, descend into `info`, read `lvMin`/`lvMax`): **all three yield the
+identical 9 rows below.** One table, not three.
+
+Sweep, not a spot check: the root has exactly 9 `imgdir` children and all 9 appear here.
+
+| # | Node (`0426.img/<node>`) | `crystal_item_id` | `lvMin` | `lvMax` | Loader evidence (v72 / v83) |
+|---:|---|---:|---:|---:|---|
+| 1 | `04260000` | 4260000 | 31 | 50 | `0x5a3307`/`0x5a335b` → `0x5a3396`-`98` / `0x5e755e`/`0x5e75b2` → `0x5e75ed`-`ef` |
+| 2 | `04260001` | 4260001 | 51 | 60 | same loop body, same addresses |
+| 3 | `04260002` | 4260002 | 61 | 70 | same loop body, same addresses |
+| 4 | `04260003` | 4260003 | 71 | 80 | same loop body, same addresses |
+| 5 | `04260004` | 4260004 | 81 | 90 | same loop body, same addresses |
+| 6 | `04260005` | 4260005 | 91 | 100 | same loop body, same addresses |
+| 7 | `04260006` | 4260006 | 101 | 110 | same loop body, same addresses |
+| 8 | `04260007` | 4260007 | 111 | 120 | same loop body, same addresses |
+| 9 | `04260008` | 4260008 | 121 | 200 | same loop body, same addresses |
+
+> The loader is a single `while` loop over the enumerator, so every row comes from the
+> *same* instruction addresses; the per-row differentiator is the archive node, cited in
+> the "Node" column. This is the honest citation shape for a WZ-driven table — unlike
+> §3.1's gem table it is not a fall-through chain with per-field addresses.
+
+Bands are **inclusive on both ends** and **contiguous** from 31 to 200
+(`lvMax(n) + 1 == lvMin(n+1)` for all eight adjacent pairs). No gaps, no overlaps.
+
+### 5.5 Behaviour below the lowest band
+
+**Lowest band starts at level 31** (`04260000`, `lvMin=31`). Levels `1`–`30` fall into
+no band.
+
+**What the client does: nothing — it never looks the table up.**
+
+Grounds, swept in both binaries rather than inferred:
+
+- The `CItemMakerInfo` singleton is `dword_AA8058` (v72, from
+  `CWvsApp::InitializeGameData` `0x8f4e97`) and `dword_BF0EDC` (v83, from
+  `CUIItemMaker::IsExistMakableItem` `0x822d0e`).
+- `xrefs_to` the singleton returns **21 sites in v72** and **20 in v83** (v83's
+  `InitializeGameData` is not identified as a function in that IDB, which accounts for
+  the one-site difference).
+- Every one of those sites is either the constructor, the destructor, or a
+  `mov ecx, <singleton>` immediately followed by one of exactly **four** member-accessor
+  thunks. Each thunk's `add ecx, N` fixes the member it reaches:
+
+  | Member offset | v72 thunk | v83 thunk | Container |
+  |---|---|---|---|
+  | `+0x00` | `sub_5A46AC` | `sub_5E8ADA` | `ITEM_MAKE_INFO` map (recipes) |
+  | `+0x18` | `sub_5A470E` (`add ecx, 18h` @ `0x5a4717`) | `sub_5E8B3C` (`add ecx, 18h` @ `0x5e8b45`) | `ZMap<long,ZList<long>,long>` |
+  | `+0x30` | `sub_5A4728` (`add ecx, 30h` @ `0x5a4731`) | `sub_5E8B56` (`add ecx, 30h` @ `0x5e8b5f`) | `ZMap<long,ZList<long>,long>` |
+  | `+0x74` | `sub_5A47D1` (`add ecx, 74h` @ `0x5a47da`) | `sub_5E8BFF` (`add ecx, 74h` @ `0x5e8c08`) | `ZMap<long,long,long>` (monster trophy) |
+
+- `xrefs_to` those four thunks returns **16 call sites in v72 and 16 in v83**, in a 1:1
+  correspondence (7 / 5 / 3 / 1 in both). **None of them is `+0x60`** — the
+  monster-crystal band vector.
+- `xrefs_to` the append helper is one site in each binary — the loader itself
+  (v72 `sub_5A4E1A` ← `0x5a338c`; v83 `sub_5E9286` ← `0x5e75e3`).
+
+**Conclusion: the band vector is write-only on the client in both `gms_v72` and
+`gms_v83`.** It is filled at boot and never read. There is therefore **no client-side
+fallback, clamp, or default to derive** for a level below 31 — the client defines no
+behaviour at all, because it never asks the question. Exactly the same shape as the gem
+map in §1.7.
+
+**What this means for `TestCrystalForLevelBelowLowestBand`:** the correct assertion is
+*no match* — a level below 31 resolves to no band and therefore to no crystal item id.
+That is the only statement the client evidence supports. "Clamp to `4260000`" is **not**
+grounded: nothing in either binary clamps, and the archive's `lvMin=31` is a hard lower
+bound with no `0`-floored row. If the server is to clamp instead of returning
+"no crystal", that is a **product decision for this task**, not a derived client
+behaviour, and must be recorded as such — do not cite this document for it.
+
+The symmetric case above the highest band (`lvMax=200`) is identical in kind: 201+ falls
+in no band, with the same "no client behaviour" grounding.
+
+### 5.6 Version cross-check: `gms_v72` vs `gms_v83`
+
+**No divergence.** Compared item by item:
+
+| Aspect | `gms_v72` @ `0x5a3033` | `gms_v83` @ `0x5e728a` | Same? |
+|---|---|---|---|
+| Function size | `0x3fd` | `0x3fd` | yes |
+| Node path string | `Item/Etc/0426.img` | `Item/Etc/0426.img` | yes |
+| Subnode | `info` | `info` | yes |
+| Fields read | `lvMin`, `lvMax` (in that order) | `lvMin`, `lvMax` (in that order) | yes |
+| Key derivation | `atoi(childName)` | `atoi(childName)` | yes |
+| Value reader | `sub_41303A` (unnamed `get_int32`) | `get_int32` @ `0x414d40` | yes |
+| Default on absent field | `0` (second arg to `get_int32`) | `0` | yes |
+| Stored shape | `{lvMin, lvMax, itemId}` DWORD triple | `{lvMin, lvMax, itemId}` DWORD triple | yes |
+| Container member offset | `+0x60` | `+0x60` | yes |
+| Null-object behaviour | return `0` | return `0` | yes |
+| Missing `info` node | skip child, continue loop (v72 `0x5a32c8`) | skip child, continue loop (v83 `0x5e751f`) | yes |
+| Read sites for the table | none | none | yes |
+
+The only differences are cosmetic decompiler output: v83 uses `_com_issue_error` where
+v72's IDB renders the same COM error path as `IWzShape2D::Gety`, v83 has more symbols
+named, and Hex-Rays mistypes `this` as `char *` in the v83 loader (§5.3). No behavioural
+delta.
+
+Because both versions read the same node from the same archive, and the archive file is
+identical across all three local tenants, **the 9 rows of §5.4 hold for both versions.**
+
+### 5.7 Unverified / unknown
+
+Stated plainly rather than guessed:
+
+1. **What "level" the band is compared against — UNVERIFIED.** The loader stores
+   `lvMin`/`lvMax` and nothing in either binary ever reads them back (§5.5), so neither
+   `gms_v72` nor `gms_v83` shows the comparison. Whether the operand is a crafted/
+   disassembled equip's `reqLevel`, a monster's level, or a character's level **cannot be
+   settled from these two IDBs.** The task brief frames it as an equip level requirement;
+   that framing is *not* confirmed here. If it matters to the server's behaviour, it needs
+   a source outside these binaries.
+2. **Crystal count per craft — UNKNOWN.** `Load_MonsterCrystalLevel` yields no count
+   (§5.3). No count node exists on `0426.img/<id>/info` in the local dump. Any per-craft
+   quantity must come from `ItemMake.img` or the server, not from here.
+3. **Whether some later client version reads this table** — not investigated. Only
+   `gms_v72` and `gms_v83` were examined, per the task scope.
+4. **Below-band clamp vs. no-match** — see §5.5. The *client* evidence supports
+   "no match" only. A clamp is an unmade product decision, not a finding.
+5. **`slotMax = 100` and `price = 1`** are present on all 9 `info` nodes in the archive
+   but are **not read** by `Load_MonsterCrystalLevel`. Recorded for completeness; do not
+   attribute maker semantics to them from this document.
+
+### 5.8 Notes for the implementer
+
+- Seed all 9 rows of §5.4 verbatim; every id and boundary is read out of `0426.img`.
+- Bands are inclusive `[lvMin, lvMax]` and contiguous over `31..200`. A range check can
+  rely on contiguity but should not rely on it silently — assert it in the seed test.
+- `lvMin`/`lvMax` are signed 32-bit in the client. All derived values lie in `[31, 200]`,
+  so any narrower repo type is lossless *for this dataset* — a repo choice, not the
+  client's width. Same caveat as §1.5.
+- Item ids `4260000`–`4260008` are all distinct; a `(tenant_id, crystal_item_id)` unique
+  index is safe.
+- There is no count column to model (§5.7 item 2).

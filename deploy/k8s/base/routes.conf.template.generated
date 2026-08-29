@@ -708,6 +708,11 @@ location ~ ^/api/maker(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/reagents(/.*)?$ {
+  set $u "atlas-maker.${NS_ATLAS_MAKER}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location / {
   set $u "atlas-ui.${NS_ATLAS_UI}.svc.cluster.local:80";
   proxy_pass http://$u$request_uri;

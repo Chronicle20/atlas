@@ -1,0 +1,10 @@
+{
+  "data": {
+    "type": "reagent",
+    "id": "4250601",
+    "attributes": {
+      "stat": "incMaxHP",
+      "value": 20
+    }
+  }
+}

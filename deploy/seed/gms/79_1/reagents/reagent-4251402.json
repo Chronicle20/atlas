@@ -1,0 +1,10 @@
+{
+  "data": {
+    "type": "reagent",
+    "id": "4251402",
+    "attributes": {
+      "stat": "randStat",
+      "value": 5
+    }
+  }
+}

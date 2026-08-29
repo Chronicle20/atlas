@@ -55,6 +55,7 @@ use (
 	./services/atlas-keys/atlas.com/keys
 	./services/atlas-kites/atlas.com/kites
 	./services/atlas-login/atlas.com/login
+	./services/atlas-maker/atlas.com/maker
 	./services/atlas-map-actions/atlas.com/map-actions
 	./services/atlas-maps/atlas.com/maps
 	./services/atlas-marriages/atlas.com/marriages

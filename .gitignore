@@ -54,6 +54,7 @@ services/atlas-storage/.env
 /services/atlas-tenants/atlas.com/tenants/atlas-tenants
 /services/atlas-merchant/atlas.com/merchant/atlas-merchant
 /services/atlas-events/atlas.com/events/atlas-events
+/services/atlas-maker/atlas.com/maker/atlas-maker
 deploy/compose/.env
 deploy/k8s/secrets.yaml
 /tools/cideps/cideps

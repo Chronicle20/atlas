@@ -244,6 +244,17 @@ release_build_slot
 until a slot frees. The wait itself is a blocking `flock`, not a polling
 loop, so it costs no inference turns while it waits.
 
+**The GOMODCACHE lock.** `tools/tidy-all-go.sh` takes an exclusive `flock` on
+`/var/tmp/atlas/gomodcache.lock` (override with `ATLAS_GOMODCACHE_LOCK`)
+around its whole sweep, before it walks a single module. This is a different
+mechanism from the build slots above: the slots are a *counting* semaphore
+bounding CPU/RAM across concurrent heavy gates, while this is an *exclusive*
+mutex protecting a shared mutable store — `GOMODCACHE` is machine-global
+while worktrees are not, so two sessions running `go mod tidy`/`go mod
+download` against it at once is the one genuinely unsafe concurrency in the
+build system. Nothing else acquires this lock; `tools/verify.sh` and the
+build slots never touch it.
+
 ### Capacity preflight
 
 Before the Go-module block, a non-`--quick` run gates on a `preflight

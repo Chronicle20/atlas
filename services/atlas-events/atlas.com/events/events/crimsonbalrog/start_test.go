@@ -5,6 +5,7 @@ import (
 	event "atlas-events/kafka/message/event"
 	monster "atlas-events/kafka/message/monster"
 	"encoding/json"
+	"log"
 	"os"
 	"testing"
 
@@ -24,8 +25,13 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
-	os.Setenv(string(monster.EnvCommandTopic), string(monster.EnvCommandTopic))
-	os.Setenv(string(event.EnvEventTopicEventVisual), string(event.EnvEventTopicEventVisual))
+	setEnv := func(k topic.Token) {
+		if err := os.Setenv(string(k), string(k)); err != nil {
+			log.Fatalf("failed to set %s: %v", k, err)
+		}
+	}
+	setEnv(monster.EnvCommandTopic)
+	setEnv(event.EnvEventTopicEventVisual)
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

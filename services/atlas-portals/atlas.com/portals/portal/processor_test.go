@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -75,17 +74,11 @@ func setupMockDataServer(t *testing.T, responses map[string]interface{}) (*httpt
 		})
 	}))
 
-	// Save original env and set mock server URL
-	originalURL := os.Getenv("DATA_SERVICE_URL")
-	os.Setenv("DATA_SERVICE_URL", server.URL+"/api/")
+	// Set mock server URL; t.Setenv restores it automatically after the test.
+	t.Setenv("DATA_SERVICE_URL", server.URL+"/api/")
 
 	cleanup := func() {
 		server.Close()
-		if originalURL != "" {
-			os.Setenv("DATA_SERVICE_URL", originalURL)
-		} else {
-			os.Unsetenv("DATA_SERVICE_URL")
-		}
 	}
 
 	return server, cleanup

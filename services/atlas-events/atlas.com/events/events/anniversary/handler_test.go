@@ -9,6 +9,7 @@ import (
 	"atlas-events/kafka/message/buff"
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"sync"
 	"testing"
@@ -215,7 +216,9 @@ func registryOccurrence(o occurrence.Model) registry.Occurrence {
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
-	os.Setenv(string(buff.EnvCommandTopic), string(buff.EnvCommandTopic))
+	if err := os.Setenv(string(buff.EnvCommandTopic), string(buff.EnvCommandTopic)); err != nil {
+		log.Fatalf("failed to set %s: %v", buff.EnvCommandTopic, err)
+	}
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

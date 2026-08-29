@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"os"
 	"testing"
 
@@ -9,13 +10,20 @@ import (
 	expression2 "atlas-channel/kafka/message/expression"
 	kiteMsg "atlas-channel/kafka/message/kite"
 	sagaMsg "atlas-channel/kafka/message/saga"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 func TestMain(m *testing.M) {
-	os.Setenv(string(chalkboardMsg.EnvCommandTopic), string(chalkboardMsg.EnvCommandTopic))
-	os.Setenv(string(messageCashShop.EnvCommandTopic), string(messageCashShop.EnvCommandTopic))
-	os.Setenv(string(expression2.EnvExpressionCommand), string(expression2.EnvExpressionCommand))
-	os.Setenv(string(kiteMsg.EnvCommandTopic), string(kiteMsg.EnvCommandTopic))
-	os.Setenv(string(sagaMsg.EnvCommandTopic), string(sagaMsg.EnvCommandTopic))
+	setEnv := func(k topic.Token) {
+		if err := os.Setenv(string(k), string(k)); err != nil {
+			log.Fatalf("failed to set %s: %v", k, err)
+		}
+	}
+	setEnv(chalkboardMsg.EnvCommandTopic)
+	setEnv(messageCashShop.EnvCommandTopic)
+	setEnv(expression2.EnvExpressionCommand)
+	setEnv(kiteMsg.EnvCommandTopic)
+	setEnv(sagaMsg.EnvCommandTopic)
 	os.Exit(m.Run())
 }

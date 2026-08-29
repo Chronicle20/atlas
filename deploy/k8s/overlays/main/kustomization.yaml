@@ -261,7 +261,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-ae1cca9
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-ae1cca9
+    newTag: main-cd88c60
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-ae1cca9
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons

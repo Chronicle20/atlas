@@ -290,7 +290,7 @@ assert_true "preflight is NOT selected under --quick" \
 
 starved_out="$(ATLAS_MIN_FREE_MB=99999999 "$VERIFY" --base HEAD --no-ui --no-docker 2>&1)"
 starved_rc=$?
-sane_out="$("$VERIFY" --base HEAD --no-ui --no-docker 2>&1)"
+sane_out="$(TMPDIR=/tmp ATLAS_MIN_FREE_MB=1 ATLAS_MIN_TMP_MB=1 "$VERIFY" --base HEAD --no-ui --no-docker 2>&1)"
 sane_rc=$?
 
 assert_true "a starved run fails rather than proceeding (non-zero exit)" \

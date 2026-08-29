@@ -33,6 +33,21 @@ trap cleanup EXIT
 
 cd "$REPO_ROOT" || exit 2
 
+# Snapshot dirty-state BEFORE the suite runs anything, so the restore step
+# below can tell "dirtied by this suite" apart from "was already dirty when
+# the suite started" (e.g. a developer's uncommitted go.mod edit in
+# progress, or a concurrent tools/verify.sh gate mutating go.work.sum in
+# this same worktree). Anything dirty at baseline is left exactly as found;
+# see the restore step for how the two cases diverge.
+restore_paths=(go.work.sum '**/go.sum' '**/go.mod')
+declare -A baseline_dirty_set
+baseline_dirty="$(git status --porcelain -- "${restore_paths[@]}" 2>/dev/null)"
+if [ -n "$baseline_dirty" ]; then
+    while IFS= read -r line; do
+        baseline_dirty_set["${line:3}"]=1
+    done <<< "$baseline_dirty"
+fi
+
 # run_bounded SECS -- runs "$SCRIPT" [args...] in its own process group and
 # hard-kills the whole group (not just the direct child) once SECS elapses.
 # Plain `timeout` only signals its direct child; tools/tidy-all-go.sh spawns
@@ -101,15 +116,27 @@ assert_not_has "default lock path is not under slots/" "slots/" "$default_lock"
 # settle gives a killed-but-not-yet-reaped subprocess a moment to finish an
 # in-flight write before the restore reads git status, so a single pass
 # reliably lands on a clean tree.
-restore_paths=(go.work.sum '**/go.sum' '**/go.mod')
+#
+# Only paths that were CLEAN at the baseline snapshot above and are dirty
+# now are restored (checked out if tracked, removed if untracked-new). A
+# path that was already dirty at baseline is never touched here, even if it
+# is still dirty now — there is no way to tell "the suite mutated it further"
+# from "it just sat there dirty the whole time" without hashing content,
+# and silently reverting a pre-existing change (a developer's uncommitted
+# work, or a concurrent gate's own in-flight write) is exactly the defect
+# this snapshot exists to avoid. Such paths are reported with a warning
+# instead and do not fail the suite.
 sleep 1
 dirty="$(git status --porcelain -- "${restore_paths[@]}" 2>/dev/null)"
 if [ -n "$dirty" ]; then
-    echo "WARN - tidy run touched go.mod/go.sum/go.work.sum, restoring:" >&2
-    echo "$dirty" >&2
     while IFS= read -r line; do
         status="${line:0:2}"
         f="${line:3}"
+        if [ -n "${baseline_dirty_set[$f]:-}" ]; then
+            echo "WARN - $f was already dirty before this suite ran; leaving it untouched (cannot separate pre-existing changes from anything the suite may have added)" >&2
+            continue
+        fi
+        echo "WARN - tidy run touched $f, restoring:" >&2
         if [ "$status" = "??" ]; then
             rm -f -- "$f"
         else
@@ -118,9 +145,22 @@ if [ -n "$dirty" ]; then
     done <<< "$dirty"
 fi
 still_dirty="$(git status --porcelain -- "${restore_paths[@]}" 2>/dev/null)"
+# Only fail the suite over paths it is responsible for restoring. A path
+# that was already dirty at baseline is expected to still show up here (see
+# the warning above) and must not be counted as a suite failure.
+unexpected_dirty=""
 if [ -n "$still_dirty" ]; then
+    while IFS= read -r line; do
+        f="${line:3}"
+        if [ -z "${baseline_dirty_set[$f]:-}" ]; then
+            unexpected_dirty="${unexpected_dirty}${line}
+"
+        fi
+    done <<< "$still_dirty"
+fi
+if [ -n "$unexpected_dirty" ]; then
     echo "FAIL - tree still dirty after restore:" >&2
-    echo "$still_dirty" >&2
+    printf '%s' "$unexpected_dirty" >&2
     fails=$((fails + 1))
 fi
 

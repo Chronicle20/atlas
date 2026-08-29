@@ -15,6 +15,7 @@ var rules = []subdomainRule{
 	{path: "drops/reactors", typ: "reactor-drop", pattern: regexp.MustCompile(`^reactor-(\d+)\.json$`)},
 	{path: "gachapons", typ: "gachapon", pattern: regexp.MustCompile(`^gachapon-(.+)\.json$`)},
 	{path: "gachapons/_global", typ: "gachapon-pool", pattern: nil},
+	{path: "reagents", typ: "reagent", pattern: regexp.MustCompile(`^reagent-(\d+)\.json$`)},
 	{path: "map-actions/onUserEnter", typ: "map-action", pattern: regexp.MustCompile(`^map-(.+)\.json$`)},
 	{path: "map-actions/onFirstUserEnter", typ: "map-action", pattern: regexp.MustCompile(`^map-(.+)\.json$`)},
 	{path: "portal-actions/portals", typ: "portal-action", pattern: regexp.MustCompile(`^portal-(.+)\.json$`)},

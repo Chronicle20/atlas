@@ -1,6 +1,8 @@
 package main
 
 import (
+	"atlas-maker/reagent"
+	"atlas-maker/seed"
 	"os"
 
 	"gorm.io/gorm"
@@ -39,11 +41,8 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+		reagent.Migration,
 	))
-	// db is unused until Tasks 17-18 add the reagent/crystal-band route
-	// initializers that need it; this line goes away when the first one
-	// lands (atlas-events' task-231 scaffold, aedbda59d, is the precedent).
-	_ = db
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
@@ -58,6 +57,8 @@ func main() {
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(reagent.InitResource(GetServer())(db)).
+		AddRouteInitializer(seed.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 

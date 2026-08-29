@@ -109,6 +109,10 @@ probe_bake_ban="$probe_ban_dir/go.mod"
 probe_bake_account="$probe_account_dir/go.mod"
 probe_broken_dir="$HERE/../services/zz-verify-probe-broken-${probe_tag}"
 probe_jobs0_err="$HERE/zz-verify-jobs0-${probe_tag}.err"
+# Task 9 (Layer 5): a real libs/ file, per-process like every other probe
+# above — two concurrent runs of this file must not collide on the same
+# libs/ path.
+probe_libs="$HERE/../libs/atlas-tenant/zz-verify-probe-${probe_tag}.go"
 # Two assertions below don't read this run's OWN probe by name — they read a
 # category `--facts` derives from shared, not-per-process, state: "does any
 # deploy/ path exist in the changed set" and "which SERVICES have a changed
@@ -134,7 +138,7 @@ gowork_sum_backup="$HERE/zz-verify-probe-broken-${probe_tag}.go.work.sum.bak"
 gowork_sum_backup_absent="$HERE/zz-verify-probe-broken-${probe_tag}.go.work.sum.absent"
 cleanup() {
   rm -f "$probe_suite" "$probe_deploy" "$probe_bake_ban" "$probe_bake_account" \
-    "$probe_jobs0_err"
+    "$probe_jobs0_err" "$probe_libs"
   rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
   rm -rf "$probe_broken_dir"
   if [ -f "$gowork_sum_backup" ]; then
@@ -205,6 +209,74 @@ want_mods="$("$VERIFY" --quick --base HEAD 2>/dev/null \
 want_mods="${want_mods:-0}"
 got_mods="$(facts_key modules_selected --quick --base HEAD)"
 assert_eq "module count agrees" "$want_mods" "$got_mods"
+
+# --- libs/ fan-out narrows to the reverse-dependency closure (Task 9) ------
+#
+# The real repo graph, not a synthetic one: libs/atlas-tenant has dozens of
+# consumers, which is exactly what makes the old "any libs/ change reaches
+# every module" behaviour so expensive.
+
+total_modules="$(find "$HERE/../services" "$HERE/../libs" -name go.mod -not -path '*/node_modules/*' \
+  | wc -l | tr -d ' ')"
+
+printf 'package atlastenant\n' > "$probe_libs"
+
+closure_selected="$(facts_key modules_selected --quick --base HEAD)"
+assert_true "a real libs/ change no longer selects every module" \
+  "$([ "$closure_selected" -lt "$total_modules" ] && echo true)"
+
+closure_reason="$(facts_key fanout_reason --quick --base HEAD)"
+assert_true "the fan-out reason names the closure" \
+  "$(printf '%s\n' "$closure_reason" | grep -qE '^shared-lib-closure:libs/atlas-tenant' \
+     && printf '%s\n' "$closure_reason" | grep -qE '\([0-9]+ consumers\)$' \
+     && echo true)"
+
+all_selected="$(ATLAS_LIBS_FANOUT=all facts_key modules_selected --quick --base HEAD)"
+assert_eq "the escape hatch restores the old behaviour (module count)" \
+  "$total_modules" "$all_selected"
+all_reason="$(ATLAS_LIBS_FANOUT=all facts_key fanout_reason --quick --base HEAD)"
+assert_true "the escape hatch's fan-out reason carries the shared-lib: prefix" \
+  "$(printf '%s\n' "$all_reason" | grep -qE '^shared-lib:' && echo true)"
+
+rm -f "$probe_libs"
+assert_eq "no libs change, no fan-out" "none" "$(facts_key fanout_reason --quick --base HEAD)"
+
+# go.work.sum is a checksum artifact of resolving the workspace — an ordinary
+# local `go build`/`go mod tidy` dirties it with no require-graph edge
+# actually changing. The old `^(go\.work|libs/)` match was unanchored at its
+# end, so it also matched go.work.sum and sent every such run through
+# all_modules — a second, independent path to the full fan-out, and the
+# common one in daily use. go.work.sum is shared, not per-process, state (it
+# is THE workspace sum file, not a probe), so this takes the same lock this
+# suite already uses for go.work.sum below.
+flock 8
+gowork_dirty_backup="$HERE/zz-verify-probe-gowork-dirty-${probe_tag}.bak"
+if [ -f "$gowork_sum" ]; then
+  cp -p "$gowork_sum" "$gowork_dirty_backup"
+else
+  : > "$gowork_dirty_backup.absent"
+fi
+printf '// zz-verify-probe-%s dirty line\n' "$probe_tag" >> "$gowork_sum"
+
+dirty_reason="$(facts_key fanout_reason --quick --base HEAD)"
+dirty_selected="$(facts_key modules_selected --quick --base HEAD)"
+
+if [ -f "$gowork_dirty_backup" ]; then
+  mv -f "$gowork_dirty_backup" "$gowork_sum"
+else
+  rm -f "$gowork_sum" "$gowork_dirty_backup.absent"
+fi
+flock -u 8
+
+assert_eq "a dirty go.work.sum alone does not fan out" "none" "$dirty_reason"
+assert_eq "a dirty go.work.sum alone selects zero modules" "0" "$dirty_selected"
+
+# --- structural: go.work still fans out to everything (Task 9) -------------
+
+changed_modules_body="$(awk '/^changed_modules\(\) \{/,/^\}$/' "$VERIFY")"
+assert_true "the go.work branch of changed_modules still calls all_modules" \
+  "$(printf '%s\n' "$changed_modules_body" \
+     | awk '/gowork_changed/,0' | grep -F 'all_modules' >/dev/null && echo true)"
 
 # --- preflight: capacity gate (Task 7) --------------------------------------
 #

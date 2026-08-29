@@ -25,6 +25,8 @@ cd "$ROOT"
 
 # shellcheck source=lib/build-slot.sh
 . "$ROOT/tools/lib/build-slot.sh"
+# shellcheck source=lib/module-graph.sh
+. "$ROOT/tools/lib/module-graph.sh"
 
 BASE=""
 ALL=0
@@ -232,10 +234,52 @@ all_modules() {
         | xargs -0 -r -n1 dirname | sort -u
 }
 
-# The one predicate that decides whether this run fans out to every module.
-# Extracted so `--facts` can name the reason without restating the rule.
-fanout_paths() {
-    printf '%s\n' "$CHANGED" | grep -E '^(go\.work|libs/)' || true
+# go.work in the change set — the exact filename, not go.work.sum. Anchored
+# at both ends: go.work.sum is a checksum artifact of resolving the workspace
+# (an ordinary local `go build`/`go mod tidy` dirties it as a matter of
+# course), not a change to the require graph, so it must not trigger this
+# branch. A real graph edit that also happens to dirty go.work.sum still gets
+# picked up on its own merits — either as a go.work change here, or as a
+# libs/ or services/ path below.
+gowork_changed() {
+    printf '%s\n' "$CHANGED" | grep -E '^go\.work$' || true
+}
+
+libs_paths() {
+    printf '%s\n' "$CHANGED" | grep -E '^libs/' || true
+}
+
+# libs_changed_module_dirs — the module directory owning each changed libs/
+# path, one absolute dir per line, sorted and unique. Most libs live directly
+# under libs/<name>, but at least one (libs/atlas-constants/gen) is a nested
+# module in its own right, so this maps by longest module-directory prefix
+# over the discovered module set rather than assuming one path depth.
+libs_changed_module_dirs() {
+    local -a mods=()
+    local m rel f best best_len len
+    while IFS= read -r m; do mods+=("$m"); done < <(all_modules)
+
+    local -A seen=()
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        best="" best_len=0
+        for m in "${mods[@]}"; do
+            rel="${m#"$ROOT"/}"
+            case "$f" in
+                "$rel"|"$rel"/*)
+                    len="${#rel}"
+                    if [ "$len" -gt "$best_len" ]; then
+                        best="$rel"
+                        best_len="$len"
+                    fi
+                    ;;
+            esac
+        done
+        [ -n "$best" ] && seen["$ROOT/$best"]=1
+    done < <(libs_paths)
+
+    local k
+    for k in "${!seen[@]}"; do printf '%s\n' "$k"; done | sort -u
 }
 
 changed_modules() {
@@ -243,45 +287,100 @@ changed_modules() {
         all_modules
         return
     fi
-    # go.work, or ANY shared lib, reaches every module: services consume libs
-    # through the workspace, so a lib edit can break a service that has no
-    # changed file of its own. Conservative on purpose — use --quick to skip
-    # the -race pass while iterating.
-    #
-    # The trap this fan-out sets: CHANGED is the whole branch against its merge
-    # base, so ONE libs/ commit makes every later run on that branch a full
-    # 86-module build, forever. On a long branch that is ~10 minutes per run
-    # instead of ~1. Say so out loud, and name the remedy — an iteration gate
-    # should pass --base <last-gated-commit> so the change set is the increment
-    # under test, not the accumulated branch.
-    local fanout
-    fanout="$(fanout_paths)"
-    if [ -n "$fanout" ]; then
+
+    # The trap a full fan-out sets: CHANGED is the whole branch against its
+    # merge base, so ONE such commit makes every later run on that branch a
+    # full 86-module build, forever. On a long branch that is ~10 minutes per
+    # run instead of ~1. Say so out loud, and name the remedy — an iteration
+    # gate should pass --base <last-gated-commit> so the change set is the
+    # increment under test, not the accumulated branch.
+
+    # go.work reaches every module unconditionally: it is the workspace
+    # membership list itself, not a require edge, so the closure has nothing
+    # to compute from it.
+    local gowork
+    gowork="$(gowork_changed)"
+    if [ -n "$gowork" ]; then
         if [ -z "$BASE" ]; then
-            printf '\033[33mverify.sh: shared-lib change fans out to ALL modules (%s path(s) under go.work/libs/).\n' \
-                "$(printf '%s\n' "$fanout" | wc -l | tr -d ' ')" >&2
-            printf '           first: %s\n' "$(printf '%s\n' "$fanout" | head -1)" >&2
+            printf '\033[33mverify.sh: go.work change fans out to ALL modules.\n' >&2
             printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
             printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
         else
             # stderr, NOT stdout: this function's stdout IS the module list the
             # caller cd's into, so a chatty line here becomes a phantom module
-            # ("cd: verify.sh: shared-lib change...: No such file or directory")
+            # ("cd: verify.sh: go.work changed...: No such file or directory")
             # and fails the gate. Matches the no-BASE branch above.
-            echo "verify.sh: shared-lib change in this increment — fanning out to all modules" >&2
+            echo "verify.sh: go.work changed in this increment — fanning out to all modules" >&2
         fi
         all_modules
         return
     fi
+
+    local libs
+    libs="$(libs_paths)"
+
+    # ATLAS_LIBS_FANOUT=all is the one-variable escape hatch back to the old
+    # "any libs/ change reaches every module" behaviour — for Step 4's
+    # validation against the closure, and for any future doubt about the
+    # closure's correctness.
+    if [ -n "$libs" ] && [ "${ATLAS_LIBS_FANOUT:-}" = "all" ]; then
+        if [ -z "$BASE" ]; then
+            printf '\033[33mverify.sh: shared-lib change fans out to ALL modules (ATLAS_LIBS_FANOUT=all; %s path(s) under libs/).\n' \
+                "$(printf '%s\n' "$libs" | wc -l | tr -d ' ')" >&2
+            printf '           first: %s\n' "$(printf '%s\n' "$libs" | head -1)" >&2
+            printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
+            printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
+        else
+            echo "verify.sh: shared-lib change in this increment (ATLAS_LIBS_FANOUT=all) — fanning out to all modules" >&2
+        fi
+        all_modules
+        return
+    fi
+
+    # all_modules() walks only $ROOT/services and $ROOT/libs — the workspace
+    # also has tools/ modules (go.work's `use` list), which all_modules() has
+    # never built and which the closure must not start building either.
+    # module_consumers walks the whole $ROOT to build its graph (it has no
+    # opinion on which subtrees are "in scope" — the unit test's own fixture
+    # uses arbitrary directory names), so its output is intersected with
+    # this same services+libs set below rather than trusted as-is.
+    local -A mods_set=()
     local mods=() m rel
-    while IFS= read -r m; do mods+=("$m"); done < <(all_modules)
+    while IFS= read -r m; do mods+=("$m"); mods_set["$m"]=1; done < <(all_modules)
+
+    local -A result=()
+
+    if [ -n "$libs" ]; then
+        # A libs/ change reaches its transitive reverse-dependency closure
+        # over the workspace require graph (tools/lib/module-graph.sh),
+        # rather than every module: services consume libs through the
+        # workspace, so a lib edit can break a consumer with no changed file
+        # of its own, but it cannot break a module that never named the lib.
+        local -a lib_dirs=()
+        while IFS= read -r m; do [ -n "$m" ] && lib_dirs+=("$m"); done \
+            < <(libs_changed_module_dirs)
+
+        local first_lib="${libs%%$'\n'*}"
+        if [ "${#lib_dirs[@]}" -gt 0 ]; then
+            first_lib="${lib_dirs[0]#"$ROOT"/}"
+            while IFS= read -r m; do
+                [ -n "$m" ] && [ -n "${mods_set[$m]:-}" ] && result["$m"]=1
+            done < <(module_consumers "$ROOT" "${lib_dirs[@]}")
+        fi
+
+        echo "verify.sh: shared-lib change (${first_lib}) fans out to its ${#result[@]}-module reverse-dependency closure — ATLAS_LIBS_FANOUT=all restores the old whole-workspace behaviour." >&2
+    fi
+
     for m in "${mods[@]}"; do
         rel="${m#"$ROOT"/}"
         # See touched(): no `-q` under pipefail.
         if printf '%s\n' "$CHANGED" | grep -E "^${rel}/" >/dev/null; then
-            echo "$m"
+            result["$m"]=1
         fi
     done
+
+    local k
+    for k in "${!result[@]}"; do printf '%s\n' "$k"; done | sort -u
 }
 
 if [ "$QUICK" -eq 0 ]; then
@@ -802,7 +901,8 @@ if [ "$FACTS" -eq 1 ]; then
         printf '%s' "${v:-none}"
     }
 
-    fanout="$(fanout_paths)"
+    gowork="$(gowork_changed)"
+    libs="$(libs_paths)"
     changed_services="$(printf '%s\n' "$CHANGED" | sed -n 's|^services/\([^/]*\)/.*|\1|p' | sort -u)"
     changed_libs="$(printf '%s\n' "$CHANGED" | sed -n 's|^libs/\([^/]*\)/.*|\1|p' | sort -u)"
     module_rel=""
@@ -820,10 +920,21 @@ if [ "$FACTS" -eq 1 ]; then
     echo "changed_libs=$(csv "$changed_libs")"
     echo "go_changed=$(touched '\.go$' && echo true || echo false)"
     echo "ui_changed=$([ "$UI_CHANGED" -eq 1 ] && echo true || echo false)"
-    if [ -n "$fanout" ]; then
-        echo "fanout_reason=shared-lib:$(printf '%s\n' "$fanout" | head -1)"
-    elif [ "$ALL" -eq 1 ]; then
+    if [ "$ALL" -eq 1 ]; then
         echo "fanout_reason=--all"
+    elif [ -n "$gowork" ]; then
+        echo "fanout_reason=shared-lib:go.work"
+    elif [ -n "$libs" ] && [ "${ATLAS_LIBS_FANOUT:-}" = "all" ]; then
+        echo "fanout_reason=shared-lib:$(printf '%s\n' "$libs" | head -1)"
+    elif [ -n "$libs" ]; then
+        # Same mapping changed_modules() uses, so the reason names the
+        # module the closure was actually computed from — not just the first
+        # raw changed path, which might be a nested module like
+        # libs/atlas-constants/gen.
+        lib_dirs_facts="$(libs_changed_module_dirs)"
+        first_lib_facts="$(printf '%s\n' "$lib_dirs_facts" | head -1)"
+        first_lib_facts="${first_lib_facts#"$ROOT"/}"
+        echo "fanout_reason=shared-lib-closure:${first_lib_facts} (${#MODULES[@]} consumers)"
     else
         echo "fanout_reason=none"
     fi

@@ -281,3 +281,123 @@ suites (`tools/lib/build-slot_test.sh`, `tools/with-build-slot_test.sh`,
 both from Task 6) already cover slot contention, timeout, and release
 behavior with real concurrent `flock` holders — see those suites' own
 passing output for that evidence. This session did not re-derive it.
+
+## Layer 5 — fan-out
+
+Task 9 narrows `changed_modules()`'s `libs/` branch from "any `libs/` change
+reaches every module" to the transitive reverse-dependency closure over the
+workspace `require` graph (`tools/lib/module-graph.sh`), with
+`ATLAS_LIBS_FANOUT=all` as a one-variable escape hatch back to the old
+behaviour, and Correction B's fix to `go.work.sum` (see below).
+
+### Closure vs. all-modules, on a real `libs/` change
+
+Change set: one untracked file under `libs/atlas-tenant/` (a real `libs/`
+consumer with wide reach — 10 other `libs/` modules and multiple services
+name it directly in their own `go.mod`).
+
+```sh
+ATLAS_LIBS_FANOUT=all tools/verify.sh --facts --quick --base HEAD
+tools/verify.sh --facts --quick --base HEAD
+```
+
+| Run | `fanout_reason` | `modules_selected` |
+|---|---|---|
+| `ATLAS_LIBS_FANOUT=all` (old behaviour) | `shared-lib:libs/atlas-tenant/<probe-file>` | `91` |
+| closure (default)                       | `shared-lib-closure:libs/atlas-tenant (77 consumers)` | `77` |
+
+Total workspace module count at measurement time (`find services libs -name
+go.mod -not -path '*/node_modules/*' \| wc -l`): `91`. The closure's `77` is a
+strict subset of the all-modules `91` — 14 modules dropped.
+
+### Spot-check: three dropped modules confirmed as real non-consumers
+
+The 14 dropped modules were computed directly (source
+`tools/lib/module-graph.sh`, diff `module_consumers "$ROOT"
+"$ROOT/libs/atlas-tenant"` against the full `services`+`libs` module set).
+Three were spot-checked by grepping their `go.mod` for the changed lib's
+module path (`github.com/Chronicle20/atlas/libs/atlas-tenant`), confirming
+each does not name it, directly or as a `replace` target:
+
+```sh
+grep -n "atlas-tenant" libs/atlas-opcodes/go.mod libs/atlas-env/go.mod services/atlas-kafka-precreate/go.mod
+# (no output — exit 1: none of the three reference atlas-tenant)
+```
+
+- `libs/atlas-opcodes` — requires only `atlas-socket`, `atlas-routine`, and
+  external deps; no `atlas-tenant`.
+- `libs/atlas-env` — requires only `atlas-model` and `atlas-routine`
+  (indirect); no `atlas-tenant`.
+- `services/atlas-kafka-precreate` — a standalone service with no
+  workspace-lib requires at all (only `kafka-go`/`logrus` and their
+  transitive deps); no `atlas-tenant`.
+
+### RED/GREEN: the assertions are load-bearing, not vacuously true
+
+Per the controller's instruction, the closure logic was broken in place
+(`tools/lib/module-graph.sh`'s `module_consumers`, final `printf` changed to
+emit every discovered module directory instead of just the BFS result — i.e.
+simulating a bug that always selects everything) and the same `--facts`
+invocation re-run, then the file was restored.
+
+| State | `fanout_reason` | `modules_selected` |
+|---|---|---|
+| GREEN (real closure) | `shared-lib-closure:libs/atlas-tenant (77 consumers)` | `77` |
+| RED (closure broken to select everything) | `shared-lib-closure:libs/atlas-tenant (91 consumers)` | `91` |
+| GREEN (restored) | `shared-lib-closure:libs/atlas-tenant (77 consumers)` | `77` |
+
+With the closure broken, `modules_selected` (`91`) equals `total_modules`
+(`91`) — `tools/verify_test.sh`'s "a real libs/ change no longer selects
+every module" assertion (`[ "$closure_selected" -lt "$total_modules" ]`)
+would fail under this break, confirming the assertion is load-bearing rather
+than passing regardless of the implementation.
+
+### Correction B: a dirty `go.work.sum` no longer forces the full fan-out
+
+Decision recorded (see also the comment at `tools/verify.sh`'s
+`gowork_changed()`): `go.work.sum` is **excluded** from the `go.work`
+fan-out trigger — `gowork_changed()` matches `^go\.work$`, anchored at both
+ends, so it no longer matches `go.work.sum`. Rejected alternative: giving
+`go.work.sum` its own branch that still fans out (e.g. to `all_modules` or
+to the closure) — rejected because `go.work.sum` is a checksum artifact of
+resolving the workspace, not a `require`-graph edit; an ordinary local
+`go build`/`go mod tidy` dirties it with zero graph change, so treating it as
+a fan-out trigger at all (full or closure) would reintroduce exactly the
+"everyday op sends every subsequent run to a full/wide build" trap this task
+exists to remove. A real `require`-graph edit that happens to also dirty
+`go.work.sum` is still caught on its own merits, via the `go.work` or
+`libs/`/`services/` path that actually changed.
+
+Measured on a clean tree (no other changed paths), dirtying only
+`go.work.sum` with a synthetic appended line:
+
+```sh
+git checkout -- go.work.sum   # start clean
+tools/verify.sh --facts --quick --base HEAD   # before
+printf '// dirty line\n' >> go.work.sum
+tools/verify.sh --facts --quick --base HEAD   # after
+git checkout -- go.work.sum   # restore
+```
+
+| State | `fanout_reason` | `modules_selected` |
+|---|---|---|
+| clean `go.work.sum` | `none` | `0` |
+| dirty `go.work.sum` (no other change) | `none` | `0` |
+
+Confirms Correction B's fix holds: dirtying `go.work.sum` alone — the
+everyday-local-`go build` case — no longer routes to `all_modules`.
+`tools/verify_test.sh` covers this same condition under its own per-process
+`flock`-protected probe (see "a dirty go.work.sum alone does not fan out" /
+"...selects zero modules" in that suite's output).
+
+### What this does and does not show
+
+Measured: the closure vs. all-modules module counts on one real `libs/`
+change (`libs/atlas-tenant`, a wide-reach lib), the RED/GREEN load-bearing
+check on that same change, and the dirty-`go.work.sum` condition on a clean
+tree. Not measured: wall-clock time saved (the brief asks for module-count
+evidence, not a timed before/after build); the closure's behavior on a lib
+with very few consumers (not needed to establish the win — `atlas-tenant`
+was chosen because it is a stress case, not a favorable one); a `go.work`
+change (the `go.work` branch is unchanged by Task 9 and is covered
+structurally in `tools/verify_test.sh`, not re-measured here).

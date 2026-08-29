@@ -284,9 +284,32 @@ internal parallelism stays inside the slot it is running in rather than
 oversubscribing the host. `go vet` takes no `-p`; it is not a valid flag for
 that subcommand.
 
-A change to `go.work` or a shared lib fans out to every module, and the script
-expands the set accordingly: services consume libs through the workspace, so a
-lib edit can break a service with no changed file of its own.
+A change to `go.work` fans out to every module: it is the workspace
+membership list itself, not a require edge, so there is nothing narrower to
+compute from it.
+
+A change under `libs/` fans out to its transitive reverse-dependency closure
+over the workspace `require` graph (Layer 5, `tools/lib/module-graph.sh`),
+not to every module: services consume libs through the workspace, so a lib
+edit can break a consumer with no changed file of its own, but it cannot
+break a module that never named the lib, directly or transitively. The graph
+is built once per run by reading every workspace `go.mod`'s `module` line and
+`require` entries — both the single-line and block forms, and `// indirect`
+requires count as real edges — then BFS'd from the changed lib(s) over
+reverse edges. `ATLAS_LIBS_FANOUT=all` is the one-variable escape hatch back
+to the old "any `libs/` change reaches every module" behaviour, for whenever
+the closure is in doubt.
+
+`go.work.sum` is deliberately **not** treated as a fan-out trigger: it is a
+checksum artifact of resolving the workspace, and an ordinary local
+`go build`/`go mod tidy` dirties it with no `require`-graph edge actually
+changing. Before Layer 5 this mattered less because any `libs/` or `go.work`
+change fanned out fully anyway; narrowing the `libs/` case to a closure while
+leaving `go.work.sum` unanchored in the `go.work` match would have left a
+second, silent path back to the full 89+-module fan-out — the common case in
+daily use, not an edge case. A real `require`-graph edit that happens to also
+dirty `go.work.sum` is still caught on its own merits, either as a `go.work`
+change or as the `libs/`/`services/` path that actually changed.
 
 `go vet` runs full-module here on purpose. The lint guard's `govet` is
 diff-gated (`--new-from-rev`), so it will not see a pre-existing vet failure in

@@ -17,6 +17,7 @@ type assetRestModel struct {
 	Id         uint32 `json:"-"`
 	TemplateId uint32 `json:"templateId"`
 	Quantity   uint32 `json:"quantity"`
+	Slot       int16  `json:"slot"`
 }
 
 func (r assetRestModel) GetName() string { return "assets" }
@@ -104,7 +105,7 @@ func Extract(rm RestModel) (Model, error) {
 }
 
 func extractAsset(rm assetRestModel) (AssetModel, error) {
-	return AssetModel{templateId: item.Id(rm.TemplateId), quantity: rm.Quantity}, nil
+	return AssetModel{templateId: item.Id(rm.TemplateId), quantity: rm.Quantity, slot: rm.Slot}, nil
 }
 
 // accommodationInputRestModel is the POST body for

@@ -8,11 +8,20 @@ import (
 )
 
 // AssetModel is the subset of atlas-inventory's asset resource this service
-// consumes: the template item id and stacked quantity, used to evaluate
-// whether a character holds enough of a recipe's ingredients.
+// consumes: the template item id, stacked quantity, and slot, used to
+// evaluate whether a character holds enough of a recipe's ingredients and,
+// per-slot, which stacks a craft would consume (Task 21/23).
 type AssetModel struct {
 	templateId item.Id
 	quantity   uint32
+	slot       int16
+}
+
+// NewAssetModel builds an AssetModel directly, for tests and other code
+// outside this package that needs to construct a compartment snapshot
+// without a round-trip through atlas-inventory's wire format.
+func NewAssetModel(templateId item.Id, quantity uint32, slot int16) AssetModel {
+	return AssetModel{templateId: templateId, quantity: quantity, slot: slot}
 }
 
 func (m AssetModel) TemplateId() item.Id {
@@ -21,6 +30,12 @@ func (m AssetModel) TemplateId() item.Id {
 
 func (m AssetModel) Quantity() uint32 {
 	return m.quantity
+}
+
+// Slot is the compartment slot this stack occupies, as atlas-inventory
+// reports it (services/atlas-inventory/atlas.com/inventory/asset/rest.go).
+func (m AssetModel) Slot() int16 {
+	return m.slot
 }
 
 // Model is one inventory compartment snapshot (one of EQUIP/USE/ETC), as
@@ -66,4 +81,37 @@ func (m Model) QuantityOf(itemId item.Id) uint32 {
 type AccommodationItem struct {
 	ItemId   item.Id
 	Quantity uint32
+}
+
+// Builder constructs a Model directly, for tests that need a compartment
+// snapshot with specific assets without standing up an httptest server for
+// atlas-inventory's wire format.
+type Builder struct {
+	id            uuid.UUID
+	inventoryType inventory.Type
+	capacity      uint32
+	assets        []AssetModel
+}
+
+func NewBuilder(inventoryType inventory.Type) *Builder {
+	return &Builder{id: uuid.New(), inventoryType: inventoryType}
+}
+
+func (b *Builder) SetCapacity(capacity uint32) *Builder {
+	b.capacity = capacity
+	return b
+}
+
+func (b *Builder) AddAsset(asset AssetModel) *Builder {
+	b.assets = append(b.assets, asset)
+	return b
+}
+
+func (b *Builder) Build() Model {
+	return Model{
+		id:            b.id,
+		inventoryType: b.inventoryType,
+		capacity:      b.capacity,
+		assets:        b.assets,
+	}
 }

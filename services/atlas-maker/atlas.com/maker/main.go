@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-maker/crystalband"
 	"atlas-maker/reagent"
 	"atlas-maker/seed"
 	"os"
@@ -42,6 +43,7 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
 		reagent.Migration,
+		crystalband.Migration,
 	))
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
@@ -58,6 +60,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(reagent.InitResource(GetServer())(db)).
+		AddRouteInitializer(crystalband.InitResource(GetServer())(db)).
 		AddRouteInitializer(seed.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

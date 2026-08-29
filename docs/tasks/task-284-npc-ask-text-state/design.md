@@ -67,7 +67,7 @@ Two supporting workstreams hang off this spine and are otherwise independent:
 - **Configuration** — the three templates whose `messageType` table is missing
   (§7). Without this the inbound leg silently degrades to `bodyNone` and the
   reply is never read, no matter how correct the Go code is.
-- **Content** — `get_quest_progress` plus the eight NPC conversions (§8, §9).
+- **Content** — `local:get_quest_progress` plus the eight NPC conversions (§8, §9).
 
 ---
 
@@ -407,7 +407,7 @@ that does not exist.
 
 | # | Seed file | Source | Shape | Needs |
 |---|---|---|---|---|
-| 1 | `npc-2111024.json` | `MagatiaPassword.js` | `get_quest_progress(3360, info 0) → ctx.magatiaPassword`; `askText` with one `valueFromContext` match; on match `set_quest_progress(3360, 1)` + `play_portal_sound` + `warp_to_map(261030000, portalName sp_jenu\|sp_alca)` branched on `mapId == 261010000`; else "#rWrong!" | `get_quest_progress` **(new)**, `mapId` condition, `warp_to_map` `portalName` |
+| 1 | `npc-2111024.json` | `MagatiaPassword.js` | `local:get_quest_progress(3360, info 0) → ctx.magatiaPassword`; `askText` with one `valueFromContext` match; on match `set_quest_progress(3360, 1)` + `play_portal_sound` + `warp_to_map(261030000, portalName sp_jenu\|sp_alca)` branched on `mapId == 261010000`; else "#rWrong!" | `local:get_quest_progress` **(new)**, `mapId` condition, `warp_to_map` `portalName` |
 | 2–4 | `npc-2111017.json`, `npc-2111018.json`, `npc-2111019.json` | `2111017/18/19.js` | Entry `genericAction` on `questStatus(3339)` + `questProgress(23339, step 1)`; per-NPC progress advance (`17`: 0→1, `19`: 1→2, `18`: 2→3); at progress 3, `askText` matching literal `"my love Phyllia"` → `set_quest_progress(23339, 1, 4)` + `warp_to_map(261000001, portal 1)` | existing only |
 | 5 | `npc-1063011.json` (Thief arm) | `ThiefPassword.js` | `askText` matching `"Open Sesame"` → `genericAction` on `questStatus(3925) = completed` → `warp_to_map(260010402, portal 1)`, else `send_message` PINK_TEXT | existing only |
 | 6 | `npc-1063011.json` (Puppeteer arm) | `PupeteerPassword.js` | Pre-check `questStatus(21728) = started` → `sendOk` + `set_quest_progress(21728, 21761, 0)`; else `askText` matching `"Francis is a genius Puppeteer!"` → **two sequential** `genericAction` gates (20730/9300285, then 21731/9300346), each warping to `910510001` portal 1, falling through to `send_message` PINK_TEXT | existing only |
@@ -534,7 +534,7 @@ pattern for setup.
 | `processAskTextState` | emits `CommandTypeText` with `{context.x}` resolved in the prompt and the right `Def`/`Min`/`Max` |
 | `Continue` `AskTextType` arm | below-min and above-max rejected and logged; text stored trimmed under `contextKey`; first-match-wins across three ordered entries; `valueFromContext` resolved against existing context; fallback to `nextState` on no match and on empty `matches` |
 | Downstream read | a dialogue state after an `askText` renders `{context.<contextKey>}` |
-| `get_quest_progress` | value stored as a string; unstarted quest (404) stores `""` and returns nil; unknown `infoNumber` stores `""`; transport error propagates |
+| `local:get_quest_progress` | value stored as a string; unstarted quest (404) stores `""` and returns nil; unknown `infoNumber` stores `""`; transport error propagates |
 | Channel handler | the decoded reply survives handler → `ContinueConversationCommandBody.Text` (PRD acceptance criterion) |
 | Channel consumer | `TEXT` command announces `AskTextConversationDetail` with the correct field values |
 | Packet | byte fixtures for `NpcAskTextConversationDetail` on v84 and v92 with `packet-audit:verify` markers |
@@ -567,7 +567,7 @@ Each group is independently verifiable; groups 1–3 are the critical path.
    store, `matches`).
 4. **Channel** — handler passes `sp.Text()`; `TEXT` consumer arm +
    `announceTextConversation`; `getNPCTalkType` `"TEXT"` case.
-5. **`get_quest_progress`** — `quest/` client package + the operation arm.
+5. **`local:get_quest_progress`** — `quest/` client package + the operation arm.
 6. **Configuration** — derive and land the three `messageType` tables; register
    the gms_92_1 handler.
 7. **Packet coverage** — promote `NpcAskTextConversationDetail` on v84 and v92.
@@ -575,7 +575,7 @@ Each group is independently verifiable; groups 1–3 are the critical path.
 9. **Content** — the seven conversions × 10 seed directories.
 10. **Docs** — `npc_conversation_schema.json`, `quest_conversation_schema.json`,
     `domain.md`, `docs/npc_conversation_conversion_spec.md` (the `sendGetText` →
-    `askText` mapping and the `get_quest_progress` operation entry),
+    `askText` mapping and the `local:get_quest_progress` operation entry),
     `docs/research/missing-features/npc-content.md` §5.
 
 Gate: flagless `tools/verify.sh` exits 0, then code review, then PR.

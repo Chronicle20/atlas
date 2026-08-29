@@ -32,7 +32,7 @@ everything between those two ends: the handler decodes the reply and then **thro
 
 This task closes that loop end-to-end: an `askText` state in the engine, an outbound `TEXT` conversation
 command, the inbound text carried on the `ContinueConversation` command, branching on the entered value,
-a supporting `get_quest_progress` operation, editor support in `atlas-ui`, the version-config gaps that
+a supporting `local:get_quest_progress` operation, editor support in `atlas-ui`, the version-config gaps that
 prevent `ASK_TEXT` from working on several client versions, and conversion of the Cosmic scripts this
 unblocks.
 
@@ -46,7 +46,7 @@ Primary goals:
 - Let a conversation branch on the entered text without a round trip to the validation service, via an
   ordered `matches` list on the state itself.
 - Support comparing the entered text against a character's quest progress string (the Magatia lab door),
-  by adding a context-loading `get_quest_progress` operation.
+  by adding a context-loading `local:get_quest_progress` operation.
 - Make `ASK_TEXT` actually work on every client version whose template registers the
   continue-conversation handler.
 - Convert every Cosmic `sendGetText` script that this engine work unblocks into seed JSON, and state
@@ -236,7 +236,7 @@ The 14 Cosmic scripts that call `sendGetText`, and their disposition:
 
 | Script | NPC / purpose | Disposition |
 |---|---|---|
-| `MagatiaPassword.js` | Magatia lab door, password vs quest 3360 progress | **Convert** (needs `get_quest_progress`) |
+| `MagatiaPassword.js` | Magatia lab door, password vs quest 3360 progress | **Convert** (needs `local:get_quest_progress`) |
 | `2111017.js`, `2111018.js`, `2111019.js` | Magatia lab pipes, "my love Phyllia" | **Convert** |
 | `ThiefPassword.js` | "Open Sesame", gated on quest 3925 completed | **Convert** |
 | `2091009.js` | Sealed Shrine, "Actions speak louder than words" | **Convert** |
@@ -316,9 +316,9 @@ Documentation artifacts to update:
 |---|---|
 | `libs/atlas-packet` | No wire change. Byte-fixture verification for `NpcAskTextConversationDetail` on v84 and v92. |
 | `services/atlas-channel` | Handler passes decoded text through; `ContinueConversationCommandBody.Text`; producer/processor signature; `CommandTextBody` + `TEXT` consumer arm + `announceTextConversation`; `getNPCTalkType` `"TEXT"` case. |
-| `services/atlas-npc-conversations` | `AskTextType` + `AskTextModel` + `AskTextMatchModel`; builder, REST, JSON, validator; `processAskTextState` and the advance arm; `SendText` on the npc sender processor; `get_quest_progress` operation; schema/docs. |
+| `services/atlas-npc-conversations` | `AskTextType` + `AskTextModel` + `AskTextMatchModel`; builder, REST, JSON, validator; `processAskTextState` and the advance arm; `SendText` on the npc sender processor; `local:get_quest_progress` operation; schema/docs. |
 | `services/atlas-saga-orchestrator` | Mirrors the npc command constants (`kafka/message/npc/kafka.go:30`); keep the `ContinueConversationCommandBody` definition in sync if it carries one. |
-| `services/atlas-query-aggregator` | Only if `get_quest_progress` reads through it rather than the quest service directly — a design-phase decision. |
+| `services/atlas-query-aggregator` | Only if `local:get_quest_progress` reads through it rather than the quest service directly — a design-phase decision. |
 | `services/atlas-configurations` | `messageType` tables for gms_87_1, jms_185_1; handler registration + table for gms_92_1. |
 | `services/atlas-ui` | `askText` in types, stateMeta, transitions, editorOps, ConversationInspector. |
 | `deploy/seed` | 7 new NPC conversation JSON files × 10 seed versions. |
@@ -337,7 +337,7 @@ Documentation artifacts to update:
 - **Backwards compatibility:** both Kafka additions are optional fields on existing message shapes; a
   conversation with no `askText` state behaves identically before and after.
 - **Performance:** no additional service round trip on the hot path. `matches` are evaluated in-process
-  against the conversation context; `get_quest_progress` is an explicit, author-controlled operation.
+  against the conversation context; `local:get_quest_progress` is an explicit, author-controlled operation.
 - **Immutability / style:** models are immutable with builder construction and no test-only constructors,
   per `backend-dev-guidelines`.
 
@@ -345,7 +345,7 @@ Documentation artifacts to update:
 
 1. Should whitespace trimming of the player's reply (§4.4) apply to `matches` comparison only, or also to
    the value stored in `contextKey`? Proposed: trim for comparison, store trimmed.
-2. Does `get_quest_progress` read the quest service directly or go through `atlas-query-aggregator`?
+2. Does `local:get_quest_progress` read the quest service directly or go through `atlas-query-aggregator`?
    Design-phase decision; the aggregator's existing `questProgress` support is numeric-only.
 3. Cosmic's `getQuestProgress(3360)` with no info-number returns the quest's default progress string. The
    exact Atlas equivalent for a quest with no recorded progress needs confirming against the quest service
@@ -370,7 +370,7 @@ Documentation artifacts to update:
 - [ ] `matches` evaluate first-match-wins, support both `value` and `valueFromContext`, and fall back to
       `nextState`; covered by unit tests including a `valueFromContext` case.
 - [ ] The reply is readable from a later state as `{context.<contextKey>}`.
-- [ ] `get_quest_progress` stores a quest's progress string into conversation context and returns the
+- [ ] `local:get_quest_progress` stores a quest's progress string into conversation context and returns the
       empty string (not an error) for an unstarted quest.
 - [ ] `template_gms_87_1.json` and `template_jms_185_1.json` carry a complete `messageType` options table
       including `ASK_TEXT`, with every byte derived from the corresponding client.

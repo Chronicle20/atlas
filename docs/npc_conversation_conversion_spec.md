@@ -250,7 +250,15 @@ it is the fallback used when no `matches` entry applies.
 - `text` (required): Prompt text asking for input. Supports `{context.xxx}` references.
 - `defaultText` (optional): Default text pre-filled for the player.
 - `minLength` / `maxLength` (`maxLength` required): Accepted length range for the trimmed
-  input. Input outside this range is rejected and the player is re-prompted.
+  input. Input outside this range is rejected and the player is re-prompted: the state
+  does not advance, the rejected input is never stored under `contextKey` (a prior value
+  already held there survives untouched), and processing continues with no error — a
+  `Warnf`-level server log line is emitted instead. The re-prompt re-sends the exact same
+  prompt the state's first presentation used — same `text` (after context-placeholder
+  replacement), same `defaultText`, same `minLength`/`maxLength` — through the same send
+  path; there is no "invalid input" message or other marker, so from the player's side the
+  re-prompt is indistinguishable from the original prompt. A subsequent valid input on the
+  same state advances normally.
 - `contextKey` (required): Context key the trimmed, entered text is stored under. The
   captured value is then available as `{context.<contextKey>}` in later states.
 - `matches` (optional): An ordered, first-match-wins branch table. Each entry has exactly

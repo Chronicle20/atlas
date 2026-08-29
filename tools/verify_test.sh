@@ -94,15 +94,32 @@ facts_key() { local k="$1"; shift; "$VERIFY" --facts "$@" 2>/dev/null | sed -n "
 # than execution. (Do not start a comment line with the word that shellcheck
 # reads as a directive; it parses one and fails with SC1072/SC1073.)
 #
-# Fixed names, not $$: a crashed run leaves exactly one stale file, which the
-# next run removes, instead of one per attempt.
-probe_suite="$HERE/zz-verify-probe_test.sh"
-probe_deploy="$HERE/../deploy/.zz-verify-probe.tmp"
-probe_ban_dir="$HERE/../services/atlas-ban/zz-verify-probe"
-probe_account_dir="$HERE/../services/atlas-account/zz-verify-probe"
+# Per-process, not fixed: two concurrent runs of this suite — or one run
+# racing a live `verify.sh` gate — must not collide on the same paths. Each
+# leaf name carries the PID of this run; the directory each probe sits in is
+# unchanged, because several assertions depend on the probes' RELATIVE
+# locations (inside services/, deploy/, tools/) and cannot simply move to a
+# shared temp dir.
+probe_tag="$$"
+probe_suite="$HERE/zz-verify-probe-${probe_tag}_test.sh"
+probe_deploy="$HERE/../deploy/.zz-verify-probe-${probe_tag}.tmp"
+probe_ban_dir="$HERE/../services/atlas-ban/zz-verify-probe-${probe_tag}"
+probe_account_dir="$HERE/../services/atlas-account/zz-verify-probe-${probe_tag}"
 probe_bake_ban="$probe_ban_dir/go.mod"
 probe_bake_account="$probe_account_dir/go.mod"
-probe_broken_dir="$HERE/../services/zz-verify-probe-broken"
+probe_broken_dir="$HERE/../services/zz-verify-probe-broken-${probe_tag}"
+probe_jobs0_err="$HERE/zz-verify-jobs0-${probe_tag}.err"
+# Two assertions below don't read this run's OWN probe by name — they read a
+# category `--facts` derives from shared, not-per-process, state: "does any
+# deploy/ path exist in the changed set" and "which SERVICES have a changed
+# go.mod," which bake_targets() dedupes by service name. A per-process leaf
+# name can't isolate those; a concurrent run's own probe under the same
+# category is indistinguishable from this run's, so the add/assert/remove/
+# assert-gone sequence around them takes an exclusive lock instead — the same
+# tool (flock) tools/tidy-all-go.sh already uses for the one other genuinely
+# shared, not-per-process, mutable resource in this suite.
+shared_state_lock="${TMPDIR:-/tmp}/atlas-verify-test-shared-state.lock"
+exec 8>"$shared_state_lock"
 # The broken-module run below is a real `verify.sh --quick` invocation, so the
 # Go toolchain resolves the workspace and appends hash lines to go.work.sum.
 # That file must come back byte-identical whether the assertions pass, fail,
@@ -113,11 +130,11 @@ probe_broken_dir="$HERE/../services/zz-verify-probe-broken"
 # EXIT, INT, and TERM so a signal-delivered interruption (e.g. from a
 # `timeout`-bounded foreground child) still restores it.
 gowork_sum="$HERE/../go.work.sum"
-gowork_sum_backup="$HERE/zz-verify-probe-broken.go.work.sum.bak"
-gowork_sum_backup_absent="$HERE/zz-verify-probe-broken.go.work.sum.absent"
+gowork_sum_backup="$HERE/zz-verify-probe-broken-${probe_tag}.go.work.sum.bak"
+gowork_sum_backup_absent="$HERE/zz-verify-probe-broken-${probe_tag}.go.work.sum.absent"
 cleanup() {
   rm -f "$probe_suite" "$probe_deploy" "$probe_bake_ban" "$probe_bake_account" \
-    "$HERE/zz-verify-jobs0.err"
+    "$probe_jobs0_err"
   rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
   rm -rf "$probe_broken_dir"
   if [ -f "$gowork_sum_backup" ]; then
@@ -172,12 +189,14 @@ assert_true "--facts lists it under guard_suites" \
 
 # A deploy/ path selects the deploy gates. Only --facts is exercised here: a
 # real gen-lb-ports.sh --check walks the whole tree, and selection is the claim.
+flock 8
 : > "$probe_deploy"
 assert_true "a deploy/ change selects the LB port gate" \
   "$(facts_selected --quick --base HEAD | grep 'LB port drift' >/dev/null && echo true)"
 rm -f "$probe_deploy"
 assert_true "removing it deselects the LB port gate" \
   "$(facts_selected --quick --base HEAD | grep 'LB port drift' >/dev/null && echo false || echo true)"
+flock -u 8
 
 # --- module selection agrees ----------------------------------------------
 
@@ -254,6 +273,15 @@ assert_eq "no slot acquisition on the guard, lint, --facts, or summary paths" "0
 # .github/config/services.json, requiring the path to end in go.mod. CHANGED
 # includes untracked files, so two untracked go.mods select exactly two
 # targets — and must produce exactly one bake gate, not two.
+#
+# bake_targets() dedupes by SERVICE (atlas-ban/atlas-account), so a
+# concurrent verify_test.sh run's own probe under either service is
+# indistinguishable, from this block's perspective, from this run's — the
+# lock above (held for the whole add/assert/remove/assert-gone sequence)
+# is what makes "no probes, no bake gate" hold; bake_gate_lines_baseline is
+# belt-and-suspenders for any pre-existing litter the lock can't see.
+flock 8
+bake_gate_lines_baseline="$(facts_selected --base HEAD | grep -c '^docker buildx bake' || true)"
 mkdir -p "$probe_ban_dir" "$probe_account_dir"
 : > "$probe_bake_ban"
 : > "$probe_bake_account"
@@ -271,7 +299,8 @@ rm -f "$probe_bake_ban" "$probe_bake_account"
 rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
 
 no_bake_lines="$(facts_selected --base HEAD | grep -c '^docker buildx bake' || true)"
-assert_eq "no probes, no bake gate" "0" "$no_bake_lines"
+assert_eq "no probes, no bake gate" "$bake_gate_lines_baseline" "$no_bake_lines"
+flock -u 8
 
 assert_eq "no per-target bake loop remains" "0" \
   "$(grep -c 'for t in .\{0,4\}TARGETS' "$VERIFY")"
@@ -290,7 +319,6 @@ mods_j1="$(ATLAS_VERIFY_GO_JOBS=1 facts_key modules_selected --quick --base HEAD
 mods_j4="$(ATLAS_VERIFY_GO_JOBS=4 facts_key modules_selected --quick --base HEAD)"
 assert_eq "module count is job-count invariant (1 vs 4)" "$mods_j1" "$mods_j4"
 
-probe_jobs0_err="$HERE/zz-verify-jobs0.err"
 ATLAS_VERIFY_GO_JOBS=0 "$VERIFY" --quick --base HEAD >/dev/null 2>"$probe_jobs0_err"
 job0_rc=$?
 assert_eq "GO_JOBS=0 is rejected (exit 2)" "2" "$job0_rc"
@@ -316,6 +344,14 @@ assert_true "the Go layer's log dir is created under TMPDIR and cleaned up on ex
 # that regression class; a sabotaged `.rc` read can still leave the overall
 # exit status non-zero for unrelated reasons, so the first assertion alone
 # would not catch it.
+# go.work.sum itself (unlike the backup file names above) is one real,
+# shared, not-per-process path: it is THE workspace sum file, not a probe.
+# A concurrent verify_test.sh run mutating it (via its own real `--quick`
+# invocation below) while this run is mid snapshot/restore would corrupt
+# either run's restore, so this whole snapshot/run/restore sequence is
+# lock-protected too — held across a possible signal-driven interruption,
+# since the EXIT/INT/TERM trap's own restore runs before this fd closes.
+flock 8
 rm -f "$gowork_sum_backup" "$gowork_sum_backup_absent"
 if [ -f "$gowork_sum" ]; then
   cp -p "$gowork_sum" "$gowork_sum_backup"
@@ -345,11 +381,12 @@ if [ -f "$gowork_sum_backup" ]; then
 elif [ -f "$gowork_sum_backup_absent" ]; then
   rm -f "$gowork_sum" "$gowork_sum_backup_absent"
 fi
+flock -u 8
 
 assert_eq "a genuinely broken module makes the run exit non-zero" "1" "$broken_rc"
 assert_true "the broken module is reported FAILED, unstripped" \
   "$(printf '%s\n' "$broken_out" \
-     | grep 'FAILED' | grep 'zz-verify-probe-broken' >/dev/null && echo true)"
+     | grep 'FAILED' | grep "zz-verify-probe-broken-${probe_tag}" >/dev/null && echo true)"
 
 # --- --facts runs nothing --------------------------------------------------
 #

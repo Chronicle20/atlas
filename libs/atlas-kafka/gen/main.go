@@ -21,9 +21,13 @@ import (
 )
 
 const (
-	topicsYAMLPath      = "topics.yaml"
-	envConfigMapPath    = "../../../deploy/k8s/base/env-configmap.yaml"
-	topicsConfigMapPath = "../../../deploy/k8s/base/kafka-topics-configmap.yaml"
+	topicsYAMLPath        = "topics.yaml"
+	envConfigMapPath      = "../../../deploy/k8s/base/env-configmap.yaml"
+	topicsConfigMapPath   = "../../../deploy/k8s/base/kafka-topics-configmap.yaml"
+	mainOverlayPath       = "../../../deploy/k8s/overlays/main/kustomization.yaml"
+	prOverlayPath         = "../../../deploy/k8s/overlays/pr/kustomization.yaml"
+	prSparseOverlayPath   = "../../../deploy/k8s/overlays/pr-sparse/kustomization.yaml"
+	composeEnvExamplePath = "../../../deploy/compose/.env.example"
 )
 
 const (
@@ -55,17 +59,44 @@ func main() {
 		os.Exit(1)
 	}
 
+	mainOverlay, err := renderOverlay(mainOverlayPath, m, overlaySuffixes["main"])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "rendering", mainOverlayPath, "failed:", err)
+		os.Exit(1)
+	}
+	prOverlay, err := renderOverlay(prOverlayPath, m, overlaySuffixes["pr"])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "rendering", prOverlayPath, "failed:", err)
+		os.Exit(1)
+	}
+	prSparseOverlay, err := renderOverlay(prSparseOverlayPath, m, overlaySuffixes["pr-sparse"])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "rendering", prSparseOverlayPath, "failed:", err)
+		os.Exit(1)
+	}
+	composeEnvExample, err := renderComposeEnvExample(m)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "rendering", composeEnvExamplePath, "failed:", err)
+		os.Exit(1)
+	}
+
+	files := []struct {
+		path string
+		out  []byte
+	}{
+		{topicsYAMLPath, topicsYAML},
+		{envConfigMapPath, envConfigMap},
+		{topicsConfigMapPath, topicsConfigMap},
+		{mainOverlayPath, mainOverlay},
+		{prOverlayPath, prOverlay},
+		{prSparseOverlayPath, prSparseOverlay},
+		{composeEnvExamplePath, composeEnvExample},
+	}
+
 	if *check {
 		var failed bool
-		for _, f := range []struct {
-			path string
-			want []byte
-		}{
-			{topicsYAMLPath, topicsYAML},
-			{envConfigMapPath, envConfigMap},
-			{topicsConfigMapPath, topicsConfigMap},
-		} {
-			if err := checkDrift(f.path, f.want); err != nil {
+		for _, f := range files {
+			if err := checkDrift(f.path, f.out); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				failed = true
 			}
@@ -77,14 +108,7 @@ func main() {
 		return
 	}
 
-	for _, f := range []struct {
-		path string
-		out  []byte
-	}{
-		{topicsYAMLPath, topicsYAML},
-		{envConfigMapPath, envConfigMap},
-		{topicsConfigMapPath, topicsConfigMap},
-	} {
+	for _, f := range files {
 		if err := os.WriteFile(f.path, f.out, 0o644); err != nil {
 			fmt.Fprintln(os.Stderr, "writing", f.path, "failed:", err)
 			os.Exit(1)
@@ -102,6 +126,28 @@ func renderEnvConfigMap(m Manifest) ([]byte, error) {
 		return nil, err
 	}
 	return Splice(existing, envConfigMapBeginMarker, envConfigMapEndMarker, m.EmitEnvConfigMapBlock())
+}
+
+// renderOverlay splices m's generated topic literals, suffixed for the
+// given overlay, into the existing kustomization.yaml at path, preserving
+// everything outside the marker region.
+func renderOverlay(path string, m Manifest, suffix string) ([]byte, error) {
+	existing, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return Splice(existing, envConfigMapBeginMarker, envConfigMapEndMarker, m.EmitOverlayBlock(suffix))
+}
+
+// renderComposeEnvExample splices m's generated topic assignments into the
+// existing deploy/compose/.env.example, preserving everything outside the
+// marker region.
+func renderComposeEnvExample(m Manifest) ([]byte, error) {
+	existing, err := os.ReadFile(composeEnvExamplePath)
+	if err != nil {
+		return nil, err
+	}
+	return Splice(existing, envConfigMapBeginMarker, envConfigMapEndMarker, m.EmitComposeBlock())
 }
 
 // repoRootFromGit resolves the repository root so Scan can be run from

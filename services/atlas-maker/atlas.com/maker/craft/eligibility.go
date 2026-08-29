@@ -3,10 +3,15 @@ package craft
 import (
 	"atlas-maker/character"
 	"atlas-maker/compartment"
+	"atlas-maker/crystalband"
+	"atlas-maker/data/equipment"
 	"atlas-maker/quest"
+	"atlas-maker/reagent"
 	"atlas-maker/recipe"
 	"atlas-maker/skill"
+	"context"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -76,7 +81,13 @@ func resolveMakerLevel(skills []skill.Model) byte {
 }
 
 // Processor evaluates per-character recipe eligibility (FR-2.1, FR-2.2,
-// FR-3.5).
+// FR-3.5) and, per Task 23, validates and executes a craft. Create lives
+// here rather than on a separately named type because Task 21 already
+// claimed the package's obvious "the craft processor" name for eligibility;
+// splitting validation-only and validate-and-execute processors would
+// fragment one cohesive dependency set (character/skill/compartment/quest
+// plus, as of Task 23, recipe/reagent/crystalband/equipment) across two
+// types for no benefit to a caller, who always wants both.
 type Processor interface {
 	// NewSnapshot reads characterId's EQUIP, USE, and ETC compartments once
 	// each, for repeated in-memory evaluation of every candidate recipe
@@ -85,20 +96,39 @@ type Processor interface {
 	// Evaluate checks r against characterId and snap, in the cheapest-first
 	// order design §4.2.2 specifies, returning on the first failed check.
 	Evaluate(characterId uint32, snap Snapshot, r recipe.Model) (Eligibility, error)
+	// Create validates req against characterId's live state and, on
+	// acceptance, emits the craft saga and returns its transaction id
+	// (design §3.2 steps 2-4). On rejection it returns a *CraftError whose
+	// Code maps 1:1 onto PRD §5 and mutates nothing (design §7 "rejection is
+	// pre-mutation").
+	Create(characterId uint32, req Request) (uuid.UUID, error)
+	// ReleaseInFlight clears characterId's in-flight craft guard (design
+	// §7). Intended for the saga terminal-event consumer Task 24 wires; a
+	// rejected Create already releases its own guard before returning.
+	ReleaseInFlight(characterId uint32)
 }
 
 type ProcessorImpl struct {
-	l  logrus.FieldLogger
-	cp character.Processor
-	sp skill.Processor
-	kp compartment.Processor
-	qp quest.Processor
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  character.Processor
+	sp  skill.Processor
+	kp  compartment.Processor
+	qp  quest.Processor
+	rp  recipe.Processor
+	rgp reagent.Processor
+	cbp crystalband.Processor
+	eqp equipment.Processor
+	em  SagaEmitter
 }
 
 // NewProcessor builds a Processor backed by the upstream character, skill,
-// compartment, and quest processors (Task 19).
-func NewProcessor(l logrus.FieldLogger, cp character.Processor, sp skill.Processor, kp compartment.Processor, qp quest.Processor) Processor {
-	return &ProcessorImpl{l: l, cp: cp, sp: sp, kp: kp, qp: qp}
+// compartment, and quest processors (Task 19), the recipe cache (Task 20),
+// the reagent stat table and crystal-band table (Task 17/18), the equipment
+// data client (Task 19), and em, the caller-supplied saga emission seam
+// (Task 23; the concrete Kafka-backed implementation is Task 24's to wire).
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, cp character.Processor, sp skill.Processor, kp compartment.Processor, qp quest.Processor, rp recipe.Processor, rgp reagent.Processor, cbp crystalband.Processor, eqp equipment.Processor, em SagaEmitter) Processor {
+	return &ProcessorImpl{l: l, ctx: ctx, cp: cp, sp: sp, kp: kp, qp: qp, rp: rp, rgp: rgp, cbp: cbp, eqp: eqp, em: em}
 }
 
 var _ Processor = (*ProcessorImpl)(nil)

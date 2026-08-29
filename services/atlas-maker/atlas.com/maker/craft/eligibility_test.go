@@ -15,9 +15,17 @@ import (
 
 	compartmentmock "atlas-maker/compartment/mock"
 
+	crystalbandmock "atlas-maker/crystalband/mock"
+
+	equipmentmock "atlas-maker/data/equipment/mock"
+
 	itemmakemock "atlas-maker/data/itemmake/mock"
 
 	questmock "atlas-maker/quest/mock"
+
+	reagentmock "atlas-maker/reagent/mock"
+
+	recipemock "atlas-maker/recipe/mock"
 
 	skillmock "atlas-maker/skill/mock"
 
@@ -29,8 +37,26 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// noopEmitter satisfies craft.SagaEmitter without ever being expected to be
+// called by the eligibility/snapshot tests in this file, which never reach
+// Create.
+type noopEmitter struct{}
+
+func (noopEmitter) Emit(saga.Saga) error { return nil }
+
+// testContext builds a fresh per-call tenant context, so tests that build a
+// craft.Processor never collide on the package-wide in-flight guard's
+// (tenant, characterId) key.
+func testContext(t *testing.T) context.Context {
+	t.Helper()
+	te, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	return tenant.WithContext(context.Background(), te)
+}
 
 func testLogger() logrus.FieldLogger {
 	l := logrus.New()
@@ -143,7 +169,7 @@ func newEligibleHarness(t *testing.T) *harness {
 	}
 }
 
-func (h *harness) processor() craft.Processor {
+func (h *harness) processor(t *testing.T) craft.Processor {
 	cp := &charactermock.ProcessorMock{
 		GetByIdFunc: func(uint32) (character.Model, error) { return h.character, nil },
 	}
@@ -172,7 +198,11 @@ func (h *harness) processor() craft.Processor {
 			return h.quests, nil
 		},
 	}
-	return craft.NewProcessor(testLogger(), cp, sp, kp, qp)
+	rp := &recipemock.ProcessorMock{}
+	rgp := &reagentmock.ProcessorMock{}
+	cbp := &crystalbandmock.ProcessorMock{}
+	eqp := &equipmentmock.ProcessorMock{}
+	return craft.NewProcessor(testLogger(), testContext(t), cp, sp, kp, qp, rp, rgp, cbp, eqp, noopEmitter{})
 }
 
 func (h *harness) snapshot(t *testing.T, p craft.Processor) craft.Snapshot {
@@ -277,7 +307,7 @@ func TestEligibilityOnePerExclusionReason(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newEligibleHarness(t)
 			tc.mutate(t, h)
-			p := h.processor()
+			p := h.processor(t)
 			snap := h.snapshot(t, p)
 
 			e, err := p.Evaluate(h.characterId, snap, r)
@@ -294,7 +324,7 @@ func TestEligibilityOnePerExclusionReason(t *testing.T) {
 func TestEligibilityAllConditionsMetIsEligible(t *testing.T) {
 	r := eligibleRecipeFixture(t)
 	h := newEligibleHarness(t)
-	p := h.processor()
+	p := h.processor(t)
 	snap := h.snapshot(t, p)
 
 	e, err := p.Evaluate(h.characterId, snap, r)
@@ -320,7 +350,7 @@ func TestAnyMakerVariantSatisfiesTheSkillGate(t *testing.T) {
 		t.Run(skillconst.IdentityName(id), func(t *testing.T) {
 			h := newEligibleHarness(t)
 			h.skills = []skill.Model{buildSkill(t, uint32(id), 2)}
-			p := h.processor()
+			p := h.processor(t)
 			snap := h.snapshot(t, p)
 
 			e, err := p.Evaluate(h.characterId, snap, r)
@@ -346,7 +376,7 @@ func TestReqQuestIsOnlyReadWhenTheRecipeCarriesOne(t *testing.T) {
 	h := newEligibleHarness(t)
 	h.character = buildCharacter(t, 40, 0)
 	h.etc = compartment.NewBuilder(inventory.TypeValueETC).Build()
-	p := h.processor()
+	p := h.processor(t)
 	snap := h.snapshot(t, p)
 
 	e, err := p.Evaluate(h.characterId, snap, r)
@@ -375,7 +405,7 @@ func TestMaterialCountSumsAcrossStacks(t *testing.T) {
 		AddAsset(compartment.NewAssetModel(item.Id(4011001), 3, 1)).
 		AddAsset(compartment.NewAssetModel(item.Id(4011001), 2, 2)).
 		Build()
-	p := h.processor()
+	p := h.processor(t)
 	snap := h.snapshot(t, p)
 
 	assert.EqualValues(t, 5, snap.Held(item.Id(4011001)))

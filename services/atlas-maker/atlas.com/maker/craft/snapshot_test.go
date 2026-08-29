@@ -12,7 +12,15 @@ import (
 
 	compartmentmock "atlas-maker/compartment/mock"
 
+	crystalbandmock "atlas-maker/crystalband/mock"
+
+	equipmentmock "atlas-maker/data/equipment/mock"
+
 	questmock "atlas-maker/quest/mock"
+
+	reagentmock "atlas-maker/reagent/mock"
+
+	recipemock "atlas-maker/recipe/mock"
 
 	skillmock "atlas-maker/skill/mock"
 
@@ -90,7 +98,11 @@ func TestSnapshotReadsEachTypeExactlyOnce(t *testing.T) {
 		},
 	}
 	qp := &questmock.ProcessorMock{}
-	p := craft.NewProcessor(testLogger(), cp2, sp, cp, qp)
+	rp := &recipemock.ProcessorMock{}
+	rgp := &reagentmock.ProcessorMock{}
+	cbp := &crystalbandmock.ProcessorMock{}
+	eqp := &equipmentmock.ProcessorMock{}
+	p := craft.NewProcessor(testLogger(), testContext(t), cp2, sp, cp, qp, rp, rgp, cbp, eqp, noopEmitter{})
 
 	recipes := []itemmake.RestModel{
 		{Id: 3000001, Group: 1, ReqLevel: 1, ReqSkillLevel: 1, ItemNum: 1},

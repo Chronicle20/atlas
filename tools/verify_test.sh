@@ -105,10 +105,13 @@ probe_bake_account="$probe_account_dir/go.mod"
 probe_broken_dir="$HERE/../services/zz-verify-probe-broken"
 # The broken-module run below is a real `verify.sh --quick` invocation, so the
 # Go toolchain resolves the workspace and appends hash lines to go.work.sum.
-# That file must come back byte-identical no matter how the run ends, or every
-# later gate misclassifies it as a shared-lib change and rebuilds all modules
-# (see the comment at the broken-module block). Snapshot/restore is folded
-# into the same EXIT trap as the rest of the probe cleanup.
+# That file must come back byte-identical whether the assertions pass, fail,
+# or the run is interrupted by SIGINT/SIGTERM, or every later gate
+# misclassifies it as a shared-lib change and rebuilds all modules (see the
+# comment at the broken-module block). Snapshot/restore is folded into the
+# same cleanup trap as the rest of the probe cleanup, and the trap fires on
+# EXIT, INT, and TERM so a signal-delivered interruption (e.g. from a
+# `timeout`-bounded foreground child) still restores it.
 gowork_sum="$HERE/../go.work.sum"
 gowork_sum_backup="$HERE/zz-verify-probe-broken.go.work.sum.bak"
 gowork_sum_backup_absent="$HERE/zz-verify-probe-broken.go.work.sum.absent"
@@ -123,7 +126,7 @@ cleanup() {
     rm -f "$gowork_sum" "$gowork_sum_backup_absent"
   fi
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 cleanup
 printf '#!/usr/bin/env bash\nexit 0\n' > "$probe_suite"
 chmod +x "$probe_suite"

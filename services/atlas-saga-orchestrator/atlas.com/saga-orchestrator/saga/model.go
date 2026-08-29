@@ -219,6 +219,9 @@ const (
 	WithdrawFromParcel = sharedsaga.WithdrawFromParcel
 	ShowParcel         = sharedsaga.ShowParcel
 
+	// Crafting actions (maker skill, task-285).
+	AwardCraftedAsset = sharedsaga.AwardCraftedAsset
+
 	// Guild actions
 	RequestGuildName             = sharedsaga.RequestGuildName
 	RequestGuildEmblem           = sharedsaga.RequestGuildEmblem
@@ -293,6 +296,7 @@ const (
 type (
 	AwardItemActionPayload              = sharedsaga.AwardItemActionPayload
 	ItemPayload                         = sharedsaga.ItemPayload
+	AwardCraftedAssetPayload            = sharedsaga.AwardCraftedAssetPayload
 	WarpToRandomPortalPayload           = sharedsaga.WarpToRandomPortalPayload
 	WarpToPortalPayload                 = sharedsaga.WarpToPortalPayload
 	AwardExperiencePayload              = sharedsaga.AwardExperiencePayload
@@ -1597,6 +1601,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case AcceptToParcel:
 		var payload AcceptToParcelPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case AwardCraftedAsset:
+		var payload AwardCraftedAssetPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

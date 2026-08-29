@@ -49,6 +49,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -148,6 +149,7 @@ type Handler interface {
 	handleDepositToStorage(s Saga, st Step[any]) error
 	handleUpdateStorageMesos(s Saga, st Step[any]) error
 	handleAwardFame(s Saga, st Step[any]) error
+	handleAwardCraftedAsset(s Saga, st Step[any]) error
 	handleShowStorage(s Saga, st Step[any]) error
 	handleAcceptToStorage(s Saga, st Step[any]) error
 	handleReleaseFromCharacter(s Saga, st Step[any]) error
@@ -856,6 +858,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 	switch action {
 	case AwardAsset:
 		return h.handleAwardAsset, true
+	case AwardCraftedAsset:
+		return h.handleAwardCraftedAsset, true
 	case WarpToRandomPortal:
 		return h.handleWarpToRandomPortal, true
 	case WarpToPortal:
@@ -1114,6 +1118,25 @@ func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
 	err := h.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAwardCraftedAsset handles the AwardCraftedAsset action. Unlike
+// AwardAsset (template stats only) or CreateAndEquipAsset (randomized-stat
+// toggle), the crafted equip carries an explicit stat block and upgrade-slot
+// count computed by the maker skill recipe.
+func (h *HandlerImpl) handleAwardCraftedAsset(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(AwardCraftedAssetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.compP.RequestCreateItemWithExplicitStats(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, time.Time{}, payload)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to award crafted asset.")
 		return err
 	}
 

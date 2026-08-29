@@ -58,6 +58,7 @@ type Compensator interface {
 	compensateChangeSkin(s Saga, failedStep Step[any]) error
 	compensateStorageOperation(s Saga, failedStep Step[any]) error
 	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
+	compensateAwardCraftedAsset(s Saga, failedStep Step[any]) error
 	compensateCharacterCreation(s Saga, failedStep Step[any]) error
 	compensatePetEvolution(s Saga, failedStep Step[any]) error
 	compensateCashItemUse(s Saga, failedStep Step[any]) error
@@ -528,6 +529,8 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		return c.compensateStorageOperation(s, failedStep)
 	case SelectGachaponReward:
 		return c.compensateSelectGachaponReward(s, failedStep)
+	case AwardCraftedAsset:
+		return c.compensateAwardCraftedAsset(s, failedStep)
 	default:
 		c.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId().String(),
@@ -1173,6 +1176,115 @@ func (c *CompensatorImpl) compensateSelectGachaponReward(s Saga, failedStep Step
 			"character_id":   characterId,
 			"tenant_id":      c.t.Id().String(),
 		}).Error("Failed to emit saga failed event for gachapon compensation.")
+		return err
+	}
+
+	return nil
+}
+
+// compensateAwardCraftedAsset reverse-walks a failed AwardCraftedAsset step
+// (task-285 maker skill crafting, design §4.5.2 mode 1|2 create). Unlike the
+// other special-cased actions above, AwardCraftedAsset has no dedicated saga
+// type: it is dispatched generically, always as the terminal step of a craft
+// saga, preceded by AwardMesos (the recipe's meso cost, negative) and one
+// DestroyAssetFromSlot per resolved material/gem/catalyst slot. A failure here
+// means creation itself did not happen, so every already-completed step must
+// be undone or the player is charged and stripped of materials for a craft
+// that delivered nothing (FR-3.7 / PRD §8 Atomicity).
+//
+// The inner switch also carries a `case AwardCraftedAsset:` arm, modelled on
+// AwardAsset's reverse-walk arm (DispatchCharacterCreationRollbacks), for the
+// symmetric case: a completed AwardCraftedAsset encountered while walking back
+// from an unrelated later failure. No craft sequence today places a step after
+// AwardCraftedAsset, so this arm is not reachable via CompensateFailedStep in
+// production traffic; it exists so this compensator has the same completeness
+// every other creation action (AwardAsset, CreateAndEquipAsset) already has.
+func (c *CompensatorImpl) compensateAwardCraftedAsset(s Saga, failedStep Step[any]) error {
+	var characterId uint32
+	if payload, ok := failedStep.Payload().(AwardCraftedAssetPayload); ok {
+		characterId = payload.CharacterId
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"step_id":        failedStep.StepId(),
+		"character_id":   characterId,
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Compensating failed AwardCraftedAsset — reversing consumed materials and the recipe cost.")
+
+	for _, step := range s.Steps() {
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case AwardCraftedAsset:
+			payload, ok := step.Payload().(AwardCraftedAssetPayload)
+			if !ok {
+				continue
+			}
+			if err := c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, false); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"template_id":    payload.TemplateId,
+				}).Error("Reverse-walk: AwardCraftedAsset → DestroyItem dispatch failed; continuing chain.")
+			}
+		case DestroyAssetFromSlot:
+			payload, ok := step.Payload().(DestroyAssetFromSlotPayload)
+			if !ok || payload.TemplateId == 0 {
+				// Legacy/producer payload with no recoverable quantity; nothing
+				// can be re-created from it.
+				continue
+			}
+			qty := payload.Quantity
+			if qty == 0 {
+				qty = 1
+			}
+			if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"template_id":    payload.TemplateId,
+				}).Error("Reverse-walk: DestroyAssetFromSlot → CreateItem dispatch failed; continuing chain.")
+			}
+		case AwardMesos:
+			payload, ok := step.Payload().(AwardMesosPayload)
+			if !ok {
+				continue
+			}
+			ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+			if err := c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+				}).Error("Reverse-walk: AwardMesos → refund dispatch failed; continuing chain.")
+			}
+		}
+	}
+
+	// Cancel the Phase-4 timeout backstop and remove saga from cache.
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	// Emit saga failed event
+	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
+		FailedStatusEventProvider(
+			s.TransactionId(),
+			0,
+			characterId,
+			string(s.SagaType()),
+			sagaMsg.ErrorCodeUnknown,
+			fmt.Sprintf("AwardCraftedAsset failed at step [%s]", failedStep.StepId()),
+			failedStep.StepId(),
+		))
+	if err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"character_id":   characterId,
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event for AwardCraftedAsset compensation.")
 		return err
 	}
 
@@ -3000,6 +3112,10 @@ var lateCompensableActions = map[Action]struct{}{
 	// undid the character grant. Mirrors the MTS custody entries above.
 	AcceptToParcel:    {},
 	ReleaseFromParcel: {},
+	// AwardCraftedAsset (task-285 maker skill crafting). Its completion event
+	// can land after the saga has already timed out/failed, exactly like
+	// AwardAsset above; the late inverse destroys the crafted equip.
+	AwardCraftedAsset: {},
 }
 
 // tradeLateCompensableActions extends lateCompensableActions for TradeTransaction
@@ -3150,6 +3266,15 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 			return fmt.Errorf("invalid payload for late CreateAndEquipAsset compensation")
 		}
 		return c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false)
+	case AwardCraftedAsset:
+		// A late-successful craft delivered the equip after the saga's own
+		// compensation already reversed the mesos charge and re-created the
+		// consumed materials: destroy the now-duplicate crafted equip.
+		payload, ok := step.Payload().(AwardCraftedAssetPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AwardCraftedAsset compensation")
+		}
+		return c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, false)
 	case CreateSkill:
 		payload, ok := step.Payload().(CreateSkillPayload)
 		if !ok {

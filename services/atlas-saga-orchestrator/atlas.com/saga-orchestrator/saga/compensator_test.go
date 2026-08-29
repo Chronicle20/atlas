@@ -1263,3 +1263,215 @@ func TestExpirationExtenderUseIsTimerClassified(t *testing.T) {
 		t.Error("ExpirationExtenderUse missing from allSagaTypes")
 	}
 }
+
+// TestCompensateAwardCraftedAssetDestroysTheAsset verifies the reverse-walk
+// arm registered for AwardCraftedAsset (task-285 maker skill crafting):
+// walking a saga whose AwardCraftedAsset step already completed but whose
+// next step failed destroys the crafted equip, mirroring AwardAsset's
+// reverse-walk arm (DispatchCharacterCreationRollbacks). No craft sequence in
+// design §4.5.2 places a step after AwardCraftedAsset today, but the
+// compensator's per-completed-step switch must still carry this arm for the
+// same completeness every other creation action already has.
+func TestCompensateAwardCraftedAssetDestroysTheAsset(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		testCharId        = uint32(88001)
+		craftedTemplateId = uint32(1082002)
+		craftedQty        = uint32(1)
+	)
+
+	type destroyCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var destroyCalls []destroyCall
+	compP := &compmock.ProcessorMock{
+		RequestDestroyItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ bool) error {
+			destroyCalls = append(destroyCalls, destroyCall{characterId, templateId, quantity})
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("craft-compensation-test").
+		AddStep("award_crafted_asset", Completed, AwardCraftedAsset, AwardCraftedAssetPayload{
+			CharacterId: testCharId,
+			TemplateId:  craftedTemplateId,
+			Quantity:    craftedQty,
+		}).
+		AddStep("unrelated_next_step", Failed, ChangeHair, ChangeHairPayload{CharacterId: testCharId}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	failedStep, ok := s.StepAt(1)
+	assert.True(t, ok)
+
+	compensator := NewCompensator(logger, tctx).WithCompartmentProcessor(compP)
+	err = compensator.compensateAwardCraftedAsset(s, failedStep)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, len(destroyCalls), "the crafted asset should be destroyed exactly once")
+	if len(destroyCalls) == 1 {
+		assert.Equal(t, testCharId, destroyCalls[0].CharacterId)
+		assert.Equal(t, craftedTemplateId, destroyCalls[0].TemplateId)
+		assert.Equal(t, craftedQty, destroyCalls[0].Quantity)
+	}
+}
+
+// TestAwardCraftedAssetIsLateCompensable asserts AwardCraftedAsset is
+// registered in lateCompensableActions: its creation event can arrive after
+// the saga has already timed out/failed, exactly like AwardAsset.
+func TestAwardCraftedAssetIsLateCompensable(t *testing.T) {
+	_, ok := lateCompensableActions[AwardCraftedAsset]
+	assert.True(t, ok, "AwardCraftedAsset missing from lateCompensableActions")
+}
+
+// TestDispatchLateInverseAwardCraftedAsset verifies that a late-successful
+// AwardCraftedAsset step (its completion arrived after the saga already went
+// terminal) is compensated by destroying the crafted equip. A missing arm in
+// dispatchLateInverse would mean the action is declared late-compensable but
+// has no inverse to dispatch, which fails at runtime rather than at build
+// time.
+func TestDispatchLateInverseAwardCraftedAsset(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("award_crafted_asset", Pending, AwardCraftedAsset, AwardCraftedAssetPayload{
+			CharacterId: 7,
+			TemplateId:  1082002,
+			Quantity:    1,
+		}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	destroyed := 0
+	cp := &compmock.ProcessorMock{
+		RequestDestroyItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ bool) error {
+			destroyed++
+			assert.Equal(t, uint32(7), characterId)
+			assert.Equal(t, uint32(1082002), templateId)
+			assert.Equal(t, uint32(1), quantity)
+			return nil
+		},
+	}
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(cp)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, destroyed)
+}
+
+// TestCraftSagaFullyCompensatesOnFinalStepFailure is the FR-3.7 acceptance
+// test (PRD §8 Atomicity): the mode-1 create sequence (design §4.5.2) —
+// AwardMesos (negative) → DestroyAssetFromSlot per material slot →
+// AwardCraftedAsset — must resolve to fully applied or fully compensated,
+// never partial. Failing the last step must re-create every already-consumed
+// material and reverse the mesos charge; the count of compensating dispatches
+// must equal the count of completed steps, or a partial compensation would
+// leave the player charged, or short a material, or both.
+func TestCraftSagaFullyCompensatesOnFinalStepFailure(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		testCharId  = uint32(99001)
+		testWorldId = world.Id(0)
+		testChannel = channel.Id(1)
+		mesoCost    = int32(30000)
+		materialA   = uint32(4000000)
+		materialB   = uint32(4000001)
+	)
+
+	type createCall struct {
+		TemplateId uint32
+		Quantity   uint32
+	}
+	var createCalls []createCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createCalls = append(createCalls, createCall{templateId, quantity})
+			return nil
+		},
+	}
+
+	var mesosCalls []int32
+	charP := &charmock.ProcessorMock{
+		AwardMesosAndEmitFunc: func(_ uuid.UUID, _ channel.Model, _ uint32, _ uint32, _ string, amount int32, _ bool) error {
+			mesosCalls = append(mesosCalls, amount)
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("craft-fr37-test").
+		AddStep("charge_mesos", Completed, AwardMesos, AwardMesosPayload{
+			CharacterId: testCharId,
+			WorldId:     testWorldId,
+			ChannelId:   testChannel,
+			ActorId:     testCharId,
+			ActorType:   "SYSTEM",
+			Amount:      -mesoCost,
+		}).
+		AddStep("consume_material_a", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 4,
+			Slot:          3,
+			Quantity:      2,
+			TemplateId:    materialA,
+		}).
+		AddStep("consume_material_b", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 4,
+			Slot:          5,
+			Quantity:      1,
+			TemplateId:    materialB,
+		}).
+		AddStep("award_crafted_asset", Failed, AwardCraftedAsset, AwardCraftedAssetPayload{
+			CharacterId: testCharId,
+			TemplateId:  1082002,
+			Quantity:    1,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	failedStep, ok := s.StepAt(3)
+	assert.True(t, ok)
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP).
+		WithCharacterProcessor(charP)
+
+	err = compensator.compensateAwardCraftedAsset(s, failedStep)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 2, len(createCalls), "both consumed materials must be re-created")
+	assert.Equal(t, 1, len(mesosCalls), "the mesos charge must be reversed exactly once")
+	if len(mesosCalls) == 1 {
+		assert.Equal(t, mesoCost, mesosCalls[0], "refund must re-credit +cost so the player nets to even")
+	}
+
+	totalDispatches := len(createCalls) + len(mesosCalls)
+	assert.Equal(t, s.GetCompletedStepCount(), totalDispatches, "a partial compensation would leave the saga's completed steps unevenly reversed")
+}

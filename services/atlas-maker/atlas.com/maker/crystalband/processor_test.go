@@ -183,3 +183,22 @@ func TestCrystalForLevelIsTenantScoped(t *testing.T) {
 	assert.Equal(t, item.Id(9999999), itemIdB)
 	assert.EqualValues(t, 7, countB)
 }
+
+// TestCrystalForLevelNotFoundAcrossTenants asserts the not-found path is also
+// what a tenant sees for a level that only matches a band seeded under
+// another tenant, mirroring reagent's TestGetByItemIdNotFoundAcrossTenants.
+func TestCrystalForLevelNotFoundAcrossTenants(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, crystalband.Migration)
+	tenantA := uuid.New()
+	tenantB := uuid.New()
+
+	mA, err := crystalband.NewBuilder(tenantA).
+		SetMinLevel(31).SetMaxLevel(50).SetCrystalItemId(item.Id(4260000)).SetCount(1).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, crystalband.CreateCrystalBand(db, mA))
+
+	_, _, err = crystalband.NewProcessor(testLogger(), databasetest.TenantContext(tenantB), db).CrystalForLevel(40)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, crystalband.ErrNotFound)
+}

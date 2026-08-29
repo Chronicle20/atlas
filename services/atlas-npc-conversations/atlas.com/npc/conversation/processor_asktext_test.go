@@ -369,7 +369,7 @@ func TestContinueAskText(t *testing.T) {
 		preContext   map[string]string
 		matches      []AskTextMatchModel // nil uses the shared three-entry table
 		emptyMatches bool
-		wantErr      bool
+		wantReprompt bool
 		wantState    string
 		wantAnswer   string
 	}{
@@ -424,10 +424,10 @@ func TestContinueAskText(t *testing.T) {
 			wantAnswer: "Open Sesame",
 		},
 		{
-			name:       "trimmed before length check",
-			text:       "  ab  ",
-			preContext: map[string]string{},
-			wantErr:    true,
+			name:         "trimmed before length check",
+			text:         "  ab  ",
+			preContext:   map[string]string{},
+			wantReprompt: true,
 		},
 		{
 			name:       "case sensitive",
@@ -437,10 +437,10 @@ func TestContinueAskText(t *testing.T) {
 			wantAnswer: "open sesame",
 		},
 		{
-			name:       "below minLength",
-			text:       "ab",
-			preContext: map[string]string{},
-			wantErr:    true,
+			name:         "below minLength",
+			text:         "ab",
+			preContext:   map[string]string{},
+			wantReprompt: true,
 		},
 		{
 			name:       "at minLength",
@@ -457,10 +457,10 @@ func TestContinueAskText(t *testing.T) {
 			wantAnswer: "abcdefghijklmnopqrst",
 		},
 		{
-			name:       "above maxLength",
-			text:       "abcdefghijklmnopqrstu",
-			preContext: map[string]string{},
-			wantErr:    true,
+			name:         "above maxLength",
+			text:         "abcdefghijklmnopqrstu",
+			preContext:   map[string]string{},
+			wantReprompt: true,
 		},
 	}
 
@@ -509,21 +509,27 @@ func TestContinueAskText(t *testing.T) {
 				t.Fatalf("GetPreviousContext: %v", getErr)
 			}
 
-			if tc.wantErr {
-				if err == nil {
-					t.Fatalf("Continue returned nil error, want error")
+			if tc.wantReprompt {
+				if err != nil {
+					t.Fatalf("Continue returned error, want nil (re-prompt, not error): %v", err)
 				}
 				if got.CurrentState() != "askPassword" {
-					t.Errorf("CurrentState = %q, want %q (parked on error)", got.CurrentState(), "askPassword")
+					t.Errorf("CurrentState = %q, want %q (re-prompt stays on same state)", got.CurrentState(), "askPassword")
 				}
-				foundErrorLog := false
+				if v, exists := got.Context()["answer"]; exists {
+					t.Errorf("context[answer] = %q, want absent (rejected input must not be stored)", v)
+				}
+				if !mock.sendTextCalled {
+					t.Errorf("expected SendText to be called again as a re-prompt")
+				}
+				foundWarnLog := false
 				for _, entry := range hook.AllEntries() {
-					if entry.Level.String() == "error" {
-						foundErrorLog = true
+					if entry.Level.String() == "warning" {
+						foundWarnLog = true
 					}
 				}
-				if !foundErrorLog {
-					t.Errorf("expected an error-level log entry for the length rejection")
+				if !foundWarnLog {
+					t.Errorf("expected a warn-level log entry for the length rejection")
 				}
 				return
 			}

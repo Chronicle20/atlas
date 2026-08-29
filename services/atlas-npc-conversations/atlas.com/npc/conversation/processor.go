@@ -436,36 +436,39 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 		// Trim once, before anything else
 		trimmed := strings.TrimSpace(text)
 
-		// Validate the trimmed text against min/max length
+		// Validate the trimmed text against min/max length. An out-of-range
+		// answer is re-prompted on the same state rather than treated as a
+		// fatal error: leave choiceContext unset (so the rejected input is
+		// never stored) and set nextStateId to the current state so the
+		// post-switch machinery re-sends the prompt via processAskTextState.
 		if len(trimmed) < int(askText.MinLength()) {
-			p.l.Errorf("Invalid text input for character [%d] in state [%s]: below minimum length [%d]", characterId, state.Id(), askText.MinLength())
-			return fmt.Errorf("text below minimum length")
-		}
-		if len(trimmed) > int(askText.MaxLength()) {
-			p.l.Errorf("Invalid text input for character [%d] in state [%s]: above maximum length [%d]", characterId, state.Id(), askText.MaxLength())
-			return fmt.Errorf("text above maximum length")
-		}
+			p.l.Warnf("Invalid text input for character [%d] in state [%s]: below minimum length [%d]", characterId, state.Id(), askText.MinLength())
+			nextStateId = state.Id()
+		} else if len(trimmed) > int(askText.MaxLength()) {
+			p.l.Warnf("Invalid text input for character [%d] in state [%s]: above maximum length [%d]", characterId, state.Id(), askText.MaxLength())
+			nextStateId = state.Id()
+		} else {
+			// Store the trimmed text in the context using the configured context key
+			choiceContext = make(map[string]string)
+			choiceContext[askText.ContextKey()] = trimmed
 
-		// Store the trimmed text in the context using the configured context key
-		choiceContext = make(map[string]string)
-		choiceContext[askText.ContextKey()] = trimmed
-
-		// Walk the matches in order; the first satisfied match wins
-		nextStateId = askText.NextState()
-		for _, m := range askText.Matches() {
-			if m.ValueFromContext() != "" {
-				resolved, _, err := ExtractContextValue(m.ValueFromContext(), ctx.Context())
-				if err != nil {
-					// An unresolvable context reference is a non-match, not an error
-					continue
-				}
-				if trimmed == resolved {
+			// Walk the matches in order; the first satisfied match wins
+			nextStateId = askText.NextState()
+			for _, m := range askText.Matches() {
+				if m.ValueFromContext() != "" {
+					resolved, _, err := ExtractContextValue(m.ValueFromContext(), ctx.Context())
+					if err != nil {
+						// An unresolvable context reference is a non-match, not an error
+						continue
+					}
+					if trimmed == resolved {
+						nextStateId = m.NextState()
+						break
+					}
+				} else if trimmed == m.Value() {
 					nextStateId = m.NextState()
 					break
 				}
-			} else if trimmed == m.Value() {
-				nextStateId = m.NextState()
-				break
 			}
 		}
 

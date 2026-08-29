@@ -57,6 +57,10 @@ paths = [
   '''(^|/)\.gitleaks\.local\.toml\.example$''',
 ]
 regexes = [
+  # Angle-bracket placeholder in place of a Windows profile name. Docs are
+  # required to write `C:\Users\<windows-user>\...` rather than a literal
+  # home path, and the windows-user-path char class does not exclude <>.
+  '''[A-Za-z]:\\Users\\<[^>\\]+>''',
   # GitHub Actions runner home (only legitimate when present in workflow files)
   '''/home/runner/''',
   # Common CI/Docker builder homes

@@ -145,3 +145,48 @@ Task 5 depends on Task 4: the generator collects tokens **by type**, so it
 finds nothing until the retype has landed. Task 9's third diagnostic depends
 on Task 5 for the same reason. Tasks 6/7 and 10/11 are independent of each
 other and could run in parallel if desired.
+
+## Execution deviations recorded during Phase 4
+
+These are decisions taken while executing the plan, recorded here because the
+plan asked for them to be recorded rather than because they went wrong.
+
+### Task 4 landed as one retype commit plus a series of fix commits
+
+Task 4's plan text called for landing the repo-wide retype as **two commits**,
+"or record in `context.md` if not achievable." It was not achievable, and this
+is that record.
+
+The retype itself landed as a single codemod-produced commit. What followed
+was a long series of separately-reviewed fix commits, each scoped to one
+service or one shape — restoring topic env tokens that the newly fail-closed
+`topic.EnvProvider` required in tests, and correcting `Token`/`string`
+mismatches the codemod could not resolve on its own.
+
+The two-commit split was not achievable because the fixes were not knowable in
+advance: each one surfaced only when a module's tests were actually run against
+the fail-closed provider. Batching them into a second commit would have meant
+either holding the branch red across many batches, or discovering the failures
+in one undifferentiated lump with no per-service review boundary. The series
+kept every batch independently reviewable, which is what the plan's escape
+clause exists to permit.
+
+### `tools/topicmod` grew a fifth rule mid-Task-4
+
+R5 (mixed-const-group split) was added during Task 4, not planned in Tasks 2-3.
+It closed a real `staticcheck` gap the first four rules left open, and it landed
+with its own passing test. Recorded because the codemod's rule set is now wider
+than Tasks 2-3 describe.
+
+### `libs/atlas-kafka/gen` is deliberately outside `go.work`
+
+Stated at `design.md:164`, repeated here because it was independently queried
+during review. The generator loads every `use` directive in `go.work` to find
+the modules it scans; making the generator itself a `use` member would have it
+scan itself. It is also absent from the root `Dockerfile`'s COPY blocks, which
+is correct — it is a build-time generator and never belongs in a runtime image.
+
+Note the asymmetry with `libs/atlas-constants/gen`, which **is** a `go.work`
+member (`go.work:5`). The two `gen` modules look alike and need opposite
+treatment; anything sweeping modules must decide from `go.work`, not from the
+directory name. `tools/test-all-go.sh` was corrected for exactly this.

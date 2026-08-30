@@ -1027,6 +1027,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[fieldsb.ItcStatusChargeHandle] = handler.ItcStatusChargeHandleFunc
 	handlerMap[fieldsb.ItcQueryCashRequestHandle] = handler.ItcQueryCashRequestHandleFunc
 	handlerMap[fieldsb.ItcOperationHandle] = handler.ItcOperationHandleFunc
+	handlerMap[charsb.MakerSkillHandle] = handler.MakerSkillHandleFunc
 	handlerMap[petsb.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[petsb.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	handlerMap[petsb.PetDestroyItemHandle] = handler.PetDestroyItemHandleFunc

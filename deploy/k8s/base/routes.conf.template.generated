@@ -143,6 +143,11 @@ location ~ ^/api/characters/[^/]+/inventory(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/characters/[^/]+/maker(/.*)?$ {
+  set $u "atlas-maker.${NS_ATLAS_MAKER}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/characters/[^/]+/notes(/.*)?$ {
   set $u "atlas-notes.${NS_ATLAS_NOTES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

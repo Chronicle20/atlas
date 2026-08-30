@@ -968,6 +968,23 @@
         ]
       },
       {
+        "opCode": "0x71",
+        "validator": "LoggedInValidator",
+        "handler": "MakerSkillHandle",
+        "fname": "CUIItemMaker::RequestItemMake",
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "CREATE_WITH_UPGRADE": 2,
+            "MONSTER_CRYSTAL": 3,
+            "DISASSEMBLE": 4
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x72",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter",

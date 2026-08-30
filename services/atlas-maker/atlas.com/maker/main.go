@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-maker/craft"
 	"atlas-maker/crystalband"
 	"atlas-maker/reagent"
 	"atlas-maker/seed"
@@ -62,6 +63,7 @@ func main() {
 		AddRouteInitializer(reagent.InitResource(GetServer())(db)).
 		AddRouteInitializer(crystalband.InitResource(GetServer())(db)).
 		AddRouteInitializer(seed.InitResource(GetServer())(db)).
+		AddRouteInitializer(craft.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 

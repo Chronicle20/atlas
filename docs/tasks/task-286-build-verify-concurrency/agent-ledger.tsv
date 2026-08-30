@@ -46,3 +46,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-29T21:48:51Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	2f8847fee	APPROVED	no	-	-
 2026-08-29T23:01:00Z	agent	final gate	task-verifier	-	-	-	-	-	FAIL	6080dc121	-	-	-	-
 2026-08-29T23:01:00Z	agent	final gate (TMPDIR relocated)	task-verifier	-	-	-	-	-	PASS	6080dc121	-	-	-	-
+2026-08-30T15:16:53Z	agent	Criterion 5 after-figures	controller	fable	-	-	-	-	done	b92f8c3	-	-	-	-
+2026-08-30T15:19:08Z	agent	flagless gate (tuned host)	controller	fable	-	-	-	-	PASS	d149b8b	-	-	-	-
+2026-08-30T15:19:20Z	agent	post-gate tail review	task-reviewer	sonnet	-	-	-	-	-	-	APPROVED_WITH_FINDINGS	no	docs/tasks/task-286-build-verify-concurrency/reviews/review-post-gate-tail.md	-

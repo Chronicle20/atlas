@@ -133,18 +133,53 @@ matches the "VM currently gets 31 GiB by the 50% default" figure the
 
 ### After
 
-**Not applied at implementation time.** The `.wslconfig` memory/CPU bump and
-the `/etc/fstab` `/tmp` pin are host state outside this repo and outside this
-task's scope to apply (`wsl --shutdown` and an `/etc/fstab` edit are operator
-actions on the Windows host and the WSL2 VM, not repo changes); doing either
-from an implementer session would also invalidate the "before" figures above
-for any later comparison. No after-figure is recorded here — recording one
-without having actually applied the tuning and rerun `tools/scratch-sweep.sh
---now --root /tmp` would be a fabricated number. Task 7's preflight is the
-mechanism that later detects whether an operator has applied this section on
-a given host; that detection output, or a fresh `df -h /tmp` / `ls /tmp | wc
--l` pair taken after the operator applies the tuning, is the legitimate
-source for an after-figure.
+Recorded 2026-08-30, after the operator applied the host tuning
+(`.wslconfig` `memory=52GB, processors=24, swap=16GB`, the `/etc/fstab`
+`/tmp` pin, `TMPDIR=/var/tmp/atlas/scratch` in `~/.zshrc`, the
+`atlas-scratch-sweep.timer` user unit) and restarted the VM with
+`wsl --shutdown`.
+
+```
+$ df -h /tmp
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           4.0G     0  4.0G   0% /tmp
+
+$ ls /tmp | wc -l
+2
+```
+
+`free -h` and `nproc` at the same moment confirm the VM resize took:
+
+```
+               total        used        free      shared  buff/cache   available
+Mem:            50Gi       2.6Gi        47Gi       3.0Mi       1.7Gi        48Gi
+Swap:           16Gi          0B        16Gi
+
+$ nproc
+24
+```
+
+`/etc/fstab` now carries the pinned line
+`tmpfs /tmp tmpfs rw,nosuid,nodev,size=4G,nr_inodes=1048576 0 0`
+(duplicated — the operator added it twice; the duplicate is harmless, `df`
+shows a single 4.0G mount, but one copy should be removed).
+
+Two deviations from the brief's literal command, both disclosed rather than
+papered over:
+
+- `tools/scratch-sweep.sh --now --root /tmp` exits 2 by design —
+  `/tmp` is on the script's dangerous-root refusal list (as the guard tests
+  require). The brief's command predates that guard. The sweep was instead
+  run against its default root: `tools/scratch-sweep.sh --now` over
+  `/var/tmp/atlas/scratch`, leaving the scratch root at 32K.
+- The `/tmp` after-figures above therefore reflect the restart (a fresh
+  4G tmpfs), not a sweep of `/tmp`; that is the steady state the tuning
+  targets — 4G pinned vs the old 16G/33%-used/2661-entry tmpfs.
+
+Operational note: `tools/scratch-sweep.sh --now` deletes *live* session
+scratch under `$TMPDIR` (it removed this session's own Claude Code task
+output mid-run). `--now` should only be run with no active sessions; the
+timer's age-based sweep does not have this hazard.
 
 ## Layer 2 — parallelism (Go half)
 

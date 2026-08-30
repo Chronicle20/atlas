@@ -1,6 +1,10 @@
 package progress
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
+)
 
 // RestModel represents a single quest progress entry from atlas-quest's
 // GET /characters/{characterId}/quests/{questId}/progress collection.
@@ -35,23 +39,34 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
-// Model is the domain representation of a quest progress entry. Progress is
-// stored and returned as a string, unparsed: parsing it when it happens to
-// look numeric would make comparison against a stored context value depend
-// on the content of the data (design.md §8).
-type Model struct {
-	infoNumber uint32
-	progress   string
+// GetReferences returns the resource references
+func (r RestModel) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{}
 }
 
-// InfoNumber returns the quest info number this progress entry tracks
-func (m Model) InfoNumber() uint32 {
-	return m.infoNumber
+// GetReferencedIDs returns the referenced IDs
+func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	return []jsonapi.ReferenceID{}
 }
 
-// Progress returns the raw, unparsed progress value
-func (m Model) Progress() string {
-	return m.progress
+// GetReferencedStructs returns the referenced structs
+func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	return []jsonapi.MarshalIdentifier{}
+}
+
+// SetToOneReferenceID sets a to-one reference ID
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+// SetToManyReferenceIDs sets to-many reference IDs
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
+// SetReferencedStructs sets referenced structs
+func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
+	return nil
 }
 
 // Extract converts a RestModel into a Model

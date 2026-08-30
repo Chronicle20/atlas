@@ -1,0 +1,110 @@
+{
+  "service": "task-284-npc-ask-text-state (atlas-channel, atlas-configurations, atlas-npc-conversations, atlas-saga-orchestrator, libs/atlas-packet)",
+  "path": "services/atlas-channel, services/atlas-configurations, services/atlas-npc-conversations, services/atlas-saga-orchestrator, libs/atlas-packet",
+  "date": "2026-08-29",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "conversation",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()", "status": "pass", "evidence": "services/atlas-npc-conversations/atlas.com/npc/conversation/builder.go:1221,1233-1265 NewAskTextBuilder/Build"},
+        {"id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "n-a", "evidence": "no entity.go in package"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) defined in entity.go", "status": "n-a", "evidence": "no entity.go in package"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger, never *logrus.Logger", "status": "pass", "evidence": "services/atlas-npc-conversations/atlas.com/npc/conversation/processor.go:115"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "n-a", "evidence": "no resource.go in changed conversation package"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery", "status": "n-a", "evidence": "no provider.go in package"},
+        {"id": "DOM-18", "name": "REST models implement GetName()/GetID()/SetID()", "status": "pass", "evidence": "RestStateModel unaffected; RestAskTextModel/RestAskTextMatchModel are nested attributes like sibling RestAskNumberModel"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "services/atlas-npc-conversations/atlas.com/npc/conversation/rest.go:194-203"},
+        {"id": "DOM-21", "name": "No redeclaration of a shared constant", "status": "pass", "evidence": "AskTextType (model.go:47), CommandTypeText (kafka/message/npc/kafka.go:25); no match in libs/atlas-constants"},
+        {"id": "DOM-24", "name": "Test packages reaching an emit path install producertest stub or inject no-op", "status": "n-a", "evidence": "SetNpcSenderProcessorFactory swaps the downstream sender before any AndEmit/producer.ProviderImpl call (processor.go:97-110)"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "git diff grep for bare 'go ' statements returned none added"},
+        {"id": "DOM-30", "name": "DB-writing operation emits through AndEmit + message.Buffer", "status": "pass", "evidence": "npc/processor.go:146 SendText -> producer.ProviderImpl directly; no DB write on this path (documented exception: non-DB state)"},
+        {"id": "DOM-31", "name": "Tenant/trace never in a REST model, request body, or public param", "status": "pass", "evidence": "rest.go:194-203 RestAskTextModel/RestAskTextMatchModel carry no tenant/trace field"},
+        {"id": "DOM-33", "name": "Interface change updates every mock in the same diff", "status": "pass", "evidence": "Continue re-signed processor.go:48; mock/processor.go:20,54-60 updated in same diff"}
+      ]
+    },
+    {
+      "name": "conversation/quest",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "pass", "evidence": "services/atlas-npc-conversations/atlas.com/npc/conversation/quest/rest.go:410-433"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "quest/rest.go:166-183"}
+      ]
+    },
+    {
+      "name": "conversation/quest/progress",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface, constructor, ProcessorImpl live in processor.go", "status": "pass", "evidence": "services/atlas-npc-conversations/atlas.com/npc/conversation/quest/progress/processor.go:17-30,37-55"},
+        {"id": "FILE-02", "name": "RestModel, Transform/Extract, JSON:API methods live in rest.go", "status": "fail", "evidence": "rest.go:7-36 present, but same file also carries the domain Model (see FILE-05/06)"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "pass", "evidence": "services/atlas-npc-conversations/atlas.com/npc/conversation/quest/progress/requests.go:10-24"},
+        {"id": "FILE-04", "name": "Entity struct, Migration, TableName live in entity.go", "status": "n-a", "evidence": "no persistence; no entity.go expected"},
+        {"id": "FILE-05", "name": "Builder in builder.go, domain Model in model.go, writes in administrator.go, readers in provider.go, enums in state.go", "status": "fail", "evidence": "services/atlas-npc-conversations/atlas.com/npc/conversation/quest/progress/rest.go:42-55 defines type Model struct with accessors; no model.go exists in this package"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 responsibilities", "status": "fail", "evidence": "rest.go bundles REST responsibility (lines 7-36) and domain-model responsibility (lines 42-55) in one file"},
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID and SetToManyReferenceIDs", "status": "fail", "evidence": "rest.go:7-36 RestModel has neither method, not even as no-ops"},
+        {"id": "EXT-02", "name": "httptest-backed integration test serves a representative fixture and asserts a populated domain struct", "status": "fail", "evidence": "no httptest.NewServer under conversation/quest/progress/; rest_test.go only exercises Extract/SetID on hand-built RestModel values; sibling map/processor_drain_test.go establishes the precedent this package should have followed"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to domain not-found", "status": "pass", "evidence": "processor.go:47-48 errors.Is(err, requests.ErrNotFound); other errors bubble at line 50-51"},
+        {"id": "EXT-04", "name": "Service URL composed via requests.RootUrl, not hardcoded DNS", "status": "pass", "evidence": "requests.go:10-11 requests.RootUrlFor(ctx, \"QUEST\")"}
+      ]
+    },
+    {
+      "name": "operation_executor (conversation)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-14", "name": "Handlers call processor methods, never provider functions directly", "status": "n-a", "evidence": "no resource.go in scope; executeLocalOperation (operation_executor.go:806-885) calls e.questProgressP.GetByCharacterAndQuest, a processor method"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "operation_executor_test.go:963 tests := []struct{...} + t.Run for TestGetQuestProgressOperation"}
+      ]
+    },
+    {
+      "name": "npc (atlas.com/npc/npc, channel-command sender)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "SendText added to Processor (npc/processor.go:38); no mock file exists under this package"},
+        {"id": "DOM-30", "name": "DB write + emit atomicity", "status": "pass", "evidence": "npc/processor.go:146 SendText -> producer.ProviderImpl directly, no DB write on this path (documented exception, matches sibling SendNumber/SendStyle)"}
+      ]
+    },
+    {
+      "name": "atlas-channel/npc (command producer)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "ContinueConversation re-signed (services/atlas-channel/atlas.com/channel/npc/processor.go:13); no mock file exists under this package"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/npc/conversation",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted bytes resolved from a tenant writer-options table, never Go literals", "status": "pass", "evidence": "consumer.go:237-238 case \"TEXT\": return npcpkt.NpcConversationMessageTypeAskText (semantic key); wire byte resolved via template_gms_92_1.json new \"ASK_TEXT\": 3 entry"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "consumer_test.go:23 tests := []struct{...} + t.Run"},
+        {"id": "DOM-24", "name": "Emit-path stubbing", "status": "n-a", "evidence": "TestAnnounceTextConversation calls newTextConversation directly, never reaching session.Announce/writer.Producer"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "npc_continue_conversation_test.go (new, 180 lines) uses tests := []struct{...} + t.Run"}
+      ]
+    },
+    {
+      "name": "seed-data templates (atlas-configurations)",
+      "type": "support",
+      "checks": [
+        {"id": "SCAFFOLD-07", "name": "New writer/handler constants seeded in every targeted tenant opcode template", "status": "n-a", "evidence": "no new Writer/Handler constant registered by this diff; NpcConversationWriter and NPCContinueConversationHandle both pre-date this branch; template edits add ASK_TEXT to an existing messageType table, governed by DOM-25"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "packet codec version-gating: whether libs/atlas-packet AskTextConversationDetail.Encode correctly version-gates gms_v84 vs gms_v92 — codec predates this diff (only its test file changed), verifying it needs history outside this range"
+  ],
+  "blocking": [
+    "FILE-05/FILE-06: services/atlas-npc-conversations/atlas.com/npc/conversation/quest/progress/rest.go:42-55 — domain Model struct defined in rest.go instead of model.go, collapsing two FILE-* responsibilities into one file",
+    "EXT-01: services/atlas-npc-conversations/atlas.com/npc/conversation/quest/progress/rest.go:7-36 — RestModel has no SetToOneReferenceID/SetToManyReferenceIDs, not even as no-ops",
+    "EXT-02: services/atlas-npc-conversations/atlas.com/npc/conversation/quest/progress/ — no httptest-backed integration test asserting a populated Model from a representative atlas-quest JSON:API fixture; sibling map/processor_drain_test.go establishes this precedent in the same service"
+  ],
+  "nonBlocking": []
+}

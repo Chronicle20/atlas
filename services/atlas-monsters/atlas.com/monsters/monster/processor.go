@@ -87,7 +87,7 @@ type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
 var testInformationLookup func(monsterId uint32) (information.Model, error)
 
 // testMobSkillLookup is a test-only override for mobskill.GetByIdAndLevel.
-// When nil (production), UseSkill calls mobskill.GetByIdAndLevel normally.
+// When nil (production), UseSkill and UseSkillGM call mobskill.GetByIdAndLevel normally.
 var testMobSkillLookup func(skillId uint16, level uint16) (mobskill.Model, error)
 
 // SelfDestructTrigger names which of the four detonation paths fired. It is a
@@ -862,9 +862,12 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 		return
 	}
 
-	// Check seal status - sealed monsters cannot use skills
-	if m.HasStatusEffect("SEAL") {
-		p.l.Debugf("Monster [%d] is sealed and cannot use skill [%d].", uniqueId, skillId)
+	// Skill-suppression gate. Mirrors the picker's gate so a decision that
+	// went stale between pick and cast is rejected at cast time. This runs
+	// before the animation delay, so it deliberately does not observe a
+	// status that lands mid-flight (task-279 design §4).
+	if st := skillSuppressingStatus(m); st != "" {
+		p.l.Debugf("Monster [%d] has [%s] and cannot use skill [%d].", uniqueId, st, skillId)
 		return
 	}
 
@@ -946,7 +949,8 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 			return
 		}
 		switch category {
-		case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
+		case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity,
+			monster2.SkillCategoryReflect, monster2.SkillCategoryCarnivalBuf:
 			p.executeStatBuff(m, sd, skillId, skillLevel)
 		case monster2.SkillCategoryHeal:
 			p.executeHeal(m, characterId, sd)
@@ -1015,7 +1019,12 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 		return
 	}
 
-	sd, err := mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel(uint16(skillId), uint16(skillLevel))
+	var sd mobskill.Model
+	if testMobSkillLookup != nil {
+		sd, err = testMobSkillLookup(uint16(skillId), uint16(skillLevel))
+	} else {
+		sd, err = mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel(uint16(skillId), uint16(skillLevel))
+	}
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d] for GM command.", skillId, skillLevel)
 		return
@@ -1030,7 +1039,8 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 
 	category := monster2.SkillCategory(uint16(skillId))
 	switch category {
-	case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
+	case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity,
+		monster2.SkillCategoryReflect, monster2.SkillCategoryCarnivalBuf:
 		p.executeStatBuff(m, sd, skillId, skillLevel)
 	case monster2.SkillCategoryHeal:
 		p.executeHeal(m, m.UniqueId(), sd)

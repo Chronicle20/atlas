@@ -70,15 +70,15 @@ func IsMonsterSkill(id uint16) bool {
 // used for status effect tracking and client broadcast.
 func SkillTypeToStatusName(skillType uint16) TemporaryStatType {
 	switch skillType {
-	case SkillTypeWeaponAttackUp, SkillTypeWeaponAttackUpAoe:
+	case SkillTypeWeaponAttackUp, SkillTypeWeaponAttackUpAoe, SkillTypeCarnivalPAD:
 		return TemporaryStatTypePowerUp
-	case SkillTypeMagicAttackUp, SkillTypeMagicAttackUpAoe:
+	case SkillTypeMagicAttackUp, SkillTypeMagicAttackUpAoe, SkillTypeCarnivalMAD:
 		return TemporaryStatTypeMagicUp
-	case SkillTypeWeaponDefenseUp, SkillTypeWeaponDefenseUpAoe:
+	case SkillTypeWeaponDefenseUp, SkillTypeWeaponDefenseUpAoe, SkillTypeCarnivalPDR:
 		return TemporaryStatTypePowerGuardUp
-	case SkillTypeMagicDefenseUp, SkillTypeMagicDefenseUpAoe:
+	case SkillTypeMagicDefenseUp, SkillTypeMagicDefenseUpAoe, SkillTypeCarnivalMDR:
 		return TemporaryStatTypeMagicGuardUp
-	case SkillTypeSpeedUp:
+	case SkillTypeSpeedUp, SkillTypeCarnivalSpeed:
 		return TemporaryStatTypeSpeed
 	case SkillTypePhysicalImmune:
 		return TemporaryStatTypeWeaponAttackImmune
@@ -90,6 +90,12 @@ func SkillTypeToStatusName(skillType uint16) TemporaryStatType {
 		return TemporaryStatTypeWeaponCounter
 	case SkillTypeMagicCounter:
 		return TemporaryStatTypeMagicCounter
+	case SkillTypeCarnivalACC:
+		return TemporaryStatTypeAccuracy
+	case SkillTypeCarnivalEVA:
+		return TemporaryStatTypeAvoidability
+	case SkillTypeCarnivalSealSkill:
+		return TemporaryStatTypeSealSkill
 	default:
 		return ""
 	}
@@ -101,6 +107,19 @@ func IsAoeSkill(skillType uint16) bool {
 	case SkillTypeWeaponAttackUpAoe, SkillTypeMagicAttackUpAoe,
 		SkillTypeWeaponDefenseUpAoe, SkillTypeMagicDefenseUpAoe,
 		SkillTypeHeal:
+		return true
+	// Knowing divergence from the Cosmic reference (task-279 D3 / FR-5.3):
+	// the reference consults lt/rb only for the *_M and HEAL_M arms, so it
+	// does not treat the carnival family as AoE. Atlas does, for forward
+	// compatibility with custom or later-version mob-skill data. This is
+	// inert on all current WZ data — no MobSkill.img entry for 150-157
+	// declares lt/rb, so the sole caller's
+	// `IsAoeSkill(...) && sd.HasBoundingBox()` conjunction is always false.
+	// Do not describe this as reference parity.
+	case SkillTypeCarnivalPAD, SkillTypeCarnivalMAD,
+		SkillTypeCarnivalPDR, SkillTypeCarnivalMDR,
+		SkillTypeCarnivalACC, SkillTypeCarnivalEVA,
+		SkillTypeCarnivalSpeed, SkillTypeCarnivalSealSkill:
 		return true
 	default:
 		return false
@@ -175,6 +194,14 @@ var skillNameMap = map[string]uint16{
 	"PHYSICAL_COUNTER":       SkillTypePhysicalCounter,
 	"MAGIC_COUNTER":          SkillTypeMagicCounter,
 	"PHYSICAL_MAGIC_COUNTER": SkillTypePhysicalMagicCounter,
+	"CARNIVAL_PAD":           SkillTypeCarnivalPAD,
+	"CARNIVAL_MAD":           SkillTypeCarnivalMAD,
+	"CARNIVAL_PDR":           SkillTypeCarnivalPDR,
+	"CARNIVAL_MDR":           SkillTypeCarnivalMDR,
+	"CARNIVAL_ACC":           SkillTypeCarnivalACC,
+	"CARNIVAL_EVA":           SkillTypeCarnivalEVA,
+	"CARNIVAL_SPEED":         SkillTypeCarnivalSpeed,
+	"CARNIVAL_SEAL_SKILL":    SkillTypeCarnivalSealSkill,
 	"SUMMON":                 SkillTypeSummon,
 }
 

@@ -302,13 +302,13 @@ Catch item (bridle) definition retrieved from atlas-data, used to resolve a CATC
 
 ### Skill Execution
 
-1. Skill use validated: monster alive, not sealed, skill definition fetched from atlas-data
+1. Skill use validated: monster alive, rejected if it carries `SEAL` or `SEAL_SKILL` (the rejection log names which of the two blocked the cast), skill definition fetched from atlas-data. This gate runs before the animation delay (step 6) and is therefore not re-evaluated after it.
 2. Cooldown checked; MP cost checked and deducted (deduction emits MP_CHANGED with reason SKILL_CAST)
 3. HP threshold checked (skill only activates below configured HP percentage)
 4. Cooldown registered for the skill if it defines an interval
 5. Stacking check for immunity/reflect (rejected if already active)
 6. Animation delay applied if configured; the effect and post-execute picker re-pick run after the delay only if the monster is still alive
-7. Effect executed: AREA_POISON dispatches a MIST_CREATE command regardless of category; otherwise stat-buff/immunity/reflect, heal, debuff (including the Dispel and Banish special cases), and summon are dispatched by skill category
+7. Effect executed: AREA_POISON dispatches a MIST_CREATE command regardless of category; otherwise stat-buff/immunity/reflect/`CARNIVAL_BUFF` (mob skill types 150-157; the carnival family shares the stat-buff path and adds no executor of its own), heal, debuff (including the Dispel and Banish special cases), and summon are dispatched by skill category
 8. After execution, the picker re-picks and emits a new decision if the monster still has aggro (see Skill Picker)
 
 `UseSkillGM` runs the same category dispatch without the cooldown/MP/HP-threshold/probability/seal checks (used for field-wide GM skill commands).
@@ -317,10 +317,10 @@ Catch item (bridle) definition retrieved from atlas-data, used to resolve a CATC
 
 The picker predicts which skill a monster will cast next so atlas-channel can pre-stage the animation, without waiting for a live cast. It is pure (no side effects) and re-run by `RepickAndEmit` on every trigger below, always emitting a NEXT_SKILL_DECIDED event even when the decision is unchanged or the sentinel (SkillId == 0, "no skill"):
 
-1. If the monster's template has no skills, or the monster is sealed, the sentinel decision is returned immediately.
+1. If the monster's template has no skills, or the monster carries `SEAL` or `SEAL_SKILL`, the sentinel decision is returned immediately.
 2. Skills are evaluated in template order; the first eligible skill whose probability roll (`prop`, out of 100) succeeds wins. A skill is eligible only if: it is not on cooldown, the monster's HP% is at or below the skill's HP threshold (0 = always eligible), the monster has enough MP, and — for immunity/reflect skills — the matching status is not already active.
 3. If no skill is chosen, `nextEligibleRepickAtMs` is set to the soonest cooldown expiry among cooldown-gated candidates; if at least one candidate passed every other gate but failed its probability roll, a sweep-cadence-based fallback repick time (`now + sweep interval`) is also considered, and the minimum of the two is kept.
-4. Triggers: spawn (only if the monster already has aggro), post-use-skill (after the animation delay), damaged (on first hit, or when HP% changes and the monster wasn't killed), status-applied/status-expired/status-cancelled (only for picker-relevant statuses: SEAL, SEAL_SKILL, WEAPON_ATTACK_IMMUNE, MAGIC_ATTACK_IMMUNE, WEAPON_COUNTER, MAGIC_COUNTER), control-change (only if the new controller has aggro), and sweep (see MonsterSkillPickerSweepTask).
+4. Triggers: spawn (only if the monster already has aggro), post-use-skill (after the animation delay), damaged (on first hit, or when HP% changes and the monster wasn't killed), status-applied/status-expired/status-cancelled (only for picker-relevant statuses: SEAL, SEAL_SKILL, WEAPON_ATTACK_IMMUNE, MAGIC_ATTACK_IMMUNE, WEAPON_COUNTER, MAGIC_COUNTER), control-change (only if the new controller has aggro), and sweep (see MonsterSkillPickerSweepTask). As of task-279, `SEAL_SKILL` also gates the picker itself (item 1 above), so a `SEAL_SKILL` apply or expire now changes the outcome (the sentinel decision applies or clears) rather than only triggering a re-pick that reproduces the prior decision (FR-6.5).
 5. Only `nextEligibleRepickAtMs` persists to Redis across a decision; the chosen skillId/skillLevel/decidedAtMs are in-memory only and rebuilt by the next picker run.
 
 ## Processors

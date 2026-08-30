@@ -1,0 +1,101 @@
+{
+  "service": "atlas-monsters",
+  "path": "services/atlas-monsters, libs/atlas-constants",
+  "date": "2026-08-28",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "libs/atlas-constants/monster",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file carrying >=2 of the responsibilities above",
+          "status": "pass",
+          "evidence": "libs/atlas-constants/monster/skill.go holds only skill-type constants and pure classification/lookup functions"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No redeclaration of a type, helper, or numeric constant that already exists in libs/atlas-constants/",
+          "status": "pass",
+          "evidence": "libs/atlas-constants/monster/skill.go:13,54-61 is the canonical declaration site; no downstream hardcoding of 150-157 found in services/atlas-monsters/atlas.com/monsters/monster/*.go (excluding tests)"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Tests are table-driven",
+          "status": "pass",
+          "evidence": "libs/atlas-constants/monster/skill_test.go:34-199 uses cases := []struct{...} + range loops"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-monsters/atlas.com/monsters/monster",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-06",
+          "name": "Processor constructor takes logrus.FieldLogger, never *logrus.Logger",
+          "status": "pass",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/processor.go:142 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor"
+        },
+        {
+          "id": "DOM-26",
+          "name": "Every goroutine is spawned via routine.Go",
+          "status": "pass",
+          "evidence": "no bare go statement added in the diff (grep for '^+\\s*go (func|[A-Za-z_])' across the changed files returns nothing)"
+        },
+        {
+          "id": "DOM-30",
+          "name": "Writes emit through AndEmit + message.Buffer, not a direct producer.ProviderImpl call from the success path",
+          "status": "n-a",
+          "evidence": "the only emission reached by the new CARNIVAL_BUFF dispatch path, ApplyStatusEffect at processor.go:1549, is pre-existing code unmodified by this diff; the diff only adds a switch-case arm routing into the existing executeStatBuff/ApplyStatusEffect path"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Test packages that reach an emit path install producertest or inject a no-op producer",
+          "status": "pass",
+          "evidence": "services/atlas-monsters/atlas.com/monsters/monster/registry_test.go:27-28 TestMain calls producertest.InstallNoop() package-wide, covering the new carnival/seal tests which reach executeStatBuff -> ApplyStatusEffect -> producer.ProviderImpl transitively"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Tests are table-driven",
+          "status": "pass",
+          "evidence": "carnival_skill_test.go:27-41 carnivalCase/carnivalCases table; picker_test.go TestSkillSuppressingStatus tests table"
+        },
+        {
+          "id": "DOM-10",
+          "name": "Test DB setup calls database.RegisterTenantCallbacks",
+          "status": "n-a",
+          "evidence": "no new/changed test opens a GORM DB directly"
+        },
+        {
+          "id": "DOM-33",
+          "name": "An interface change updates every mock implementation",
+          "status": "n-a",
+          "evidence": "type Processor interface (processor.go:35) unchanged by this diff"
+        },
+        {
+          "id": "FILE-01",
+          "name": "Processor interface, constructor, and ProcessorImpl methods live in processor.go or a processor_<group>.go split",
+          "status": "pass",
+          "evidence": "all new logic (seal-gate replacement, CARNIVAL_BUFF dispatch cases, testMobSkillLookup seam) lands in services/atlas-monsters/atlas.com/monsters/monster/processor.go"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file carrying >=2 of the responsibilities above",
+          "status": "pass",
+          "evidence": "picker.go (where skillSuppressingStatus was added) remains a single-purpose picker/decision file, not a Processor+RestModel+requests bundle"
+        }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-11/DOM-16/DOM-04/DOM-05: provider.go, administrator.go, and rest.go in the monster package were not touched by this diff; grading them would require reading unchanged files outside the diff surface",
+    "DOM-07/08/09/12-15/17-19/32: resource.go was not part of the changed-file list; these rules' trigger file is untouched"
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

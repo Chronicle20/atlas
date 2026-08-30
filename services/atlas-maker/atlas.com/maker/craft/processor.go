@@ -94,11 +94,13 @@ var CompensableActions = map[saga.Action]bool{
 // before any validation work -- so a second MAKER_SKILL arriving while the
 // first is still resolving is rejected immediately (design §7), then
 // dispatches to the mode-specific validate-and-build path. The guard is
-// released on every path that returns an error (nothing was emitted, so
-// nothing is left to wait on); on success it is Track-ed against the saga's
-// transaction id -- the only handle the terminal event carries -- and left
-// held for kafka/consumer/saga's terminal-event handler to release via
-// ReleaseInFlightByTransaction.
+// released on every path that returns an error, including one that already
+// reached p.emit: p.emit itself Tracks the saga's transaction id against
+// this entry before submitting it, and unwinds that Track back off again if
+// the submit fails, so a repeat Release here after such a failure is a
+// harmless no-op (Release on an unheld key is defined as one). On success
+// the entry stays held, already Tracked, for kafka/consumer/saga's
+// terminal-event handler to release via ReleaseInFlightByTransaction.
 func (p *ProcessorImpl) Create(characterId uint32, req Request) (uuid.UUID, error) {
 	t := tenant.MustFromContext(p.ctx)
 	if !craftGuard.TryAcquire(t.Id(), characterId) {
@@ -110,7 +112,6 @@ func (p *ProcessorImpl) Create(characterId uint32, req Request) (uuid.UUID, erro
 		craftGuard.Release(t.Id(), characterId)
 		return uuid.Nil, err
 	}
-	craftGuard.Track(t.Id(), characterId, txId)
 	return txId, nil
 }
 
@@ -193,7 +194,7 @@ func (p *ProcessorImpl) createOrUpgrade(characterId uint32, req Request) (uuid.U
 		})
 	}
 
-	return p.emit(b, logrus.Fields{
+	return p.emit(characterId, b, logrus.Fields{
 		"characterId":  characterId,
 		"mode":         req.Mode,
 		"recipeId":     r.Id(),
@@ -265,7 +266,7 @@ func (p *ProcessorImpl) crystal(characterId uint32, req Request) (uuid.UUID, err
 		ShowEffect:  true,
 	})
 
-	return p.emit(b, logrus.Fields{
+	return p.emit(characterId, b, logrus.Fields{
 		"characterId":  characterId,
 		"mode":         req.Mode,
 		"recipeId":     r.Id(),
@@ -360,7 +361,7 @@ func (p *ProcessorImpl) disassemble(characterId uint32, req Request) (uuid.UUID,
 		ShowEffect:  true,
 	})
 
-	return p.emit(b, logrus.Fields{
+	return p.emit(characterId, b, logrus.Fields{
 		"characterId":  characterId,
 		"mode":         req.Mode,
 		"disassembled": req.EquipItemId,
@@ -440,15 +441,35 @@ func reagentStats(rgp reagent.Processor, gemIds []item.Id) saga.AwardCraftedAsse
 	return out
 }
 
-// emit builds b, submits it through the Emitter, and logs the PRD §8
-// observability line on acceptance -- tenant, character, mode, recipe id,
-// materials consumed, meso delta, and produced item, correlated by saga id.
-func (p *ProcessorImpl) emit(b *saga.Builder, fields logrus.Fields) (uuid.UUID, error) {
+// emit builds b, Tracks its transaction id against characterId's held
+// craftGuard entry, and only then submits it through the Emitter. Tracking
+// before the produce (rather than after, as an earlier revision did) closes
+// a release-before-track race: NewBuilder assigns TransactionId at Build
+// time (libs/atlas-saga/builder.go), so the id already exists here and a
+// synchronous, broker-acknowledged Emit can otherwise let this same service
+// consume the saga's terminal event -- and call ReleaseByTransactionId as a
+// no-op, because nothing was Tracked yet -- before the emitting goroutine
+// ever reaches Track, leaving a mapping nothing will ever release. Tracking
+// first means the terminal-event consumer always finds a mapping to
+// release, however fast it runs.
+//
+// If Emit then fails, the craft was never accepted and no terminal event
+// will ever arrive to release the entry via ReleaseByTransactionId, so this
+// unwinds by releasing the whole (tenant, character) entry directly --
+// Release also drops the just-added byTransaction index, leaving no stale
+// mapping behind. Create's own error path additionally calls Release, but
+// that is a harmless no-op by then (Release on an unheld key is defined as
+// a no-op) and still required, since not every error returned by
+// p.create() (see p.emit's own callers) reaches this method's Track/Emit at
+// all.
+func (p *ProcessorImpl) emit(characterId uint32, b *saga.Builder, fields logrus.Fields) (uuid.UUID, error) {
 	s := b.Build()
+	t := tenant.MustFromContext(p.ctx)
+	craftGuard.Track(t.Id(), characterId, s.TransactionId)
 	if err := p.em.Emit(s); err != nil {
+		craftGuard.Release(t.Id(), characterId)
 		return uuid.Nil, err
 	}
-	t := tenant.MustFromContext(p.ctx)
 	p.l.WithFields(fields).
 		WithField("tenantId", t.Id()).
 		WithField("transactionId", s.TransactionId).

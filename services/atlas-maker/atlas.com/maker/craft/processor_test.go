@@ -9,6 +9,7 @@ import (
 	"atlas-maker/quest"
 	"atlas-maker/recipe"
 	"atlas-maker/skill"
+	"context"
 	"testing"
 
 	charactermock "atlas-maker/character/mock"
@@ -30,14 +31,22 @@ import (
 
 // spyEmitter records every saga it is given, so a test can assert both
 // "exactly one saga was emitted, shaped like X" and "zero sagas were
-// emitted" (TestEveryRejectionEmitsNoSaga's whole point).
+// emitted" (TestEveryRejectionEmitsNoSaga's whole point). duringEmit, if
+// set, runs after the call is recorded but before Emit returns -- ordering_
+// test.go uses it to simulate the saga's terminal event being observed (and
+// released) synchronously inside the produce call, before the caller ever
+// regains control.
 type spyEmitter struct {
-	calls []saga.Saga
-	err   error
+	calls      []saga.Saga
+	err        error
+	duringEmit func(saga.Saga)
 }
 
 func (e *spyEmitter) Emit(s saga.Saga) error {
 	e.calls = append(e.calls, s)
+	if e.duringEmit != nil {
+		e.duringEmit(s)
+	}
 	return e.err
 }
 
@@ -68,6 +77,16 @@ func newDeps() *deps {
 // tests only) does not build.
 func buildCreateProcessor(t *testing.T, h *harness, d *deps) craft.Processor {
 	t.Helper()
+	return buildCreateProcessorWithContext(t, testContext(t), h, d)
+}
+
+// buildCreateProcessorWithContext is buildCreateProcessor with the tenant
+// context supplied by the caller, so a test that needs to reach the same
+// tenant id craftGuard uses internally (ordering_test.go's emit-vs-Track
+// races) can build one it already knows the id of, instead of the fresh
+// random one testContext mints on every call.
+func buildCreateProcessorWithContext(t *testing.T, ctx context.Context, h *harness, d *deps) craft.Processor {
+	t.Helper()
 	cp := &charactermock.ProcessorMock{
 		GetByIdFunc: func(uint32) (character.Model, error) { return h.character, nil },
 	}
@@ -92,7 +111,7 @@ func buildCreateProcessor(t *testing.T, h *harness, d *deps) craft.Processor {
 	qp := &questmock.ProcessorMock{
 		GetByCharacterIdFunc: func(uint32) ([]quest.Model, error) { return h.quests, nil },
 	}
-	return craft.NewProcessor(testLogger(), testContext(t), cp, sp, kp, qp, d.rp, d.rgp, d.cbp, d.eqp, d.em)
+	return craft.NewProcessor(testLogger(), ctx, cp, sp, kp, qp, d.rp, d.rgp, d.cbp, d.eqp, d.em)
 }
 
 func TestCreateModeOneBuildsSequence(t *testing.T) {

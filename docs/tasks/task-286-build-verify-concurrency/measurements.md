@@ -561,3 +561,73 @@ What the build-slot broker's correctness therefore rests on instead:
 The 4-way saturation case named by the criterion remains **unproven by direct
 measurement**. Anyone relying on the broker under heavy multi-worktree contention should
 treat that as an open question.
+
+## Criterion 2 — flagless before/after on a `libs/` fan-out (branch-end, 2026-08-30)
+
+The design's headline measurement, run at branch end: the same fan-out change
+timed through the old `verify.sh` (main) and the new one (this branch),
+back-to-back on the same host.
+
+### Method
+
+- Change set: one untracked probe file under `libs/atlas-tenant/` (the same
+  wide-reach stress lib as the Layer 5 measurement), identical on both sides.
+- "Before": a detached-`main` worktree at `/var/tmp/atlas/measure-286-before`
+  (created for this measurement, outside the repo so it never enters a build
+  context). `--facts` confirms the old selection: `shared-lib`, **92 modules**,
+  serial, no bake targets.
+- "After": this branch's worktree. `--facts` confirms: `shared-lib-closure:
+  libs/atlas-tenant (77 consumers)`, **77 modules**, pooled (`GO_JOBS=4`),
+  no bake targets.
+- Both runs flagless `tools/verify.sh --base HEAD` — full `go build`/`go vet`/
+  `go test -race` plus the lint & format guard over the selected modules.
+  Neither side bakes (no `go.mod` changed) and neither runs the UI layer, so
+  the comparison isolates the fan-out path the design targets.
+- Cache control: compile caches (plain and `-race`) warmed once before either
+  timed run; `go clean -testcache` immediately before **each** timed run, so
+  both pay real `-race` test execution and neither inherits the other's cached
+  test results. Without this the second run would trivially win on cached
+  `go test` verdicts.
+- Host state at measurement time: **untuned** — VM at 31 GiB / 24 threads,
+  `/tmp` a 16 GiB tmpfs at 48% use. (The `## Host tuning (WSL2)` section had
+  been applied on the Windows side but the WSL restart that activates it was
+  deliberately deferred until after this measurement, so both runs share the
+  same untuned conditions.)
+
+### Measured figures
+
+| Run | verify.sh | Modules | Wall time | Exit |
+|---|---|---|---|---|
+| Before | main (`3b03c2905`) | 92, serial | **2846s (47m26s)** | 0 |
+| After | this branch | 77, pooled `GO_JOBS=4` | **1349s (22m29s)** | 1 (see below) |
+
+**2.11× faster wall-clock on the fan-out case.** The delta comes from both
+levers at once, as designed: 15 fewer modules selected (closure) and 4-way
+overlap of the remainder (pool).
+
+### The after-run's exit 1 is a pre-existing flaky data race, not a branch defect
+
+The after run completed all 77 modules; one module failed:
+`libs/atlas-kafka` — `TestAddConsumerNoWarnForHealthyDefaults` hit
+`WARNING: DATA RACE`: a consumer goroutine spawned via
+`consumer.(*Manager).AddConsumer` (manager.go:202 → engine.go:64, via
+`atlas-routine.Go`) outlives its test and races with `testing.tRunner`
+returning. This branch touches no Go code; the identical code passed in the
+serial before-run, and 30 stress iterations of the full consumer suite on the
+main checkout (`go test -race -count=30 ./consumer/`, 273s) all passed —
+the race needs the pooled run's machine load to fire. It is a latent
+goroutine-leak bug in atlas-kafka's tests (or the consumer shutdown path)
+that the parallel Go layer is better at exposing than the serial one was.
+Filed as follow-up work; the wall-time figure is unaffected (the module ran
+to completion, failing only its race check).
+
+### What this does and does not show
+
+Measured: the full flagless wall time on the design's headline scenario,
+before vs after, same change, same host, controlled caches. Not measured: a
+"typical single-service change" timing (the design's single-digit-minutes
+goal for that case; on this branch such a change selects one module and is
+dominated by that module's own `-race` time); the tuned-host figures (both
+runs predate the WSL restart by design). Note the fan-out case lands at
+22m29s — materially faster, as the goal asks, but a `libs/` fan-out with
+full `-race` is still not a single-digit-minutes operation on this host.

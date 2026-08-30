@@ -108,6 +108,42 @@ topics:
 	}
 }
 
+// TestParseAllowlistRequiresReason pins parseAllowlist's own contract,
+// mirroring tools/scopeguard/allowlist.go's identically-shaped parser.
+func TestParseAllowlistRequiresReason(t *testing.T) {
+	cases := []struct {
+		name    string
+		raw     string
+		wantErr bool
+	}{
+		{"empty file", "", false},
+		{"comment only", "# just a comment\n", false},
+		{"valid entry", "SOME_TOPIC_VAR # a real reason\n", false},
+		{"no hash at all", "SOME_TOPIC_VAR\n", true},
+		{"hash but empty reason", "SOME_TOPIC_VAR #\n", true},
+		{"hash but whitespace reason", "SOME_TOPIC_VAR #   \n", true},
+		{"duplicate key", "a # r1\na # r2\n", true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, err := parseAllowlist(c.raw)
+			if (err != nil) != c.wantErr {
+				t.Errorf("parseAllowlist(%q) error = %v, wantErr %v", c.raw, err, c.wantErr)
+			}
+		})
+	}
+}
+
+// TestAllowlistEntriesHaveReasons re-parses the real, checked-in
+// allowlist.txt directly (rather than relying on package init having
+// already succeeded) so a future malformed entry fails this test with a
+// clear message instead of a cryptic init panic during `go test`.
+func TestAllowlistEntriesHaveReasons(t *testing.T) {
+	if _, err := parseAllowlist(allowlistRaw); err != nil {
+		t.Fatalf("allowlist.txt: %v", err)
+	}
+}
+
 func writeFile(t *testing.T, path, contents string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {

@@ -15,7 +15,11 @@
 //     the call site, so the type checker alone sees a well-typed call.
 //  2. raw-env-topic-read — os.Getenv/os.LookupEnv called with a bare string
 //     literal that looks like a topic token name (contains "TOPIC"),
-//     instead of `string(SomeTypedConst)`.
+//     instead of `string(SomeTypedConst)`. An env var name that lexically
+//     matches but names something other than a Kafka topic (e.g. a
+//     filesystem path) can be exempted via the narrow, named allowlist in
+//     allowlist.go/allowlist.txt — one entry per env var name, each with a
+//     written reason; never a loosening of the pattern itself.
 //  3. token-not-in-manifest — a topic.Token-typed constant declared in the
 //     analyzed package whose value is absent from the checked-in
 //     topics.yaml manifest, meaning tools/gen-topics.sh has not been rerun.
@@ -232,6 +236,9 @@ func checkRawEnvTopicRead(pass *analysis.Pass, call *ast.CallExpr) {
 	}
 	val, err := strconv.Unquote(lit.Value)
 	if err != nil || !rawEnvTopicPattern.MatchString(val) {
+		return
+	}
+	if _, exempt := RawEnvAllowlist[val]; exempt {
 		return
 	}
 	pass.Reportf(call.Pos(), "raw environment read of topic token %q; reference a topic.Token constant instead", val)

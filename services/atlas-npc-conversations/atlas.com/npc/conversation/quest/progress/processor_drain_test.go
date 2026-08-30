@@ -27,10 +27,10 @@ func progressDoc(entries [][3]string, total, number, size, last int) string {
 		if i > 0 {
 			b.WriteString(",")
 		}
-		b.WriteString(fmt.Sprintf(
+		_, _ = fmt.Fprintf(&b,
 			`{"id":"%s","type":"progress","attributes":{"infoNumber":%s,"progress":"%s"}}`,
 			e[0], e[1], e[2],
-		))
+		)
 	}
 	return fmt.Sprintf(
 		`{"data":[%s],"meta":{"total":%d,"page":{"number":%d,"size":%d,"last":%d}}}`,

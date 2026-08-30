@@ -1,6 +1,7 @@
 package craft
 
 import (
+	msgsaga "atlas-maker/kafka/message/saga"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -8,11 +9,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
-
-// EnvCommandTopic is the saga command topic env var name
-// (deploy/k8s/base/env-configmap.yaml), shared across every
-// saga-emitting service.
-const EnvCommandTopic = "COMMAND_TOPIC_SAGA"
 
 // kafkaEmitter is the concrete, Kafka-backed SagaEmitter (Task 23's
 // interface) that Task 24 wires into main.go. Every other package in this
@@ -32,5 +28,5 @@ func NewKafkaEmitter(l logrus.FieldLogger, ctx context.Context) SagaEmitter {
 func (e kafkaEmitter) Emit(s saga.Saga) error {
 	key := []byte(s.TransactionId.String())
 	provider := producer.SingleMessageProvider(key, &s)
-	return producer.ProviderImpl(e.l)(e.ctx)(EnvCommandTopic)(provider)
+	return producer.ProviderImpl(e.l)(e.ctx)(msgsaga.EnvCommandTopic)(provider)
 }

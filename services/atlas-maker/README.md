@@ -42,6 +42,7 @@ Every error is a JSON:API error carrying a stable `code`:
 | Direction | Topic (env var) | Purpose |
 |---|---|---|
 | Produces | `COMMAND_TOPIC_SAGA` | The craft saga (`InventoryTransaction`) an accepted `POST .../crafts` emits for `atlas-saga-orchestrator` to execute. |
+| Consumes | `EVENT_TOPIC_SAGA_STATUS` | The craft saga's terminal event (`COMPLETED` or `FAILED`). Releases the character's in-flight craft guard (`craft_in_progress`), the only way an accepted craft's guard entry is ever released short of a pod restart. |
 
 ## Upstream Dependencies
 
@@ -71,3 +72,5 @@ Every error is a JSON:API error carrying a stable `code`:
 | INVENTORY | Base URL for `atlas-inventory` |
 | QUESTS | Base URL for `atlas-quests` |
 | COMMAND_TOPIC_SAGA | Kafka topic name the craft saga command is produced to |
+| EVENT_TOPIC_SAGA_STATUS | Kafka topic name the saga terminal event is consumed from |
+| BOOTSTRAP_SERVERS | Kafka broker bootstrap servers |

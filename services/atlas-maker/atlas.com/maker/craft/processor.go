@@ -95,8 +95,10 @@ var CompensableActions = map[saga.Action]bool{
 // first is still resolving is rejected immediately (design §7), then
 // dispatches to the mode-specific validate-and-build path. The guard is
 // released on every path that returns an error (nothing was emitted, so
-// nothing is left to wait on); on success it is left held for the saga's
-// terminal event to release via ReleaseInFlight.
+// nothing is left to wait on); on success it is Track-ed against the saga's
+// transaction id -- the only handle the terminal event carries -- and left
+// held for kafka/consumer/saga's terminal-event handler to release via
+// ReleaseInFlightByTransaction.
 func (p *ProcessorImpl) Create(characterId uint32, req Request) (uuid.UUID, error) {
 	t := tenant.MustFromContext(p.ctx)
 	if !craftGuard.TryAcquire(t.Id(), characterId) {
@@ -108,13 +110,14 @@ func (p *ProcessorImpl) Create(characterId uint32, req Request) (uuid.UUID, erro
 		craftGuard.Release(t.Id(), characterId)
 		return uuid.Nil, err
 	}
+	craftGuard.Track(t.Id(), characterId, txId)
 	return txId, nil
 }
 
 // ReleaseInFlight implements Processor.ReleaseInFlight.
-func (p *ProcessorImpl) ReleaseInFlight(characterId uint32) {
+func (p *ProcessorImpl) ReleaseInFlight(transactionId uuid.UUID) {
 	t := tenant.MustFromContext(p.ctx)
-	craftGuard.Release(t.Id(), characterId)
+	ReleaseInFlightByTransaction(t.Id(), transactionId)
 }
 
 func (p *ProcessorImpl) create(characterId uint32, req Request) (uuid.UUID, error) {

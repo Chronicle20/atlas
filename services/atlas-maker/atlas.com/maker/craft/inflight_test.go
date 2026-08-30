@@ -63,3 +63,60 @@ func TestGuardIsConcurrencySafe(t *testing.T) {
 
 	assert.Equal(t, 1, acquired, "exactly one concurrent TryAcquire for the same key must succeed")
 }
+
+// TestGuardTrackAndReleaseConcurrencySafe exercises Track's and Release's own
+// locking under -race: many goroutines race Track-ing a fresh transaction id
+// onto a held entry concurrently with another goroutine releasing it, none of
+// which should panic or corrupt inflightGuard's maps.
+func TestGuardTrackAndReleaseConcurrencySafe(t *testing.T) {
+	g := newInflightGuard()
+	tenantId := uuid.New()
+
+	require := assert.New(t)
+	require.True(g.TryAcquire(tenantId, 2001))
+
+	const n = 50
+	var wg sync.WaitGroup
+	wg.Add(n * 2)
+	for i := 0; i < n; i++ {
+		go func() {
+			defer wg.Done()
+			g.Track(tenantId, 2001, uuid.New())
+		}()
+		go func() {
+			defer wg.Done()
+			g.Release(tenantId, 2001)
+		}()
+	}
+	wg.Wait()
+}
+
+func TestGuardReleasesByTransactionId(t *testing.T) {
+	g := newInflightGuard()
+	tenantId := uuid.New()
+	txId := uuid.New()
+
+	require := assert.New(t)
+	require.True(g.TryAcquire(tenantId, 1001))
+	g.Track(tenantId, 1001, txId)
+
+	g.ReleaseByTransactionId(tenantId, txId)
+
+	require.True(g.TryAcquire(tenantId, 1001), "a craft should succeed again once the terminal event releases the guard by transaction id")
+}
+
+func TestGuardReleaseByUnknownTransactionIdIsNoOp(t *testing.T) {
+	g := newInflightGuard()
+	tenantId := uuid.New()
+	txId := uuid.New()
+
+	require := assert.New(t)
+	require.True(g.TryAcquire(tenantId, 1001))
+	g.Track(tenantId, 1001, txId)
+
+	assert.NotPanics(t, func() {
+		g.ReleaseByTransactionId(tenantId, uuid.New())
+	})
+
+	require.False(g.TryAcquire(tenantId, 1001), "an unknown transaction id must not release a held entry")
+}

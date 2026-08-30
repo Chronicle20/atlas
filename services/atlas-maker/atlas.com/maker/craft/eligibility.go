@@ -102,10 +102,12 @@ type Processor interface {
 	// Code maps 1:1 onto PRD §5 and mutates nothing (design §7 "rejection is
 	// pre-mutation").
 	Create(characterId uint32, req Request) (uuid.UUID, error)
-	// ReleaseInFlight clears characterId's in-flight craft guard (design
-	// §7). Intended for the saga terminal-event consumer Task 24 wires; a
-	// rejected Create already releases its own guard before returning.
-	ReleaseInFlight(characterId uint32)
+	// ReleaseInFlight clears the in-flight craft guard entry Track-ed under
+	// transactionId (design §7). Called by kafka/consumer/saga's terminal
+	// event handler on both COMPLETED and FAILED -- the only handle a
+	// terminal event carries is the transaction id, never a character id.
+	// A rejected Create already releases its own guard before returning.
+	ReleaseInFlight(transactionId uuid.UUID)
 }
 
 type ProcessorImpl struct {

@@ -110,7 +110,7 @@ func requestCreateCraft(ctx context.Context, characterId uint32, input CraftRequ
 	if err != nil {
 		return CraftResponse{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

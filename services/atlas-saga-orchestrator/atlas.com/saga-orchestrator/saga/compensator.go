@@ -2314,6 +2314,25 @@ func petNameTagCharacterId(s Saga) uint32 {
 	return 0
 }
 
+// craftManifestCharacterId resolves the character to notify for a compensated
+// or timed-out craft saga (task-285 Task 26a addendum). RecordCraftManifest
+// is the first step of all four craft modes and always carries CharacterId,
+// so no fallback walk is needed the way mesoSackCharacterId /
+// petNameTagCharacterId need one. Returns 0 when the saga carries no
+// RecordCraftManifest step at all -- a non-craft InventoryTransaction saga
+// must keep its existing ExtractCharacterCreationIds behavior exactly.
+func craftManifestCharacterId(s Saga) uint32 {
+	for _, step := range s.Steps() {
+		if step.Action() != RecordCraftManifest {
+			continue
+		}
+		if payload, ok := step.Payload().(CraftManifestPayload); ok {
+			return payload.CharacterId
+		}
+	}
+	return 0
+}
+
 // DispatchPetNameTagRollbacks reverse-walks the saga's completed steps and
 // reverts the pet's name by re-issuing RENAME with the PreviousName captured
 // at build time (RenamePet → RenameAndEmit). Pure dispatch half — no

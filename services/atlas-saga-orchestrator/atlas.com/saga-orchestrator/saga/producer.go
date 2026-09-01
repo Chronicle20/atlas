@@ -50,6 +50,15 @@ func CompletedStatusEventProvider(s Saga) model.Provider[[]kafka.Message] {
 		body.Results = r
 	}
 
+	// For a completed craft saga (task-285 Task 26a), echo the consumption
+	// manifest so atlas-channel can write MAKER_RESULT (Task 26). The craft
+	// saga's type is the generic InventoryTransaction, shared with non-craft
+	// operations, so the discriminator is the presence of a
+	// RecordCraftManifest step -- not SagaType.
+	if r := extractMakerCraftResults(s); r != nil {
+		body.Results = r
+	}
+
 	value := &saga.StatusEvent[saga.StatusEventCompletedBody]{
 		TransactionId: s.TransactionId(),
 		Type:          saga.StatusEventTypeCompleted,
@@ -135,6 +144,38 @@ func extractMtsTakeHomeResults(s Saga) map[string]any {
 	return results
 }
 
+// MakerCraftResultKind is the Results["kind"] marker atlas-channel matches to
+// recognize a completed craft saga (task-285 Task 26a) -- not SagaType,
+// since a craft saga's type (InventoryTransaction) is shared with non-craft
+// operations.
+const MakerCraftResultKind = "maker_craft"
+
+// extractMakerCraftResults returns the COMPLETED Results map for a craft
+// saga, or nil if this is not one. The discriminator is the presence of a
+// RecordCraftManifest step, mirroring how extractMtsTakeHomeResults uses
+// ReleaseFromMtsHolding. characterId is lifted to the top level as a scalar
+// so the channel resolves the session with its existing resultUint32 helper
+// before it decodes anything nested; craftManifest carries the full
+// CraftManifestPayload as a single nested object, which Task 26 re-marshals
+// into the typed struct (manifest-carrier-derivation.md §5 hop 3).
+func extractMakerCraftResults(s Saga) map[string]any {
+	for _, step := range s.Steps() {
+		if step.Action() != RecordCraftManifest {
+			continue
+		}
+		p, ok := step.Payload().(CraftManifestPayload)
+		if !ok {
+			return nil
+		}
+		return map[string]any{
+			"kind":          MakerCraftResultKind,
+			"characterId":   p.CharacterId,
+			"craftManifest": p,
+		}
+	}
+	return nil
+}
+
 // ExtractCharacterCreationIds returns (accountId, characterId) from a
 // CharacterCreation saga's CreateCharacter step. accountId is taken from
 // the payload (known at saga acceptance); characterId is taken from the
@@ -201,6 +242,18 @@ func EmitSagaFailed(l logrus.FieldLogger, ctx context.Context, s Saga, errorCode
 		if s.SagaType() == PetNameTagUse {
 			characterId = petNameTagCharacterId(s)
 		}
+		return EmitSagaFailedByIds(l, ctx, s.TransactionId(), string(s.SagaType()), 0, characterId, errorCode, reason, failedStep)
+	}
+	// A craft saga (task-285) carries no CharacterCreation ids either, and
+	// its saga type (InventoryTransaction) is shared with non-craft
+	// operations -- so this guards on the manifest step's presence rather
+	// than SagaType, not on the type itself. Without this arm a compensated
+	// or timed-out craft emits FAILED with characterId 0 and the client
+	// stays locked behind its exclusive-request gate, the identical defect
+	// class the MtsOperation arm's own comment records as task-102. Covers
+	// both entry points -- the compensator and the timeout backstop in
+	// timer.go, which also calls EmitSagaFailed.
+	if characterId := craftManifestCharacterId(s); characterId != 0 {
 		return EmitSagaFailedByIds(l, ctx, s.TransactionId(), string(s.SagaType()), 0, characterId, errorCode, reason, failedStep)
 	}
 	accountId, characterId := ExtractCharacterCreationIds(s)

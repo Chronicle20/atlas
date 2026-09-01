@@ -27,6 +27,20 @@ import (
 // wrong. The recipe's own `count` is ignored for group 0.
 const LeftoverConsumeQuantity = 100
 
+// Role discriminates why a Consumption was resolved -- the recipe's material
+// list, a named gem, the recipe's catalyst, or a plain material-typed
+// consumption with no finer distinction (mode 3's leftover). It exists so
+// the craft consumption manifest (task-285 Task 26a) can aggregate the same
+// Plan the destroy steps are built from, by role, without re-deriving that
+// classification from the request.
+type Role string
+
+const (
+	RoleMaterial Role = "material"
+	RoleGem      Role = "gem"
+	RoleCatalyst Role = "catalyst"
+)
+
 // Consumption is one concrete (inventoryType, slot, quantity) tuple a craft
 // destroys. TemplateId always accompanies it, never left zero, so a saga
 // step built from it can carry DestroyAssetFromSlotPayload.TemplateId and
@@ -37,6 +51,7 @@ type Consumption struct {
 	Slot          int16
 	Quantity      uint32
 	TemplateId    item.Id
+	Role          Role
 }
 
 // Plan is a craft's exact material consumption, resolved against a Snapshot
@@ -57,7 +72,7 @@ type Plan struct {
 // actually there rather than fabricating a shortfall; a caller that must
 // reject on a shortfall (a recipe's required materials) checks that via
 // eligibility before ever building a Plan.
-func resolveConsumption(snap Snapshot, invType inventory.Type, itemId item.Id, count uint32) []Consumption {
+func resolveConsumption(snap Snapshot, invType inventory.Type, itemId item.Id, count uint32, role Role) []Consumption {
 	if count == 0 {
 		return nil
 	}
@@ -71,7 +86,7 @@ func resolveConsumption(snap Snapshot, invType inventory.Type, itemId item.Id, c
 		if take > remaining {
 			take = remaining
 		}
-		out = append(out, Consumption{InventoryType: invType, Slot: sh.Slot, Quantity: take, TemplateId: itemId})
+		out = append(out, Consumption{InventoryType: invType, Slot: sh.Slot, Quantity: take, TemplateId: itemId, Role: role})
 		remaining -= take
 	}
 	return out
@@ -102,7 +117,7 @@ func BuildCreatePlan(snap Snapshot, r recipe.Model, gemItemIds []item.Id, useCat
 
 	for _, mat := range r.Materials() {
 		invType, _ := inventory.TypeFromItemId(mat.ItemId)
-		out = append(out, resolveConsumption(snap, invType, mat.ItemId, mat.Count)...)
+		out = append(out, resolveConsumption(snap, invType, mat.ItemId, mat.Count, RoleMaterial)...)
 	}
 
 	// Iterate gemItemIds in the order first named, deduplicated: map
@@ -116,12 +131,12 @@ func BuildCreatePlan(snap Snapshot, r recipe.Model, gemItemIds []item.Id, useCat
 		}
 		seen[id] = true
 		invType, _ := inventory.TypeFromItemId(id)
-		out = append(out, resolveConsumption(snap, invType, id, freq[id])...)
+		out = append(out, resolveConsumption(snap, invType, id, freq[id], RoleGem)...)
 	}
 
 	if useCatalyst && r.Catalyst() != 0 {
 		invType, _ := inventory.TypeFromItemId(r.Catalyst())
-		out = append(out, resolveConsumption(snap, invType, r.Catalyst(), 1)...)
+		out = append(out, resolveConsumption(snap, invType, r.Catalyst(), 1, RoleCatalyst)...)
 	}
 
 	return Plan{Consumptions: out}
@@ -131,7 +146,7 @@ func BuildCreatePlan(snap Snapshot, r recipe.Model, gemItemIds []item.Id, useCat
 // LeftoverConsumeQuantity -- never the archive's group-0 `count` (OQ-7).
 func BuildCrystalPlan(snap Snapshot, leftoverItemId item.Id) Plan {
 	invType, _ := inventory.TypeFromItemId(leftoverItemId)
-	return Plan{Consumptions: resolveConsumption(snap, invType, leftoverItemId, LeftoverConsumeQuantity)}
+	return Plan{Consumptions: resolveConsumption(snap, invType, leftoverItemId, LeftoverConsumeQuantity, RoleMaterial)}
 }
 
 // AppliedGems is the subset of gemItemIds (deduplicated, order preserved)

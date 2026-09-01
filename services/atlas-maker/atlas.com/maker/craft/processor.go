@@ -166,6 +166,8 @@ func (p *ProcessorImpl) createOrUpgrade(characterId uint32, req Request) (uuid.U
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("MAKER_SKILL")
 
+	b.AddStep("record_manifest", saga.Pending, saga.RecordCraftManifest, craftManifest(characterId, req.Mode, r, plan, req.GemItemIds, snap))
+
 	b.AddStep("deduct_meso", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
 		CharacterId: characterId,
 		WorldId:     req.WorldId,
@@ -248,6 +250,14 @@ func (p *ProcessorImpl) crystal(characterId uint32, req Request) (uuid.UUID, err
 	b := saga.NewBuilder().
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("MAKER_SKILL")
+
+	b.AddStep("record_manifest", saga.Pending, saga.RecordCraftManifest, saga.CraftManifestPayload{
+		CharacterId:    characterId,
+		Mode:           uint32(req.Mode),
+		CrystalItemId:  uint32(reward.ItemId),
+		LeftoverItemId: uint32(req.LeftoverItemId),
+		MesoCost:       r.Meso(),
+	})
 
 	b.AddStep("deduct_meso", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
 		CharacterId: characterId,
@@ -338,6 +348,14 @@ func (p *ProcessorImpl) disassemble(characterId uint32, req Request) (uuid.UUID,
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("MAKER_SKILL")
 
+	b.AddStep("record_manifest", saga.Pending, saga.RecordCraftManifest, saga.CraftManifestPayload{
+		CharacterId:        characterId,
+		Mode:               uint32(req.Mode),
+		DisassembledItemId: uint32(req.EquipItemId),
+		Crystals:           []saga.CraftManifestItem{{ItemId: uint32(crystalId), Count: count}},
+		MesoCost:           uint32(DisassembleMesoCharge),
+	})
+
 	b.AddStep("destroy_equip", saga.Pending, saga.DestroyAssetFromSlot, saga.DestroyAssetFromSlotPayload{
 		CharacterId:   characterId,
 		InventoryType: byte(invType),
@@ -368,6 +386,73 @@ func (p *ProcessorImpl) disassemble(characterId uint32, req Request) (uuid.UUID,
 		"mesoDelta":    -int32(DisassembleMesoCharge),
 		"producedItem": crystalId,
 	})
+}
+
+// craftManifest builds modes 1/2's CraftManifestPayload from the resolved
+// Plan and recipe -- never from Request, since BuildCreatePlan silently
+// drops an unheld gem and an unheld catalyst (FR-3.2); a Request-derived
+// manifest would report consumption that never happened (task-285
+// Task 26a). Materials aggregate by template id (craftManifestMaterials);
+// GemItemIds is the applied, hold-filtered set (AppliedGems, F5); a catalyst
+// is reported only when the plan actually holds a RoleCatalyst consumption.
+func craftManifest(characterId uint32, mode Mode, r recipe.Model, plan Plan, gemItemIds []item.Id, snap Snapshot) saga.CraftManifestPayload {
+	applied := AppliedGems(snap, gemItemIds)
+	gemIds := make([]uint32, len(applied))
+	for i, id := range applied {
+		gemIds[i] = uint32(id)
+	}
+	catalystUsed, catalystItemId := craftManifestCatalyst(plan)
+
+	return saga.CraftManifestPayload{
+		CharacterId:    characterId,
+		Mode:           uint32(mode),
+		TargetItemId:   uint32(r.Id()),
+		ItemNum:        r.ItemNum(),
+		Materials:      craftManifestMaterials(plan),
+		GemItemIds:     gemIds,
+		CatalystUsed:   catalystUsed,
+		CatalystItemId: catalystItemId,
+		MesoCost:       r.Meso(),
+	}
+}
+
+// craftManifestMaterials aggregates plan's RoleMaterial consumptions by
+// template id: resolveConsumption emits one Consumption per slot touched,
+// but the wire renders one line per material id, not per slot
+// (manifest-carrier-derivation.md §1, §2 F4).
+func craftManifestMaterials(plan Plan) []saga.CraftManifestItem {
+	var order []item.Id
+	totals := make(map[item.Id]uint32, len(plan.Consumptions))
+	for _, c := range plan.Consumptions {
+		if c.Role != RoleMaterial {
+			continue
+		}
+		if _, seen := totals[c.TemplateId]; !seen {
+			order = append(order, c.TemplateId)
+		}
+		totals[c.TemplateId] += c.Quantity
+	}
+	if len(order) == 0 {
+		return nil
+	}
+	out := make([]saga.CraftManifestItem, 0, len(order))
+	for _, id := range order {
+		out = append(out, saga.CraftManifestItem{ItemId: uint32(id), Count: totals[id]})
+	}
+	return out
+}
+
+// craftManifestCatalyst reports whether plan holds a RoleCatalyst
+// consumption and, if so, its template id -- true only when a catalyst
+// consumption is actually in the plan, matching the fact that
+// BuildCreatePlan resolves no catalyst consumption when it is unheld.
+func craftManifestCatalyst(plan Plan) (bool, uint32) {
+	for _, c := range plan.Consumptions {
+		if c.Role == RoleCatalyst {
+			return true, uint32(c.TemplateId)
+		}
+	}
+	return false, 0
 }
 
 // appendDestroySteps adds one DestroyAssetFromSlot step per plan entry, in

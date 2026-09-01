@@ -262,6 +262,18 @@ const (
 	// reagent-adjusted stats".
 	AwardCraftedAsset Action = "award_crafted_asset"
 
+	// Crafting actions (maker skill, task-285)
+	//
+	// RecordCraftManifest carries the craft's resolved consumption/production
+	// manifest (task-285 Task 26a). It is self-completing -- nothing external
+	// acts on it, it exists only so the manifest survives to the saga's
+	// terminal event and a pod restart in between (jsonb rehydration through
+	// Step[T].UnmarshalJSON). It is always the first step of all four craft
+	// modes, including disassemble, which emits no AwardCraftedAsset step at
+	// all, and CREATE vs CREATE_WITH_UPGRADE, which build byte-identical step
+	// lists otherwise (manifest-carrier-derivation.md §2 F1/F2).
+	RecordCraftManifest Action = "record_craft_manifest"
+
 	// Guild actions
 	RequestGuildName             Action = "request_guild_name"
 	RequestGuildEmblem           Action = "request_guild_emblem"

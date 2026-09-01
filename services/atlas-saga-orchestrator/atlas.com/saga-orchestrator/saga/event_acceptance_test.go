@@ -60,6 +60,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.StartItemConversation, sharedsaga.StartNpcConversation,
 	sharedsaga.TransferToParcel, sharedsaga.AcceptToParcel, sharedsaga.ReleaseFromParcel,
 	sharedsaga.WithdrawFromParcel, sharedsaga.ShowParcel,
+	sharedsaga.RecordCraftManifest,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant

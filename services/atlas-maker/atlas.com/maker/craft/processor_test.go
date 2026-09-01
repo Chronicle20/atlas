@@ -133,18 +133,28 @@ func TestCreateModeOneBuildsSequence(t *testing.T) {
 	require.Len(t, d.em.calls, 1)
 	steps := d.em.calls[0].Steps
 
-	// AwardMesos (negative) -> 2 destroy steps (material + catalyst) ->
-	// AwardCraftedAsset. h's fixture holds material 4011001 at count 5 in
-	// one slot and catalyst 4130000 in one slot; no gems were requested.
-	require.Len(t, steps, 3)
+	// RecordCraftManifest -> AwardMesos (negative) -> 1 destroy step (h's
+	// fixture holds material 4011001 at count 5 in one slot; the catalyst
+	// 4130000 is not held, so BuildCreatePlan resolves no catalyst
+	// consumption despite UseCatalyst: true) -> AwardCraftedAsset.
+	require.Len(t, steps, 4)
 
-	assert.Equal(t, saga.AwardMesos, steps[0].Action)
-	mesos := steps[0].Payload.(saga.AwardMesosPayload)
+	assert.Equal(t, saga.RecordCraftManifest, steps[0].Action)
+	manifest := steps[0].Payload.(saga.CraftManifestPayload)
+	assert.EqualValues(t, h.characterId, manifest.CharacterId)
+	assert.EqualValues(t, craft.ModeCreate, manifest.Mode)
+	assert.EqualValues(t, r.Id(), manifest.TargetItemId)
+	assert.False(t, manifest.CatalystUsed)
+	assert.Zero(t, manifest.CatalystItemId)
+	assert.EqualValues(t, 1200, manifest.MesoCost)
+
+	assert.Equal(t, saga.AwardMesos, steps[1].Action)
+	mesos := steps[1].Payload.(saga.AwardMesosPayload)
 	assert.EqualValues(t, -1200, mesos.Amount)
 
-	assert.Equal(t, saga.DestroyAssetFromSlot, steps[1].Action)
+	assert.Equal(t, saga.DestroyAssetFromSlot, steps[2].Action)
 
-	last := steps[2]
+	last := steps[3]
 	assert.Equal(t, saga.AwardCraftedAsset, last.Action)
 	award := last.Payload.(saga.AwardCraftedAssetPayload)
 	assert.EqualValues(t, r.Tuc(), award.Slots)
@@ -431,6 +441,283 @@ func TestEveryRejectionEmitsNoSaga(t *testing.T) {
 	})
 }
 
+// TestManifestStepIsFirstInEveryMode is table-driven over all four modes:
+// steps[0].Action is always RecordCraftManifest, and the remaining step
+// order is byte-identical to today's (task-285 Task 26a).
+func TestManifestStepIsFirstInEveryMode(t *testing.T) {
+	t.Run("mode 1 create", func(t *testing.T) {
+		r := eligibleRecipeFixture(t)
+		h := newEligibleHarness(t)
+		d := newDeps()
+		d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+		p := buildCreateProcessor(t, h, d)
+
+		_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeCreate, TargetItemId: r.Id()})
+		require.NoError(t, err)
+		require.Len(t, d.em.calls, 1)
+
+		wantOrder := []saga.Action{saga.RecordCraftManifest, saga.AwardMesos, saga.DestroyAssetFromSlot, saga.AwardCraftedAsset}
+		steps := d.em.calls[0].Steps
+		require.Len(t, steps, len(wantOrder))
+		for i, a := range wantOrder {
+			assert.Equal(t, a, steps[i].Action)
+		}
+	})
+
+	t.Run("mode 2 create with upgrade", func(t *testing.T) {
+		r := eligibleRecipeFixture(t)
+		h := newEligibleHarness(t)
+		d := newDeps()
+		d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+		p := buildCreateProcessor(t, h, d)
+
+		_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeCreateWithUpgrade, TargetItemId: r.Id()})
+		require.NoError(t, err)
+		require.Len(t, d.em.calls, 1)
+
+		wantOrder := []saga.Action{saga.RecordCraftManifest, saga.AwardMesos, saga.DestroyAssetFromSlot, saga.AwardCraftedAsset}
+		steps := d.em.calls[0].Steps
+		require.Len(t, steps, len(wantOrder))
+		for i, a := range wantOrder {
+			assert.Equal(t, a, steps[i].Action)
+		}
+	})
+
+	t.Run("mode 3 monster crystal", func(t *testing.T) {
+		h, r := crystalHarness(t)
+		d := newDeps()
+		d.rp.GetByLeftoverFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+		p := buildCreateProcessor(t, h, d)
+
+		_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeMonsterCrystal, LeftoverItemId: 4200000})
+		require.NoError(t, err)
+		require.Len(t, d.em.calls, 1)
+
+		wantOrder := []saga.Action{saga.RecordCraftManifest, saga.AwardMesos, saga.DestroyAssetFromSlot, saga.AwardAsset}
+		steps := d.em.calls[0].Steps
+		require.Len(t, steps, len(wantOrder))
+		for i, a := range wantOrder {
+			assert.Equal(t, a, steps[i].Action)
+		}
+	})
+
+	t.Run("mode 4 disassemble", func(t *testing.T) {
+		h, equipId, slot := disassembleHarness(t)
+		d := newDeps()
+		d.eqp.GetByIdFunc = func(item.Id) (equipment.Model, error) {
+			return equipment.Extract(equipment.RestModel{Id: uint32(equipId), ReqLevel: 50})
+		}
+		d.cbp.CrystalForLevelFunc = func(uint32) (item.Id, uint32, error) { return item.Id(4260005), 1, nil }
+		p := buildCreateProcessor(t, h, d)
+
+		_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeDisassemble, EquipItemId: equipId, SlotPos: slot})
+		require.NoError(t, err)
+		require.Len(t, d.em.calls, 1)
+
+		wantOrder := []saga.Action{saga.RecordCraftManifest, saga.DestroyAssetFromSlot, saga.AwardAsset, saga.AwardMesos}
+		steps := d.em.calls[0].Steps
+		require.Len(t, steps, len(wantOrder))
+		for i, a := range wantOrder {
+			assert.Equal(t, a, steps[i].Action)
+		}
+	})
+}
+
+// TestModeOneAndTwoManifestsDifferOnlyByMode proves the carrier's whole
+// reason to exist (manifest-carrier-derivation.md §2 F2): createOrUpgrade
+// never branches on req.Mode when it builds the step list, so mode 1 and
+// mode 2 produce byte-identical sagas except for the manifest's Mode field.
+func TestModeOneAndTwoManifestsDifferOnlyByMode(t *testing.T) {
+	r := eligibleRecipeFixture(t)
+
+	build := func(mode craft.Mode) saga.CraftManifestPayload {
+		h := newEligibleHarness(t)
+		d := newDeps()
+		d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+		p := buildCreateProcessor(t, h, d)
+
+		_, err := p.Create(h.characterId, craft.Request{Mode: mode, TargetItemId: r.Id()})
+		require.NoError(t, err)
+		require.Len(t, d.em.calls, 1)
+		return d.em.calls[0].Steps[0].Payload.(saga.CraftManifestPayload)
+	}
+
+	m1 := build(craft.ModeCreate)
+	m2 := build(craft.ModeCreateWithUpgrade)
+
+	assert.EqualValues(t, 1, m1.Mode)
+	assert.EqualValues(t, 2, m2.Mode)
+
+	m1.Mode = 0
+	m2.Mode = 0
+	assert.Equal(t, m1, m2)
+}
+
+// TestCreateManifestMatchesActualConsumption asserts the manifest's
+// Materials aggregate by item id and their totals equal the sum of the
+// DestroyAssetFromSlot steps' quantities for that id.
+func TestCreateManifestMatchesActualConsumption(t *testing.T) {
+	r := eligibleRecipeFixture(t)
+	h := newEligibleHarness(t)
+	d := newDeps()
+	d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+	p := buildCreateProcessor(t, h, d)
+
+	_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeCreate, TargetItemId: r.Id()})
+	require.NoError(t, err)
+	require.Len(t, d.em.calls, 1)
+	steps := d.em.calls[0].Steps
+	manifest := steps[0].Payload.(saga.CraftManifestPayload)
+
+	destroyed := map[uint32]uint32{}
+	for _, st := range steps {
+		if st.Action != saga.DestroyAssetFromSlot {
+			continue
+		}
+		payload := st.Payload.(saga.DestroyAssetFromSlotPayload)
+		destroyed[payload.TemplateId] += payload.Quantity
+	}
+
+	materials := map[uint32]uint32{}
+	for _, m := range manifest.Materials {
+		materials[m.ItemId] = m.Count
+	}
+	assert.Equal(t, destroyed, materials)
+	assert.EqualValues(t, r.Id(), manifest.TargetItemId)
+	assert.EqualValues(t, r.ItemNum(), manifest.ItemNum)
+	assert.EqualValues(t, r.Meso(), manifest.MesoCost)
+}
+
+// TestUnheldGemIsDroppedFromManifest covers FR-3.2: a gem the snapshot does
+// not hold is dropped entirely, not rejected, and is absent from both the
+// manifest and the destroy steps. It also covers the duplicate-id case
+// (gemFrequency, plan.go): an id named twice but held once appears once.
+func TestUnheldGemIsDroppedFromManifest(t *testing.T) {
+	r := eligibleRecipeFixture(t)
+	h := newEligibleHarness(t)
+	h.etc = compartment.NewBuilder(inventory.TypeValueETC).
+		AddAsset(compartment.NewAssetModel(item.Id(4011001), 5, 1)).
+		AddAsset(compartment.NewAssetModel(item.Id(4000021), 1, 2)).
+		AddAsset(compartment.NewAssetModel(item.Id(4260000), 1, 3)).
+		Build()
+	d := newDeps()
+	d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+	p := buildCreateProcessor(t, h, d)
+
+	// 4260099 is not held at all; 4260000 is held once but named twice.
+	gems := []item.Id{4260099, 4260000, 4260000}
+	_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeCreate, TargetItemId: r.Id(), GemItemIds: gems})
+	require.NoError(t, err)
+	require.Len(t, d.em.calls, 1)
+	steps := d.em.calls[0].Steps
+	manifest := steps[0].Payload.(saga.CraftManifestPayload)
+
+	require.Len(t, manifest.GemItemIds, 1)
+	assert.EqualValues(t, 4260000, manifest.GemItemIds[0])
+
+	var gemDestroyed int
+	for _, st := range steps {
+		if st.Action != saga.DestroyAssetFromSlot {
+			continue
+		}
+		payload := st.Payload.(saga.DestroyAssetFromSlotPayload)
+		if payload.TemplateId == 4260099 {
+			t.Fatalf("unheld gem 4260099 must not appear in a destroy step")
+		}
+		if payload.TemplateId == 4260000 {
+			gemDestroyed++
+		}
+	}
+	assert.Equal(t, 1, gemDestroyed, "a gem named twice but held once must appear once")
+}
+
+// TestUnheldCatalystLeavesCatalystUnused matches the fact that
+// BuildCreatePlan resolves no catalyst consumption when the catalyst is
+// unheld even though UseCatalyst was requested.
+func TestUnheldCatalystLeavesCatalystUnused(t *testing.T) {
+	r := eligibleRecipeFixture(t)
+	h := newEligibleHarness(t) // does not hold 4130000, the recipe's catalyst
+	d := newDeps()
+	d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+	p := buildCreateProcessor(t, h, d)
+
+	_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeCreate, TargetItemId: r.Id(), UseCatalyst: true})
+	require.NoError(t, err)
+	require.Len(t, d.em.calls, 1)
+	manifest := d.em.calls[0].Steps[0].Payload.(saga.CraftManifestPayload)
+	assert.False(t, manifest.CatalystUsed)
+	assert.Zero(t, manifest.CatalystItemId)
+}
+
+// TestCrystalManifestCarriesDrawnRewardAndLeftover asserts mode 3's manifest
+// fields: CrystalItemId equals the award_crystal step's template id,
+// LeftoverItemId equals req.LeftoverItemId, and Materials stays empty (the
+// MONSTER_CRYSTAL arm takes no material list -- derivation §5).
+func TestCrystalManifestCarriesDrawnRewardAndLeftover(t *testing.T) {
+	h, r := crystalHarness(t)
+	d := newDeps()
+	d.rp.GetByLeftoverFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+	p := buildCreateProcessor(t, h, d)
+
+	_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeMonsterCrystal, LeftoverItemId: 4200000})
+	require.NoError(t, err)
+	require.Len(t, d.em.calls, 1)
+	steps := d.em.calls[0].Steps
+	manifest := steps[0].Payload.(saga.CraftManifestPayload)
+
+	var awardedItemId uint32
+	for _, st := range steps {
+		if st.Action == saga.AwardAsset {
+			awardedItemId = st.Payload.(saga.AwardItemActionPayload).Item.TemplateId
+		}
+	}
+	require.NotZero(t, awardedItemId)
+	assert.EqualValues(t, awardedItemId, manifest.CrystalItemId)
+	assert.EqualValues(t, 4200000, manifest.LeftoverItemId)
+	assert.Empty(t, manifest.Materials)
+	assert.EqualValues(t, 3, manifest.Mode)
+}
+
+// TestDisassembleManifestCarriesCrystalsAndZeroMeso asserts mode 4's
+// manifest against the DisassembleMesoCharge constant, not a literal, so a
+// future retune does not silently pass.
+func TestDisassembleManifestCarriesCrystalsAndZeroMeso(t *testing.T) {
+	h, equipId, slot := disassembleHarness(t)
+	d := newDeps()
+	d.eqp.GetByIdFunc = func(item.Id) (equipment.Model, error) {
+		return equipment.Extract(equipment.RestModel{Id: uint32(equipId), ReqLevel: 50})
+	}
+	d.cbp.CrystalForLevelFunc = func(uint32) (item.Id, uint32, error) { return item.Id(4260005), 3, nil }
+	p := buildCreateProcessor(t, h, d)
+
+	_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeDisassemble, EquipItemId: equipId, SlotPos: slot})
+	require.NoError(t, err)
+	require.Len(t, d.em.calls, 1)
+	manifest := d.em.calls[0].Steps[0].Payload.(saga.CraftManifestPayload)
+
+	assert.EqualValues(t, equipId, manifest.DisassembledItemId)
+	require.Len(t, manifest.Crystals, 1)
+	assert.EqualValues(t, 4260005, manifest.Crystals[0].ItemId)
+	assert.EqualValues(t, 3, manifest.Crystals[0].Count)
+	assert.EqualValues(t, craft.DisassembleMesoCharge, manifest.MesoCost)
+	assert.EqualValues(t, 4, manifest.Mode)
+}
+
+// TestEveryRejectionStillEmitsNoSaga extends the rejection sweep so the new
+// manifest step does not create an emission on a rejected craft.
+func TestEveryRejectionStillEmitsNoSaga(t *testing.T) {
+	r := eligibleRecipeFixture(t)
+	h := newEligibleHarness(t)
+	h.character = buildCharacter(t, 29, 1200) // level too low
+	d := newDeps()
+	d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+	p := buildCreateProcessor(t, h, d)
+
+	_, err := p.Create(h.characterId, craft.Request{Mode: craft.ModeCreate, TargetItemId: r.Id()})
+	require.Error(t, err)
+	assert.Empty(t, d.em.calls, "a rejected craft must never emit even the manifest step")
+}
+
 func TestEveryStepUsesACompensableAction(t *testing.T) {
 	r := eligibleRecipeFixture(t)
 	h := newEligibleHarness(t)
@@ -461,6 +748,12 @@ func TestEveryStepUsesACompensableAction(t *testing.T) {
 		require.Len(t, e.calls, 1)
 		for _, st := range e.calls[0].Steps {
 			assert.NotEqual(t, saga.DestroyAllAssets, st.Action)
+			// RecordCraftManifest is exempt: it is self-completing and
+			// commits no mutation (it only carries data alongside the
+			// saga), so it has nothing to compensate (task-285 Task 26a).
+			if st.Action == saga.RecordCraftManifest {
+				continue
+			}
 			assert.True(t, craft.CompensableActions[st.Action], "action %q is not in the compensable set", st.Action)
 		}
 	}

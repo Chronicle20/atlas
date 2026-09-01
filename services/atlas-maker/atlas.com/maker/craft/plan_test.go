@@ -150,3 +150,50 @@ func TestPlanNeverTrustsClientQuantities(t *testing.T) {
 	assert.Equal(t, item.Id(4260000), plan.Consumptions[0].TemplateId)
 	assert.EqualValues(t, 1, plan.Consumptions[0].Quantity)
 }
+
+// TestBuildCreatePlanTagsRoles asserts materials, gems and the catalyst each
+// carry their own Role, and that the resolved order (materials -> gems ->
+// catalyst) is unchanged from before Role existed (task-285 Task 26a).
+func TestBuildCreatePlanTagsRoles(t *testing.T) {
+	etc := compartment.NewBuilder(inventory.TypeValueETC).
+		AddAsset(compartment.NewAssetModel(item.Id(4011001), 1, 5)).
+		AddAsset(compartment.NewAssetModel(item.Id(4260000), 1, 1)).
+		AddAsset(compartment.NewAssetModel(item.Id(4130000), 1, 3)).
+		Build()
+	snap := buildSnapshot(t, etc)
+
+	r := buildRecipe(t, itemmake.RestModel{
+		Id:       1082008,
+		Group:    1,
+		Recipe:   []itemmake.MaterialRestModel{{ItemId: 4011001, Count: 5}},
+		Catalyst: 4130000,
+	})
+
+	gems := []item.Id{4260000}
+	plan := craft.BuildCreatePlan(snap, r, gems, true)
+
+	require.Len(t, plan.Consumptions, 3)
+	assert.Equal(t, item.Id(4011001), plan.Consumptions[0].TemplateId)
+	assert.Equal(t, craft.RoleMaterial, plan.Consumptions[0].Role)
+	assert.Equal(t, item.Id(4260000), plan.Consumptions[1].TemplateId)
+	assert.Equal(t, craft.RoleGem, plan.Consumptions[1].Role)
+	assert.Equal(t, item.Id(4130000), plan.Consumptions[2].TemplateId)
+	assert.Equal(t, craft.RoleCatalyst, plan.Consumptions[2].Role)
+}
+
+// TestBuildCrystalPlanTagsMaterialRole covers mode 3's leftover consumption:
+// it carries RoleMaterial, matching what the manifest's Materials aggregation
+// would expect if mode 3's arm ever populated that field (it does not --
+// derivation §5 -- but the Plan's own tagging stays consistent regardless).
+func TestBuildCrystalPlanTagsMaterialRole(t *testing.T) {
+	etc := compartment.NewBuilder(inventory.TypeValueETC).
+		AddAsset(compartment.NewAssetModel(item.Id(4020000), 150, 1)).
+		Build()
+	snap := buildSnapshot(t, etc)
+
+	plan := craft.BuildCrystalPlan(snap, item.Id(4020000))
+
+	require.Len(t, plan.Consumptions, 1)
+	assert.Equal(t, craft.RoleMaterial, plan.Consumptions[0].Role)
+	assert.EqualValues(t, craft.LeftoverConsumeQuantity, plan.Consumptions[0].Quantity)
+}

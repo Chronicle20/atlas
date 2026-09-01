@@ -204,6 +204,7 @@ type Handler interface {
 	handleClearBackEffect(s Saga, st Step[any]) error
 	handleStartRPSGame(s Saga, st Step[any]) error
 	handleIncubatorResult(s Saga, st Step[any]) error
+	handleRecordCraftManifest(s Saga, st Step[any]) error
 	handleEmitMegaphone(s Saga, st Step[any]) error
 	handleEnqueueWorldBroadcast(s Saga, st Step[any]) error
 	handleCreateNote(s Saga, st Step[any]) error
@@ -1088,6 +1089,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleExtendAssetExpiration, true
 	case IncubatorResult:
 		return h.handleIncubatorResult, true
+	case RecordCraftManifest:
+		return h.handleRecordCraftManifest, true
 	case EmitMegaphone:
 		return h.handleEmitMegaphone, true
 	case EnqueueWorldBroadcast:
@@ -1373,6 +1376,24 @@ func (h *HandlerImpl) handleIncubatorResult(s Saga, st Step[any]) error {
 	}
 
 	// Fire-and-forget: mark step complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleRecordCraftManifest handles the RecordCraftManifest action
+// (task-285 Task 26a). It is handleIncubatorResult's shape minus the
+// produce: nothing external acts on the manifest, it exists only so it
+// survives on the saga for producer.extractMakerCraftResults to read once
+// the saga completes, so the step is marked complete immediately after
+// validating its payload type. Matches ValidateCharacterState's empty
+// acceptanceTable entry -- both are self-completing.
+func (h *HandlerImpl) handleRecordCraftManifest(s Saga, st Step[any]) error {
+	if _, ok := st.Payload().(CraftManifestPayload); !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Self-completing: mark step complete immediately.
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil

@@ -164,6 +164,11 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.ApplyAssetKarma:       {EventKindAssetUpdated},
 	sharedsaga.ExtendAssetExpiration: {EventKindAssetUpdated},
 	sharedsaga.IncubatorResult:       {},
+	// RecordCraftManifest is self-completing (task-285 Task 26a): nothing
+	// external acts on it, it exists only to carry the craft consumption
+	// manifest to the saga's terminal event. Matches IncubatorResult's own
+	// empty acceptance entry.
+	sharedsaga.RecordCraftManifest: {},
 
 	// Character/stat actions.
 	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},

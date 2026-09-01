@@ -233,4 +233,44 @@ Also confirm before merge that the live tenant configuration is patched with the
 
 ## Gate outcomes
 
-*(Task 27 appends the command-by-command results and the review verdicts here.)*
+### Verification gates
+
+Only the `FLAGLESS VERIFY EXIT=` line inside a log file counts as a verdict — the background-task
+notification reports the trailing `echo`'s exit status, not the gate's, and read `0` on
+`gate-final2.log`, the run that actually FAILED.
+
+| Log | Range / commit | Invocation | Verdict |
+|---|---|---|---|
+| `.superpowers/sdd/plan/gate-26.log` | `331b0c0b5..3d4391dad` (covers `61ff8cbd8`, `3d4391dad`) | `tools/verify.sh --quick --base 331b0c0b5` | **SUPERSEDED — does not certify anything.** `--quick` skips the docker bake and does not count as the branch gate; ends with repeated lint `0 issues.` lines, no flagless verdict. |
+| `.superpowers/sdd/plan/gate-final.log` | launched at `79f6bd566` | `tools/verify.sh` (flagless) | **SUPERSEDED — stopped, not failed.** Stopped deliberately mid-bake when later commits landed underneath the run; superseded by `gate-final2.log`. |
+| `.superpowers/sdd/plan/gate-final2.log` | `493bf669f` (full range through docs commit) | `tools/verify.sh` (flagless) | **FAIL.** `FLAGLESS VERIFY EXIT=1`, `1 check(s) FAILED — the branch is not ready.` One failure: `go build/vet/test -race services/atlas-configurations/atlas.com/configurations` → `--- FAIL: TestValidate_AcceptsEverySeedTemplate` at `corpus_test.go:64` (`corpus size = 3403 entries, want 3387`), diagnosed as a stale expectation — the branch adds exactly 16 seed-template bindings (8 templates × `MakerSkillHandle`+`MakerResult`) and the corpus guard was never bumped. All other 91 modules, every guard, routes drift, version coverage, overlay env drift, tenant tables, pr-sparse mirror, sparse baseline scoping, lint and format passed. Fixed by fix round 3, commit `e846ac3eb`. |
+| `.superpowers/sdd/plan/gate-final3.log` | `493bf669f..e846ac3eb` | `tools/verify.sh` (flagless) | **PASS, but superseded by a later HEAD.** `FLAGLESS VERIFY EXIT=0`, `All checks passed.` (the unqualified message — not the `--quick` "bake was skipped" variant, confirming the bake ran). `grep -c "FAILED\|--- FAIL"` over the full log returns 0. This was the first and only creditable verification of the branch **at that time**, but HEAD later moved to `0261eb2c4` (the `/api/crystal-bands` ingress fix), so per CLAUDE.md this PASS no longer certifies current HEAD. |
+| `.superpowers/sdd/plan/gate-final4.log` | launched at `0261eb2c4` | `tools/verify.sh` (flagless) | **SUPERSEDED — stopped, not failed.** Stopped deliberately partway through (last line `── go build/vet/test -race services/atlas-rates/atlas.com/rates`, no `FLAGLESS VERIFY EXIT=` line) once it became clear this write-up commit would land on top of `0261eb2c4` and invalidate it anyway. Certifies nothing. |
+| `.superpowers/sdd/plan/gate-final5.log` | the write-up commit (branch HEAD) | `tools/verify.sh` (flagless) | The outstanding gate. Verdict is whatever its `FLAGLESS VERIFY EXIT=` line says; absent that line the run did not finish and must be re-launched, never inferred. |
+
+The branch currently has **no gate log that certifies current HEAD**. `gate-final5.log`
+must finish with `FLAGLESS VERIFY EXIT=0` before the branch can be called verified.
+
+### Review verdicts
+
+| Unit | Agent / model | Verdict | Caused a fix? |
+|---|---|---|---|
+| Task 27 code slice (`3d4391dad..79f6bd566`) | `task-reviewer` / sonnet | CHANGES_REQUIRED, 1 blocking | Yes — fix round 1, commit `3877d5047` (widened a mis-cited `plan.md` line range in `maker_skill.go:23` from `1455-1458` to `1455-1461`; the byte value `2` was already correct, this was a citation defect only). No re-review dispatched for this fix (controller independently re-read the cited range). |
+| `backend-guidelines-reviewer` full `SCAFFOLD-*` audit of `atlas-maker` | `backend-guidelines-reviewer` / sonnet | CHANGES_REQUIRED, 7 blocking | Yes — two parallel fix rounds on disjoint file sets: **round A** (`8ada1d8ba`) closed the five structural findings (FILE-01/06 topic-named file, DOM-02/03 missing `ToEntity`/`Make`, DOM-05 inline transform, DOM-01 missing `builder.go` files); **round B** (`e25600ea5`) added the missing `server.ParseEnvironment` stage to `atlas-maker`'s REST handler wrappers, a `docker-compose.core.yml` entry, and a `.bruno` collection. The `ParseEnvironment` gap was found repo-wide (33 of 33 services with a local `RegisterHandler` omit it) but the ruling scoped the fix to atlas-maker only, since it is the new service this branch introduces; the other 32 are carried to the PR body as a separate follow-up. |
+| Backend-audit fix rounds A + B (`3877d5047..8ada1d8ba`) | `task-reviewer` / sonnet | APPROVED, 0 blocking | No | 
+| `plan-adherence-reviewer`, Tasks 1-14 shard | `plan-adherence-reviewer` / sonnet | APPROVED_WITH_FINDINGS, 0 blocking | No — one non-blocking finding, closed by the controller directly (not a fix round): review artifacts for Tasks 3, 12, 13, 14 had never been mirrored into `docs/tasks/task-285-maker-skill-crafting/reviews/`. All missing artifacts except Task 3's were copied in from `.superpowers/sdd/plan/task-N-review.md` (commit `493bf669f`). **Task 3 has no review artifact anywhere** — it was never written; its APPROVED verdict exists only in `progress.md`'s ledger entry ("Task 3: complete (commits `cda7f3f1e..f6d91735e`, review clean)"). |
+| `plan-adherence-reviewer`, Tasks 15-27 shard (incl. 26a, 26b) | `plan-adherence-reviewer` / sonnet | APPROVED, 0 blocking | No |
+| `packet-completeness-critic` | `packet-completeness-critic` / sonnet | CLEAN, 0 findings (CHANGED-BUT-UNCLAIMED: 0, CLAIMED-BUT-UNVERIFIED: 0) | No |
+
+Fix rounds on this branch, end to end: Task 27 code slice fix round 1 (`3877d5047`), backend-audit
+fix round A (`8ada1d8ba`), backend-audit fix round B (`e25600ea5`), and fix round 3 for the
+gate-final2 corpus-guard failure (`e846ac3eb`) — at least three fix rounds plus the corpus-guard
+gate fix, all landed and re-verified. The final audit-fix review (`task-27-audit-fixes.md`, over
+`3877d5047..8ada1d8ba`) closed **APPROVED, 0 blocking**, re-running build/test/lint/guard checks on
+the merged tree rather than trusting either concurrent round's self-report.
+
+One further producible fix landed after all reviews closed: the `/api/crystal-bands` ingress gap
+(found as a non-blocking note in the audit-fix review — `deploy/shared/routes.conf` had no
+`location` block for that prefix, so it fell through to the `atlas-ui` catch-all) was fixed directly
+rather than carried to the PR body, via commit `0261eb2c4`. This is why `gate-final3.log`'s PASS no
+longer covers current HEAD and `gate-final5.log` is the outstanding gate.

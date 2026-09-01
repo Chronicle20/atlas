@@ -229,13 +229,14 @@ changed_tool_suites() {
 
 # --------------------------------------------------------------- go modules
 
-# workspace_module_dirs() — go.work `use`-entry membership. A module directory
-# under services/ or libs/ that is NOT a go.work member is a tool module,
-# deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen — see
-# plan.md:18 for task-276) and verified by its own explicit GOWORK=off step
-# instead, so all_modules below filters it out rather than folding it into
-# the workspace build/vet sweep, which cannot type-check a non-member.
-# Shared with lint.sh and analyzer-guard.sh in tools/lib/go-work.sh.
+# workspace_module_dirs() — go.work `use`-entry membership. all_modules below
+# intersects its module walk under services/ and libs/ against it: `go
+# build`/`go vet` in workspace mode cannot type-check a directory outside
+# go.work's `use` list. check_workspace_drift() closes the hole that
+# intersection would otherwise leave — a module found on disk but missing
+# from go.work must fail this script loudly by name, not drop silently out
+# of the build/vet sweep. Shared with lint.sh and analyzer-guard.sh in
+# tools/lib/go-work.sh.
 # shellcheck source=tools/lib/go-work.sh
 source "$ROOT/tools/lib/go-work.sh"
 
@@ -244,6 +245,7 @@ all_modules() {
     found="$(find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
         | xargs -0 -r -n1 dirname | sort -u)"
     workspace="$(workspace_module_dirs "verify.sh")" || exit 1
+    check_workspace_drift "verify.sh" "$found" "$workspace" || exit 1
     result="$(comm -12 <(printf '%s\n' "$found") <(printf '%s\n' "$workspace"))"
     if [ -n "$found" ] && [ -z "$result" ]; then
         echo "verify.sh: ERROR — workspace filter produced zero modules from a non-empty candidate set;" >&2

@@ -147,15 +147,14 @@ resolve_base() {
     return 1
 }
 
-# workspace_module_dirs() — go.work `use`-entry membership. A module directory
-# under services/ or libs/ that is NOT a go.work member is a tool module,
-# deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen — see
-# plan.md:18 for task-276): golangci-lint in workspace mode cannot
-# type-check a non-member ("directory prefix . does not contain modules
-# listed in go.work"). It is verified by its own explicit GOWORK=off step
-# instead, so discover_modules below filters it out rather than this script
-# re-adding it to go.work. Shared with verify.sh and analyzer-guard.sh in
-# tools/lib/go-work.sh.
+# workspace_module_dirs() — go.work `use`-entry membership. discover_modules
+# below intersects its module walk under services/ and libs/ against it:
+# golangci-lint in workspace mode cannot type-check a directory outside
+# go.work's `use` list ("directory prefix . does not contain modules listed
+# in go.work"). check_workspace_drift() closes the hole that intersection
+# would otherwise leave — a module found on disk but missing from go.work
+# must fail this script loudly by name, not drop silently out of the lint
+# sweep. Shared with verify.sh and analyzer-guard.sh in tools/lib/go-work.sh.
 # shellcheck source=tools/lib/go-work.sh
 source "$ROOT/tools/lib/go-work.sh"
 
@@ -176,6 +175,7 @@ discover_modules() {
         done | sort -u)"
     fi
     workspace="$(workspace_module_dirs "lint.sh")" || exit 1
+    check_workspace_drift "lint.sh" "$found" "$workspace" || exit 1
     result="$(comm -12 <(printf '%s\n' "$found") <(printf '%s\n' "$workspace"))"
     if [ -n "$found" ] && [ -z "$result" ]; then
         echo "lint.sh: ERROR — workspace filter produced zero modules from a non-empty candidate set;" >&2

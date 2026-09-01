@@ -134,13 +134,14 @@ analyzer_guard_build() {
 # excludes.
 #
 # The walk is also intersected with go.work's `use` set (workspace_module_dirs,
-# tools/lib/go-work.sh): a module directory under a scanned root that is NOT a
-# go.work member is a tool module deliberately kept out of the workspace (e.g.
-# libs/atlas-kafka/gen — see plan.md:18 for task-276). `go vet` in workspace
-# mode cannot type-check a non-member, which is what made every analyzer
-# guard fail against it. Same loud-failure contract as above: a non-empty
-# find result that filters down to zero is an error, not a green "nothing to
-# analyze".
+# tools/lib/go-work.sh): `go vet` in workspace mode cannot type-check a
+# module directory under a scanned root that is NOT a go.work member, which
+# is what made every analyzer guard fail against it. check_workspace_drift()
+# closes the hole that intersection would otherwise leave — a module found
+# on disk but missing from go.work must fail this guard loudly by name, not
+# drop silently out of the analysis sweep (see plan.md:18 for task-276,
+# Fix G5). Same loud-failure contract as above: a non-empty find result
+# that filters down to zero is an error, not a green "nothing to analyze".
 analyzer_guard_discover() {
     local root found workspace result
     found="$(
@@ -166,6 +167,7 @@ analyzer_guard_discover() {
     )"
 
     workspace="$(workspace_module_dirs "analyzer-guard")" || return 1
+    check_workspace_drift "analyzer-guard" "$found" "$workspace" || return 1
     # workspace_module_dirs() sorts in the caller's locale, not C; re-sort it
     # LC_ALL=C to match $found (sorted LC_ALL=C above) — comm requires both
     # inputs collated the same way or it refuses with "not in sorted order".

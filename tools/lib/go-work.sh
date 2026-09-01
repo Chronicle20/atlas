@@ -3,14 +3,14 @@
 # tools/lint.sh, tools/verify.sh, and tools/lib/analyzer-guard.sh.
 #
 # go.work's `use` entries (both the single-line `use ./path` form and the
-# parenthesized `use ( ... )` block form), resolved to absolute directories. A
-# module directory under services/ or libs/ that is NOT listed here is a tool
-# module, deliberately kept out of the workspace (e.g. libs/atlas-kafka/gen —
-# see plan.md:18 for task-276): a tool that walks `go.work`-scoped modules
-# cannot type-check a non-member ("directory prefix . does not contain
-# modules listed in go.work"). It is verified by its own explicit GOWORK=off
-# step instead, so every caller here filters it out of its module walk
-# rather than folding it into the workspace sweep.
+# parenthesized `use ( ... )` block form), resolved to absolute directories.
+# Every caller here intersects its own module walk under services/ or libs/
+# against this set: a tool that walks `go.work`-scoped modules cannot
+# type-check a directory outside it ("directory prefix . does not contain
+# modules listed in go.work"). check_workspace_drift() below is the other
+# half of that contract — a module found under services/ or libs/ but absent
+# from this set must fail the caller loudly by name, never drop out of the
+# intersection silently (see plan.md:18 for task-276, Fix G5).
 #
 # Fails loudly (non-zero, naming go.work) rather than returning an empty set:
 # an unreadable go.work or a parse with zero `use` entries must stop the
@@ -58,4 +58,36 @@ workspace_module_dirs() {
             *)  printf '%s\n' "$ROOT/${p#./}" ;;
         esac
     done | sort -u
+}
+
+# check_workspace_drift <caller> <found> <workspace> — fails loudly, naming
+# every offender, when <found> (a newline-separated set of module
+# directories a caller discovered under services/ or libs/) contains a
+# directory absent from <workspace> (workspace_module_dirs()'s go.work
+# `use` set).
+#
+# The intersection callers take between found and workspace (`comm -12`)
+# must never silently drop a module nobody added to go.work: that module
+# then goes unbuilt, unvetted, and unlinted while the gate still reports
+# green. It already happened once on this branch (libs/atlas-kafka/gen —
+# see plan.md:18 for task-276, Fix G5), so this check runs before the
+# intersection is taken, not after.
+#
+# Both sets are re-sorted LC_ALL=C here so `comm` never refuses regardless
+# of which locale/order the caller collated them in.
+check_workspace_drift() {
+    local caller="${1:?check_workspace_drift: caller name required}"
+    local found="$2"
+    local workspace="$3"
+    [ -z "$found" ] && return 0
+    local dropped
+    dropped="$(LC_ALL=C comm -23 <(printf '%s\n' "$found" | LC_ALL=C sort -u) <(printf '%s\n' "$workspace" | LC_ALL=C sort -u))"
+    if [ -n "$dropped" ]; then
+        echo "${caller}: ERROR — the following module(s) under services/ or libs/ are not in go.work's 'use' list:" >&2
+        printf '%s\n' "$dropped" | while IFS= read -r d; do
+            echo "${caller}: ERROR —   $d" >&2
+        done
+        echo "${caller}: ERROR — add the missing module(s) to go.work's 'use' list to fix this" >&2
+        return 1
+    fi
 }

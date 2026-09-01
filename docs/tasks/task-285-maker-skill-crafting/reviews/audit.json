@@ -1,0 +1,149 @@
+{
+  "service": "atlas-maker (new); atlas-channel, atlas-configurations, atlas-data, atlas-inventory, atlas-saga-orchestrator, libs/atlas-packet, libs/atlas-saga (changed)",
+  "path": "services/atlas-maker",
+  "date": "2026-09-01",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "craft",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic not in handler", "status": "pass", "evidence": "craft/resource.go:222 handleCreateCraft delegates to p.Create"},
+        {"id": "SUB-02", "name": "Writes via administrator", "status": "n-a", "evidence": "craft performs no DB writes (no gorm.DB reference in craft/processor.go or craft/inflight.go)"},
+        {"id": "SUB-03", "name": "POST via RegisterInputHandler[T]", "status": "pass", "evidence": "craft/resource.go:95 registerInput bound to rest.RegisterInputHandler[CraftRequestRestModel]"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "no json.NewDecoder/json.Unmarshal/io.ReadAll in craft/resource.go"},
+        {"id": "FILE-01", "name": "Processor interface/impl/constructor in processor.go", "status": "fail", "evidence": "craft/eligibility.go:91 (interface), :113 (struct), :132 (constructor), :138,:142 (methods) — topic-named file, not processor.go or processor_<group>.go"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API in rest.go", "status": "pass", "evidence": "craft/rest.go:22-146 defines RecipeRestModel, CraftRequestRestModel, CraftResponseRestModel"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "n-a", "evidence": "craft makes no direct upstream HTTP calls itself"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "n-a", "evidence": "craft has no entity.go / local persistence"},
+        {"id": "FILE-05", "name": "Builder/model/administrator/provider placement", "status": "n-a", "evidence": "craft has no model.go"},
+        {"id": "FILE-06", "name": "No catch-all file carrying >=2 responsibilities", "status": "fail", "evidence": "craft/eligibility.go carries the Processor interface/impl/constructor plus eligibility business logic"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "craft/eligibility.go:132"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "craft/resource.go:53,65"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "pass", "evidence": "craft/resource.go:95"},
+        {"id": "DOM-09", "name": "Transform( call sites check error", "status": "n-a", "evidence": "craft/resource.go calls TransformRecipe, which has no error return"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "fail", "evidence": "craft/rest.go:53 defines TransformRecipe(recipe.Model, Eligibility) RecipeRestModel — different name, no error return"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers, no inline loop", "status": "fail", "evidence": "craft/resource.go:147-158 inline for loop calling TransformRecipe per item"},
+        {"id": "DOM-17", "name": "Domain errors map to HTTP status", "status": "pass", "evidence": "craft/resource.go:110-116 writeProcessorError maps CraftError to its own code, else server.WriteErrorResponse"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "craft/rest.go RecipeRestModel/CraftRequestRestModel/CraftResponseRestModel implement GetName/GetID/SetID"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "craft/rest.go:76-88 CraftRequestRestModel is flat"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "craft/resource.go:222 calls p.Create only"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never providers", "status": "pass", "evidence": "craft/resource.go:222"},
+        {"id": "DOM-15", "name": "No db writes in handlers", "status": "pass", "evidence": "no db.Create/db.Save in craft/resource.go"},
+        {"id": "DOM-24", "name": "Test packages reaching emit path install stub", "status": "pass", "evidence": "craft/eligibility_test.go:44 noopEmitter satisfies craft.SagaEmitter"},
+        {"id": "DOM-30", "name": "DB-write ops emit via AndEmit + message.Buffer", "status": "pass", "evidence": "craft/emitter.go:29-31 direct producer.ProviderImpl call, but craft.Create has no gorm.DB write on this path — documented exception (operations over non-DB state)"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler/RegisterInputHandler[T]", "status": "fail", "evidence": "craft/resource.go:86-87 binds atlas-maker/rest.RegisterHandler/RegisterInputHandler (rest/handler.go:45,109), which reimplement route registration and omit server.ParseEnvironment (libs/atlas-rest/server/register.go:16,31 vs rest/handler.go:50-52,113-116) — breaks env-aware RootUrlFor routing (libs/atlas-rest/requests/url.go:34-41) for every EXT client this service calls"}
+      ]
+    },
+    {
+      "name": "crystalband",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go with NewBuilder()/Build()", "status": "pass", "evidence": "crystalband/builder.go:19,43"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "fail", "evidence": "crystalband/entity.go has only Migration/TableName; administrator.go:10-19 builds &entity{} inline"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) in entity.go", "status": "fail", "evidence": "no func Make( in package; modelFromEntity in provider.go:29-35 instead"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "pass", "evidence": "crystalband/rest.go:29"},
+        {"id": "DOM-05", "name": "TransformSlice / no inline loop", "status": "pass", "evidence": "crystalband/resource.go:73 model.SliceMap(Transform)(...)"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "crystalband/processor.go:46"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "crystalband/resource.go:66"},
+        {"id": "DOM-09", "name": "Transform( call sites check error", "status": "pass", "evidence": "crystalband/resource.go:112-117"},
+        {"id": "DOM-11", "name": "Providers lazy via database.Query/SliceQuery", "status": "pass", "evidence": "crystalband/provider.go:11-27"},
+        {"id": "DOM-16", "name": "Writes in administrator.go", "status": "pass", "evidence": "crystalband/administrator.go"},
+        {"id": "DOM-17", "name": "Domain errors map to HTTP status", "status": "pass", "evidence": "crystalband/resource.go write-method 405 rejection :44-56"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "crystalband/rest.go RestModel implements GetName/GetID/SetID"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler/RegisterInputHandler[T]", "status": "fail", "evidence": "crystalband/resource.go:38 same non-delegating atlas-maker/rest wrapper as craft"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "Processor/RestModel/entity/builder/administrator/provider each in their own named file; no catch-all"}
+      ]
+    },
+    {
+      "name": "reagent",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go with NewBuilder()/Build()", "status": "pass", "evidence": "reagent/builder.go"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "fail", "evidence": "reagent/entity.go has only Migration/TableName; administrator.go:10-19 builds &entity{} inline"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) in entity.go", "status": "fail", "evidence": "no func Make( in package; modelFromEntity in provider.go:29-35 instead"},
+        {"id": "DOM-05", "name": "TransformSlice / no inline loop", "status": "pass", "evidence": "reagent/resource.go:73 model.SliceMap(Transform)(...)"},
+        {"id": "DOM-09", "name": "Transform( call sites check error", "status": "pass", "evidence": "reagent/resource.go:100-105"},
+        {"id": "DOM-11", "name": "Providers lazy", "status": "pass", "evidence": "reagent/provider.go"},
+        {"id": "DOM-16", "name": "Writes in administrator.go", "status": "pass", "evidence": "reagent/administrator.go"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler/RegisterInputHandler[T]", "status": "fail", "evidence": "reagent/resource.go imports atlas-maker/rest, same non-delegating wrapper"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "same layout as crystalband"}
+      ]
+    },
+    {
+      "name": "character, quest, skill, compartment, data/equipment, data/itemmake",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go with NewBuilder()/Build()", "status": "fail", "evidence": "character, quest, skill, data/equipment, data/itemmake have model.go but no builder.go/NewBuilder/Build; construction is via Extract(RestModel) only"},
+        {"id": "DOM-01", "name": "builder.go placement (compartment)", "status": "fail", "evidence": "compartment/model.go:86-110 defines an inline Builder/NewBuilder/Build outside builder.go"},
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "character/rest.go:35-42, compartment/rest.go:60-68,127-128,152-153, quest/rest.go:40-46, skill/rest.go:34-40, data/equipment/rest.go:38-44, data/itemmake/rest.go:67-73"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "httptest.NewServer present in all six packages' _test.go files"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "requests.ErrNotFound bubbled verbatim; no blanket not-found mapping found"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "all six use requests.RootUrlFor(ctx, \"<DOMAIN>\") — env-aware sibling of RootUrl, libs/atlas-rest/requests/url.go:34"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "clean separation across all six packages"}
+      ]
+    },
+    {
+      "name": "recipe",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go", "status": "fail", "evidence": "recipe has model.go with private fields, no builder.go; construction via internal modelFromItemMake (processor.go:96)"},
+        {"id": "DOM-29", "name": "Cache is application-scoped singleton", "status": "pass", "evidence": "recipe/processor.go:50-52 package-level recipeIndex var, not constructed in NewProcessor (:151) or held as ProcessorImpl field"},
+        {"id": "FILE-01", "name": "Processor interface/impl/constructor in processor.go", "status": "pass", "evidence": "recipe/processor.go:128-152"}
+      ]
+    },
+    {
+      "name": "seed / rest / kafka (atlas-maker)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0, 92 modules"},
+        {"id": "DOM-31", "name": "Tenant/trace never in REST model/body", "status": "pass", "evidence": "craft/crystalband/reagent request/response models carry no tenant field"},
+        {"id": "DOM-25", "name": "Client-interpreted wire bytes resolved from tenant table", "status": "pass", "evidence": "libs/atlas-packet/character/maker_result_body.go:26-49 resolves mode via WithResolvedCode; nResult sentinel (0/2) is a documented fixed wire-protocol invariant, not a per-tenant operations-table value"}
+      ]
+    },
+    {
+      "name": "SCAFFOLD (services/atlas-maker/)",
+      "type": "scaffolding",
+      "checks": [
+        {"id": "SCAFFOLD-01", "name": "services.json go-service entry", "status": "pass", "evidence": ".github/config/services.json:256-260"},
+        {"id": "SCAFFOLD-02", "name": "K8s base manifest listed", "status": "pass", "evidence": "deploy/k8s/base/atlas-maker.yaml; kustomization.yaml:38"},
+        {"id": "SCAFFOLD-03", "name": "docker-bake.hcl + go.work entries", "status": "pass", "evidence": "docker-bake.hcl:66; go.work:57"},
+        {"id": "SCAFFOLD-04", "name": "Ingress block in routes.conf", "status": "pass", "evidence": "deploy/shared/routes.conf:146-149,696-704"},
+        {"id": "SCAFFOLD-05", "name": "Generated routes template regenerated", "status": "pass", "evidence": "tools/gen-routes.sh --check exit 0"},
+        {"id": "SCAFFOLD-06", "name": "docker-compose entry alongside peers", "status": "fail", "evidence": "no atlas-maker: block in deploy/compose/docker-compose.core.yml (alphabetical gap between atlas-maps and atlas-merchant)"},
+        {"id": "SCAFFOLD-07", "name": "New Writer/Handler seeded in every tenant template", "status": "pass", "evidence": "MakerSkillHandle/MakerResult present in all 8 templates, verified gms_72_1, jms_185_1, gms_95_1"},
+        {"id": "SCAFFOLD-08", "name": "Bruno collection (REST service)", "status": "fail", "evidence": "no .bru files under services/atlas-maker/; sibling REST services all carry .bruno/"},
+        {"id": "SCAFFOLD-09", "name": "Overlay enumerations / ATLAS_DB_NAMES / DB bootstrap", "status": "pass", "evidence": "tools/service-registration-guard.sh exit 0"}
+      ]
+    },
+    {
+      "name": "Security",
+      "type": "n-a",
+      "checks": [
+        {"id": "SEC-01..04", "name": "Auth/token/redirect/secret handling", "status": "n-a", "evidence": "atlas-maker and other changed services handle no authentication, tokens, redirects, or secrets in this diff"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "FILE-*/DOM-*: atlas-inventory asset/processor.go and compartment/processor.go full-file sweep beyond the new CreateOptions/hasExplicitStats/applyExplicitStats region — needed the whole pre-existing file",
+    "DOM-27/28: atlas-saga-orchestrator saga/compensator.go (144 new lines) and saga/handler.go (44 new lines) — read at signature level only, not walked branch-by-branch",
+    "DOM-27/DOM-9-equivalent: atlas-channel kafka/consumer/maker/consumer.go (274 new lines) beyond the two cited call sites and the already-ruled FAILED-path discriminator (excluded from scope)",
+    "libs/atlas-packet/character/serverbound/maker_skill.go (173 new lines) decode logic — read only via its consumer, not walked against wire-derivation.md line-by-line",
+    "Whether craft/eligibility.go's Processor layout was already reviewed/accepted in an earlier task-285 sub-review — per-task review files under docs/tasks/task-285-maker-skill-crafting/reviews/task-*.md were not read in full"
+  ],
+  "blocking": [
+    "DOM-32: services/atlas-maker/atlas.com/maker/rest/handler.go:45-63,109-123 — local RegisterHandler/RegisterInputHandler reimplement route registration and omit server.ParseEnvironment, breaking PR-sandbox environment-aware routing for craft, crystalband, and reagent",
+    "FILE-01/FILE-06: services/atlas-maker/atlas.com/maker/craft/eligibility.go:91,113,132 — Processor interface, ProcessorImpl struct, and NewProcessor constructor live in a topic-named file instead of processor.go",
+    "DOM-02/DOM-03: services/atlas-maker/atlas.com/maker/crystalband/entity.go, reagent/entity.go — no Model.ToEntity() or Make(Entity) (Model, error); equivalent logic under a different name in provider.go",
+    "DOM-05: services/atlas-maker/atlas.com/maker/craft/resource.go:147-158 — inline for loop calling TransformRecipe per item instead of a bulk TransformSlice/model.SliceMap pass",
+    "DOM-01: services/atlas-maker/atlas.com/maker/{character,quest,skill,data/equipment,data/itemmake} — no builder.go in any of the five model.go-bearing packages; compartment/model.go:89-110 has a misplaced Builder",
+    "SCAFFOLD-06: no atlas-maker entry in deploy/compose/docker-compose.core.yml",
+    "SCAFFOLD-08: no Bruno collection for atlas-maker despite exposing REST"
+  ],
+  "nonBlocking": [
+    "DOM-04: services/atlas-maker/atlas.com/maker/craft/rest.go:53 — TransformRecipe doesn't match the standard Transform(Model) (RestModel, error) shape (different name, no error return)"
+  ]
+}

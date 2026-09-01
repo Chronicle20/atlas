@@ -70,3 +70,15 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-29T22:44:31Z	agent	Task 19 fix 1	task-implementer	sonnet	-	-	-	-	DONE	5c1ce65	-	-	-	-
 2026-08-29T22:46:15Z	agent	Task 19	task-reviewer	sonnet	-	-	-	-	DONE	2451a0c51	APPROVED_WITH_FINDINGS	no	-	-
 2026-08-29T22:46:16Z	handoff	after Task 19	-	-	-	-	-	-	-	-	-	-	-	130000
+2026-08-30T12:15:20Z	agent	Task 26b gate	task-verifier	haiku	-	-	-	-	FAIL	974cf0257	-	-	-	-
+2026-08-30T12:16:31Z	agent	Task 26b	task-reviewer	sonnet	-	-	-	-	DONE	974cf0257	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/task-26b-review.md	-
+2026-08-30T12:22:15Z	agent	Task 26b fix2	task-implementer	sonnet	-	-	-	-	DONE	6f5615c20	-	-	-	-
+2026-08-30T12:22:53Z	handoff	after Task 26b	-	-	-	-	-	-	-	-	-	-	-	130000
+2026-08-30T12:29:18Z	agent	Task 26b fix1	task-implementer	sonnet	-	-	-	-	DONE	331b0c0b5	-	-	-	-
+2026-09-01T10:02:19Z	agent	Task 26	task-implementer	sonnet	-	-	-	-	BLOCKED	331b0c0b5	-	-	-	-
+2026-09-01T10:23:45Z	agent	Task 26a design	general-purpose	opus	-	-	-	-	DONE	331b0c0b5	-	-	-	-
+2026-09-01T10:37:39Z	agent	Task 26a	task-implementer	sonnet	-	-	-	-	DONE	61ff8cbd8	-	-	-	-
+2026-09-01T10:42:34Z	agent	Task 26a	task-reviewer	sonnet	-	-	-	-	DONE	61ff8cbd8	APPROVED	no	-	-
+2026-09-01T11:01:17Z	agent	Task 26	task-implementer	sonnet	-	-	-	-	DONE	3d4391dad	-	-	-	-
+2026-09-01T11:05:03Z	handoff	after Task 26	-	-	-	-	-	-	-	-	-	-	-	150000
+2026-09-01T11:12:43Z	agent	Task 26	task-reviewer	sonnet	-	-	-	-	DONE	3d4391dad	APPROVED_WITH_FINDINGS	no	-	-

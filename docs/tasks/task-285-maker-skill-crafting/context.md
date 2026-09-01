@@ -246,10 +246,10 @@ notification reports the trailing `echo`'s exit status, not the gate's, and read
 | `.superpowers/sdd/plan/gate-final2.log` | `493bf669f` (full range through docs commit) | `tools/verify.sh` (flagless) | **FAIL.** `FLAGLESS VERIFY EXIT=1`, `1 check(s) FAILED — the branch is not ready.` One failure: `go build/vet/test -race services/atlas-configurations/atlas.com/configurations` → `--- FAIL: TestValidate_AcceptsEverySeedTemplate` at `corpus_test.go:64` (`corpus size = 3403 entries, want 3387`), diagnosed as a stale expectation — the branch adds exactly 16 seed-template bindings (8 templates × `MakerSkillHandle`+`MakerResult`) and the corpus guard was never bumped. All other 91 modules, every guard, routes drift, version coverage, overlay env drift, tenant tables, pr-sparse mirror, sparse baseline scoping, lint and format passed. Fixed by fix round 3, commit `e846ac3eb`. |
 | `.superpowers/sdd/plan/gate-final3.log` | `493bf669f..e846ac3eb` | `tools/verify.sh` (flagless) | **PASS, but superseded by a later HEAD.** `FLAGLESS VERIFY EXIT=0`, `All checks passed.` (the unqualified message — not the `--quick` "bake was skipped" variant, confirming the bake ran). `grep -c "FAILED\|--- FAIL"` over the full log returns 0. This was the first and only creditable verification of the branch **at that time**, but HEAD later moved to `0261eb2c4` (the `/api/crystal-bands` ingress fix), so per CLAUDE.md this PASS no longer certifies current HEAD. |
 | `.superpowers/sdd/plan/gate-final4.log` | launched at `0261eb2c4` | `tools/verify.sh` (flagless) | **SUPERSEDED — stopped, not failed.** Stopped deliberately partway through (last line `── go build/vet/test -race services/atlas-rates/atlas.com/rates`, no `FLAGLESS VERIFY EXIT=` line) once it became clear this write-up commit would land on top of `0261eb2c4` and invalidate it anyway. Certifies nothing. |
-| `.superpowers/sdd/plan/gate-final5.log` | the write-up commit (branch HEAD) | `tools/verify.sh` (flagless) | The outstanding gate. Verdict is whatever its `FLAGLESS VERIFY EXIT=` line says; absent that line the run did not finish and must be re-launched, never inferred. |
+| `.superpowers/sdd/plan/gate-final5.log` | `e846ac3eb..521321688` (branch HEAD) | `tools/verify.sh` (flagless) | **PASS — the creditable verification of this branch.** `FLAGLESS VERIFY EXIT=0` at line 18288, closing with the unqualified `All checks passed.` — not the `--quick` "bake was skipped" variant, so the docker bake ran. `grep -c "FAILED\|--- FAIL"` over the whole log returns `0`. 92 modules, every guard, routes drift, sparse baseline scoping, lint & format all green. |
 
-The branch currently has **no gate log that certifies current HEAD**. `gate-final5.log`
-must finish with `FLAGLESS VERIFY EXIT=0` before the branch can be called verified.
+`gate-final5.log` certifies branch HEAD `521321688`. Per CLAUDE.md the branch is **verified**:
+the flagless `tools/verify.sh` exited 0 with the bake included.
 
 ### Review verdicts
 
@@ -273,4 +273,5 @@ One further producible fix landed after all reviews closed: the `/api/crystal-ba
 (found as a non-blocking note in the audit-fix review — `deploy/shared/routes.conf` had no
 `location` block for that prefix, so it fell through to the `atlas-ui` catch-all) was fixed directly
 rather than carried to the PR body, via commit `0261eb2c4`. This is why `gate-final3.log`'s PASS no
-longer covers current HEAD and `gate-final5.log` is the outstanding gate.
+longer covers current HEAD; `gate-final5.log` supersedes it and covers both that fix and this
+write-up commit.

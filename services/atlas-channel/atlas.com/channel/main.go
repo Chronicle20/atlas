@@ -35,6 +35,7 @@ import (
 	"atlas-channel/kafka/consumer/invite"
 	kiteconsumer "atlas-channel/kafka/consumer/kite"
 	"atlas-channel/kafka/consumer/macro"
+	makerConsumer "atlas-channel/kafka/consumer/maker"
 	_map "atlas-channel/kafka/consumer/map"
 	megaphoneConsumer "atlas-channel/kafka/consumer/megaphone"
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
@@ -280,6 +281,7 @@ func main() {
 	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
+	makerConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	parcelConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
@@ -621,6 +623,9 @@ func buildListener(
 		if err := register(saga.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return handles, err
 		}
+		if err := register(makerConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return handles, err
+		}
 		if err := register(parcelConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -932,6 +937,7 @@ func produceWriters() []string {
 		reportcb.ClaimAvailableTimeWriter,
 		reportcb.ClaimSvrStatusChangedWriter,
 		parcelcb.ParcelWriter,
+		charcb.MakerResultWriter,
 	}
 }
 

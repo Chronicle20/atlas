@@ -59,6 +59,9 @@ func resolveEngine(l logrus.FieldLogger) EngineName {
 
 // start dispatches to the configured engine. It is the single entry point
 // AddConsumer launches per consumer.
+//
+// The caller must have already called wg.Add(1) before launching start; the
+// selected engine owns the matching wg.Done() (issue #1586).
 func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
 	if c.engine == EngineReader {
 		c.startReaderEngine(l, ctx, wg)

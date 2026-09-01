@@ -1469,3 +1469,54 @@ func TestAddConsumerNoWarnForHealthyDefaults(t *testing.T) {
 		}
 	}
 }
+
+// TestAddConsumerRegistersWaitGroupBeforeLaunch pins the happens-before that
+// issue #1586 was about: AddConsumer must call wg.Add(1) BEFORE routine.Go,
+// not from inside the spawned consumer goroutine. sync.WaitGroup requires
+// that an Add which takes the counter off zero happens-before any Wait, and
+// a caller doing cancel()+wg.Wait() must never be able to observe a zero
+// counter while its consumer is still running.
+//
+// GOMAXPROCS(1) is what makes this deterministic rather than a load-dependent
+// flake. With a single P, the goroutine that routine.Go spawns cannot run
+// until this goroutine yields, so at the moment AddConsumer returns the
+// counter reflects only what AddConsumer itself did. If the Add still lived
+// inside the engine, the wg.Wait() below would see zero and return
+// immediately — before the canceller goroutine has had any chance to run.
+func TestAddConsumerRegistersWaitGroupBeforeLaunch(t *testing.T) {
+	consumer.ResetInstance()
+
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(1))
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	installMockTracerProvider(t, &MockTracerProvider{})
+
+	rp := consumer.ConfigReaderProducer(func(config kafka.ReaderConfig) consumer.KafkaReader {
+		return &ChannelMockReader{msgCh: make(chan kafka.Message)}
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cm := consumer.GetManager(consumer.ConfigEngine(consumer.EngineReader), rp)
+	c := consumer.NewConfig([]string{""}, "test-consumer", "test-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(c)
+
+	// Queued, but cannot run until this goroutine blocks in wg.Wait().
+	cancelled := make(chan struct{})
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		close(cancelled)
+		cancel()
+	}()
+
+	wg.Wait()
+
+	select {
+	case <-cancelled:
+		// Wait outlived the pre-cancel window, so the counter was non-zero
+		// when AddConsumer returned.
+	default:
+		t.Fatal("wg.Wait() returned before cancel() ran: AddConsumer did not wg.Add(1) before launching the consumer goroutine (issue #1586)")
+	}
+}

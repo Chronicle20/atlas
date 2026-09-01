@@ -199,6 +199,13 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 		m.consumers[c.topic] = con
 
 		l := cl.WithFields(logrus.Fields{"originator": c.topic, "type": "kafka_consumer", "engine": string(con.engine)})
+
+		// Register on the launching side, before the goroutine exists. Adding
+		// inside the goroutine would let a caller that does cancel()+wg.Wait()
+		// observe a zero counter and return while the consumer is still
+		// running (issue #1586). The engine owns the matching wg.Done(). Same
+		// idiom as the partition fan-out below.
+		wg.Add(1)
 		routine.Go(l, ctx, func(_ context.Context) { con.start(l, ctx, wg) })
 	}
 }

@@ -223,23 +223,30 @@ export function ApplyPresetDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      {/* The preset tile grid grows with the number of configured presets
+          (20+ on later versions). Bound the dialog to the viewport and let
+          only the grid scroll, so the world Select, the name Input and the
+          footer stay on screen no matter how many presets exist. */}
+      <DialogContent className="max-w-2xl max-h-[85vh] grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Add character from preset</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form
+            onSubmit={onSubmit}
+            className="flex min-h-0 flex-col gap-4 overflow-hidden"
+          >
             <FormField
               control={form.control}
               name="presetId"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex min-h-0 flex-1 flex-col">
                   <FormLabel>Preset</FormLabel>
                   <FormControl>
                     <div
                       role="radiogroup"
                       aria-label="Preset"
-                      className="grid grid-cols-2 sm:grid-cols-3 gap-3"
+                      className="grid min-h-0 flex-1 content-start grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-1"
                     >
                       {presets.map((p) => {
                         const selected = field.value === p.id;
@@ -299,7 +306,7 @@ export function ApplyPresetDialog({
               control={form.control}
               name="worldId"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="shrink-0">
                   <FormLabel>World</FormLabel>
                   <Select
                     onValueChange={(v) => field.onChange(Number(v))}
@@ -335,7 +342,7 @@ export function ApplyPresetDialog({
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="shrink-0">
                   <FormLabel>Character name</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="3-12 characters" />
@@ -353,7 +360,7 @@ export function ApplyPresetDialog({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="shrink-0">
               <Button
                 type="button"
                 variant="outline"

@@ -29,6 +29,11 @@ type LiveEntry struct {
 	ControllerHasAggro bool
 	ControlCharacterId uint32
 	LastWrite          time.Time
+	// X/Y: last locally-known position, seeded from the CREATED fetch and
+	// updated synchronously from this pod's monster-movement fold (task-122
+	// FR-5.1 — serves the reflect bounds check without a REST read).
+	X int16
+	Y int16
 }
 
 // LiveMirror is a per-pod, in-memory, tenant-scoped projection of live
@@ -75,6 +80,8 @@ func LiveEntryFromModel(mo Model) LiveEntry {
 		MaxMp:              mo.MaxMp(),
 		ControllerHasAggro: mo.ControllerHasAggro(),
 		ControlCharacterId: mo.ControlCharacterId(),
+		X:                  mo.X(),
+		Y:                  mo.Y(),
 	}
 }
 
@@ -164,6 +171,24 @@ func (m *LiveMirror) UpdateControl(t tenant.Model, uniqueId uint32, controllerId
 		return
 	}
 	e.ControlCharacterId = controllerId
+	e.LastWrite = time.Now()
+	tenantMap[uniqueId] = e
+}
+
+// UpdatePosition sets the entry's last-known position. Update only — see
+// UpdateMp for why events/feeds never create entries.
+func (m *LiveMirror) UpdatePosition(t tenant.Model, uniqueId uint32, x, y int16) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	tenantMap, ok := m.perTenant[t.Id()]
+	if !ok {
+		return
+	}
+	e, ok := tenantMap[uniqueId]
+	if !ok {
+		return
+	}
+	e.X, e.Y = x, y
 	e.LastWrite = time.Now()
 	tenantMap[uniqueId] = e
 }

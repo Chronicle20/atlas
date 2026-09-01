@@ -29,7 +29,7 @@ func masteryTestCtx(t *testing.T, region string, major, minor uint16) (context.C
 }
 
 // seedSkillMastery installs a data/skill.Model for skillId directly into the
-// shared, tenant-keyed cache (data/skill.GetCache()) so
+// in-process, tenant-keyed skill-data cache (data/skill.SeedForTest) so
 // getMasteryFromSkill's skill3.NewProcessor(...).GetById call resolves
 // in-process rather than making a live REST call to atlas-data. effectCount
 // drives the level-group-size term of the mastery formula (gs=3 at
@@ -43,7 +43,7 @@ func seedSkillMastery(t *testing.T, tm tenant.Model, skillId skill2.Id, effectCo
 	if err != nil {
 		t.Fatalf("dataskill.Extract: %v", err)
 	}
-	dataskill.GetCache().Put(tm, uint32(skillId), m)
+	dataskill.SeedForTest(tm, uint32(skillId), m)
 }
 
 func trainedSkill(id skill2.Id, level byte) charskill.Model {

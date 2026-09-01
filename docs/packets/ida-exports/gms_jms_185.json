@@ -3,6 +3,16 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CNpcPool::OnNpcLeaveField": {
+      "address": "0x720724",
+      "direction": "",
+      "calls": null
+    },
+    "CNpcPool::OnNpcImitateData": {
+      "address": "0x7204c2",
+      "direction": "",
+      "calls": null
+    },
     "CCashShop::OnCheckTransferWorldPossibleResult": {
       "address": "0x48e7a6",
       "direction": "",
@@ -5519,19 +5529,43 @@
     "CNpcPool::OnNpcEnterField": {
       "address": "0x72068f",
       "direction": "clientbound",
-      "notes": "SPAWN_NPC (JMS185 opcode 0x116/278). CNpcPool::OnNpcEnterField@0x72068f reads Decode4(npcId @0x7206a1); the new-entry path then Decode4(templateId @0x7206d8) and CNpc::Init reads x/cy/moveAction/foothold/rx0/rx1. SAME shape as GMS v95.",
+      "notes": "SPAWN_NPC (JMS185 opcode 0x116/278). CNpcPool::OnNpcEnterField@0x72068f reads Decode4(npcId @0x7206a1); the new-entry path then Decode4(templateId @0x7206d8) and descends into CNpc::Init@0x716da2, which reads Decode2(x @0x716dd6)+Decode2(cy @0x716de4)+Decode1(stance/moveAction @0x716e0c)+Decode2(fh @0x716e1c)+Decode2(rx0 @0x716e3c)+Decode2(rx1 @0x716e4a)+Decode1(miniMap/bEnabled @0x716edf) \u2014 the identical descent already recorded on the sibling CNpcPool::OnNpcChangeController entry. The block was previously recorded as one opaque DecodeBuffer; it is per-field derivable and is now expanded (task-273). SAME shape as GMS v95.",
       "calls": [
         {
           "op": "Decode4",
-          "comment": "npcId (object id)"
+          "comment": "npcId (object id) (@0x7206a1)"
         },
         {
           "op": "Decode4",
-          "comment": "templateId"
+          "comment": "templateId (@0x7206d8)"
         },
         {
-          "op": "DecodeBuffer",
-          "comment": "CNpc::Init(iPacket) \u2014 opaque npc position/appearance block"
+          "op": "Decode2",
+          "comment": "x (CNpc::Init @0x716dd6)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "cy (CNpc::Init @0x716de4)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance/moveAction (CNpc::Init @0x716e0c)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "fh foothold (CNpc::Init @0x716e1c)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "rx0 (CNpc::Init @0x716e3c)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "rx1 (CNpc::Init @0x716e4a)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "miniMap / bEnabled (CNpc::Init @0x716edf)"
         }
       ]
     },

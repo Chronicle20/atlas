@@ -20752,6 +20752,11 @@
           "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v69, v63, v12, 0, 0x7FFFFFFF, v56) && Src"
         }
       ]
+    },
+    "CNpcPool::OnNpcImitateData": {
+      "address": "0x645d28",
+      "direction": "",
+      "calls": null
     }
   }
 }

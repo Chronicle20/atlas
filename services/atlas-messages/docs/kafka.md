@@ -17,6 +17,7 @@
 | Party Quest Command | `COMMAND_TOPIC_PARTY_QUEST` | Emits party quest commands |
 | Map Command | `COMMAND_TOPIC_MAP` | Emits map commands |
 | Pet Command | `COMMAND_TOPIC_PET` | Emits pet commands |
+| Reactor Command | `COMMAND_TOPIC_REACTOR` | Emits reactor commands |
 
 ## Message Types
 
@@ -125,6 +126,7 @@ Saga command structure produced to `COMMAND_TOPIC_SAGA`.
 | transactionId | uuid.UUID | Unique transaction identifier |
 | sagaType | string | Type of saga |
 | initiatedBy | string | Initiator of the saga |
+| timeout | int64 | Optional per-saga timeout in milliseconds, omitted when zero; not set by this service |
 | steps | []Step | Steps in the saga |
 
 #### BuffCommand
@@ -299,6 +301,36 @@ Pet command structure produced to `COMMAND_TOPIC_PET`.
 |------|-----------|-------------|
 | AWARD_CLOSENESS | AwardClosenessCommandBody | amount (uint16) |
 
+#### ReactorCommand
+
+Reactor command structure produced to `COMMAND_TOPIC_REACTOR`.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 100000000,
+  "instance": "00000000-0000-0000-0000-000000000000",
+  "type": "DESTROY_IN_FIELD",
+  "body": {}
+}
+```
+
+| Field | Type | Description |
+|-------|------|--------------|
+| worldId | byte | World identifier |
+| channelId | byte | Channel identifier |
+| mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
+| type | string | Command type |
+| body | object | Type-specific body |
+
+#### Reactor Command Types
+
+| Type | Body Type | Body Fields |
+|------|-----------|-------------|
+| DESTROY_IN_FIELD | DestroyInFieldCommandBody | (empty) |
+
 ## Transaction Semantics
 
 - Chat events are partitioned by actor ID for ordering
@@ -309,5 +341,6 @@ Pet command structure produced to `COMMAND_TOPIC_PET`.
 - Party quest commands are partitioned by character ID
 - Map commands are partitioned by map ID
 - Pet commands are partitioned by pet ID
+- Reactor commands are partitioned by map ID
 - Headers include span context for distributed tracing
 - Headers include tenant context for multi-tenancy

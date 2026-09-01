@@ -45,6 +45,7 @@ Represents a player guild with membership, emblem, titles, and capacity.
 - Updates emblem, notice, capacity, and titles
 - Manages member online status and titles
 - Processes member leave and join operations
+- Rejoins a member to a guild at a specified title (world-transfer compensation)
 - Handles guild invitation requests
 - Processes guild disbanding
 
@@ -76,6 +77,7 @@ Represents a character's membership in a guild.
 - Removes members from guilds
 - Updates member online status
 - Updates member title
+- Updates member name
 - Updates character-guild mapping on membership changes
 
 ---

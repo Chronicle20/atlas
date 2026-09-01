@@ -19,6 +19,7 @@
 | slot | int8 | NOT NULL, DEFAULT -1 | Spawn slot (-1 = despawned, 0-2 = spawned) |
 | flag | uint16 | NOT NULL, DEFAULT 0 | Pet flags |
 | purchase_by | uint32 | NOT NULL, DEFAULT 0 | Purchaser character identifier |
+| revive_transaction_id | uuid | nullable | Transaction identifier of the last successful revive |
 
 ### excludes
 
@@ -44,5 +45,5 @@ GORM auto-migration manages indexes. The primary keys on `pets.id` and `excludes
 - Tables are created via GORM AutoMigrate at service startup
 - Pet migration (`pet.Migration`) creates the `pets` table
 - Exclude migration (`exclude.Migration`) creates the `excludes` table and backfills `tenant_id` on existing rows from the parent `pets` row when it is unset
-- Both migrations are registered in `main.go` via `database.SetMigrations(pet.Migration, exclude.Migration)`
+- Migration order: `pet.Migration`, `exclude.Migration`, `outbox.Migration` (github.com/Chronicle20/atlas/libs/atlas-outbox), registered in `main.go` via `database.SetMigrations(pet.Migration, exclude.Migration, outboxlib.Migration)`
 - Excludes are replaced atomically: existing excludes for a pet are deleted, then new ones are inserted, within a single transaction

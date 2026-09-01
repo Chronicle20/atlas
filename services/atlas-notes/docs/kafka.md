@@ -30,6 +30,7 @@ Note status events emitted when notes change.
 | CREATED | StatusEventCreatedBody | Emitted when a note is created |
 | UPDATED | StatusEventUpdatedBody | Emitted when a note is updated |
 | DELETED | StatusEventDeletedBody | Emitted when a note is deleted |
+| CREATE_FAILED | StatusEventCreateFailedBody | Emitted when a CREATE command fails |
 
 ### COMMAND_TOPIC_SAGA
 
@@ -41,6 +42,7 @@ Saga commands produced when discarding notes to award fame to the sender.
 
 ```json
 {
+  "transactionId": "00000000-0000-0000-0000-000000000000",
   "worldId": 0,
   "channelId": 0,
   "characterId": 123,
@@ -49,15 +51,20 @@ Saga commands produced when discarding notes to award fame to the sender.
 }
 ```
 
+`transactionId` is omitted (uuid.Nil) for non-saga-driven commands.
+
 ### CommandCreateBody
 
 ```json
 {
   "senderId": 456,
   "message": "Note message",
-  "flag": 0
+  "flag": 0,
+  "giftNote": false
 }
 ```
+
+`giftNote` records that the note originates from a cash-shop gift acknowledgement whose fame was already settled at acceptance time; it is omitted when false.
 
 ### CommandDiscardBody
 
@@ -71,11 +78,14 @@ Saga commands produced when discarding notes to award fame to the sender.
 
 ```json
 {
+  "transactionId": "00000000-0000-0000-0000-000000000000",
   "characterId": 123,
   "type": "CREATED",
   "body": {}
 }
 ```
+
+`transactionId` is omitted (uuid.Nil) for non-saga-driven events.
 
 ### StatusEventCreatedBody
 
@@ -109,9 +119,17 @@ Saga commands produced when discarding notes to award fame to the sender.
 }
 ```
 
+### StatusEventCreateFailedBody
+
+```json
+{
+  "senderId": 456,
+  "reason": "error message"
+}
+```
+
 ## Transaction Semantics
 
 - Messages are partitioned by characterId
-- Status events are emitted after successful database operations
-- Buffered emission ensures events are sent atomically with database changes
+- Status events are buffered during a database transaction and written to a transactional outbox within the same transaction, then published to Kafka asynchronously by an outbox drainer
 - Required headers: span context and tenant headers on all consumed topics

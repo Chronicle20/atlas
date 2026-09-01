@@ -349,3 +349,193 @@ Tracks character login state for session management.
 | LoggedIn | Transition | Session destroyed |
 | Transition | LoggedIn | Session created (channel change) |
 | Transition | LoggedOut | Timeout |
+
+---
+
+## Pending Change
+
+### Responsibility
+Manages cash-shop-initiated character name-change and world-transfer requests: eligibility gating, request lifecycle, coupon consumption/refund, and expiry.
+
+### Core Models
+
+#### Model
+Immutable representation of a pending change request.
+
+| Field | Type | Description |
+|-------|------|--------------|
+| id | uuid.UUID | Request identifier |
+| characterId | uint32 | Character |
+| changeType | string | NAME_CHANGE or WORLD_TRANSFER |
+| status | string | PENDING, APPLIED, CANCELLED, REJECTED, or EXPIRED |
+| requestedName | string | Requested name (NAME_CHANGE only) |
+| destinationWorldId | world.Id | Destination world (WORLD_TRANSFER only) |
+| sourceWorldId | world.Id | World the character occupied at request time |
+| assetId | uint32 | Coupon item template ID consumed at acceptance (item purchase path only) |
+| hasAsset | bool | Whether assetId is set |
+| reason | string | Rejection/expiry/cancel reason |
+| transactionId | uuid.UUID | Correlation ID for the originating request |
+| createdAt | time.Time | Creation timestamp |
+| expiresAt | time.Time | Deadline after which the sweep expires the request |
+| resolvedAt | *time.Time | Terminal-transition timestamp (null while PENDING) |
+| notifiedAt | *time.Time | Timestamp the resolution notification was last emitted (null if unnotified) |
+
+### Invariants
+- changeType is one of NAME_CHANGE, WORLD_TRANSFER
+- status is one of PENDING, APPLIED, CANCELLED, REJECTED, EXPIRED
+- A character may have at most one PENDING request per changeType
+- A PENDING NAME_CHANGE reserves its requested name tenant-wide (case-insensitive) until it leaves PENDING
+- A transition out of PENDING is one-way; a terminal record is never reopened
+- expiresAt defaults to the tenant's configured pending-expiry (see Configuration domain), 168h fallback
+- A WORLD_TRANSFER request is admitted only if every eligibility gate passes, evaluated in order: destination world differs from the current world; character is not GM; destination world exists and is not full; the account has a free character slot in the destination world; the requested name is available; the account is not banned; the character is not a guild master; the character is not in a family; the character has no open trade; the character has no open hired merchant; the character holds no live MTS listings or bids; the character has no parcel in flight. A gate whose remote dependency fails is reported as check_unavailable rather than the gate's own reason
+- A dependency-error outcome from any gate fails closed (the request is rejected)
+
+### Processors
+
+#### Processor
+Handles pending-change lifecycle operations.
+
+| Operation | Description |
+|-----------|-------------|
+| Create / CreateAndEmit | Validate eligibility and create a PENDING request |
+| Resolve / ResolveAndEmit | Transition a PENDING request to a terminal status, exactly once |
+| CancelForCharacterAndType | Cancel the calling character's own PENDING request of a given type |
+| ApplyForCharacter | Apply every PENDING request the character holds (driven by LOGOUT) |
+| RenotifyForCharacter | Re-emit resolution notifications not yet delivered (driven by LOGIN) |
+| Sweep | Expire every PENDING request whose deadline has passed |
+| GetByCharacterId | Retrieve requests for a character |
+| GetById | Retrieve a request by ID |
+| NameReserved | Report whether a live PENDING NAME_CHANGE holds a given name |
+| CheckTransferEligibility | Evaluate the full gate table for a character and destination world |
+| CheckTransferEligibilityIndependent | Evaluate only the destination-independent gates |
+
+---
+
+## Equip Slot
+
+### Responsibility
+Manages purchased equipped-inventory slot extensions per character.
+
+### Core Models
+
+#### Model
+Immutable representation of one active equip-slot extension.
+
+| Field | Type | Description |
+|-------|------|--------------|
+| id | uuid.UUID | Extension record identifier |
+| characterId | uint32 | Character |
+| slotIndex | int16 | Atlas canonical equipped-inventory position the extension unlocks |
+| expiresAt | time.Time | Expiration timestamp |
+
+### Invariants
+- A character has at most one extension row per slotIndex
+- Extend adds period to max(now, current expiresAt) rather than duplicating or resetting the row
+- Extend is idempotent per transactionId: a repeat call carrying the same non-zero transactionId as the row's last-applied call returns the current expiry unchanged
+- An expired row is not deleted; only rows with expiresAt in the future are considered active
+
+### Processors
+
+#### Processor
+Handles equip-slot extension operations.
+
+| Operation | Description |
+|-----------|-------------|
+| Extend | Extend (or create) a character's slot extension by a period |
+| GetActive | Retrieve a character's currently-active extensions |
+
+---
+
+## Teleport Rock
+
+### Responsibility
+Manages a character's saved teleport-rock map lists (regular and VIP).
+
+### Core Models
+
+#### Model
+Immutable representation of both of a character's saved-map lists, unpadded and ordered.
+
+| Field | Type | Description |
+|-------|------|--------------|
+| characterId | uint32 | Character |
+| regular | []map.Id | Regular list entries |
+| vip | []map.Id | VIP list entries |
+
+### Invariants
+- The regular list holds at most 5 entries; the VIP list holds at most 10
+- A map is eligible for registration only if mapId/100000000 != 0 and (mapId/1000000)%100 != 9
+- A map may appear at most once per list
+- Removing a map compacts the remaining entries of that list to a contiguous prefix
+
+### Processors
+
+#### Processor
+Handles teleport-rock list operations.
+
+| Operation | Description |
+|-----------|-------------|
+| GetByCharacterId | Retrieve both lists for a character |
+| AddMap / AddMapAndEmit | Register the character's current map on a list; buffers/emits an error event on rejection |
+| Add | REST-facing add that returns the typed validation error instead of buffering it |
+| RemoveMap / RemoveMapAndEmit | Remove a map from a list; buffers/emits an error event on rejection |
+| Remove | REST-facing remove that returns the typed validation error instead of buffering it |
+
+---
+
+## Configuration
+
+### Responsibility
+Resolves and caches per-tenant pending-change configuration fetched from atlas-tenants.
+
+### Core Models
+
+#### Model
+Immutable per-tenant imprint (pending-change) configuration.
+
+| Field | Type | Description |
+|-------|------|--------------|
+| pendingExpiry | time.Duration | How long a pending request survives before the sweep expires and refunds it |
+
+### Invariants
+- A non-positive fetched expiry value falls back to the shipped default of 168 hours
+- A tenant with no imprint-configs resource resolves to the default configuration
+- A tenant's resolved configuration is fetched once and cached for the process lifetime
+
+### Processors
+
+#### Registry
+Resolves and caches configuration.
+
+| Operation | Description |
+|-----------|-------------|
+| Get | Return the cached configuration for the request's tenant, fetching and caching on first access |
+
+---
+
+## External Effective Stats
+
+### Responsibility
+Retrieves a character's computed effective stats from the external atlas-effective-stats service.
+
+### Core Models
+
+#### Model
+Immutable representation of a character's effective stats as reported by atlas-effective-stats.
+
+| Field | Type | Description |
+|-------|------|--------------|
+| strength | uint32 | Effective STR |
+| dexterity | uint32 | Effective DEX |
+| luck | uint32 | Effective LUK |
+| intelligence | uint32 | Effective INT |
+| maxHp | uint32 | Effective max HP |
+| maxMp | uint32 | Effective max MP |
+| weaponAttack | uint32 | Effective weapon attack |
+| weaponDefense | uint32 | Effective weapon defense |
+| magicAttack | uint32 | Effective magic attack |
+| magicDefense | uint32 | Effective magic defense |
+| accuracy | uint32 | Effective accuracy |
+| avoidability | uint32 | Effective avoidability |
+| speed | uint32 | Effective speed |
+| jump | uint32 | Effective jump |

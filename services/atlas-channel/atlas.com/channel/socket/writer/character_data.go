@@ -73,11 +73,12 @@ func BuildCharacterData(l logrus.FieldLogger, ctx context.Context, c character.M
 	for _, s := range c.Skills() {
 		// MasterLevel is always populated; whether it reaches the wire is the
 		// codec's call (charpkt derives it per SKILL from the id via
-		// skill.NeedsMasterLevel). Gating it here on the per-JOB IsFourthJob is
-		// what closed the client with error 38 on a preset Evan: the client asks
-		// is_skill_need_master_level(nSkillID), which for Evan selects only the
-		// 9th/10th growths plus three named skills — not the whole 2214-2218
-		// band. See skill.NeedsMasterLevel (task-218).
+		// job.NeedsMasterLevel, which resolves the arm from the tenant's
+		// region and major version). Gating it here on the per-JOB IsFourthJob
+		// is what closed the client with error 38 on a preset Evan: the client
+		// asks is_skill_need_master_level(nSkillID), which for Evan selects
+		// only the 9th/10th growths plus three named skills — not the whole
+		// 2214-2218 band. See job.NeedsMasterLevel (task-218, task-275).
 		entry := charpkt.SkillEntry{
 			Id:          uint32(s.Id()),
 			Level:       uint32(s.Level()),

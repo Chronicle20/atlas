@@ -1,6 +1,8 @@
 package skill
 
 import (
+	skillmodel "atlas-channel/character/skill"
+	"atlas-channel/character/snapshot"
 	consumer2 "atlas-channel/kafka/consumer"
 	skill2 "atlas-channel/kafka/message/skill"
 	"atlas-channel/listener"
@@ -13,6 +15,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -57,6 +60,21 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleCooldownExpired(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotSkillCreated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotSkillUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotSkillDeleted(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -170,5 +188,57 @@ func announceSkillCooldownReset(l logrus.FieldLogger) func(ctx context.Context) 
 				return session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillCooldownWriter)(charpkt.NewCharacterSkillCooldown(skillId, 0).Encode)
 			}
 		}
+	}
+}
+
+// --- task-122 snapshot maintenance (additive) ---
+
+func snapshotSkillFromEvent(skillId uint32, level byte, masterLevel byte, expiration time.Time) skillmodel.Model {
+	return skillmodel.NewModelBuilder(skillconst.Id(skillId)).
+		SetLevel(level).
+		SetMasterLevel(masterLevel).
+		SetExpiration(expiration).
+		MustBuild()
+}
+
+func handleSnapshotSkillCreated(sc server.Model, _ writer.Producer) message.Handler[skill2.StatusEvent[skill2.StatusEventCreatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventCreatedBody]) {
+		if e.Type != skill2.StatusEventTypeCreated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().UpsertSkill(t, e.CharacterId, snapshotSkillFromEvent(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
+	}
+}
+
+func handleSnapshotSkillUpdated(sc server.Model, _ writer.Producer) message.Handler[skill2.StatusEvent[skill2.StatusEventUpdatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventUpdatedBody]) {
+		if e.Type != skill2.StatusEventTypeUpdated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().UpsertSkill(t, e.CharacterId, snapshotSkillFromEvent(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
+	}
+}
+
+// handleSnapshotSkillDeleted is atlas-channel's first consumer of the
+// skill DELETED event (saga compensation path; the packet layer never
+// needed it — event-coverage.md §3).
+func handleSnapshotSkillDeleted(sc server.Model, _ writer.Producer) message.Handler[skill2.StatusEvent[skill2.StatusEventDeletedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventDeletedBody]) {
+		if e.Type != skill2.StatusEventTypeDeleted {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().RemoveSkill(t, e.CharacterId, skillconst.Id(e.SkillId))
 	}
 }

@@ -26,6 +26,7 @@
 | deleted_at | timestamp | INDEX (soft delete) |
 | quantity | uint32 | |
 | owner_id | uint32 | |
+| owner | string | NOT NULL, DEFAULT '' |
 | flag | uint16 | |
 | rechargeable | uint64 | |
 | strength | uint16 | |

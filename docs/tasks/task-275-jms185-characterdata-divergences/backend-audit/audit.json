@@ -1,0 +1,75 @@
+{
+  "service": "task-275-jms185-characterdata-divergences (cross-module)",
+  "path": "libs/atlas-constants, libs/atlas-packet, services/atlas-channel",
+  "date": "2026-08-28",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-constants/job",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()", "status": "n-a", "evidence": "no builder.go in package; job/model.go unchanged by this diff"},
+        {"id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "n-a", "evidence": "no entity.go in package"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) defined in entity.go", "status": "n-a", "evidence": "no entity.go in package"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "n-a", "evidence": "no rest.go in package"},
+        {"id": "DOM-05", "name": "TransformSlice defined in rest.go and used by list handlers", "status": "n-a", "evidence": "no rest.go in package"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery", "status": "n-a", "evidence": "no provider.go in package"},
+        {"id": "DOM-16", "name": "administrator.go holds the write functions", "status": "n-a", "evidence": "no writes performed; no administrator.go"},
+        {"id": "FILE-01", "name": "Processor interface/constructor/methods in processor.go", "status": "n-a", "evidence": "no Processor symbols in extended_sp.go or master_level.go"},
+        {"id": "FILE-02", "name": "RestModel, Transform/Extract, JSON:API methods in rest.go", "status": "n-a", "evidence": "no RestModel symbols added"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "n-a", "evidence": "no requests.* calls added"},
+        {"id": "FILE-04", "name": "Entity struct, Migration, TableName in entity.go", "status": "n-a", "evidence": "no entity symbols added"},
+        {"id": "FILE-05", "name": "Builder/model/administrator/provider/state placement", "status": "pass", "evidence": "libs/atlas-constants/job/master_level.go:1-175, extended_sp.go:1-41 — topic-named files matching package convention (advancement.go, parents.go, identity.go)"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "ls libs/atlas-constants/job/ shows no job.go; new files are single-purpose"},
+        {"id": "DOM-21", "name": "No redeclaration of a type/helper/constant already in libs/atlas-constants/", "status": "fail", "evidence": "libs/atlas-constants/job/master_level.go:155 uses skill.Id(22111001)/skill.Id(22141002)/skill.Id(22140000) instead of skill.EvanStage3MagicGuardId/EvanStage6MagicBoosterId/EvanStage6CriticalMagicId (libs/atlas-constants/skill/constants.go:3445,3452,3450)"},
+        {"id": "DOM-21", "name": "No redeclaration of a type/helper/constant already in libs/atlas-constants/ (EvanId)", "status": "fail", "evidence": "libs/atlas-constants/job/master_level.go:28,52 and extended_sp.go:37,40 hardcode literal 2001 in package job itself, where job.EvanId = Id(2001) already exists (libs/atlas-constants/job/constants.go:166)"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "grep -rnE '^\\s*go (func|[A-Za-z_])' on extended_sp.go and master_level.go: no matches"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "libs/atlas-constants/job/extended_sp_test.go:17-49, master_level_test.go:15-49,73-101,106-134,138-166"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "n-a", "evidence": "no test opens a GORM DB directly"},
+        {"id": "DOM-24", "name": "producertest stub installed for emit-reaching tests", "status": "n-a", "evidence": "no test reaches AndEmit/message.Emit/producer.Produce"},
+        {"id": "DOM-33", "name": "Mock updated for interface change", "status": "n-a", "evidence": "no Processor/Provider/Administrator interface changed"},
+        {"id": "DOM-34", "name": "No aliases/wrappers left behind after a library move", "status": "pass", "evidence": "grep -rn 'NeedsMasterLevel' --include='*.go' . shows every call site uses job.NeedsMasterLevel; no skill.NeedsMasterLevel wrapper remains"},
+        {"id": "DOM-35", "name": "No dead symbols left after extraction", "status": "pass", "evidence": "libs/atlas-constants/skill/model.go diff removes function+doc in full; libs/atlas-packet/character/data.go removes superseded isEvanJob helper with no residual caller"}
+      ]
+    },
+    {
+      "name": "libs/atlas-constants/skill",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-34", "name": "No alias left for the moved function", "status": "pass", "evidence": "libs/atlas-constants/skill/model.go no longer defines NeedsMasterLevel; full deletion, no wrapper"},
+        {"id": "DOM-35", "name": "No dead test/const left over", "status": "pass", "evidence": "libs/atlas-constants/skill/model_test.go diff removes TestNeedsMasterLevelMatchesClientRule and TestNeedsMasterLevelNotSkillBookIndexed in full"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "remaining model.go content unchanged in shape; deletion only"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/character",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "data.go gains job import and call-site swaps; no responsibility relocated"},
+        {"id": "DOM-31", "name": "Tenant identity travels in context only", "status": "pass", "evidence": "libs/atlas-packet/character/data.go:127,205 tenant.MustFromContext(ctx); tenant.Model passed as internal function param, not a public REST field"},
+        {"id": "DOM-25", "name": "No client wire code as Go literal outside libs/atlas-packet codec internals", "status": "pass", "evidence": "all byte-writing (data.go WriteByte/WriteInt/WriteShort) is inside libs/atlas-packet codec internals, the documented exempted surface"},
+        {"id": "DOM-26", "name": "No bare go statement", "status": "pass", "evidence": "grep -rnE '^\\s*go (func|[A-Za-z_])' libs/atlas-packet/character/data.go: no match"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "data_golden_test.go:20-58, data_master_level_test.go:39-68,80-104 use table+t.Run; single-scenario tests (TestCharacterDataJMSDualBladePlainSP etc.) have no case matrix to tabulate"},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "n-a", "evidence": "no emit path reached"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/socket/writer",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "No bare go statement", "status": "pass", "evidence": "grep -rnE '^\\s*go (func|[A-Za-z_])' character_data.go: no match"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "diff is comment-only, character_data.go:73-84"},
+        {"id": "DOM-25", "name": "No client wire code hardcoded", "status": "n-a", "evidence": "diff is comment text only, no code changed"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-21: libs/atlas-constants/job/master_level.go:155: hardcodes skill.Id(22111001)/skill.Id(22141002)/skill.Id(22140000) instead of the already-named skill.EvanStage3MagicGuardId/EvanStage6MagicBoosterId/EvanStage6CriticalMagicId",
+    "DOM-21: libs/atlas-constants/job/master_level.go:28,52 and extended_sp.go:37,40: hardcode literal 2001 in package job itself, where job.EvanId = Id(2001) already exists"
+  ],
+  "nonBlocking": []
+}

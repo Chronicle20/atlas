@@ -38,6 +38,8 @@ var commandSyntaxList = []string{
 	"@pq register <questId> - Register for a party quest",
 	"@pq stage - Force-advance the current party quest stage",
 	"@weather <itemId> <message> - Trigger a weather effect in the current field (30s)",
+	"@playernpc add <target> - Deploy a Player NPC for a character at your position",
+	"@playernpc remove <target> [here] - Remove a character's Player NPCs (all, or just this map)",
 }
 
 func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {

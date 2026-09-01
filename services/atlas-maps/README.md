@@ -4,15 +4,15 @@ Mushroom game maps Service
 
 ## Overview
 
-A service that tracks character presence in maps, manages spawning of monsters and reactors, manages map weather and mist area effects, enforces map-stay timers, tracks each character's persisted last-known map location, and records character map visit history. Maintains in-memory registries of character presence, spawn point cooldown states, active weather effects, active mists, and map-stay timers. Persists visit records and character locations to PostgreSQL.
+A service that tracks character presence in maps, manages spawning of monsters and reactors, manages map weather, jukebox playback, and mist area effects, enforces map-stay timers, tracks each character's persisted last-known map location, and records character map visit history. Maintains in-memory registries of character presence, spawn point cooldown states, active weather effects, active jukebox playback, active mists, and map-stay timers. Persists visit records and character locations to PostgreSQL.
 
 ## External Dependencies
 
 - PostgreSQL: Persistent storage for character map visit records and character locations
 - Redis: Spawn point cooldown registry storage
-- Kafka: Message consumption and production for character status events, map status events, cash shop events, monster status events, map commands, map action commands, reactor commands, mist commands and events, character buff commands, and data ingestion events
+- Kafka: Message consumption and production for character status events, map status events, cash shop events, monster status events, map commands, map action commands, reactor commands, mist commands and events, character buff commands, monster commands, and data ingestion events
 - atlas-data service: REST API for map spawn point, reactor, script, and map info data
-- atlas-monsters service: REST API for monster counts and creation
+- atlas-monsters service: REST API for monster counts, creation, and querying monsters within a map rectangle
 - atlas-reactors service: REST API for reactor queries
 - atlas-character service: REST API for character position (used by the mist tick task)
 
@@ -43,6 +43,7 @@ A service that tracks character presence in maps, manages spawning of monsters a
 | COMMAND_TOPIC_CHARACTER | Topic for character commands (consumed and produced) |
 | COMMAND_TOPIC_CHARACTER_CHANNEL_CHANGE_REQUEST | Topic for character channel-change request commands (consumed) |
 | COMMAND_TOPIC_CHARACTER_BUFF | Topic for character buff commands (produced) |
+| COMMAND_TOPIC_MONSTER | Topic for monster commands (produced) |
 | COMMAND_TOPIC_REACTOR | Topic for reactor commands (produced) |
 | COMMAND_TOPIC_MAP_ACTIONS | Topic for map action commands (produced) |
 | COMMAND_TOPIC_MIST | Topic for mist commands (consumed) |

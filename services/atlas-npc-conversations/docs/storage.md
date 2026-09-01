@@ -35,6 +35,24 @@ Stores quest conversation definitions.
 
 The `data` column stores the full quest conversation definition (questName, startStateMachine, endStateMachine) as a JSON blob.
 
+### item_conversations
+
+Stores scripted item conversation definitions (the 243xxxx item family).
+
+| Column      | Type         | Constraints                                                       |
+|-------------|--------------|---------------------------------------------------------------------|
+| id          | uuid         | Primary key                                                        |
+| tenant_id   | uuid         | Not null, unique composite with item_id                            |
+| item_id     | uint32       | Not null, unique composite with tenant_id                          |
+| npc_id      | uint32       | Indexed (metadata: NPC the dialogue renders with)                  |
+| script_name | text         | Metadata: WZ spec/script value                                     |
+| data        | jsonb        | Not null                                                            |
+| created_at  | timestamp    | Not null, default CURRENT_TIMESTAMP                                 |
+| updated_at  | timestamp    | Not null, default CURRENT_TIMESTAMP                                 |
+| deleted_at  | timestamp    | Nullable, indexed (soft delete)                                    |
+
+The `data` column stores the full item conversation definition (startState, states) as a JSON blob.
+
 ### recipes
 
 Derived index of `craftAction` states found inside NPC conversations. One row per `(tenant_id, conversation_id, state_id)` triple.
@@ -72,6 +90,7 @@ Tracks the most recently applied seed catalog revision per tenant/subdomain-grou
 
 - `conversations.tenant_id` references the tenant. Scoped by tenant in all queries.
 - `quest_conversations.tenant_id` references the tenant. Scoped by tenant in all queries.
+- `item_conversations.tenant_id` references the tenant. Scoped by tenant in all queries.
 - `recipes.tenant_id` references the tenant. Scoped by tenant in all queries.
 - `recipes.conversation_id` references `conversations.id`.
 - `seed_state.tenant_id` references the tenant.
@@ -82,6 +101,9 @@ Tracks the most recently applied seed catalog revision per tenant/subdomain-grou
 - `quest_conversations(tenant_id, quest_id)` — Composite index `idx_quest_conversations_tenant_quest` for tenant-scoped quest lookup.
 - `quest_conversations.npc_id` — Indexed for NPC-based lookups.
 - `quest_conversations.deleted_at` — Indexed for soft delete queries.
+- `item_conversations(tenant_id, item_id)` — Unique composite index `idx_item_conversations_tenant_item`.
+- `item_conversations.npc_id` — Indexed for NPC-based lookups.
+- `item_conversations.deleted_at` — Indexed for soft delete queries.
 - `recipes(tenant_id, item_id)` — Composite index `idx_recipes_tenant_item`.
 - `recipes(tenant_id, npc_id)` — Composite index `idx_recipes_tenant_npc`.
 - `recipes.conversation_id` — Index `idx_recipes_conversation`.
@@ -90,5 +112,5 @@ Tracks the most recently applied seed catalog revision per tenant/subdomain-grou
 
 ## Migration Rules
 
-- Migrations are run via GORM `AutoMigrate` at service startup for `conversations`, `quest_conversations`, `recipes`, and `seed_state` tables.
-- `conversations` and `quest_conversations` use soft deletes via the `deleted_at` column. `recipes` rows are hard-deleted.
+- Migrations are run via GORM `AutoMigrate` at service startup for `conversations`, `quest_conversations`, `item_conversations`, `recipes`, and `seed_state` tables.
+- `conversations`, `quest_conversations`, and `item_conversations` use soft deletes via the `deleted_at` column. `recipes` rows are hard-deleted.

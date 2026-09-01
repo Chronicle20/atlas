@@ -14,33 +14,36 @@ const (
 )
 
 const (
-	EventTypeRouteCreated         = "ROUTE_CREATED"
-	EventTypeRouteUpdated         = "ROUTE_UPDATED"
-	EventTypeRouteDeleted         = "ROUTE_DELETED"
-	EventTypeVesselCreated        = "VESSEL_CREATED"
-	EventTypeVesselUpdated        = "VESSEL_UPDATED"
-	EventTypeVesselDeleted        = "VESSEL_DELETED"
-	EventTypeInstanceRouteCreated = "INSTANCE_ROUTE_CREATED"
-	EventTypeInstanceRouteUpdated = "INSTANCE_ROUTE_UPDATED"
-	EventTypeInstanceRouteDeleted = "INSTANCE_ROUTE_DELETED"
-	EventTypeRpsRewardCreated     = "RPS_REWARD_CREATED"
-	EventTypeRpsRewardUpdated     = "RPS_REWARD_UPDATED"
-	EventTypeRpsRewardDeleted     = "RPS_REWARD_DELETED"
-	EventTypeMtsConfigCreated     = "MTS_CONFIG_CREATED"
-	EventTypeMtsConfigUpdated     = "MTS_CONFIG_UPDATED"
-	EventTypeMtsConfigDeleted     = "MTS_CONFIG_DELETED"
-	EventTypeTradeConfigCreated   = "TRADE_CONFIG_CREATED"
-	EventTypeTradeConfigUpdated   = "TRADE_CONFIG_UPDATED"
-	EventTypeTradeConfigDeleted   = "TRADE_CONFIG_DELETED"
-	EventTypeRankingsCreated      = "RANKINGS_CREATED"
-	EventTypeRankingsUpdated      = "RANKINGS_UPDATED"
-	EventTypeRankingsDeleted      = "RANKINGS_DELETED"
-	EventTypeKiteConfigCreated    = "KITE_CONFIG_CREATED"
-	EventTypeKiteConfigUpdated    = "KITE_CONFIG_UPDATED"
-	EventTypeKiteConfigDeleted    = "KITE_CONFIG_DELETED"
-	EventTypeImprintConfigCreated = "IMPRINT_CONFIG_CREATED"
-	EventTypeImprintConfigUpdated = "IMPRINT_CONFIG_UPDATED"
-	EventTypeImprintConfigDeleted = "IMPRINT_CONFIG_DELETED"
+	EventTypeRouteCreated           = "ROUTE_CREATED"
+	EventTypeRouteUpdated           = "ROUTE_UPDATED"
+	EventTypeRouteDeleted           = "ROUTE_DELETED"
+	EventTypeVesselCreated          = "VESSEL_CREATED"
+	EventTypeVesselUpdated          = "VESSEL_UPDATED"
+	EventTypeVesselDeleted          = "VESSEL_DELETED"
+	EventTypeInstanceRouteCreated   = "INSTANCE_ROUTE_CREATED"
+	EventTypeInstanceRouteUpdated   = "INSTANCE_ROUTE_UPDATED"
+	EventTypeInstanceRouteDeleted   = "INSTANCE_ROUTE_DELETED"
+	EventTypeRpsRewardCreated       = "RPS_REWARD_CREATED"
+	EventTypeRpsRewardUpdated       = "RPS_REWARD_UPDATED"
+	EventTypeRpsRewardDeleted       = "RPS_REWARD_DELETED"
+	EventTypeMtsConfigCreated       = "MTS_CONFIG_CREATED"
+	EventTypeMtsConfigUpdated       = "MTS_CONFIG_UPDATED"
+	EventTypeMtsConfigDeleted       = "MTS_CONFIG_DELETED"
+	EventTypeTradeConfigCreated     = "TRADE_CONFIG_CREATED"
+	EventTypeTradeConfigUpdated     = "TRADE_CONFIG_UPDATED"
+	EventTypeTradeConfigDeleted     = "TRADE_CONFIG_DELETED"
+	EventTypeRankingsCreated        = "RANKINGS_CREATED"
+	EventTypeRankingsUpdated        = "RANKINGS_UPDATED"
+	EventTypeRankingsDeleted        = "RANKINGS_DELETED"
+	EventTypeKiteConfigCreated      = "KITE_CONFIG_CREATED"
+	EventTypeKiteConfigUpdated      = "KITE_CONFIG_UPDATED"
+	EventTypeKiteConfigDeleted      = "KITE_CONFIG_DELETED"
+	EventTypePlayerNpcConfigCreated = "PLAYER_NPC_CONFIG_CREATED"
+	EventTypePlayerNpcConfigUpdated = "PLAYER_NPC_CONFIG_UPDATED"
+	EventTypePlayerNpcConfigDeleted = "PLAYER_NPC_CONFIG_DELETED"
+	EventTypeImprintConfigCreated   = "IMPRINT_CONFIG_CREATED"
+	EventTypeImprintConfigUpdated   = "IMPRINT_CONFIG_UPDATED"
+	EventTypeImprintConfigDeleted   = "IMPRINT_CONFIG_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes
@@ -155,6 +158,19 @@ func CreateRankingsStatusEventProvider(tenantId uuid.UUID, eventType string, ran
 		Type:         eventType,
 		ResourceType: "rankings",
 		ResourceId:   rankingsId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreatePlayerNpcConfigStatusEventProvider creates a provider for
+// player-npcs configuration status events
+func CreatePlayerNpcConfigStatusEventProvider(tenantId uuid.UUID, eventType string, playerNpcConfigId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "player-npcs",
+		ResourceId:   playerNpcConfigId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

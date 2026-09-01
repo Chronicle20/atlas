@@ -1,0 +1,167 @@
+{
+  "service": "atlas-player-npcs",
+  "path": "services/atlas-player-npcs",
+  "date": "2026-08-22",
+  "build": "pass",
+  "testsPassed": 14,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "playernpc",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go has NewBuilder()/setters/validating Build()", "status": "pass", "evidence": "playernpc/builder.go:47,200,229"},
+        {"id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "fail", "evidence": "no ToEntity method; free function MakeEntity(tenantId, m) at playernpc/entity.go:159"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) defined in entity.go", "status": "pass", "evidence": "playernpc/entity.go:103"},
+        {"id": "DOM-04", "name": "rest.go has func Transform(", "status": "fail", "evidence": "Transform defined in playernpc/resource.go:73, not rest.go"},
+        {"id": "DOM-05", "name": "TransformSlice in rest.go used by list handlers", "status": "fail", "evidence": "no TransformSlice anywhere; playernpc/rest.go:293 uses model.SliceMap(Transform) inline"},
+        {"id": "DOM-11", "name": "Providers lazy via database.Query/SliceQuery", "status": "pass", "evidence": "playernpc/provider.go:12-42 matches patterns-provider.md's documented canonical example"},
+        {"id": "DOM-16", "name": "administrator.go holds writes, called by processor", "status": "fail", "evidence": "playernpc/processor.go:303,309 inline tx.Create in Deploy instead of calling administrator.go:19 createPlayerNpc"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "playernpc/processor.go:88,120,145+"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods in rest.go", "status": "fail", "evidence": "RestModel+Transform in playernpc/resource.go; DeployRestModel+JSON:API methods in playernpc/requests.go; rest.go holds handlers/routes instead (inverted vs services/atlas-notes/.../note/ convention)"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "fail", "evidence": "playernpc/requests.go holds DeployRestModel (own inbound REST model), no cross-service request functions"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "pass", "evidence": "playernpc/entity.go:33,60,206"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider/enums in named files", "status": "fail", "evidence": "EventType enum declared in playernpc/processor.go:53-61, not state.go"},
+        {"id": "FILE-06", "name": "No package-named catch-all combining >=2 responsibilities", "status": "n-a", "evidence": "violation is misplacement (FILE-02/03/05), not a single catch-all file"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "playernpc/processor.go:120"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "playernpc/rest.go:196 processorFor"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "fail", "evidence": "PATCH redeploy_player_npc at playernpc/rest.go:184 registers via registerGet (GetHandler), not an input-handler variant"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks error", "status": "pass", "evidence": "playernpc/rest.go:211,293"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "no occurrence in package"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "fail", "evidence": "playernpc/rest.go:440-506 handleGetEligibility constructs character.NewProcessor/configuration.NewProcessor and orchestrates directly"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never providers directly", "status": "fail", "evidence": "playernpc/rest.go:310 getPlayerNpcModel, :286 pagedPlayerNpcsByMap, :491 countByName called directly instead of via playernpc.Processor"},
+        {"id": "DOM-15", "name": "No db.Create/Save/Delete in handlers", "status": "pass", "evidence": "none found in rest.go/resource.go"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "playernpc/rest.go:143 writeDeployError; :311,:352,:378 gorm.ErrRecordNotFound -> 404"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "playernpc/resource.go:46-64"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "playernpc/requests.go:15-21 DeployRestModel"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler/RegisterInputHandler[T]", "status": "fail", "evidence": "playernpc/rest.go:84,99 local wrappers re-implement span/tenant parsing instead of delegating; :126 writeError is a custom error helper"},
+        {"id": "DOM-30", "name": "DB writes emit through AndEmit+message.Buffer", "status": "pass", "evidence": "only producer.ProviderImpl call for domain events is inside playernpc/producer.go:29 itself, excluded by the checklist's own grep scope; emission strictly after commit per processor.go:36-42 doc"},
+        {"id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "no tenantId field on RestModel/DeployRestModel; tenant.MustFromContext at processor.go:158, rest.go:485"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "pass", "evidence": "playernpc/administrator_test.go:30"},
+        {"id": "DOM-20", "name": "Tests table-driven", "status": "warn", "evidence": "errors_test.go:12 table-driven; processor_test.go/resource_test.go use sequential t.Run without a driving table"},
+        {"id": "DOM-24", "name": "Emit-path tests install producer stub", "status": "pass", "evidence": "playernpc/producer_test.go:17-19 producertest.InstallCapturing()"},
+        {"id": "DOM-33", "name": "Interface changes update every mock", "status": "n-a", "evidence": "greenfield service, no mock package exists"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "main.go:64 routine.Go(l, rt.Context(), ...)"},
+        {"id": "DOM-27", "name": "Transient DB errors surface as 503", "status": "n-a", "evidence": "no bare http.StatusInternalServerError in non-test code; all routed through server.WriteErrorResponse"},
+        {"id": "DOM-28", "name": "Enrichment/decorator paths degrade loudly", "status": "n-a", "evidence": "no model.Decorator or enrichment fallback in service"}
+      ]
+    },
+    {
+      "name": "character",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "character/rest.go:48,52"},
+        {"id": "EXT-02", "name": "httptest-backed integration test with JSON:API fixture", "status": "fail", "evidence": "character/rest_test.go only unmarshal-tests RestModel directly, no httptest.NewServer"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "no broad ErrNotFound reclassification in package"},
+        {"id": "EXT-04", "name": "URL composed via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "character/requests.go:17 requests.RootUrlFor(ctx, \"CHARACTERS\")"}
+      ]
+    },
+    {
+      "name": "configuration",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "configuration/rest.go RestModel has neither method"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "configuration/rest_test.go:29 httptest.NewServer"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "configuration/processor.go:35 errors.Is(err, requests.ErrNotFound) used correctly for the documented default-config fallback"},
+        {"id": "EXT-04", "name": "URL composed via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "configuration/requests.go:15"}
+      ]
+    },
+    {
+      "name": "data/map",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "data/map/rest.go RestModel, GroundRequestRestModel, GroundResultRestModel all lack both methods"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no httptest.NewServer in data/map/rest_test.go"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "no broad reclassification"},
+        {"id": "EXT-04", "name": "URL composed via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "data/map/requests.go:18"}
+      ]
+    },
+    {
+      "name": "data/npc",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "data/npc/rest.go RestModel lacks both methods"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no httptest.NewServer in data/npc/rest_test.go"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "no broad reclassification"},
+        {"id": "EXT-04", "name": "URL composed via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "data/npc/requests.go:16"}
+      ]
+    },
+    {
+      "name": "inventory",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "inventory/rest.go:95,99,185,189"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no httptest.NewServer in inventory/rest_test.go"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "no broad reclassification"},
+        {"id": "EXT-04", "name": "URL composed via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "inventory/requests.go:16"}
+      ]
+    },
+    {
+      "name": "ranking",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "ranking/rest.go RestModel lacks both methods"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "ranking/rest_test.go:28 httptest.NewServer"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "ranking/processor.go:35 used correctly"},
+        {"id": "EXT-04", "name": "URL composed via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "ranking/requests.go:17"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/playernpc, kafka/consumer/character",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-30", "name": "producer.ProviderImpl outside producer.go wrapped in AndEmit unless no DB write", "status": "pass", "evidence": "kafka/consumer/playernpc/consumer.go:56, kafka/consumer/character/consumer.go:154 report/trigger downstream operations with no DB write of their own — matches documented exception #2 spirit"},
+        {"id": "DOM-24", "name": "Emit-path tests stub the producer", "status": "pass", "evidence": "kafka/consumer/character/consumer_test.go:29-32 producertest.InstallCapturing(); kafka/consumer/playernpc/consumer_test.go:90,97 stub OutcomeEmitter per test"}
+      ]
+    },
+    {
+      "name": "allocation, eligibility, position, routing, snapshot",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "No domain files present", "status": "n-a", "evidence": "pure algorithm/lookup packages, no model.go/entity.go/rest.go/processor.go/resource.go"}
+      ]
+    },
+    {
+      "name": "deploy/scaffolding",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-22", "name": "New libs/atlas-* module wired in", "status": "n-a", "evidence": "no new libs module added"},
+        {"id": "DOM-23", "name": "Topic env vars registered correctly", "status": "pass", "evidence": "COMMAND_TOPIC_PLAYER_NPC, EVENT_TOPIC_PLAYER_NPC_STATUS, EVENT_TOPIC_CHARACTER_STATUS all configmap=PRESENT manifest_literal=CLEAN; present in main/pr overlays"},
+        {"id": "SCAFFOLD-01", "name": "services.json go-service entry", "status": "pass", "evidence": ".github/config/services.json:393-397"},
+        {"id": "SCAFFOLD-02", "name": "Base manifest exists + listed", "status": "pass", "evidence": "deploy/k8s/base/atlas-player-npcs.yaml; deploy/k8s/base/kustomization.yaml:57"},
+        {"id": "SCAFFOLD-03", "name": "docker-bake.hcl + go.work entries", "status": "pass", "evidence": "docker-bake.hcl:84; go.work:74"},
+        {"id": "SCAFFOLD-04", "name": "Ingress location block", "status": "pass", "evidence": "deploy/shared/routes.conf:561-562"},
+        {"id": "SCAFFOLD-05", "name": "Generated routes regenerated", "status": "pass", "evidence": "tools/gen-routes.sh: 'gen-routes: up to date', no diff"},
+        {"id": "SCAFFOLD-06", "name": "docker-compose entry alongside peers", "status": "fail", "evidence": "no atlas-player-npcs block in deploy/compose/docker-compose.core.yml"},
+        {"id": "SCAFFOLD-07", "name": "Channel Writer/Handler seeded", "status": "n-a", "evidence": "no new atlas-channel Writer/Handler registered"},
+        {"id": "SCAFFOLD-08", "name": "Bruno collection present", "status": "pass", "evidence": "services/atlas-player-npcs/.bruno/collection.bru + 7 request files"},
+        {"id": "SCAFFOLD-09", "name": "Overlay enumerations / ATLAS_DB_NAMES / DB bootstrap", "status": "pass", "evidence": "tools/service-registration-guard.sh exit clean; ATLAS_DB_NAMES includes atlas-player-npcs"},
+        {"id": "SEC-01..04", "name": "Security checks", "status": "n-a", "evidence": "service handles no auth/tokens/redirects/secrets"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-20: full line-by-line table-driven sweep across all 12 _test.go files not performed; WARN reflects files actually read",
+    "FILE-01..06 for kafka/message/*/kafka.go: no rule category applies to a pure wire-envelope file, not exhaustively re-derived",
+    "DOM-21: only checked constants most likely to collide with libs/atlas-constants (object-id, script-id pool); no full symbol-by-symbol diff performed"
+  ],
+  "blocking": [
+    "DOM-02: playernpc/entity.go — no Model.ToEntity() method, only free function MakeEntity(tenantId, m)",
+    "DOM-04/FILE-02: playernpc/resource.go:73 — Transform lives outside rest.go",
+    "DOM-05: playernpc — no TransformSlice function anywhere",
+    "DOM-08: playernpc/rest.go:184 — PATCH redeploy route registered via GetHandler, not an input-handler variant",
+    "DOM-13/DOM-14: playernpc/rest.go:286,310,440-506 — handlers bypass playernpc.Processor, call providers/administrator/other-package processors directly",
+    "DOM-16: playernpc/processor.go:303,309 — Deploy inlines tx.Create instead of calling administrator.go's createPlayerNpc",
+    "DOM-32: playernpc/rest.go:84,99,126 — local route registration doesn't delegate to server.RegisterHandler/RegisterInputHandler[T]; writeError is a custom error helper",
+    "FILE-03: playernpc/requests.go — holds a domain input model instead of cross-service request functions",
+    "FILE-05: playernpc/processor.go:53-61 — EventType enum outside state.go",
+    "EXT-01: data/map, data/npc, ranking, configuration RestModels lack SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: character, data/map, data/npc, inventory have no httptest-backed integration test",
+    "SCAFFOLD-06: no atlas-player-npcs entry in deploy/compose/docker-compose.core.yml"
+  ],
+  "nonBlocking": [
+    "DOM-20: processor_test.go/resource_test.go use sequential t.Run without a driving table for most of the suite",
+    "DOM-30: domain-event emission happens strictly after commit via a bare producer.ProviderImpl call, not AndEmit/message.Buffer — passes literal grep scope but leaves the commit-succeeds/emit-fails window the pattern exists to close"
+  ]
+}

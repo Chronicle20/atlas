@@ -25,6 +25,7 @@ Manages pet lifecycle, attributes, and state within the game. Pets are companion
 | excludes | []Exclude | Items excluded from pet auto-loot |
 | flag | uint16 | Pet flags |
 | purchaseBy | uint32 | Character who purchased the pet |
+| reviveTransactionId | *uuid.UUID | Transaction identifier of the last successful revive, or nil if the pet has never been revived |
 
 #### Exclude Model
 
@@ -108,6 +109,25 @@ Redis-backed tracking for pet position and stance, managed by a singleton Tempor
 - The corresponding cash inventory asset's template is updated to match, keyed by petId
 - If the pet was spawned, it is despawned and respawned (to the same lead/non-lead slot) to refresh its appearance
 
+#### Revive
+
+- A pet is revived by consuming a source item (Water of Life); reviving sets the pet's expiration to now + the source item's life value (in days), read from the source item's cash reference data
+- Revive is refused (no state change, a failure event is emitted) if the pet is not found, the acting character does not own the pet, the pet has not yet dried up (expiration is in the future), or the source item's cash data cannot be resolved or grants no lifespan
+- A redelivery of a revive command already recorded as the pet's last revive re-emits the success outcome without writing to the pet again; the pet's `reviveTransactionId` records the transaction identifier of the last successful revive so a redelivery can be distinguished from a genuine second revive attempt
+- A revive does not change the pet's spawn slot
+
+#### Rename
+
+- A pet's name may be replaced, subject to the same name normalization and validation rules as pet creation
+- A rename requires the acting character to own the pet
+- A rename is idempotent: renaming re-emits the outcome on every delivery, including redeliveries
+
+#### Skill Flags
+
+- A pet's `flag` field carries a bitmask of enabled/disabled pet skills, addressed by a semantic skill key rather than a raw bit
+- Setting a skill with an unrecognized key is dropped without effect
+- Setting a skill to its current state is a no-op (no persistence write, no event)
+
 #### Egg Hatching
 
 - Spawning a pet whose template's `IsEgg()` is true does not spawn the pet; the egg hatches in place into its single evolution outcome instead
@@ -142,6 +162,9 @@ Redis-backed tracking for pet position and stance, managed by a singleton Tempor
 | AwardFullness | Awards fullness to a pet, capped at 100 |
 | AwardLevel | Awards levels to a pet, capped at 30 |
 | Evolve | Evolves a pet to a new template selected via weighted-random roll among its evolution outcomes; despawns/respawns a spawned pet to refresh its appearance |
+| Revive | Restores a dried-up pet's lifespan from a consumed source item's life value; refuses if not owned, not dried up, or source data unresolvable |
+| Rename | Replaces a pet's name, subject to name validation; requires ownership |
+| SetSkill | Sets or clears a pet skill flag bit identified by a semantic skill key |
 | SetExclude | Replaces the set of excluded items for pet auto-loot |
 
 #### Temporal Registry
@@ -391,6 +414,33 @@ Helper methods:
 | Method | Description |
 |--------|-------------|
 | GetById | Fetches pet template reference data via REST from the pet reference data service |
+
+## data/cash
+
+### Responsibility
+
+Read-only projection of a cash item template's pet-revival attributes, fetched from the reference data service. Used to resolve the lifespan granted by a source item (Water of Life) when reviving a pet.
+
+### Core Models
+
+#### Cash Item Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Item template identifier |
+| life | uint32 | Lifespan in days granted to a revived pet; zero indicates the data is absent |
+
+### Invariants
+
+- This is a read-only projection; no persistence in this service
+
+### Processors
+
+#### Cash Item Reference Data Processor
+
+| Method | Description |
+|--------|-------------|
+| GetById | Fetches a cash item template's revival attributes via REST from the reference data service |
 
 ## data/position
 

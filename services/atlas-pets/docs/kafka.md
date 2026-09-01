@@ -67,7 +67,7 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
   "transactionId": "uuid",
   "actorId": 12345,
   "petId": 1,
-  "type": "SPAWN|DESPAWN|ATTEMPT_COMMAND|AWARD_CLOSENESS|AWARD_FULLNESS|AWARD_LEVEL|EXCLUDE|EVOLVE",
+  "type": "SPAWN|DESPAWN|ATTEMPT_COMMAND|AWARD_CLOSENESS|AWARD_FULLNESS|AWARD_LEVEL|EXCLUDE|EVOLVE|SET_SKILL|REVIVE|RENAME",
   "body": {}
 }
 ```
@@ -84,6 +84,9 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 | AWARD_LEVEL | amount (byte) | Award levels to a pet |
 | EXCLUDE | items ([]uint32) | Set excluded items for auto-loot |
 | EVOLVE | none | Evolve a pet to a new template; transactionId from command envelope is forwarded |
+| SET_SKILL | skill (string), enabled (bool) | Set or clear a pet skill flag bit identified by a semantic skill key; unknown keys are dropped |
+| REVIVE | sourceTemplateId (uint32) | Restore a dried-up pet's lifespan from the consumed source item's life value; transactionId from command envelope is forwarded |
+| RENAME | name (string) | Rename a pet; transactionId from command envelope is forwarded |
 
 ### Pet Movement Command (Consumed)
 
@@ -107,7 +110,7 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 {
   "petId": 1,
   "ownerId": 12345,
-  "type": "CREATED|DELETED|SPAWNED|DESPAWNED|COMMAND_RESPONSE|CLOSENESS_CHANGED|FULLNESS_CHANGED|LEVEL_CHANGED|SLOT_CHANGED|EXCLUDE_CHANGED|EVOLVED",
+  "type": "CREATED|DELETED|SPAWNED|DESPAWNED|COMMAND_RESPONSE|CLOSENESS_CHANGED|FULLNESS_CHANGED|LEVEL_CHANGED|SLOT_CHANGED|EXCLUDE_CHANGED|EVOLVED|FLAG_CHANGED|REVIVED|REVIVE_FAILED|NAME_CHANGED",
   "body": {}
 }
 ```
@@ -118,7 +121,7 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 |------|-------------|-------------|
 | CREATED | none | Pet was created |
 | DELETED | none | Pet was deleted |
-| SPAWNED | templateId, name, slot, level, closeness, fullness, x, y, stance, fh | Pet was spawned to a slot |
+| SPAWNED | templateId, name, slot, level, closeness, fullness, x, y, stance, fh, cashId | Pet was spawned to a slot |
 | DESPAWNED | templateId, name, slot, level, closeness, fullness, oldSlot, reason | Pet was despawned |
 | COMMAND_RESPONSE | slot, closeness, fullness, commandId, success | Response to a command attempt |
 | CLOSENESS_CHANGED | slot, closeness, amount, transactionId | Closeness was modified |
@@ -127,6 +130,10 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 | SLOT_CHANGED | oldSlot, newSlot | Slot was modified (due to spawn/despawn shifting) |
 | EXCLUDE_CHANGED | items | Excluded items were replaced |
 | EVOLVED | slot, oldTemplateId, newTemplateId, transactionId | Pet template was changed via evolution |
+| FLAG_CHANGED | slot, flag | A pet skill flag bit was set or cleared |
+| REVIVED | slot, expiration, transactionId | Pet's expiration was reset following a successful revive |
+| REVIVE_FAILED | reason, transactionId | Revive was rejected (pet not found, not owned, not dried up, or source item data unavailable) |
+| NAME_CHANGED | slot, name, previousName, transactionId | Pet was renamed |
 
 ### Change Template Command (Produced)
 
@@ -145,6 +152,24 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 
 Produced to the compartment command topic when a pet's template changes (evolution or egg hatching), so the corresponding cash inventory asset's template is updated to match.
 
+### Reset Pet Expiration Command (Produced)
+
+```json
+{
+  "transactionId": "uuid",
+  "characterId": 12345,
+  "inventoryType": 6,
+  "type": "RESET_PET_EXPIRATION",
+  "body": {
+    "petId": 1,
+    "expiration": "2026-11-26T00:00:00Z",
+    "sourceTemplateId": 2022002
+  }
+}
+```
+
+Produced to the compartment command topic when a pet is revived, so the corresponding cash inventory asset's expiration is reset to match. `expiration` is an absolute instant, resolved by (`characterId`, `petId`).
+
 #### Despawn Reasons
 
 | Reason | Description |
@@ -158,7 +183,11 @@ Produced to the compartment command topic when a pet's template changes (evoluti
 - Pet commands include a `transactionId` field for correlation
 - `AWARD_CLOSENESS` commands forward the `transactionId` to the `CLOSENESS_CHANGED` event
 - `EVOLVE` commands forward the `transactionId` to the `EVOLVED` event and to the produced `CHANGE_TEMPLATE` command
-- All state-mutating operations are wrapped in database transactions; Kafka messages are buffered and emitted only after the transaction commits successfully
+- `REVIVE` commands forward the `transactionId` to the `REVIVED`/`REVIVE_FAILED` event and to the produced `RESET_PET_EXPIRATION` command
+- `RENAME` commands forward the `transactionId` to the `NAME_CHANGED` event
+- All state-mutating operations are wrapped in database transactions; outgoing messages are written to a transactional outbox (github.com/Chronicle20/atlas/libs/atlas-outbox) within the same database transaction as the state change, and are published to Kafka asynchronously by a background drainer once the transaction commits
+- A redelivered `REVIVE` command for a `transactionId` already recorded as the pet's last revive re-emits `REVIVED` and re-issues the `RESET_PET_EXPIRATION` cascade without writing to the pet row again
+- `RENAME` re-emits `NAME_CHANGED` on every delivery, including redeliveries
 
 ## Required Headers
 

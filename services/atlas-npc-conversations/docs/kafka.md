@@ -23,6 +23,7 @@
   - `START_CONVERSATION` — Body: `CommandConversationStartBody` (worldId, channelId, mapId, instance, accountId). Starts an NPC conversation.
   - `CONTINUE_CONVERSATION` — Body: `CommandConversationContinueBody` (action, lastMessageType, selection). Continues an NPC conversation.
   - `END_CONVERSATION` — Body: `CommandConversationEndBody`. Ends an NPC conversation.
+  - `START_ITEM_CONVERSATION` — Body: `CommandItemConversationStartBody` (worldId, channelId, mapId, instance, accountId, itemId, slot). Starts a scripted item's own conversation, keyed by item ID.
 
 ### COMMAND_TOPIC_QUEST_CONVERSATION
 
@@ -70,6 +71,16 @@
 - Direction: Command
 - Environment variable: `COMMAND_TOPIC_SAGA`
 - Produced by saga processor to send saga commands to atlas-saga-orchestrator.
+
+### EVENT_TOPIC_NPC_CONVERSATION_STATUS
+
+- Direction: Event
+- Environment variable: `EVENT_TOPIC_NPC_CONVERSATION_STATUS`
+- Message type: `npc.ConversationStatusEvent[E]`
+- Produced event types:
+  - `STARTED` — Body: `StatusEventStartedBody` (npcTemplateId, sourceId). Reports that a saga-driven NPC or item conversation start opened.
+  - `START_ERROR` — Body: `StatusEventStartErrorBody` (npcTemplateId, sourceId, reason). Reports that a saga-driven NPC or item conversation start did not open. Reason is one of `NO_CONVERSATION_AUTHORED`, `CONVERSATION_IN_PROGRESS`, `INTERNAL_ERROR`.
+- Emitted only for commands with a non-nil `transactionId`; the ordinary (non-saga) NPC-talk path emits nothing on this topic.
 
 ## Message Types
 
@@ -127,8 +138,18 @@ Type          string
 Body          E
 ```
 
+### npc.ConversationStatusEvent
+
+```
+TransactionId uuid.UUID
+CharacterId   uint32
+Type          string
+Body          E
+```
+
 ## Transaction Semantics
 
-- Saga-based operations (craft, transport, gachapon, party quest) store a pending saga ID in the conversation context. The conversation pauses until a saga status event (COMPLETED or FAILED) is received.
+- Saga-based operations (craft, transport, gachapon, RPS entry, party quest) store a pending saga ID in the conversation context. The conversation pauses until a saga status event (COMPLETED or FAILED) is received.
 - Saga status events are correlated to conversations via `GetContextBySagaId` on the conversation registry.
 - Character status events (logout, channel change, map change) unconditionally end any active conversation for the character.
+- A `START_CONVERSATION` or `START_ITEM_CONVERSATION` command carrying a non-nil `transactionId` is saga-driven: the handler reports the outcome (`STARTED` or `START_ERROR`) on `EVENT_TOPIC_NPC_CONVERSATION_STATUS`, correlated back to the awaiting saga step via `TransactionId`. A command with a nil `transactionId` (the ordinary NPC-talk path) emits nothing on this topic.

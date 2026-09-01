@@ -14,6 +14,8 @@ Represents a chair being used by a character.
 |-------|------|-------------|
 | id | uint32 | Chair identifier |
 | chairType | string | Chair type (FIXED or PORTABLE) |
+| lastHpRecoveryAt | int64 | Unix-milli of last honored HP recovery tick; zero if never |
+| lastMpRecoveryAt | int64 | Unix-milli of last honored MP recovery tick; zero if never |
 
 ### character.MapKey
 
@@ -32,6 +34,15 @@ Map data retrieved from external data service.
 |-------|------|-------------|
 | seats | uint32 | Number of fixed seats in map |
 
+### data/setup.Model
+
+Chair setup data retrieved from external data service.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| recoveryHP | uint32 | HP recovery amount honored per tick for the chair item |
+| recoveryMP | uint32 | MP recovery amount honored per tick for the chair item |
+
 ## Invariants
 
 - A character can only sit on one chair at a time
@@ -39,6 +50,10 @@ Map data retrieved from external data service.
 - Portable chairs must have item category 301 (chairId / 10000 == 301)
 - Portable chairs require character ownership of the corresponding item
 - Chair is automatically cleared on character logout, map change, or channel change
+- A recovery tick is honored against a portable chair's setup data only while the character is seated on that chair
+- A recovery tick is honored at most once per stat (HP, MP) per 4000ms (minRecoveryTickIntervalMillis) per character
+- When a recovery tick is honored, the chair item's recovery value is applied; the character-claimed recovery value is not applied
+- When the chair is not portable, has no recovery stats, or setup data cannot be retrieved, the character-claimed HP/MP values are passed through unchanged
 
 ## Chair Types
 
@@ -58,6 +73,7 @@ Primary processor for chair operations.
 | GetById | Retrieve chair for character |
 | Set | Sit character on chair with validation |
 | Clear | Clear chair for character |
+| RecoverAndEmit | Process an HP/MP recovery tick for character and emit corresponding character HP/MP change commands |
 
 ### character.Processor
 
@@ -79,6 +95,14 @@ Retrieves map data from external data service.
 | Method | Description |
 |--------|-------------|
 | GetById | Retrieve map data by map ID |
+
+### data/setup.Processor
+
+Retrieves chair setup data (HP/MP recovery values) from external data service.
+
+| Method | Description |
+|--------|-------------|
+| GetById | Retrieve setup data by chair item ID |
 
 ### validation.Processor
 

@@ -57,8 +57,10 @@ Represents an account-level storage container within a world. Holds mesos and re
 - `DepositRollback`: Rolls back a deposit by deleting the asset
 - `Accept`: Accepts an item into storage as part of a transfer saga; for stackable items, attempts to merge with existing stacks before creating a new asset (see Accept Merge Rules below)
 - `AcceptAndEmit`: Accepts an item and emits ACCEPTED compartment status event
+- `AcceptOnceAndEmit`: Accepts an item under an idempotency claim so an at-least-once redelivery of the ACCEPT command cannot create a duplicate asset; skips the operation and returns nil if the transaction was already applied
 - `Release`: Releases an item from storage as part of a transfer saga; for non-stackable items or when quantity is 0, deletes the asset; for stackable items where quantity is less than the current quantity, reduces the quantity; otherwise deletes the asset
 - `ReleaseAndEmit`: Releases an item and emits RELEASED compartment status event
+- `ReleaseOnceAndEmit`: Releases an item under an idempotency claim so an at-least-once redelivery of the RELEASE command cannot release the asset twice; skips the operation and returns nil if the transaction was already applied
 - `MergeAndSort`: Groups stackable items by (templateId, ownerId, flag), merges quantities up to slotMax, deletes excess assets, then sorts by templateId within each inventory type
 - `ArrangeAndEmit`: Arranges storage and emits ARRANGED event
 - `ExpireAndEmit`: Deletes an expired asset from storage; if a replacement item ID is provided, creates a new asset for the replacement; emits EXPIRED event
@@ -101,7 +103,7 @@ Represents a stored item within storage. The asset model is a unified flat struc
 - `slot`: int16 - Position within storage
 - `templateId`: uint32 - Item template identifier
 - `expiration`: time.Time - Expiration timestamp
-- Stackable fields: `quantity` (uint32), `ownerId` (uint32), `flag` (uint16), `rechargeable` (uint64)
+- Stackable fields: `quantity` (uint32), `ownerId` (uint32), `owner` (string), `flag` (uint16), `rechargeable` (uint64)
 - Equipment fields: `strength`, `dexterity`, `intelligence`, `luck`, `hp`, `mp`, `weaponAttack`, `magicAttack`, `weaponDefense`, `magicDefense`, `accuracy`, `avoidability`, `hands`, `speed`, `jump`, `slots` (all uint16); `levelType`, `level` (byte); `experience`, `hammersApplied` (uint32)
 - Cash fields: `cashId` (int64), `commodityId` (uint32), `purchaseBy` (uint32)
 - Pet reference: `petId` (uint32)

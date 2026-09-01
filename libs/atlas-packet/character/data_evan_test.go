@@ -10,29 +10,6 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-func TestIsEvanJob(t *testing.T) {
-	for _, c := range []struct {
-		job  uint16
-		want bool
-	}{
-		{2001, true},
-		{2200, true},
-		{2210, true},
-		{2218, true},
-		{2299, true},
-		{0, false},
-		{100, false},
-		{312, false},
-		{2000, false},
-		{2100, false},
-		{2300, false},
-	} {
-		if got := isEvanJob(c.job); got != c.want {
-			t.Errorf("isEvanJob(%d) = %v, want %v", c.job, got, c.want)
-		}
-	}
-}
-
 // TestEvanExtendedSPv84 pins the Evan extended-SP block: on GMS v84+ an Evan job
 // writes a 1-byte count (0 for a freshly-created Evan) instead of the 2-byte
 // single SP short. The v84 client (GW_CharacterStat::DecodeExtendSP) reads that

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	npc2 "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
@@ -21,6 +22,17 @@ func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		oid := p.Oid()
+
+		// Player NPCs (PRD FR-7.4 / design §7.3) are non-interactive and
+		// never present in atlas-data's per-map NPC list -- their oids live
+		// in the reserved band [PlayerNpcObjectIdBase, MinId), never in the
+		// WZ life-index range GetInMapByObjectId searches. A click on one
+		// must be a no-op, not the anti-cheat disconnect below (task-251
+		// bug report §3).
+		if oid >= objectid.PlayerNpcObjectIdBase && oid < objectid.MinId {
+			l.Debugf("Character [%d] clicked non-interactive Player NPC [%d]; ignoring.", s.CharacterId(), oid)
+			return
+		}
 
 		n, err := npcData.NewProcessor(l, ctx).GetInMapByObjectId(s.MapId(), oid)
 		if err != nil {

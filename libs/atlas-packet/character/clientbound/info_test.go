@@ -145,13 +145,15 @@ func TestCharacterInfo_CoverCarriesArbitraryValue(t *testing.T) {
 // CWvsContext::OnCharacterInfo @0xb0aa6e:
 //
 //	Decode4(charId), Decode1(level), Decode2(job), Decode2(fame), Decode1(married),
-//	DecodeStr(guild), DecodeStr(alliance), Decode4(v32)+Decode4(p) consumed by
-//	SetUserInfo, Decode1(medalInfo byte), Decode1(pet flag)→SetMultiPetInfo (per-pet
+//	DecodeStr(guild), DecodeStr(alliance), Decode4 @0xb0ab0f + Decode4 @0xb0ab19
+//	(unidentified, pushed to CUIUserInfo::SetUserInfo, stored at +670/+671 —
+//	sent as 0), Decode1(medalInfo byte), Decode1(pet flag)→SetMultiPetInfo (per-pet
 //	Decode4/Str/1/2/1/2/4, bool-terminated @0x9bb959), Decode1(mount flag)+3×Decode4,
 //	Decode1(wish count)+count×int, SomethingMonsterBook @0x70522a (5×Decode4),
 //	MedalAchievementInfo::Decode @0x9bcacf (Decode4 medalId + Decode2 quest count),
-//	then a trailing Decode4 count (jms-only; codec emits 0). The trailing int is the
-//	4-byte jms delta over v83 (99 vs 95 bytes).
+//	then a trailing Decode4 count (jms-only; codec emits 0). The body is 107 bytes:
+//	the previous 99-byte wire (proven 8 bytes short, root cause 1 of
+//	bug-jms185-naked-avatar-red-equips.md) plus the two int32s above.
 func TestCharacterInfoJMSGolden(t *testing.T) {
 	v := pt.Variants[4] // JMS v185
 	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -162,9 +164,31 @@ func TestCharacterInfoJMSGolden(t *testing.T) {
 
 	got := in.Encode(nil, ctx)(nil)
 	want, _ := hex.DecodeString(
-		"393000003264000a00000900546573744775696c6400000001404b4c0005004b697474790fc80050000000000000000107000000d20400002a00000002104a0f00114a0f00050000000a000000030000000d000000e1502400f76c1100000000000000")
+		"393000003264000a00000900546573744775696c64000000000000000000000001404b4c0005004b697474790fc80050000000000000000107000000d20400002a00000002104a0f00114a0f00050000000a000000030000000d000000e1502400f76c1100000000000000")
 	if !bytes.Equal(got, want) {
 		t.Errorf("jms CharacterInfo wire (len got=%d want=%d):\n got %x\nwant %x", len(got), len(want), got, want)
+	}
+}
+
+// TestCharacterInfoJMSByteLength pins the JMS body length for a character with
+// no guild, no alliance, no pets, no mount, and no wishlist — the crash-session
+// shape from bug-jms185-naked-avatar-red-equips.md root cause 1 (48 bytes on the
+// wire, 56 required by CWvsContext::OnCharacterInfo @0xb0aa6e) — and round-trips
+// it through Decode.
+func TestCharacterInfoJMSByteLength(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	in := NewCharacterInfo(41, 200, 412, 0, "", nil, nil, 0, MonsterBookInfo{}, MountInfo{}, false)
+	out := CharacterInfo{}
+	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
+
+	got := in.Encode(nil, ctx)(nil)
+	const wantLen = 56
+	if len(got) != wantLen {
+		t.Errorf("jms CharacterInfo body length: got %d want %d", len(got), wantLen)
+	}
+	if out.CharacterId() != in.CharacterId() || out.Level() != in.Level() || out.JobId() != in.JobId() {
+		t.Errorf("round-trip mismatch: got charId=%d level=%d job=%d, want charId=%d level=%d job=%d",
+			out.CharacterId(), out.Level(), out.JobId(), in.CharacterId(), in.Level(), in.JobId())
 	}
 }
 

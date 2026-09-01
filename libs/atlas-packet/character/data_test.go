@@ -9,6 +9,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 
@@ -272,8 +273,8 @@ func TestCharacterDataWithSkillsRoundTrip(t *testing.T) {
 				}
 				// NeedsMasterLevel is derived from the id on both sides, so it
 				// must agree without being carried on the wire.
-				if s.NeedsMasterLevel != skill.NeedsMasterLevel(skill.Id(input.Skills[i].Id), true) {
-					t.Errorf("skill[%d] needsMasterLevel: got %v, want %v", i, s.NeedsMasterLevel, skill.NeedsMasterLevel(skill.Id(input.Skills[i].Id), true))
+				if s.NeedsMasterLevel != job.NeedsMasterLevel(skill.Id(input.Skills[i].Id), v.Region, v.MajorVersion) {
+					t.Errorf("skill[%d] needsMasterLevel: got %v, want %v", i, s.NeedsMasterLevel, job.NeedsMasterLevel(skill.Id(input.Skills[i].Id), v.Region, v.MajorVersion))
 				}
 				if s.NeedsMasterLevel && s.MasterLevel != input.Skills[i].MasterLevel {
 					t.Errorf("skill[%d] masterLevel: got %v, want %v", i, s.MasterLevel, input.Skills[i].MasterLevel)

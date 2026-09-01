@@ -26,6 +26,7 @@ Persists a character's last-known field (world, channel, map, instance).
 | channel_id | channel.Id | Not null |
 | map_id | uint32 | Not null |
 | instance | UUID | Not null, default '00000000-0000-0000-0000-000000000000' |
+| state | string | Not null, default 'OFFLINE' |
 | updated_at | timestamp | Not null |
 
 ## Relationships
@@ -94,3 +95,11 @@ Tenant-scoped, in-memory registry of active Mist values, keyed by mist id within
 | Key | Value |
 |-----|-------|
 | (tenant, mistId) | Mist |
+
+### Jukebox Registry
+
+Singleton registry tracking active jukebox playback per map instance. State is not persisted. Expired entries are removed by the jukebox task.
+
+| Key | Value |
+|-----|-------|
+| FieldKey | JukeboxEntry |

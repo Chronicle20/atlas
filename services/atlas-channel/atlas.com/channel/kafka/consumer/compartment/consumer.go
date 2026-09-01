@@ -1,6 +1,7 @@
 package compartment
 
 import (
+	"atlas-channel/character/snapshot"
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/kafka/message/compartment"
 	"atlas-channel/listener"
@@ -59,6 +60,31 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentCreationFailedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotCompartmentCreated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotCompartmentDeleted(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotCompartmentCapacityChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotMergeComplete(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotSortComplete(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -180,5 +206,74 @@ func statusMessageBodyFor(errorCode string) (func(logrus.FieldLogger, context.Co
 		return charpkt.CharacterStatusMessageDropPickUpItemUnavailableBody(), true
 	default:
 		return nil, false
+	}
+}
+
+// --- task-122 snapshot maintenance (additive) ---
+
+// A compartment the snapshot has never seen: refetch rather than synthesize
+// (bulk shape change — event-coverage.md §4).
+func handleSnapshotCompartmentCreated(sc server.Model, _ writer.Producer) message.Handler[compartment.StatusEvent[compartment.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.CreatedStatusEventBody]) {
+		if e.Type != compartment.StatusEventTypeCreated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateInventory(t, e.CharacterId)
+	}
+}
+
+func handleSnapshotCompartmentDeleted(sc server.Model, _ writer.Producer) message.Handler[compartment.StatusEvent[compartment.DeletedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.DeletedStatusEventBody]) {
+		if e.Type != compartment.StatusEventTypeDeleted {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateInventory(t, e.CharacterId)
+	}
+}
+
+func handleSnapshotCompartmentCapacityChanged(sc server.Model, _ writer.Producer) message.Handler[compartment.StatusEvent[compartment.CapacityChangedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.CapacityChangedEventBody]) {
+		if e.Type != compartment.StatusEventTypeCapacityChanged {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateInventory(t, e.CharacterId)
+	}
+}
+
+func handleSnapshotMergeComplete(sc server.Model, _ writer.Producer) message.Handler[compartment.StatusEvent[compartment.MergeCompleteEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.MergeCompleteEventBody]) {
+		if e.Type != compartment.StatusEventTypeMergeComplete {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateInventory(t, e.CharacterId)
+	}
+}
+
+func handleSnapshotSortComplete(sc server.Model, _ writer.Producer) message.Handler[compartment.StatusEvent[compartment.SortCompleteEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.SortCompleteEventBody]) {
+		if e.Type != compartment.StatusEventTypeSortComplete {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateInventory(t, e.CharacterId)
 	}
 }

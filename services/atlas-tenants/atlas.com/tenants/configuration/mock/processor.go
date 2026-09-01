@@ -82,6 +82,16 @@ type ProcessorMock struct {
 	GetKiteConfigFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
 	KiteConfigProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Player NPC config operations
+	CreatePlayerNpcConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error)
+	CreatePlayerNpcConfigAndEmitFunc func(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error)
+	UpdatePlayerNpcConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error)
+	UpdatePlayerNpcConfigAndEmitFunc func(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error)
+	DeletePlayerNpcConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) error
+	DeletePlayerNpcConfigAndEmitFunc func(tenantID uuid.UUID) error
+	GetPlayerNpcConfigFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
+	PlayerNpcConfigProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Imprint config operations
 	CreateImprintConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error)
 	CreateImprintConfigAndEmitFunc func(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error)
@@ -989,6 +999,82 @@ func (m *ProcessorMock) GetKiteConfig(tenantID uuid.UUID) (map[string]interface{
 func (m *ProcessorMock) KiteConfigProvider(tenantID uuid.UUID) model.Provider[map[string]interface{}] {
 	if m.KiteConfigProviderFunc != nil {
 		return m.KiteConfigProviderFunc(tenantID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// CreatePlayerNpcConfig is a mock implementation
+func (m *ProcessorMock) CreatePlayerNpcConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+	if m.CreatePlayerNpcConfigFunc != nil {
+		return m.CreatePlayerNpcConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+		return func(cfg map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreatePlayerNpcConfigAndEmit is a mock implementation
+func (m *ProcessorMock) CreatePlayerNpcConfigAndEmit(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error) {
+	if m.CreatePlayerNpcConfigAndEmitFunc != nil {
+		return m.CreatePlayerNpcConfigAndEmitFunc(tenantID, cfg)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdatePlayerNpcConfig is a mock implementation
+func (m *ProcessorMock) UpdatePlayerNpcConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+	if m.UpdatePlayerNpcConfigFunc != nil {
+		return m.UpdatePlayerNpcConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(cfg map[string]interface{}) (configuration.Model, error) {
+		return func(cfg map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// UpdatePlayerNpcConfigAndEmit is a mock implementation
+func (m *ProcessorMock) UpdatePlayerNpcConfigAndEmit(tenantID uuid.UUID, cfg map[string]interface{}) (configuration.Model, error) {
+	if m.UpdatePlayerNpcConfigAndEmitFunc != nil {
+		return m.UpdatePlayerNpcConfigAndEmitFunc(tenantID, cfg)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeletePlayerNpcConfig is a mock implementation
+func (m *ProcessorMock) DeletePlayerNpcConfig(mb *message.Buffer) func(tenantID uuid.UUID) error {
+	if m.DeletePlayerNpcConfigFunc != nil {
+		return m.DeletePlayerNpcConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) error {
+		return nil
+	}
+}
+
+// DeletePlayerNpcConfigAndEmit is a mock implementation
+func (m *ProcessorMock) DeletePlayerNpcConfigAndEmit(tenantID uuid.UUID) error {
+	if m.DeletePlayerNpcConfigAndEmitFunc != nil {
+		return m.DeletePlayerNpcConfigAndEmitFunc(tenantID)
+	}
+	return nil
+}
+
+// GetPlayerNpcConfig is a mock implementation
+func (m *ProcessorMock) GetPlayerNpcConfig(tenantID uuid.UUID) (map[string]interface{}, error) {
+	if m.GetPlayerNpcConfigFunc != nil {
+		return m.GetPlayerNpcConfigFunc(tenantID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// PlayerNpcConfigProvider is a mock implementation
+func (m *ProcessorMock) PlayerNpcConfigProvider(tenantID uuid.UUID) model.Provider[map[string]interface{}] {
+	if m.PlayerNpcConfigProviderFunc != nil {
+		return m.PlayerNpcConfigProviderFunc(tenantID)
 	}
 	return func() (map[string]interface{}, error) {
 		return map[string]interface{}{}, nil

@@ -12,33 +12,38 @@ The channel service acts as the primary interface between game clients and the b
 
 - Kafka - Message bus for event consumption and command production
 - Jaeger - Distributed tracing
+- Redis - Battleship ship-HP counter storage
 - External REST services:
   - ACCOUNTS - Account data
   - BUDDIES - Buddy list data
   - BUFFS - Character buff data
-  - CASHSHOP - Cash shop inventory, wallet, and wishlist
+  - CASHSHOP - Cash shop inventory, wallet, wishlist, and couple/friendship ring pairs
   - CHAIRS - Chair state
   - CHALKBOARDS - Chalkboard state
   - CHANNELS - Channel registration
-  - CHARACTERS - Character data
+  - CHARACTERS - Character data, pending changes (name change / world transfer), and teleport-rock map lists
   - CONFIGURATIONS - Service and tenant configuration
   - DATA - Static game data (maps, NPCs, skills, portals, quests, cash items)
   - DOORS - Mystic Door state
+  - DRAGONS - Evan dragon state
   - DROPS - Drop state
   - EFFECTIVE_STATS - Session-effective character stats
+  - GACHAPONS - Incubator (Pigmy Egg) reward selection
   - GUILDS - Guild data
   - GUILD_THREADS - Guild BBS
   - INVENTORY - Character inventory (compartments and unified assets)
   - KEYS - Key bindings
-  - MAPS - Map character tracking and durable character location
+  - MAPS - Map character tracking, durable character location, and active jukebox track
   - MERCHANT - Personal shop / hired merchant state, listings, blacklist, visit list, Frederick status, and owl-of-Minerva shop search
   - MESSENGERS - Messenger rooms
+  - MINI_GAMES - Omok/Memory-match mini-game room state
   - MONSTER_BOOK - Monster-book collection and owned cards
   - MONSTERS - Monster state
   - MOUNTS - Mount progression
   - MTS - MTS marketplace listings, holdings, transactions, and wishlist
   - NOTES - Mail notes
   - NPC_SHOP - NPC shop data
+  - PARCEL - Duey parcel custody
   - PARTIES - Party data
   - PARTY_QUESTS - Party quest timers
   - PETS - Pet data
@@ -49,6 +54,7 @@ The channel service acts as the primary interface between game clients and the b
   - STORAGE - Storage data and projections
   - SUMMONS - Summon (puppet/Beholder/etc.) state
   - TENANTS - Per-tenant MTS configuration
+  - TRADES - Player trade room state
   - WEATHER - Weather state
   - WORLDS - World data
 
@@ -77,17 +83,21 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_CONSUMABLE_STATUS | Consumable status events |
 | EVENT_TOPIC_CONVERSATION_REWARD_NOTICE | Conversation-sourced item gain/loss notice events |
 | EVENT_TOPIC_DROP_STATUS | Drop status events |
+| EVENT_TOPIC_DRAGON_STATUS | Evan dragon status events |
+| EVENT_TOPIC_EVENT_VISUAL | Generalized environment visual events |
 | EVENT_TOPIC_EXPRESSION | Expression events |
 | EVENT_TOPIC_FAME_STATUS | Fame status events |
 | EVENT_TOPIC_GACHAPON_REWARD_WON | Gachapon reward won events |
 | EVENT_TOPIC_GUILD_STATUS | Guild status events |
 | EVENT_TOPIC_GUILD_THREAD_STATUS | Guild thread status events |
+| EVENT_TOPIC_INCUBATOR_RESULT | Incubator (Pigmy Egg) result events |
 | EVENT_TOPIC_INSTANCE_TRANSPORT | Instance transport events |
 | EVENT_TOPIC_INVITE_STATUS | Invite status events |
 | EVENT_TOPIC_MAP_STATUS | Map status events |
 | EVENT_TOPIC_MERCHANT_STATUS | Personal shop / hired merchant status events |
 | EVENT_TOPIC_MERCHANT_LISTING | Merchant listing events |
 | EVENT_TOPIC_MESSENGER_STATUS | Messenger status events |
+| EVENT_TOPIC_MINI_GAME_STATUS | Mini-game room status events |
 | EVENT_TOPIC_MIST | Mist / affected-area create and destroy events |
 | EVENT_TOPIC_MONSTER_BOOK_STATUS | Monster-book status events |
 | EVENT_TOPIC_MONSTER_STATUS | Monster status events |
@@ -98,15 +108,21 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_PARTY_STATUS | Party status events |
 | EVENT_TOPIC_PARTY_MEMBER_STATUS | Party member status events |
 | EVENT_TOPIC_PARTY_QUEST_STATUS | Party quest status events |
+| EVENT_TOPIC_PARCEL_STATUS | Duey parcel arrival/sent/received events |
 | EVENT_TOPIC_PET_STATUS | Pet status events |
+| EVENT_TOPIC_CHARACTER_PENDING_CHANGE | Pending name-change / world-transfer status events |
 | EVENT_TOPIC_QUEST_STATUS | Quest status events |
 | EVENT_TOPIC_REACTOR_STATUS | Reactor status events |
+| EVENT_TOPIC_REPORT_STATUS | Player report submission outcome events |
+| EVENT_TOPIC_RPS | RPS game session events |
 | EVENT_TOPIC_SAGA_STATUS | Saga status events |
 | EVENT_TOPIC_SESSION_STATUS | Session status events |
 | EVENT_TOPIC_SKILL_STATUS | Skill status events |
 | EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS | Storage compartment status events |
 | EVENT_TOPIC_STORAGE_STATUS | Storage status events |
 | EVENT_TOPIC_SUMMON_STATUS | Summon status events |
+| EVENT_TOPIC_TELEPORT_ROCK_STATUS | Teleport-rock map-list registration outcome events |
+| EVENT_TOPIC_TRADE_STATUS | Player trade room status events |
 | EVENT_TOPIC_TRANSPORT_STATUS | Transport status events |
 | EVENT_TOPIC_WALLET_STATUS | NX wallet balance-updated events |
 | COMMAND_TOPIC_ACCOUNT_SESSION | Account session commands |
@@ -122,6 +138,7 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_MERCHANT | Personal shop / hired merchant commands |
 | COMMAND_TOPIC_COMPARTMENT | Compartment commands |
 | COMMAND_TOPIC_CONSUMABLE | Consumable commands |
+| COMMAND_TOPIC_DRAGON | Evan dragon commands |
 | COMMAND_TOPIC_DROP | Drop commands |
 | COMMAND_TOPIC_EXPRESSION | Expression commands |
 | COMMAND_TOPIC_FAME | Fame commands |
@@ -129,6 +146,8 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_GUILD_THREAD | Guild thread commands |
 | COMMAND_TOPIC_INVITE | Invite commands |
 | COMMAND_TOPIC_MESSENGER | Messenger commands |
+| COMMAND_TOPIC_MINI_GAME | Mini-game room commands |
+| COMMAND_TOPIC_MIST | Mist / affected-area create and cancel commands |
 | COMMAND_TOPIC_MONSTER | Monster commands |
 | COMMAND_TOPIC_MONSTER_BOOK | Monster-book commands |
 | COMMAND_TOPIC_MONSTER_MOVEMENT | Monster movement commands |
@@ -144,6 +163,8 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_QUEST | Quest commands |
 | COMMAND_TOPIC_QUEST_CONVERSATION | Quest conversation commands |
 | COMMAND_TOPIC_REACTOR | Reactor commands |
+| COMMAND_TOPIC_REPORT | Player report submission commands |
+| COMMAND_TOPIC_RPS | RPS game session commands |
 | COMMAND_TOPIC_SAGA | Saga commands |
 | COMMAND_TOPIC_SKILL | Skill commands |
 | COMMAND_TOPIC_SKILL_MACRO | Skill macro commands |
@@ -151,6 +172,10 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_SUMMON | Summon commands |
 | COMMAND_TOPIC_SYSTEM_MESSAGE | System message commands |
 | COMMAND_TOPIC_TAMING_MOB_FOOD | Taming-mob (mount) food consumption commands |
+| COMMAND_TOPIC_TELEPORT_ROCK | Teleport-rock map-list registration commands |
+| COMMAND_TOPIC_TRADE | Player trade room commands |
+| REDIS_URL | Redis connection address (battleship ship-HP counter storage) |
+| REDIS_PASSWORD | Redis password |
 | REST_PORT | HTTP port for the debug/readiness endpoints |
 | DRAIN_DEADLINE_MS | Per-listener drain deadline in milliseconds on teardown (default 5000, capped at 10000) |
 | MONSTER_INFO_CACHE_ENABLED | Enables the in-process monster template attack-data cache (default true) |

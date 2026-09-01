@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
+	"atlas-channel/character/snapshot"
 	npc2 "atlas-channel/data/npc"
 	dataskill "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect/statup"
@@ -85,6 +86,21 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPeriodicEffect(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotBuffApplied(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotBuffExpired(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotBuffStatUpdated(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -617,4 +633,68 @@ var battleshipStateTTLFunc = func(l logrus.FieldLogger, ctx context.Context, lev
 		return 0
 	}
 	return time.Duration(e.Duration()) * time.Millisecond
+}
+
+// --- task-122 snapshot maintenance (additive) ---
+
+// handleSnapshotBuffApplied projects one APPLIED status event into the
+// character snapshot registry's buff feed. Update-only: the registry's
+// mutate path never creates an entry for a character it has not seen
+// (character/snapshot/registry.go), so a redelivery or an event for an
+// unbackfilled character is a safe no-op.
+func handleSnapshotBuffApplied(sc server.Model, _ writer.Producer) message.Handler[buff2.StatusEvent[buff2.AppliedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.AppliedStatusEventBody]) {
+		if e.Type != buff2.EventStatusTypeBuffApplied {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
+			return
+		}
+		changes := make([]stat.Model, 0, len(e.Body.Changes))
+		for _, cm := range e.Body.Changes {
+			changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
+		}
+		snapshot.GetRegistry().UpsertBuff(t, e.CharacterId,
+			buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt, e.Body.NoExpiry))
+	}
+}
+
+// handleSnapshotBuffExpired removes the expired buff's sourceId from the
+// character snapshot registry's buff feed. Update-only, same as APPLIED
+// above.
+func handleSnapshotBuffExpired(sc server.Model, _ writer.Producer) message.Handler[buff2.StatusEvent[buff2.ExpiredStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.ExpiredStatusEventBody]) {
+		if e.Type != buff2.EventStatusTypeBuffExpired {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
+			return
+		}
+		snapshot.GetRegistry().RemoveBuff(t, e.CharacterId, e.Body.SourceId)
+	}
+}
+
+// handleSnapshotBuffStatUpdated invalidates the character snapshot
+// registry's buff component on a STAT_UPDATED event (bug-shadow-buffs-dead-code
+// part 2): atlas-buffs emits STAT_UPDATED when a buff's Amount is mutated in
+// place (character/processor.go UpdateStatValue — Aran Combo orb count,
+// Energy Charge), and the buff feed otherwise has no handler for it, so a
+// buff read via GetBuffs() after an in-place mutation would be frozen at its
+// APPLIED-time value. Invalidate rather than apply in place — the thin-event
+// pattern (design.md §2): the next read refetches the mutated value over
+// REST rather than this handler reconstructing it from the event's changes.
+// Update-only, same as APPLIED/EXPIRED above.
+func handleSnapshotBuffStatUpdated(sc server.Model, _ writer.Producer) message.Handler[buff2.StatusEvent[buff2.StatUpdatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.StatUpdatedStatusEventBody]) {
+		if e.Type != buff2.EventStatusTypeStatUpdated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateBuffs(t, e.CharacterId)
+	}
 }

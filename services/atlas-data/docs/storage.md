@@ -126,6 +126,7 @@ The `documents` table stores all data types in a single table with the `type` co
 
 Document types:
 - CASH
+- CASH_PACKAGE
 - CHARACTER_TEMPLATE
 - COMMODITY
 - CONSUMABLE

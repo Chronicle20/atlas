@@ -78,6 +78,10 @@ The service makes outbound REST calls to fetch data from other services:
   }
   ```
 
+### Skill Service (SKILLS)
+
+- `GET /characters/{id}/skills` - Fetch a character's skills (paginated; drained page by page)
+
 ### Monster Service (MONSTERS)
 
 - `POST /worlds/{worldId}/channels/{channelId}/maps/{mapId}/monsters` - Create monster instance

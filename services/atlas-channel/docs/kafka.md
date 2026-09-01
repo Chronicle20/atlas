@@ -348,6 +348,95 @@
 - Start Offset: last
 - Purpose: Receives world-broadcast queue status events for the Maple TV and avatar megaphone families, gated by `sc.IsWorld` (fans out to every channel in the world). QUEUED sends a `TvSendMessageResultWriter` success ack to the sender, TV family only. STARTED renders and announces to every session on the pod's channel: `TvSetMessageWriter` (TV family; message type resolved from the tenant `messageTypes` writer table) or the SetAvatarMegaphone writer (AVATAR family). ENDED announces the TvClearMessage or ClearAvatarMegaphone writer to every session on the pod's channel.
 
+### EVENT_TOPIC_DRAGON_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventCreatedBody]`, `StatusEvent[StatusEventMovedBody]`, `StatusEvent[StatusEventDestroyedBody]`
+- Envelope: `StatusEvent[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), OwnerCharacterId (uint32), Type (string), Body (E)
+- Type Discriminators: `CREATED`, `MOVED`, `DESTROYED`
+- Start Offset: last
+- Purpose: Receives Evan dragon lifecycle events from atlas-dragons.
+
+### EVENT_TOPIC_EVENT_VISUAL
+- Direction: Event
+- Message Type: `VisualEvent[ShowVisualBody]`, `VisualEvent[HideVisualBody]`
+- Envelope: `VisualEvent[E]` with fields: OccurrenceId (uuid.UUID), WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Type (string), Body (E)
+- Type Discriminators: `SHOW`, `HIDE`
+- Start Offset: last
+- Purpose: Receives generalized environment visual events from atlas-events (e.g. `CONTI_MOVE`, the Crimson Balrog enemy-ship visual) and renders the corresponding writer already registered on the channel side.
+
+### EVENT_TOPIC_INCUBATOR_RESULT
+- Direction: Event
+- Message Type: `ResultEvent` (flat struct)
+- Body Fields: characterId, worldId, channelId, itemId, count, eggId
+- Start Offset: last
+- Purpose: Receives the outcome of an incubator (Pigmy Egg) roll and announces the result to the character.
+
+### EVENT_TOPIC_MINI_GAME_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[E]` with per-type bodies (`RecordBody`, `CreatedEventBody`, `ErrorEventBody`, `EnteredEventBody`, `LeftEventBody`, `RoomClosedEventBody`, `ChatEventBody`, `EmptyEventBody`, `StartedEventBody`, `StonePlacedEventBody`, `PutStoneErrorEventBody`, `CardFlippedEventBody`, `AnswerEventBody`, `SkippedEventBody`, `GameEndedEventBody`, `BalloonEventBody`)
+- Envelope: `StatusEvent[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), RoomId (uint32), OwnerId (uint32), VisitorId (uint32), CharacterId (uint32), Type (string), Body (E)
+- Type Discriminators: `CREATED`, `CREATE_ERROR`, `ENTERED`, `ENTER_ERROR`, `LEFT`, `ROOM_CLOSED`, `CHAT`, `READY`, `UNREADY`, `STARTED`, `STONE_PLACED`, `PUT_STONE_ERROR`, `CARD_FLIPPED`, `TIE_REQUESTED`, `TIE_ANSWERED`, `RETREAT_REQUESTED`, `RETREAT_ANSWERED`, `SKIPPED`, `GAME_ENDED`, `BALLOON_UPDATED`
+- Start Offset: last
+- Purpose: Receives Omok/Memory-match mini-game room lifecycle events from atlas-mini-games.
+
+### COMMAND_TOPIC_PARCEL
+- Direction: Command (inbound)
+- Message Type: `ShowParcelCommand` (flat struct)
+- Type Discriminators: `SHOW_PARCEL`
+- Body Fields: transactionId, worldId, channelId, characterId, npcId, quick, type
+- Start Offset: last
+- Purpose: Receives a command from atlas-saga-orchestrator to display the Duey parcel dialog for a character (NPC path when `quick` is false, Quick Delivery Ticket path when true).
+
+### EVENT_TOPIC_PARCEL_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventParcelArrivedBody]`, `StatusEvent[StatusEventParcelSentBody]`, `StatusEvent[StatusEventParcelReceivedBody]`
+- Envelope: `StatusEvent[E]` with fields: CharacterId (uint32), Type (string), Body (E)
+- Type Discriminators: `PARCEL_ARRIVED`, `PARCEL_SENT`, `PARCEL_RECEIVED`
+- Start Offset: last
+- Purpose: Receives Duey parcel arrival/sent/received notifications from atlas-parcel, addressed to the parcel's recipient (or sender, for `PARCEL_SENT`) by CharacterId.
+
+### EVENT_TOPIC_CHARACTER_PENDING_CHANGE
+- Direction: Event
+- Message Type: `StatusEvent[ResolvedEventBody]`
+- Envelope: `StatusEvent[E]` with fields: TransactionId (uuid.UUID), CharacterId (uint32), WorldId (world.Id), Type (string), Body (E)
+- Type Discriminators: `PENDING_CHANGE_CREATED`, `PENDING_CHANGE_RESOLVED`
+- Body Fields: pendingChangeId, changeType (NAME_CHANGE/WORLD_TRANSFER), status (PENDING/APPLIED/CANCELLED/REJECTED/EXPIRED), reason, requestedName, destinationWorldId
+- Start Offset: last (no `kafka.EnvHeaderParser`; header parsers: span, tenant)
+- Purpose: Receives pending-change (name change / world transfer) lifecycle events from atlas-character.
+
+### EVENT_TOPIC_REPORT_STATUS
+- Direction: Event
+- Message Type: `StatusEvent` (flat struct)
+- Type Discriminators: `CREATED`, `ERROR`
+- Body Fields: reportId, kind (sue/claim), worldId, reporterId, status, errorCode (NOT_FOUND/INTERNAL/QUOTA_EXCEEDED), hasRemaining, remaining
+- Start Offset: last
+- Purpose: Receives the outcome of a sue/claim report submission from atlas-ban.
+
+### EVENT_TOPIC_RPS
+- Direction: Event
+- Message Type: `Event[GameOpenedEventBody]`, `Event[RoundStartedEventBody]`, `Event[RoundResultEventBody]`, `Event[GameEndedEventBody]`
+- Envelope: `Event[E]` with fields: CharacterId (uint32), WorldId (world.Id), ChannelId (channel.Id), Type (string), Body (E)
+- Type Discriminators: `GAME_OPENED`, `ROUND_STARTED`, `ROUND_RESULT`, `GAME_ENDED`
+- Start Offset: last
+- Purpose: Receives rock-paper-scissors NPC game session events from atlas-rps.
+
+### EVENT_TOPIC_TELEPORT_ROCK_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[ListUpdatedStatusBody]`, `StatusEvent[ErrorStatusBody]`
+- Envelope: `StatusEvent[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), CharacterId (uint32), Type (string), Body (E)
+- Type Discriminators: `LIST_UPDATED`, `ERROR`
+- Body Fields: ListUpdatedStatusBody (vip, registered, maps); ErrorStatusBody (vip, reason: LIST_FULL/DUPLICATE/MAP_NOT_ALLOWED/NOT_FOUND)
+- Start Offset: last
+- Purpose: Receives teleport-rock (regular and VIP map list) registration outcome events from atlas-character.
+
+### EVENT_TOPIC_TRADE_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[E]` with per-type bodies (`RoomCreatedEventBody`, `ParticipantEnteredEventBody`, `InviteSentEventBody`, `ItemStagedEventBody`, `MesoStagedEventBody`, `MesoRefusedEventBody`, `ItemRefusedEventBody`, `ParticipantConfirmedEventBody`, `AttestationRequestedEventBody`, `SettledEventBody`, `CancelledEventBody`, `InviteRejectedEventBody`, `ErrorEventBody`, `ChatEventBody`)
+- Envelope: `StatusEvent[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), RoomId (uuid.UUID), Handle (uint32), RoomType (byte), OwnerId (character.Id), VisitorId (character.Id), CharacterId (character.Id), Type (string), Body (E)
+- Type Discriminators: `ROOM_CREATED`, `INVITE_SENT`, `INVITE_REJECTED`, `PARTICIPANT_ENTERED`, `ITEM_STAGED`, `ITEM_REFUSED`, `MESO_STAGED`, `MESO_REFUSED`, `PARTICIPANT_CONFIRMED`, `ATTESTATION_REQUESTED`, `SETTLED`, `CANCELLED`, `ERROR`, `CHAT`
+- Start Offset: last
+- Purpose: Receives player trade mini-room lifecycle events from atlas-trades.
+
 ### COMMAND_TOPIC_CHANNEL_STATUS
 - Direction: Command (inbound)
 - Message Type: Channel status commands
@@ -436,6 +525,13 @@
 - Message Type: `Command[RequestItemConsumeBody]`, `Command[RequestScrollBody]`
 - Purpose: Issues consumable item use commands. REQUEST_ITEM_CONSUME uses a consumable item (Source, ItemId, Quantity). REQUEST_SCROLL applies a scroll to equipment (ScrollSlot, EquipSlot, WhiteScroll, LegendarySpirit).
 
+### COMMAND_TOPIC_DRAGON
+- Direction: Command
+- Message Type: `Command[CreateCommandBody]`, `Command[DestroyCommandBody]`, `Command[MoveCommandBody]`
+- Envelope: `Command[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), Type (string), Body (E)
+- Type Discriminators: `CREATE`, `DESTROY`, `MOVE`
+- Purpose: Issues Evan dragon create/destroy/move commands to atlas-dragons, keyed on the owner character id.
+
 ### COMMAND_TOPIC_DOOR
 - Direction: Command
 - Message Type: `Command[E]` with envelope fields worldId, channelId, mapId, instance, ownerCharacterId, type, body
@@ -482,6 +578,20 @@
 - Type Discriminators: `PLACE_SHOP`, `OPEN_SHOP`, `CLOSE_SHOP`, `ENTER_SHOP`, `EXIT_SHOP`, `SEND_MESSAGE`, `ENTER_MAINTENANCE`, `EXIT_MAINTENANCE`, `ADD_LISTING`, `REMOVE_LISTING`, `PURCHASE_BUNDLE`, `RECORD_ITEM_SEARCH`, `WITHDRAW_MESO`, `ORGANIZE_LISTINGS`, `ADD_BLACKLIST`, `REMOVE_BLACKLIST`
 - Purpose: Issues personal shop / hired merchant commands. PLACE_SHOP registers a new shop (shopType, title, mapId, instanceId, x, y, permitItemId). OPEN_SHOP / CLOSE_SHOP toggle shop lifecycle. ENTER_SHOP (carries visitorName) / EXIT_SHOP track visitor presence. SEND_MESSAGE relays shop chat (content). ENTER_MAINTENANCE / EXIT_MAINTENANCE toggle owner management mode. ADD_LISTING adds an item to the shop (resolved itemId, itemType, assetId, and a full item snapshot, plus inventoryType, slot, bundleCount, bundleSize, pricePerBundle). REMOVE_LISTING removes a listing by index. PURCHASE_BUNDLE buys a listing (listingIndex, bundleCount). RECORD_ITEM_SEARCH increments the owl item-search count (itemId). WITHDRAW_MESO withdraws the shop's accrued meso. ORGANIZE_LISTINGS compacts the listing order. ADD_BLACKLIST / REMOVE_BLACKLIST maintain the shop blacklist (name; ADD may carry a bannedCharacterId to eject a current visitor).
 - Note: The `merchant2.Command` type also defines `UPDATE_LISTING` (`CommandUpdateListingBody`); the channel service defines no producer for it.
+
+### COMMAND_TOPIC_MINI_GAME
+- Direction: Command
+- Message Type: `Command[E]` with per-type bodies (`CreateCommandBody`, `VisitCommandBody`, `ChatCommandBody`, `MoveStoneCommandBody`, `FlipCardCommandBody`, `AnswerCommandBody`, `EmptyCommandBody`)
+- Envelope: `Command[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), CharacterId (uint32), Type (string), Body (E)
+- Type Discriminators: `CREATE`, `VISIT`, `LEAVE`, `CHAT`, `READY`, `UNREADY`, `START`, `MOVE_STONE`, `FLIP_CARD`, `REQUEST_TIE`, `ANSWER_TIE`, `GIVE_UP`, `REQUEST_RETREAT`, `ANSWER_RETREAT`, `EXPEL`, `SKIP`, `EXIT_AFTER_GAME`, `CANCEL_EXIT_AFTER_GAME`
+- Purpose: Issues Omok/Memory-match mini-game room lifecycle and gameplay commands to atlas-mini-games.
+
+### COMMAND_TOPIC_MIST
+- Direction: Command
+- Message Type: `Command[CreateCommandBody]`, `Command[CancelCommandBody]`
+- Envelope: `Command[E]` with fields: Tenant (uuid.UUID), Type (string), Body (E)
+- Type Discriminators: `CREATE`, `CANCEL`
+- Purpose: Issues mist (affected-area / skill-zone) create and cancel commands to atlas-maps, keyed on the map id. Tenant is resolved from Kafka headers, not the envelope body.
 
 ### COMMAND_TOPIC_MESSENGER
 - Direction: Command
@@ -571,6 +681,20 @@
 - Message Type: `Command[HitCommandBody]`
 - Purpose: Issues reactor hit commands
 
+### COMMAND_TOPIC_REPORT
+- Direction: Command
+- Message Type: `Command[CreateCommandBody]`
+- Type Discriminators: `CREATE`
+- Body Fields: kind (sue/claim), worldId, channelId, reporterId, accusedId, accusedName, reasonType, description, chatClaim, chatLog
+- Purpose: Issues a player report (/-command "sue" or CUIClaim window "claim") to atlas-ban.
+
+### COMMAND_TOPIC_RPS
+- Direction: Command
+- Message Type: `Command[BeginCommandBody]`, `Command[SelectCommandBody]`, `Command[ContinueCommandBody]`, `Command[CollectCommandBody]`, `Command[RetryCommandBody]`
+- Envelope: `Command[E]` with fields: CharacterId (uint32), WorldId (world.Id), ChannelId (channel.Id), Type (string), Body (E)
+- Type Discriminators: `BEGIN`, `SELECT`, `CONTINUE`, `COLLECT`, `RETRY`
+- Purpose: Issues rock-paper-scissors NPC game session commands to atlas-rps.
+
 ### COMMAND_TOPIC_SAGA
 - Direction: Command
 - Message Type: Saga commands
@@ -599,6 +723,20 @@
 - Envelope: `Command[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), SummonId (uint32), Type (string), Body (E)
 - Type Discriminators: `SPAWN`, `MOVE`, `ATTACK`, `DAMAGE`
 - Purpose: Issues summon commands to atlas-summons. SPAWN creates an owner-bound summon (carries AURA_OF_THE_BEHOLDER/HEX_OF_THE_BEHOLDER levels for a Beholder summon). MOVE repositions a summon and rebroadcasts the raw movement blob. ATTACK credits the owner for a list of {monster, reported damage} targets. DAMAGE decrements a puppet summon's HP.
+
+### COMMAND_TOPIC_TELEPORT_ROCK
+- Direction: Command
+- Message Type: `Command[AddMapCommandBody]`, `Command[RemoveMapCommandBody]`
+- Envelope: `Command[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), CharacterId (uint32), Type (string), Body (E)
+- Type Discriminators: `ADD_MAP`, `REMOVE_MAP`
+- Purpose: Issues teleport-rock (regular and VIP) map-list registration commands to atlas-character.
+
+### COMMAND_TOPIC_TRADE
+- Direction: Command
+- Message Type: `Command[E]` with per-type bodies (`CreateRoomCommandBody`, `InviteCommandBody`, `DeclineInviteCommandBody`, `EnterRoomCommandBody`, `PutItemCommandBody`, `AddMesoCommandBody`, `ConfirmCommandBody`, `TransactionCommandBody`, `CancelCommandBody`, `ChatCommandBody`)
+- Envelope: `Command[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), CharacterId (character.Id), Type (string), Body (E)
+- Type Discriminators: `CREATE_ROOM`, `INVITE`, `DECLINE_INVITE`, `ENTER_ROOM`, `PUT_ITEM`, `ADD_MESO`, `CONFIRM`, `TRANSACTION`, `CANCEL`, `CHAT`
+- Purpose: Issues player trade mini-room commands to atlas-trades, keyed on the acting character.
 
 ### COMMAND_TOPIC_TAMING_MOB_FOOD
 - Direction: Command

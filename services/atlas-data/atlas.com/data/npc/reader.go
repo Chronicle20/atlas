@@ -66,6 +66,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.TrunkGet = node.GetIntegerWithDefault("trunkGet", 0)
 			m.Storebank = node.GetIntegerWithDefault("storebank", 0) == 1
 			m.HideName = node.GetIntegerWithDefault("hideName", 0) == 1
+			m.Imitate = node.GetIntegerWithDefault("imitate", 0) == 1
 
 			// Parse dialog collision box
 			m.DcLeft = node.GetIntegerWithDefault("dcLeft", 0)

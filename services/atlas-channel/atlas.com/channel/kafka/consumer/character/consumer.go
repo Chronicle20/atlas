@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/combo"
+	"atlas-channel/character/snapshot"
 	dragoncmd "atlas-channel/dragon"
 	consumer2 "atlas-channel/kafka/consumer"
 	mapconsumer "atlas-channel/kafka/consumer/map"
@@ -91,6 +92,26 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventJobChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotStatChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotLevelChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotExperienceChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotMapChanged(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -528,5 +549,73 @@ func handleStatusEventJobChanged(sc server.Model, wp writer.Producer) message.Ha
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(event.CharacterId, func(s session.Model) error {
 			return dragoncmd.NewProcessor(l, ctx).Create(s.Field(), event.CharacterId)
 		})
+	}
+}
+
+// --- task-122 snapshot maintenance (additive; packet behavior above is untouched) ---
+
+// handleSnapshotStatChanged projects STAT_CHANGED into the character
+// snapshot: complete absolute Values apply in place; anything less
+// invalidates the core component (invalidate-and-refetch, never guess).
+func handleSnapshotStatChanged(sc server.Model, _ writer.Producer) message.Handler[character2.StatusEvent[character2.StatusEventStatChangedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventStatChangedBody]) {
+		if e.Type != character2.StatusEventTypeStatChanged {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
+			return
+		}
+		snapshot.GetRegistry().ApplyStatChanged(t, e.CharacterId, e.Body.Updates, e.Body.Values)
+	}
+}
+
+func handleSnapshotLevelChanged(sc server.Model, _ writer.Producer) message.Handler[character2.StatusEvent[character2.LevelChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.LevelChangedStatusEventBody]) {
+		if e.Type != character2.StatusEventTypeLevelChanged {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
+			return
+		}
+		snapshot.GetRegistry().SetLevel(t, e.CharacterId, e.Body.Current)
+	}
+}
+
+func handleSnapshotExperienceChanged(sc server.Model, _ writer.Producer) message.Handler[character2.StatusEvent[character2.ExperienceChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ExperienceChangedStatusEventBody]) {
+		if e.Type != character2.StatusEventTypeExperienceChanged {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
+			return
+		}
+		snapshot.GetRegistry().SetExperience(t, e.CharacterId, e.Body.Current)
+	}
+}
+
+// handleSnapshotMapChanged keeps the position overlay honest across warps:
+// Mystic-Door-style warps carry exact coordinates; portal warps invalidate
+// position AND core so the next attack's core refetch carries fresh REST
+// X/Y (exactly today's source) until the first movement packet re-feeds
+// the overlay (design §10.4).
+func handleSnapshotMapChanged(sc server.Model, _ writer.Producer) message.Handler[character2.StatusEvent[character2.StatusEventMapChangedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventMapChangedBody]) {
+		if e.Type != character2.StatusEventTypeMapChanged {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !sc.IsWorld(t, e.WorldId) {
+			return
+		}
+		r := snapshot.GetRegistry()
+		if e.Body.UseTargetPosition {
+			r.SetPosition(t, e.CharacterId, e.Body.TargetX, e.Body.TargetY)
+			return
+		}
+		r.InvalidatePosition(t, e.CharacterId)
+		r.InvalidateCore(t, e.CharacterId)
 	}
 }

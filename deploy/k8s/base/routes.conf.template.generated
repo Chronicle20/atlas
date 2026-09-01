@@ -582,6 +582,11 @@ location ~ ^/api/notes(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/player-npcs(/.*)?$ {
+  set $u "atlas-player-npcs.${NS_ATLAS_PLAYER_NPCS}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/rankings(/.*)?$ {
   set $u "atlas-rankings.${NS_ATLAS_RANKINGS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

@@ -1,18 +1,22 @@
 package movement
 
 import (
-	dmap "atlas-channel/data/map"
-	"atlas-channel/data/npc"
-	movement2 "atlas-channel/kafka/message/movement"
-	_map2 "atlas-channel/map"
+	"atlas-channel/character/snapshot"
 	"atlas-channel/monster"
-	monsterinfo "atlas-channel/monster/information"
-	controllernpc "atlas-channel/npc/controller"
+	"atlas-channel/npc"
 	"atlas-channel/pet"
 	"atlas-channel/position"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
+	dmap "atlas-channel/data/map"
+
+	movement2 "atlas-channel/kafka/message/movement"
+	_map2 "atlas-channel/map"
+
+	monsterinfo "atlas-channel/monster/information"
+	controllernpc "atlas-channel/npc/controller"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -70,6 +74,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
+	// Fold the packet to its final position synchronously and feed the
+	// character snapshot BEFORE anything else observes this packet: this is
+	// the same fold the Kafka command carries, minus the Kafka->Redis->REST
+	// round-trip — the freshest position this pod can know (task-122
+	// FR-2.5). Update-only: characters without a snapshot entry no-op.
+	ms, foldErr := model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
+	if foldErr == nil {
+		snapshot.GetRegistry().SetPosition(p.t, characterId, ms.X, ms.Y)
+	}
+
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(charpkt.CharacterMovementWriter)(charpkt.NewCharacterMovement(characterId, movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
@@ -78,12 +92,11 @@ func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement
 		}
 	})
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
-		ms, err := model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
-		if err != nil {
+		if foldErr != nil {
 			return
 		}
 		position.GetRegistry().Put(p.t, characterId, position.Position{X: ms.X, Y: ms.Y})
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
+		err := producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -93,6 +106,13 @@ func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement
 
 // TeleportCharacter is documented on the Processor interface.
 func (p *ProcessorImpl) TeleportCharacter(f field.Model, characterId uint32, x int16, y int16) error {
+	// Feed the character snapshot BEFORE anything else observes this
+	// teleport, mirroring ForCharacter's synchronous feed: the freshest
+	// position this pod can know (task-122 FR-2.5). x/y are already the
+	// final position, so there is no fold here. Update-only: characters
+	// without a snapshot entry no-op.
+	snapshot.GetRegistry().SetPosition(p.t, characterId, x, y)
+
 	position.GetRegistry().Put(p.t, characterId, position.Position{X: x, Y: y})
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		err := producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, x, y, 0, 0))
@@ -105,7 +125,7 @@ func (p *ProcessorImpl) TeleportCharacter(f field.Model, characterId uint32, x i
 
 func (p *ProcessorImpl) ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error {
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
-		n, err := npc.NewProcessor(p.l, p.ctx).GetInMapByObjectId(f.MapId(), objectId)
+		templateId, err := npc.ResolveTemplate(p.l, p.ctx, f, objectId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
@@ -119,7 +139,7 @@ func (p *ProcessorImpl) ForNPC(f field.Model, characterId uint32, objectId uint3
 		op := session.Announce(p.l)(p.ctx)(p.wp)(npcpkt.NpcActionWriter)(npcpkt.NewNpcActionMove(objectId, unk, unk2, movement).Encode)
 		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), characterId)
+			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", templateId, characterId)
 		}
 		// Relay to every other session (task-176): non-controllers no
 		// longer run NPC AI locally, so the controller's actions are their
@@ -211,6 +231,20 @@ func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId u
 			ackMp = computeAckMp(ackMp, pos0, info.Attacks())
 		}
 	}
+	// Fold the packet to its final position synchronously and feed the live
+	// mirror BEFORE anything else observes this packet: this is the same
+	// fold the Kafka command carries, minus the Kafka->Redis->REST
+	// round-trip — the freshest position this pod can know (task-122
+	// FR-5.1 — serves the reflect bounds check without a REST read).
+	// Update-only: monsters without a mirror entry no-op. Fed pre-snap
+	// (before SnapMobPosition below) so the live mirror reflects the same
+	// point the fold produced, independent of the map-foothold lookup that
+	// only the Kafka command path needs.
+	ms, foldErr := model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
+	if foldErr == nil {
+		monster.GetLiveMirror().UpdatePosition(p.t, objectId, ms.X, ms.Y)
+	}
+
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		// v83 protocol: the wire-level "useSkills" bool in MoveMonsterAck
 		// is actually the controller's aggro flag. The client uses it to
@@ -228,22 +262,20 @@ func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId u
 			p.l.Debugf("Inbox: serving predicted skill (%d,%d) into MoveMonsterAck for monster [%d].", skillIdByte, skillLevelByte, objectId)
 		}
 		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementAckWriter)(monsterpkt.NewMonsterMovementAck(objectId, moveId, ackMp, useSkills, skillIdByte, skillLevelByte).Encode)
-		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
+		err := p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", objectId, characterId)
 		}
 	})
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementWriter)(monsterpkt.NewMonsterMovement(objectId, false, skillPossible, false, skill, skillId, skillLevel, mt, rt, movement).Encode)
-		err = _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
+		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", objectId, f.MapId())
 		}
 	})
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
-		var ms summary
-		ms, err = model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
-		if err != nil {
+		if foldErr != nil {
 			return
 		}
 		// Snap y to (foothold surface - 1) so the stored mob position is
@@ -260,8 +292,8 @@ func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId u
 		// Mirrors atlas-data/map/processor.go::snapToGround which does the
 		// same -1 adjustment for fresh spawn-point positions; this covers
 		// the post-movement path that snapToGround does not.
-		ms.X, ms.Y = dmap.SnapMobPosition(p.l, p.ctx, f.MapId(), ms.X, ms.Y, ms.Fh)
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
+		x, y := dmap.SnapMobPosition(p.l, p.ctx, f.MapId(), ms.X, ms.Y, ms.Fh)
+		err := producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, x, y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}

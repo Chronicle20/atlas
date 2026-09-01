@@ -4,7 +4,7 @@
 
 | Environment Variable | Topic Purpose |
 |---------------------|---------------|
-| `COMMAND_TOPIC_SKILL` | Skill commands (create, update, set cooldown, delete, transfer SP) |
+| `COMMAND_TOPIC_SKILL` | Skill commands (create, update, set cooldown, reset cooldowns, delete, transfer SP) |
 | `COMMAND_TOPIC_SKILL_MACRO` | Macro update commands |
 | `EVENT_TOPIC_CHARACTER_STATUS` | Character status events (logout, deleted) |
 
@@ -55,6 +55,15 @@
 |-------|------|-------------|
 | skillId | uint32 | Skill identifier |
 | cooldown | uint32 | Cooldown duration in seconds |
+
+#### RESET_COOLDOWNS
+
+Clears every active cooldown for the character except the listed skill ids. Registry-only; does not touch the database. Emits one COOLDOWN_EXPIRED status event per cleared skill.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| exceptSkillIds | []uint32 | Skill ids to leave untouched |
+| sourceSkillId | uint32 | Observability-only identifier of the triggering skill; generic senders may pass 0 |
 
 #### REQUEST_DELETE
 
@@ -225,6 +234,7 @@ Deletes all skills, macros, and cooldowns for the character.
 
 - Skill CREATE, UPDATE, and saga-compensation DELETE, and macro UPDATE operations run inside a database transaction; on success, the resulting status event is enqueued to the transactional outbox (`atlas-outbox` library) within the same transaction, then drained asynchronously to Kafka.
 - SET_COOLDOWN operates on Redis (no database transaction) and emits its status event directly to Kafka via the producer, outside the outbox.
+- RESET_COOLDOWNS operates on Redis (no database transaction) and emits its status events directly to Kafka via the producer, outside the outbox.
 - TRANSFER_SP's skill and macro row mutations run inside a single database transaction; on success, the resulting status event (SP_TRANSFERRED or ERROR) is emitted directly to Kafka via the producer after that transaction commits, outside the outbox. A rejected transfer emits ERROR without a database transaction.
 - COOLDOWN_EXPIRED (background expiration task) operates on Redis (no database transaction) and is emitted directly to Kafka via the producer, outside the outbox.
 - Messages are partitioned by character ID.

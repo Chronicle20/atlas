@@ -60,6 +60,8 @@ None.
 | HOLY_SYMBOL | exp | Additive: `1.0 + (amount / 100.0)` |
 | MESO_UP | meso | Direct: `amount / 100.0` |
 | CURSE | exp | Fixed: `0.5` (amount ignored) |
+| EXP_BUFF_RATE | exp | Direct: `amount / 100.0` |
+| ITEM_UP_BY_ITEM | item_drop | Direct: `amount / 100.0` |
 
 ### World Rate Events
 

@@ -97,22 +97,264 @@ The narrowing is safe only because every commit in the range gets gated by
 not blindly `HEAD~1`. The flagless pre-PR run always uses the merge base and
 covers the branch as a whole regardless.
 
+## Host tuning (WSL2)
+
+`/tmp` is a tmpfs — RAM, not disk — and WSL2 sizes it at 50% of the VM's RAM
+by default. On a host measured with ~64 GiB and 24 logical CPUs, the VM
+currently gets 31 GiB by that default, and every stale scratch file left in
+`/tmp` is RAM taken from the compilers doing the build. This section is host
+state, not repo state — none of it is applied by checking out this branch.
+Task 7's preflight *detects* whether it has been applied and reports the
+un-tuned condition; it does not assume this section was followed.
+
+### `.wslconfig` — give the VM the memory and CPU the host actually has
+
+Location: `C:\Users\<windows-user>\.wslconfig` (a placeholder — never a
+literal home path).
+
+```ini
+[wsl2]
+memory=52GB
+processors=24
+swap=16GB
+```
+
+Apply with `wsl --shutdown` from a Windows shell, then restart the WSL2
+session.
+
+### `/etc/fstab` — pin `/tmp` after the memory bump
+
+WSL2's default `/tmp` sizing rule is 50% of VM RAM. Applied *after* the
+`.wslconfig` bump above, that default would make `/tmp` 26 GiB — worse than
+the 16 GiB it is today. Pin it explicitly instead:
+
+```
+tmpfs /tmp tmpfs rw,nosuid,nodev,size=4G,nr_inodes=1048576 0 0
+```
+
+### `TMPDIR` — move scratch off tmpfs
+
+```sh
+export TMPDIR=/var/tmp/atlas/scratch
+```
+
+Set in the user's shell profile (e.g. `~/.bashrc` or `~/.zshrc`). The repo
+deliberately does **not** ship a tracked `.envrc` for this: an untracked
+personal `.envrc` already exists in the main checkout and is not gitignored,
+so a tracked one would break `git checkout` of this branch there. Relocating
+`CLAUDE_JOB_DIR` is best-effort where the harness permits it; `TMPDIR` is the
+load-bearing control — it is what `tools/scratch-sweep.sh`'s default root
+(`/var/tmp/atlas/scratch`) is meant to align with.
+
+### Sweeper — systemd user timer
+
+`tools/scratch-sweep.sh` ages entries out of the scratch root; give it a
+daily systemd **user** timer rather than relying on manual runs. Drop these
+two unit files in the user systemd directory
+(`~/.config/systemd/user/`, again a placeholder, never a literal home path):
+
+`atlas-scratch-sweep.service`:
+
+```ini
+[Unit]
+Description=Sweep atlas scratch root
+
+[Service]
+Type=oneshot
+ExecStart=<repo-root>/tools/scratch-sweep.sh
+```
+
+`atlas-scratch-sweep.timer`:
+
+```ini
+[Unit]
+Description=Daily atlas scratch sweep
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable with:
+
+```sh
+systemctl --user enable --now atlas-scratch-sweep.timer
+```
+
+### Build slots
+
+`tools/lib/build-slot.sh` is a machine-wide counting semaphore: K slots,
+shared by every worktree and every session on the host, so N concurrent
+sessions cannot all run a heavy build gate at once and thrash the box. Task 7
+wires it into `tools/verify.sh` itself; it also works standalone through the
+CLI wrapper, `tools/with-build-slot.sh`.
+
+**Why K=4.** The host measured earlier in this section has 24 logical CPUs
+and, after the `.wslconfig` bump above, 52 GiB of VM memory. The per-slot
+budget one heavy gate run actually uses is:
+
+| resource | value |
+|---|---|
+| `GOMAXPROCS` | 6 |
+| `go build -p` | 6 |
+| `go test -p` | 2 |
+| BuildKit `max-parallelism` | 8 (`deploy/buildkit/buildkitd.toml`) |
+
+Four slots at 6 threads apiece cover the 24-thread budget without
+oversubscribing it, and each slot's peak memory footprint (a `go build`, a
+`go test`, and a BuildKit solve) fits inside 52 GiB / 4. A fifth concurrent
+gate would either wait for a slot or blow through both budgets at once —
+that's the failure mode this broker exists to prevent.
+
+**What's slotted.** Exactly two phases of `verify.sh` acquire a machine-wide
+slot: the bake (`docker buildx bake`, through the CLI wrapper, since it runs
+as an external process) and the Go pool (`launch_go_layers`, held around the
+function itself, and only when `-race` is actually running — a `--quick` pass
+never competes for a slot). Everything else in `verify.sh` is deliberately
+NOT slotted: `go vet` (part of the unslotted half of `go_layer`, cheap next to
+`go build`/`go test -race`), the analyzer/lint/format guards, and the
+`--facts` path, which executes no check at all.
+
+**Usage.** A caller that runs the guarded work as a subprocess should use the
+CLI wrapper:
+
+```sh
+tools/with-build-slot.sh verify -- tools/verify.sh
+```
+
+A caller that needs to hold the slot around a shell *function* — as
+`tools/verify.sh` does around `launch_go_layers` — cannot use the wrapper (a
+slot held by a subprocess releases the instant that subprocess exits, before
+the guarded work even starts) and instead sources the library directly:
+
+```sh
+. tools/lib/build-slot.sh
+acquire_build_slot "verify" || exit $?
+...
+release_build_slot
+```
+
+**The exit-75 contract.** Both the library and the CLI use exit code 75
+(`EX_TEMPFAIL` from `sysexits.h`) to mean "gave up waiting for a slot," never
+"the guarded command itself failed." Pass `--timeout SEC` (CLI) or set
+`ATLAS_BUILD_SLOT_TIMEOUT` (library) to bound the wait; unset/absent blocks
+until a slot frees. The wait itself is a blocking `flock`, not a polling
+loop, so it costs no inference turns while it waits.
+
+**The GOMODCACHE lock.** `tools/tidy-all-go.sh` takes an exclusive `flock` on
+`/var/tmp/atlas/gomodcache.lock` (override with `ATLAS_GOMODCACHE_LOCK`)
+around its whole sweep, before it walks a single module. This is a different
+mechanism from the build slots above: the slots are a *counting* semaphore
+bounding CPU/RAM across concurrent heavy gates, while this is an *exclusive*
+mutex protecting a shared mutable store — `GOMODCACHE` is machine-global
+while worktrees are not, so two sessions running `go mod tidy`/`go mod
+download` against it at once is the one genuinely unsafe concurrency in the
+build system. Nothing else acquires this lock; `tools/verify.sh` and the
+build slots never touch it.
+
+### Capacity preflight
+
+Before the Go-module block, a non-`--quick` run gates on a `preflight
+(capacity)` check: free RAM and free space under `TMPDIR` must clear a floor
+before the heavy phases are allowed to start. This fails CLOSED — a starved
+host fails the gate rather than proceeding into a slow, possibly-flaky build
+— and it is off the `--quick` path entirely, so the fast inner loop is never
+blocked by it.
+
+| threshold | env override | default |
+|---|---|---|
+| free RAM | `ATLAS_MIN_FREE_MB` | 4096 (MiB) |
+| free space under `TMPDIR` | `ATLAS_MIN_TMP_MB` | 8192 (MiB) |
+
+The preflight also reports — never assumes — the un-tuned WSL2 condition from
+"Host tuning (WSL2)" above: when `TMPDIR` resolves under `/tmp`, it prints a
+pointer back to that section, because `/tmp` being tmpfs on this host is host
+state that checking out this branch cannot apply.
+
 ## The Go layer
 
 Per changed module: `go build ./...`, `go vet ./...`, `go test -race ./...`.
+The build and test steps carry the per-slot budgets from "Build slots" above
+— `GOMAXPROCS=6`, `go build -p 6`, `go test -p 2` (each overridable via
+`ATLAS_GOMAXPROCS`, `ATLAS_GO_P`, `ATLAS_GO_TEST_P`) — so a module's own
+internal parallelism stays inside the slot it is running in rather than
+oversubscribing the host. `go vet` takes no `-p`; it is not a valid flag for
+that subcommand.
 
-A change to `go.work` or a shared lib fans out to every module, and the script
-expands the set accordingly: services consume libs through the workspace, so a
-lib edit can break a service with no changed file of its own.
+A change to `go.work` fans out to every module: it is the workspace
+membership list itself, not a require edge, so there is nothing narrower to
+compute from it.
+
+A change under `libs/` fans out to its transitive reverse-dependency closure
+over the workspace `require` graph (Layer 5, `tools/lib/module-graph.sh`),
+not to every module: services consume libs through the workspace, so a lib
+edit can break a consumer with no changed file of its own, but it cannot
+break a module that never named the lib, directly or transitively. The graph
+is built once per run by reading every workspace `go.mod`'s `module` line and
+`require` entries — both the single-line and block forms, and `// indirect`
+requires count as real edges — then BFS'd from the changed lib(s) over
+reverse edges. `ATLAS_LIBS_FANOUT=all` is the one-variable escape hatch back
+to the old "any `libs/` change reaches every module" behaviour, for whenever
+the closure is in doubt.
+
+`go.work.sum` is deliberately **not** treated as a fan-out trigger: it is a
+checksum artifact of resolving the workspace, and an ordinary local
+`go build`/`go mod tidy` dirties it with no `require`-graph edge actually
+changing. Before Layer 5 this mattered less because any `libs/` or `go.work`
+change fanned out fully anyway; narrowing the `libs/` case to a closure while
+leaving `go.work.sum` unanchored in the `go.work` match would have left a
+second, silent path back to the full 89+-module fan-out — the common case in
+daily use, not an edge case. A real `require`-graph edit that happens to also
+dirty `go.work.sum` is still caught on its own merits, either as a `go.work`
+change or as the `libs/`/`services/` path that actually changed.
 
 `go vet` runs full-module here on purpose. The lint guard's `govet` is
 diff-gated (`--new-from-rev`), so it will not see a pre-existing vet failure in
 a file you happened to touch.
 
+Modules build through a bounded worker pool: `ATLAS_VERIFY_GO_JOBS` workers run
+concurrently (default `4`), not one `go build`/`vet`/`test -race` at a time —
+significant on a `libs/`/`go.work` fan-out, where the change set can be every
+module in the workspace. Each worker's output is captured to a per-module log
+and replayed through the same `step()` bookkeeping in module order once the
+pool drains, so a failure still reads as one labelled block naming its module,
+and the summary's `PASSED`/`FAILED` counts are exactly what a serial run would
+report — concurrency changes wall time only, never what gets reported or in
+what order. Override the worker count with `ATLAS_VERIFY_GO_JOBS=<n>`; `0` or
+a non-numeric value is rejected at startup.
+
 ## The docker layer
 
-`docker buildx bake atlas-<svc>` for every service whose `go.mod` changed.
-**This is mandatory, not optional.**
+The repo-root `.dockerignore` is an allowlist (`*` then `!libs`, `!services`),
+not a blocklist: only `libs/` and `services/` reach any root-context build.
+Every existing root-context Dockerfile only `COPY`s from those two trees, so
+today nothing is lost. Adding a new root-context Dockerfile (or a `COPY` line
+that reaches outside `libs/`/`services/` in an existing one) means it silently
+loses that content unless the `.dockerignore` gets another `!` line first —
+check this before adding one.
+
+`docker buildx bake` over every target whose `go.mod` changed — all selected
+targets in a **single** invocation, not one bake per target: one context
+transfer instead of one per target. A failure is BuildKit's own solve output
+naming the failing target and step. **This is mandatory, not optional.**
+
+This paragraph previously also claimed that BuildKit shares the `libs/`
+mod-only and source layers across targets within the solve. **Measured on
+task-286, it does not.** A full `all-go-services` bake produced 67 distinct
+vertices for one byte-identical `COPY libs/atlas-constants` step — one per
+target — and 73 `CACHED` vertices out of ~4231 overall. The cause is
+structural in the shared root `Dockerfile`, not a BuildKit limitation:
+`Dockerfile:27-28` runs `RUN test -n "${SERVICE}"` above every `libs/` COPY, so
+each target's chain diverges before the first shared layer, and `Dockerfile:64`
+copies `services/${SERVICE}/` above the full-source `libs/` COPYs. The single
+invocation is still worth it for the one-context-transfer reason above; the
+cross-target layer saving is simply not something this Dockerfile currently
+gets. See `docs/tasks/task-286-build-verify-concurrency/measurements.md`,
+"Layer 4 - builder", for the raw evidence and for the reordering that would
+enable the sharing (unmeasured, not yet done).
 
 The shared root `Dockerfile` is parameterized by `ARG SERVICE`; `docker-bake.hcl`
 enumerates one target per Go service, driven by `.github/config/services.json`
@@ -139,6 +381,36 @@ in the mod-only block, one in the source block) and one `./libs/<name>` line in
 
 For large refactors expect several fix-and-rebuild cycles. Do not shortcut the
 bake step.
+
+### The builder
+
+`docker buildx bake` runs against a pinned `atlas` builder
+(`docker-container` driver), not the default `docker` driver — the default
+driver's build cache is unbounded and its parallelism is ungoverned.
+`tools/buildx-bootstrap.sh` creates and selects it, from
+`deploy/buildkit/buildkitd.toml`, which caps solve parallelism at 8 and
+enforces a two-tier GC policy: aggressively-reclaimable cache (local
+sources, cache mounts, git checkouts) is evicted first at a 40 GB/7-day
+threshold, then a hard 60 GB ceiling applies regardless of type. `verify.sh`
+asserts the builder exists (`tools/buildx-bootstrap.sh --check`) before its
+bake step and fails closed if it does not.
+
+Editing `deploy/buildkit/buildkitd.toml` requires
+`tools/buildx-bootstrap.sh --force` to take effect — buildx cannot update an
+existing builder's config in place; `--force` removes and recreates it.
+
+The `docker-container` driver does not write to the local image store by
+default, unlike `docker`. `tools/build-services.sh` — whose entire purpose is
+producing runnable `<svc>:local` images — therefore always passes `--load`.
+`verify.sh`'s own bake stays `--set '*.output=type=cacheonly'` and needs no
+`--load`, since it never intends to produce an image.
+
+Switching to the `atlas` builder means a brand-new BuildKit instance with an
+empty cache. The first bake after `tools/buildx-bootstrap.sh` runs — for
+either `verify.sh` or `tools/build-services.sh` — is a cold cache, including
+the `/go/pkg/mod` and `/root/.cache/go-build` cache mounts the Dockerfile
+relies on. That is expected, not a regression; subsequent bakes warm the new
+builder's cache same as before.
 
 ## Adding a new service
 

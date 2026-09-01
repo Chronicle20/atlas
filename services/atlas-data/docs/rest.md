@@ -200,6 +200,41 @@ Returns a specific cash item.
 
 ---
 
+### GET /api/data/cashPackages
+
+Returns all cash packages. Paginated (default 50, max 250).
+
+#### Response Model
+
+```json
+{
+  "data": [{
+    "type": "cashPackages",
+    "id": "10000",
+    "attributes": {
+      "serialNumbers": []
+    }
+  }]
+}
+```
+
+---
+
+### GET /api/data/cashPackages/{packageId}
+
+Returns a specific cash package.
+
+#### Parameters
+
+- packageId (path): Cash package ID
+
+#### Response Model
+
+- 200: cashPackages resource
+- 404: Not found
+
+---
+
 ### GET /api/data/characters/templates
 
 Returns all character templates. Paginated (default 50, max 250).

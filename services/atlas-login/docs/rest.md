@@ -434,6 +434,34 @@ type RestModel struct {
 }
 ```
 
+### Ranking Service
+
+Base URL: `RANKINGS` environment variable
+
+#### GET /rankings/characters?ids={ids}
+
+Retrieves rankings for the given character IDs in a single bulk call. Request timeout is 2 seconds.
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| ids | string | Comma-separated list of character IDs |
+
+**Response Model**
+
+```go
+type RestModel struct {
+    Id          uint32    `json:"-"`
+    WorldId     world.Id  `json:"worldId"`
+    Rank        uint32    `json:"rank"`
+    RankMove    int32     `json:"rankMove"`
+    JobRank     uint32    `json:"jobRank"`
+    JobRankMove int32     `json:"jobRankMove"`
+    ComputedAt  time.Time `json:"computedAt"`
+}
+```
+
 ### Guild Service
 
 Base URL: `GUILDS` environment variable

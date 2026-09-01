@@ -266,6 +266,79 @@ func TestSetFieldByteOutputV48(t *testing.T) {
 	}
 }
 
+// TestSetFieldByteOutputJMS185 pins the jms_v185 SET_FIELD (op 0x7B) clientbound
+// wire HEADER and TRAILER. IDA: CStage::OnSetField @0x7eea69
+// (MapleStory_dump_SCY.exe, IDB session a977912e) reads, in order —
+//
+//	CClientOptMan::DecodeOpt     @0x7eea92 → @0x4ae41d reads Decode2 (entry
+//	                                         count) @0x4ae430 and, per entry,
+//	                                         Decode4+Decode4 @0x4ae44d/@0x4ae455.
+//	                                         A zero count therefore consumes
+//	                                         EXACTLY the two bytes Atlas writes.
+//	Decode4(channelId)           @0x7eeaa6 → channel id (int32 LE).
+//	Decode1                      @0x7eeab6 → JMS-only byte.
+//	Decode4                      @0x7eeac1 → JMS-only int.
+//	Decode1(sNotifierMessage)    @0x7eeae4 → notifier byte.
+//	Decode1(bCharacterData)      @0x7eeaf1 → full-character-data flag.
+//	Decode2(nNotifierCheck)      @0x7eeb08 → notifier count (0 → no strings).
+//	if (bCharacterData) 3×Decode4(seeds) @0x7eebac/@0x7eebb6/@0x7eebcb.
+//	  CharacterData::Decode      @0x7eebf4 → called with bBackwardUpdate = 0;
+//	                                         pinned field-by-field by
+//	                                         character.TestCharacterDataByteOutputJMS185.
+//	  CWvsContext::OnSetLogoutGiftConfig @0x7eebfc → @0xae81c0 reads exactly four
+//	                                         Decode4s (one @0xae81cf plus a
+//	                                         three-iteration loop @0xae81e5).
+//	DecodeBuffer(p, 8)           @0x7eed25 → 8-byte timestamp.
+func TestSetFieldByteOutputJMS185(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	cd := charpkt.CharacterData{
+		Stats: charpkt.CharacterStats{
+			Id: 40, Name: "Chronicle", Level: 1,
+			Face: 20000, Hair: 30000,
+			Str: 12, Dex: 5, Int: 4, Luk: 4,
+			Hp: 50, MaxHp: 50, Mp: 5, MaxMp: 5,
+			MapId: 10000,
+		},
+		BuddyCapacity: 20,
+		Inventory: charpkt.InventoryData{
+			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+			EtcCapacity: 24, CashCapacity: 24,
+		},
+	}
+	input := SetField{
+		channelId:     channel.Id(1),
+		characterData: cd,
+		damageSeeds:   []uint32{0x11111111, 0x22222222, 0x33333333, 0x44444444},
+		timestamp:     0x0011223344556677,
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+
+	header := []byte{
+		0x00, 0x00, // CClientOptMan::DecodeOpt entry count = 0 @0x4ae430
+		0x01, 0x00, 0x00, 0x00, // channelId=1 @0x7eeaa6
+		0x00,                   // JMS byte @0x7eeab6
+		0x00, 0x00, 0x00, 0x00, // JMS int @0x7eeac1
+		0x01,       // sNotifierMessage @0x7eeae4
+		0x01,       // bCharacterData @0x7eeaf1
+		0x00, 0x00, // nNotifierCheck=0 @0x7eeb08
+		0x11, 0x11, 0x11, 0x11, // seed[0] @0x7eebac
+		0x22, 0x22, 0x22, 0x22, // seed[1] @0x7eebb6
+		0x33, 0x33, 0x33, 0x33, // seed[2] @0x7eebcb
+	}
+	trailer := []byte{
+		0x00, 0x00, 0x00, 0x00, // logout gift [0] @0xae81cf
+		0x00, 0x00, 0x00, 0x00, // logout gift [1] @0xae81e5
+		0x00, 0x00, 0x00, 0x00, // logout gift [2] @0xae81e5
+		0x00, 0x00, 0x00, 0x00, // logout gift [3] @0xae81e5
+		0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, // timestamp int64-LE @0x7eed25
+	}
+	cdBytes := pt.Encode(t, ctx, cd.Encode, nil) // pinned by TestCharacterDataByteOutputJMS185
+	expected := append(append(append([]byte{}, header...), cdBytes...), trailer...)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms_v185 set_field golden mismatch:\n got %v\nwant %v", actual, expected)
+	}
+}
+
 func TestSetFieldRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

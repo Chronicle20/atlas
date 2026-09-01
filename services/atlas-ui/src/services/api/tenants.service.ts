@@ -131,6 +131,7 @@ interface TenantConfigAttributes {
     };
   };
   mapleLife?: MapleLifeConfig;
+  diagnostics?: { tracePackets: boolean };
 }
 
 interface TenantConfig {

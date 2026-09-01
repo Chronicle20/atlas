@@ -1,0 +1,72 @@
+{
+  "service": "task-276-kafka-topic-manifest",
+  "path": "repo-wide diff dd00cd7a5..6246f8fc9",
+  "date": "2026-08-30",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-kafka/topic",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery, not eager reads wrapped in FixedProvider", "status": "pass", "evidence": "libs/atlas-kafka/topic/provider.go:14-21"},
+        {"id": "FILE-05", "name": "Builder in builder.go, domain Model in model.go, writes in administrator.go, readers in provider.go, enums in state.go", "status": "pass", "evidence": "topic/provider.go holds only Provider type + EnvProvider"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "topic/token.go (type only), topic/provider.go (provider only)"},
+        {"id": "DOM-21", "name": "No redeclaration of a type/helper/constant that already exists in libs/atlas-constants", "status": "pass", "evidence": "libs/atlas-constants/inventory/constants.go and gen/* define an unrelated item/currency Token, not a topic-name type"}
+      ]
+    },
+    {
+      "name": "libs/atlas-outbox",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-11", "name": "Providers evaluate lazily", "status": "pass", "evidence": "libs/atlas-outbox/provider.go:22-32"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "libs/atlas-outbox/bridge.go:26-35,54-71"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "bridge.go and provider.go stay single-purpose"}
+      ]
+    },
+    {
+      "name": "libs/atlas-kafka/gen",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-22", "name": "A new libs/atlas-* module is wired into the shared root Dockerfile and go.work", "status": "fail", "evidence": "go.work:1-95 has no ./libs/atlas-kafka/gen entry; Dockerfile:104-108 for-loop and COPY blocks omit atlas-kafka/gen. Deliberately excluded per tools/verify.sh:181-198 comment and precedented by libs/atlas-constants/gen (same shape), but checklist carries no documented carve-out for this shape."},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "main.go/scan.go/render_configmap.go/render_overlays.go/splice.go each single-purpose"}
+      ]
+    },
+    {
+      "name": "services/atlas-kafka-precreate",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor placement", "status": "n-a", "evidence": "no processor.go construct in this batch-job service"},
+        {"id": "FILE-02", "name": "RestModel/Transform placement", "status": "n-a", "evidence": "no rest.go / RestModel construct"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "n-a", "evidence": "no cross-service HTTP requests"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "n-a", "evidence": "no DB entity construct"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider/state placement", "status": "n-a", "evidence": "no such constructs; internal/manifest, internal/topics, internal/groups, internal/kafkaops are standalone"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "internal/manifest/manifest.go, internal/discover/discover.go, internal/topics/topics.go, internal/groups/groups.go, internal/kafkaops/ops.go each single-purpose"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "internal/manifest/manifest_test.go and siblings use tests := []struct{...} + t.Run"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "n-a", "evidence": "no go statement in main.go or internal/*"}
+      ]
+    },
+    {
+      "name": "mechanical sweep (topic.EnvProvider retyping, ~60 services)",
+      "type": "support",
+      "checks": [
+        {"id": "correctness", "name": "Every topic.EnvProvider(...)() call site checks its returned error", "status": "pass", "evidence": "312 non-test call sites swept programmatically; zero discard the error (t, _ :=)"},
+        {"id": "correctness", "name": "Startup-path call sites fail loud (Fatalf) rather than silently defaulting", "status": "pass", "evidence": "services/atlas-buffs/atlas.com/buffs/kafka/consumer/consumer.go:15-18 (61 files match this shape) -- one-time process-bootstrap path, correct to fatal"},
+        {"id": "correctness", "name": "Per-request/per-emit call sites propagate the error instead of fataling", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/skill/handler/shadow_stars.go:141-143 and .../socket/handler/character_attack_projectile.go:156-158 both return err"},
+        {"id": "DOM-30", "name": "Writes emit via AndEmit/message.Buffer pattern, not a raw producer.ProviderImpl misuse", "status": "fail", "evidence": "services/atlas-consumables/atlas.com/consumables/kafka/consumer/pickup/consumer.go:55-62 -- an already-resolved topic NAME (string) is cast to topic.Token and handed to producer.ProviderImpl, which performs a second, doomed EnvProvider resolution (libs/atlas-kafka/producer/manager.go:67); previously masked by EnvProvider's now-removed unset-variable fallback, now a hard, silent-at-runtime (log-only) failure on every emit"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-24: producertest stub installation was sampled (libs/atlas-kafka/producer, libs/atlas-kafka/gen, services/atlas-kafka-precreate) but not swept across all 142 changed _test.go files",
+    "DOM-33: interface retype (producer.Manager.Writer, producer.Provider, topic.Provider: string -> topic.Token) verified by compiling 4 sampled service modules (atlas-consumables, atlas-merchant, atlas-channel, atlas-character); the remaining ~55 touched service modules were not individually built here, relying on the concurrent repo-wide tools/verify.sh per the task brief",
+    "DOM-30 full sweep: only the resolved-name-recast-as-Token shape was mechanically searched and hand-verified across the whole tree (one confirmed instance); other classes of AndEmit/message.Buffer mishandling were not individually traced per call site"
+  ],
+  "blocking": [
+    "correctness/DOM-30: services/atlas-consumables/atlas.com/consumables/kafka/consumer/pickup/consumer.go:61 -- producer.ProviderImpl(l)(ctx)(topic.Token(t)) passes an already-resolved topic name where a token is required, causing every MONSTER_BOOK.CARD_PICKED_UP emission to fail silently (log-only) under the new fail-closed EnvProvider contract",
+    "DOM-22: libs/atlas-kafka/gen is a new module under libs/ not present in go.work use() or the root Dockerfile's COPY blocks / for-loop, per the checklist's literal pass criteria"
+  ],
+  "nonBlocking": []
+}

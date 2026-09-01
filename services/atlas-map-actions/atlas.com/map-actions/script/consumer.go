@@ -49,7 +49,10 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 
 func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		t, err := topic.EnvProvider(l)(EnvCommandTopic)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterCommandFunc(l, db)))); err != nil {
 			return err
 		}

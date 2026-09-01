@@ -40,7 +40,11 @@ func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer
 			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var handles []listener.HandlerHandle
 				var t string
-				t, _ = topic.EnvProvider(l)(session2.EnvEventStatusTopic)()
+				var err error
+				t, err = topic.EnvProvider(l)(session2.EnvEventStatusTopic)()
+				if err != nil {
+					return nil, err
+				}
 				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedAccountSessionStatusEvent(tenant, wp))))
 				if err != nil {
 					return nil, err

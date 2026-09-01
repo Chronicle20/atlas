@@ -7,8 +7,13 @@
 // types on the topic are ignored by the handler's type guard.
 package monsterstatus
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvEventTopicMonsterStatus = "EVENT_TOPIC_MONSTER_STATUS"
+	EnvEventTopicMonsterStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
+)
+
+const (
 
 	// EventMonsterStatusCreated/Killed/Destroyed are the only status types
 	// FR-B18's elimination tracking consumes (monsters.go).

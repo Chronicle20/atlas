@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -58,7 +59,7 @@ func TestExpirySweepDespawnsExpired(t *testing.T) {
 	task.newProcessor = func(l logrus.FieldLogger, ctx context.Context) Processor {
 		return &ProcessorImpl{
 			l: l, ctx: ctx, t: tenant.MustFromContext(ctx),
-			emit: func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+			emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		}
 	}
 	task.Run()

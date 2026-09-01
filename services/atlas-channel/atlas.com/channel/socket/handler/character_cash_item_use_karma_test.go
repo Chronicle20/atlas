@@ -320,7 +320,7 @@ func TestKarmaArmRefusals(t *testing.T) {
 
 			CharacterCashItemUseHandleFunc(logrus.New(), ctx, rec.producer())(s, r, map[string]interface{}{})
 
-			if got := len((*captured)[sagaMsg.EnvCommandTopic]); got != 0 {
+			if got := len((*captured)[string(sagaMsg.EnvCommandTopic)]); got != 0 {
 				t.Errorf("saga commands emitted = %d, want 0 (no state may mutate on a refusal)", got)
 			}
 			if rec.calls != tc.wantUnlock {
@@ -368,7 +368,7 @@ func TestKarmaArmSuccessCreatesTwoStepSaga(t *testing.T) {
 		t.Fatalf("announced %d packets on the success path, want 0 (success unlocks via INVENTORY_OPERATION, not this arm)", rec.calls)
 	}
 
-	msgs := (*captured)[sagaMsg.EnvCommandTopic]
+	msgs := (*captured)[string(sagaMsg.EnvCommandTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("saga commands emitted = %d, want exactly 1", len(msgs))
 	}

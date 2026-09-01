@@ -25,8 +25,11 @@ import (
 // TestMain installs a no-op producer writer so any DIRECT-path emits
 // (rejectEmit closures fired outside the outbox-bound buffer, per the D7
 // fix below) succeed instantly instead of retrying against an unreachable
-// broker for ~42s (see producertest package doc).
+// broker for ~42s (see producertest package doc). It also sets every topic
+// token env var to its own name so topic.EnvProvider resolves to the same
+// literal the tests already assert against.
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(list2.EnvStatusEventTopic), string(list2.EnvStatusEventTopic))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }
@@ -116,7 +119,7 @@ func TestRequestDeleteBuddyMissingListRoutesRejectDirect(t *testing.T) {
 
 	// The rejection must instead have been fired on the DIRECT producer
 	// path.
-	msgs := (*captured)[list2.EnvStatusEventTopic]
+	msgs := (*captured)[string(list2.EnvStatusEventTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("expected exactly 1 direct-path message on topic %s, got %d", list2.EnvStatusEventTopic, len(msgs))
 	}
@@ -242,7 +245,7 @@ func TestAcceptInviteMissingListRoutesRejectDirect(t *testing.T) {
 		t.Fatalf("expected caller-supplied buffer to be empty on a rolled-back tx (D7), got: %#v", events)
 	}
 
-	msgs := (*captured)[list2.EnvStatusEventTopic]
+	msgs := (*captured)[string(list2.EnvStatusEventTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("expected exactly 1 direct-path message on topic %s, got %d", list2.EnvStatusEventTopic, len(msgs))
 	}

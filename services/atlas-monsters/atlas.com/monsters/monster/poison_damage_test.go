@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -81,7 +82,7 @@ func newPoisonTestProcessor(t *testing.T, hp uint32) (*ProcessorImpl, tenant.Mod
 		l:    logrus.New(),
 		ctx:  ctx,
 		t:    tm,
-		emit: func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		inFieldFn: func(_ field.Model) ([]uint32, error) {
 			return nil, nil
 		},

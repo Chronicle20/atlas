@@ -16,6 +16,7 @@ import (
 
 	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -37,7 +38,7 @@ func TestEnqueueBuffer_ResolvesTokenAndPreservesBytes(t *testing.T) {
 	db := bridgeDb(t)
 	t.Setenv("EVENT_TOPIC_TEST", "real-topic-name")
 
-	contents := map[string][]kafka.Message{
+	contents := map[topic.Token][]kafka.Message{
 		"EVENT_TOPIC_TEST": {
 			{Key: []byte("k1"), Value: []byte(`{"a":1}`)},
 			{Key: []byte("k2"), Value: []byte(`{"b":2}`)},
@@ -56,27 +57,28 @@ func TestEnqueueBuffer_ResolvesTokenAndPreservesBytes(t *testing.T) {
 	require.Equal(t, []byte("k2"), ents[1].MessageKey)
 }
 
-func TestEnqueueBuffer_UnsetTokenFallsThroughToToken(t *testing.T) {
+func TestEnqueueBuffer_UnsetTokenIsAnError(t *testing.T) {
 	db := bridgeDb(t)
-	contents := map[string][]kafka.Message{
+	contents := map[topic.Token][]kafka.Message{
 		"EVENT_TOPIC_UNSET": {{Key: []byte("k"), Value: []byte("v")}},
 	}
-	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
+	require.Error(t, db.Transaction(func(tx *gorm.DB) error {
 		return outbox.EnqueueBuffer(logrus.New(), tenantCtx(t), tx, contents)
 	}))
-	var ent outbox.Entity
-	require.NoError(t, db.First(&ent).Error)
-	require.Equal(t, "EVENT_TOPIC_UNSET", ent.Topic)
+	var ents []outbox.Entity
+	require.NoError(t, db.Find(&ents).Error)
+	require.Empty(t, ents)
 }
 
 // FR-2.2 acceptance: enqueued header set == the direct path's decorator fold.
 func TestEnqueueBuffer_HeaderParityWithDirectPath(t *testing.T) {
+	t.Setenv("T", "T")
 	db := bridgeDb(t)
 	ctx := tenantCtx(t)
 
 	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
 		return outbox.EnqueueBuffer(logrus.New(), ctx, tx,
-			map[string][]kafka.Message{"T": {{Key: []byte("k"), Value: []byte("v")}}})
+			map[topic.Token][]kafka.Message{"T": {{Key: []byte("k"), Value: []byte("v")}}})
 	}))
 
 	// Direct-path reference: fold the same decorators the service-local
@@ -119,12 +121,13 @@ func TestEnqueueBuffer_HeaderParityWithDirectPath(t *testing.T) {
 // environment. Assert parity through the exported bridge entry point — the
 // path every caller actually takes.
 func TestEnqueueBuffer_HeaderParityWithDirectPath_IncludesEnvironment(t *testing.T) {
+	t.Setenv("T", "T")
 	db := bridgeDb(t)
 	ctx := env.WithContext(tenantCtx(t), env.Id("pr-123"))
 
 	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
 		return outbox.EnqueueBuffer(logrus.New(), ctx, tx,
-			map[string][]kafka.Message{"T": {{Key: []byte("k"), Value: []byte("v")}}})
+			map[topic.Token][]kafka.Message{"T": {{Key: []byte("k"), Value: []byte("v")}}})
 	}))
 
 	// Direct-path reference: fold the same decorators ProviderImpl passes
@@ -168,12 +171,13 @@ func TestEnqueueBuffer_HeaderParityWithDirectPath_IncludesEnvironment(t *testing
 // TestEnvHeaderDecoratorEmitsNothingForTheLegacyEnvironment in
 // libs/atlas-kafka/producer/header_test.go.
 func TestEnqueueBuffer_NoEnvironmentHeaderForLegacyEnvironment(t *testing.T) {
+	t.Setenv("T", "T")
 	db := bridgeDb(t)
 	ctx := tenantCtx(t)
 
 	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
 		return outbox.EnqueueBuffer(logrus.New(), ctx, tx,
-			map[string][]kafka.Message{"T": {{Key: []byte("k"), Value: []byte("v")}}})
+			map[topic.Token][]kafka.Message{"T": {{Key: []byte("k"), Value: []byte("v")}}})
 	}))
 
 	pub := &fakePublisher{}
@@ -195,7 +199,7 @@ func TestEnqueueBuffer_NoEnvironmentHeaderForLegacyEnvironment(t *testing.T) {
 
 func TestEnqueueBuffer_RowFailureReturnsError(t *testing.T) {
 	db := bridgeDb(t)
-	contents := map[string][]kafka.Message{
+	contents := map[topic.Token][]kafka.Message{
 		"T": {{Key: nil, Value: []byte("v")}}, // empty key -> Enqueue rejects
 	}
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -213,7 +217,7 @@ func TestEnqueueBuffer_WarnsWhenContextHasNoTenant(t *testing.T) {
 
 	db := bridgeDb(t)
 	t.Setenv("EVENT_TOPIC_TEST", "real-topic-name")
-	contents := map[string][]kafka.Message{
+	contents := map[topic.Token][]kafka.Message{
 		"EVENT_TOPIC_TEST": {{Key: []byte("k"), Value: []byte("v")}},
 	}
 
@@ -236,7 +240,7 @@ func TestEnqueueBuffer_SilentWhenContextHasTenant(t *testing.T) {
 
 	db := bridgeDb(t)
 	t.Setenv("EVENT_TOPIC_TEST", "real-topic-name")
-	contents := map[string][]kafka.Message{
+	contents := map[topic.Token][]kafka.Message{
 		"EVENT_TOPIC_TEST": {{Key: []byte("k"), Value: []byte("v")}},
 	}
 

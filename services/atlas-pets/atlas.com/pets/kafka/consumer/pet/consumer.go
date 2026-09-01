@@ -31,7 +31,11 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
-			t, _ = topic.EnvProvider(l)(pet2.EnvCommandTopic)()
+			var err error
+			t, err = topic.EnvProvider(l)(pet2.EnvCommandTopic)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnCommand(db)))); err != nil {
 				return err
 			}
@@ -65,7 +69,10 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRenameCommand(db)))); err != nil {
 				return err
 			}
-			t, _ = topic.EnvProvider(l)(pet2.EnvCommandTopicMovement)()
+			t, err = topic.EnvProvider(l)(pet2.EnvCommandTopicMovement)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db)))); err != nil {
 				return err
 			}

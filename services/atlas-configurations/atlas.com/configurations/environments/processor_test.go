@@ -60,7 +60,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to migrate outbox: %v", err)
 	}
 
-	t.Setenv(EnvEnvironmentStatusTopic, "EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS")
+	t.Setenv(string(EnvEnvironmentStatusTopic), "EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS")
 
 	return db
 }

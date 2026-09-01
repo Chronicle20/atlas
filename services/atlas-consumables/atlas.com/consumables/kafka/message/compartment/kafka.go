@@ -4,10 +4,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+)
+
+const (
 	CommandRequestReserve    = "REQUEST_RESERVE"
 	CommandConsume           = "CONSUME"
 	CommandDestroy           = "DESTROY"
@@ -63,7 +68,10 @@ type CreateAssetCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
+)
+
+const (
 	StatusEventTypeReserved             = "RESERVED"
 	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
 

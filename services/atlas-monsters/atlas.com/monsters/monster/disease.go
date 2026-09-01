@@ -12,6 +12,7 @@ import (
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -37,8 +38,8 @@ func debuffWireValue(skillId uint16, x int32) int32 {
 }
 
 const (
-	EnvCommandTopicCharacterBuff = "COMMAND_TOPIC_CHARACTER_BUFF"
-	EnvCommandTopicPortal        = "COMMAND_TOPIC_PORTAL"
+	EnvCommandTopicCharacterBuff topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+	EnvCommandTopicPortal        topic.Token = "COMMAND_TOPIC_PORTAL"
 )
 
 type buffCommand[E any] struct {

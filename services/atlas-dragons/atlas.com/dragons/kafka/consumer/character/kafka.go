@@ -7,10 +7,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicCharacterStatus  = "EVENT_TOPIC_CHARACTER_STATUS"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
 	StatusEventTypeLogin          = "LOGIN"
 	StatusEventTypeLogout         = "LOGOUT"
 	StatusEventTypeMapChanged     = "MAP_CHANGED"

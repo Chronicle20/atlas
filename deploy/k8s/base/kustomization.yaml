@@ -76,6 +76,7 @@ resources:
   - atlas-ui.yaml
   - atlas-world.yaml
   - env-configmap.yaml
+  - kafka-topics-configmap.yaml
   - namespace.yaml
 
 components:

@@ -4,6 +4,7 @@ import (
 	kafka "github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -21,15 +22,15 @@ func NewBufferBuilder() *BufferBuilder {
 }
 
 // AddMessage adds a message provider to the buffer
-func (bb *BufferBuilder) AddMessage(topic string, provider model.Provider[[]kafka.Message]) *BufferBuilder {
-	_ = bb.buffer.Put(topic, provider)
+func (bb *BufferBuilder) AddMessage(t topic.Token, provider model.Provider[[]kafka.Message]) *BufferBuilder {
+	_ = bb.buffer.Put(t, provider)
 	return bb
 }
 
 // AddConditionalMessage adds a message only if the condition is true
-func (bb *BufferBuilder) AddConditionalMessage(condition bool, topic string, provider model.Provider[[]kafka.Message]) *BufferBuilder {
+func (bb *BufferBuilder) AddConditionalMessage(condition bool, t topic.Token, provider model.Provider[[]kafka.Message]) *BufferBuilder {
 	if condition {
-		_ = bb.buffer.Put(topic, provider)
+		_ = bb.buffer.Put(t, provider)
 	}
 	return bb
 }

@@ -33,7 +33,11 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
-			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopic)()
+			var err error
+			t, err = topic.EnvProvider(l)(character2.EnvCommandTopic)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateCharacter(db)))); err != nil {
 				return err
 			}
@@ -100,11 +104,17 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDeleteCharacter(db)))); err != nil {
 				return err
 			}
-			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
+			t, err = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(db)))); err != nil {
 				return err
 			}
-			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
+			t, err = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChangedStatusEvent(db)))); err != nil {
 				return err
 			}

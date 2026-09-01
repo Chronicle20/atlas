@@ -89,7 +89,7 @@ func (h *harness) cancelledEvents() []trademsg.StatusEvent[trademsg.CancelledEve
 	}
 	out := make([]trademsg.StatusEvent[trademsg.CancelledEventBody], 0)
 	for _, r := range rows {
-		if r.Topic != trademsg.EnvEventTopicStatus {
+		if r.Topic != string(trademsg.EnvEventTopicStatus) {
 			continue
 		}
 		var probe struct {

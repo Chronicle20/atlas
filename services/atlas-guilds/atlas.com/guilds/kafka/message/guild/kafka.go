@@ -6,10 +6,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic                    = "COMMAND_TOPIC_GUILD"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_GUILD"
+)
+
+const (
 	CommandTypeRequestCreate           = "REQUEST_CREATE"
 	CommandTypeRequestInvite           = "REQUEST_INVITE"
 	CommandTypeRequestDisband          = "REQUEST_DISBAND"
@@ -102,7 +106,10 @@ type RequestCapacityIncreaseBody struct {
 }
 
 const (
-	EnvStatusEventTopic                = "EVENT_TOPIC_GUILD_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_GUILD_STATUS"
+)
+
+const (
 	StatusEventTypeCreated             = "CREATED"
 	StatusEventTypeDisbanded           = "DISBANDED"
 	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"

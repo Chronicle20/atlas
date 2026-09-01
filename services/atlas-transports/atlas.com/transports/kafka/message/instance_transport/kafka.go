@@ -5,11 +5,15 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_INSTANCE_TRANSPORT"
-	CommandStart    = "START"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_INSTANCE_TRANSPORT"
+)
+
+const (
+	CommandStart = "START"
 )
 
 type Command[E any] struct {
@@ -26,7 +30,10 @@ type StartCommandBody struct {
 }
 
 const (
-	EnvEventTopic           = "EVENT_TOPIC_INSTANCE_TRANSPORT"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_INSTANCE_TRANSPORT"
+)
+
+const (
 	EventTypeStarted        = "STARTED"
 	EventTypeTransitEntered = "TRANSIT_ENTERED"
 	EventTypeCompleted      = "COMPLETED"

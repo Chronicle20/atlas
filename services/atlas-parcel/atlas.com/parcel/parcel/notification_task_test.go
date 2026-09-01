@@ -17,6 +17,7 @@ import (
 
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	producertest "github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // notifyClock — T = 2026-03-01T00:00:00Z, the reference instant every
@@ -102,7 +103,7 @@ func getNotificationParcel(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uui
 // topic into its PARCEL_ARRIVED envelope.
 func decodedArrivals(t *testing.T) []parcelmsg.StatusEvent[parcelmsg.StatusEventParcelArrivedBody] {
 	t.Helper()
-	msgs := notificationCapture.Messages(parcelmsg.EnvStatusEventTopic)
+	msgs := notificationCapture.Messages(string(parcelmsg.EnvStatusEventTopic))
 	var out []parcelmsg.StatusEvent[parcelmsg.StatusEventParcelArrivedBody]
 	for _, m := range msgs {
 		var ev parcelmsg.StatusEvent[parcelmsg.StatusEventParcelArrivedBody]
@@ -123,7 +124,7 @@ func TestNotificationSweep(t *testing.T) {
 	}{
 		{name: "notifies a newly receivable parcel", run: func(t *testing.T) {
 			notificationCapture.Reset()
-			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			t.Setenv(string(parcelmsg.EnvStatusEventTopic), string(parcelmsg.EnvStatusEventTopic))
 			db := newNotificationTestDB(t)
 			tid := uuid.New()
 			id := seedNotifiableParcel(t, db, tid, nil)
@@ -144,7 +145,7 @@ func TestNotificationSweep(t *testing.T) {
 		}},
 		{name: "does not renotify", run: func(t *testing.T) {
 			notificationCapture.Reset()
-			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			t.Setenv(string(parcelmsg.EnvStatusEventTopic), string(parcelmsg.EnvStatusEventTopic))
 			db := newNotificationTestDB(t)
 			tid := uuid.New()
 			seedNotifiableParcel(t, db, tid, func(b *Builder) {
@@ -158,7 +159,7 @@ func TestNotificationSweep(t *testing.T) {
 		}},
 		{name: "not yet receivable", run: func(t *testing.T) {
 			notificationCapture.Reset()
-			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			t.Setenv(string(parcelmsg.EnvStatusEventTopic), string(parcelmsg.EnvStatusEventTopic))
 			db := newNotificationTestDB(t)
 			tid := uuid.New()
 			id := seedNotifiableParcel(t, db, tid, func(b *Builder) {
@@ -174,7 +175,7 @@ func TestNotificationSweep(t *testing.T) {
 		}},
 		{name: "resolved parcel", run: func(t *testing.T) {
 			notificationCapture.Reset()
-			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			t.Setenv(string(parcelmsg.EnvStatusEventTopic), string(parcelmsg.EnvStatusEventTopic))
 			db := newNotificationTestDB(t)
 			tid := uuid.New()
 			seedNotifiableParcel(t, db, tid, func(b *Builder) {
@@ -193,7 +194,7 @@ func TestNotificationSweep(t *testing.T) {
 			// the sweep does not skip a recipient just because it has no way of
 			// knowing whether they are online.
 			notificationCapture.Reset()
-			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			t.Setenv(string(parcelmsg.EnvStatusEventTopic), string(parcelmsg.EnvStatusEventTopic))
 			db := newNotificationTestDB(t)
 			tid := uuid.New()
 			id := seedNotifiableParcel(t, db, tid, nil)
@@ -259,13 +260,13 @@ func ptrTime(t time.Time) *time.Time { return &t }
 // unsetEnv unsets key for the duration of the test, restoring its previous
 // value (present or absent) afterward — t.Setenv alone cannot express
 // "absent," only "set to this string."
-func unsetEnv(t *testing.T, key string) {
+func unsetEnv(t *testing.T, key topic.Token) {
 	t.Helper()
-	prev, ok := os.LookupEnv(key)
-	require.NoError(t, os.Unsetenv(key))
+	prev, ok := os.LookupEnv(string(key))
+	require.NoError(t, os.Unsetenv(string(key)))
 	t.Cleanup(func() {
 		if ok {
-			_ = os.Setenv(key, prev)
+			_ = os.Setenv(string(key), prev)
 		}
 	})
 }

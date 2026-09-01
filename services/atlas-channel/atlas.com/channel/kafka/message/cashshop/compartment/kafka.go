@@ -1,9 +1,16 @@
 package compartment
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvEventTopicStatus     = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
+)
+
+const (
 	StatusEventTypeAccepted = "ACCEPTED"
 	StatusEventTypeReleased = "RELEASED"
 )

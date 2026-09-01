@@ -1,12 +1,16 @@
 package parcel
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 // EnvStatusEventTopic names the parcel status event topic — the arrival
 // notification channel to the rest of the platform. It is a sibling of
 // custody's EnvStatusTopic (kafka/message/custody/kafka.go), not the same
 // topic: custody acks saga steps, this one notifies players.
-const EnvStatusEventTopic = "EVENT_TOPIC_PARCEL_STATUS"
+const EnvStatusEventTopic topic.Token = "EVENT_TOPIC_PARCEL_STATUS"
 
 // StatusEventParcelArrived notifies a parcel's RECIPIENT that a parcel has
 // become receivable (design §7.1 — no notification tier ladder, one arrival

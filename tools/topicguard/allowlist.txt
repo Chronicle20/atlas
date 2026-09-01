@@ -1,0 +1,13 @@
+# topicguard raw-env-topic-read allowlist (diagnostic 2).
+#
+# One entry per environment variable name that lexically matches
+# rawEnvTopicPattern (contains "TOPIC") but names something other than a
+# Kafka topic — a false positive of the heuristic, not a real violation.
+# Keep this narrow: an entry here exempts one specific env var name, never a
+# pattern. A genuine raw topic-name env read must still fire.
+#
+# Format: <env var name> # <reason>
+# An entry with no reason is a lint failure of this file itself
+# (TestAllowlistEntriesHaveReasons).
+
+KAFKA_TOPIC_MANIFEST_PATH # filesystem path to the mounted topic manifest, not a Kafka topic; see design.md:427

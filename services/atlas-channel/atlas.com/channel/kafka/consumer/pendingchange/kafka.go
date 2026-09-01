@@ -4,12 +4,13 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvEventTopic is the channel-side copy of atlas-character's pending-change
 // event topic env key
 // (services/atlas-character/atlas.com/character/kafka/message/pending_change/kafka.go).
-const EnvEventTopic = "EVENT_TOPIC_CHARACTER_PENDING_CHANGE"
+const EnvEventTopic topic.Token = "EVENT_TOPIC_CHARACTER_PENDING_CHANGE"
 
 const (
 	EventTypeCreated  = "PENDING_CHANGE_CREATED"

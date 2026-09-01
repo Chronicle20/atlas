@@ -3,10 +3,14 @@ package buddylist
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_BUDDY_LIST"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_BUDDY_LIST"
+)
+
+const (
 	CommandTypeRequestAdd    = "REQUEST_ADD"
 	CommandTypeRequestDelete = "REQUEST_DELETE"
 )
@@ -28,7 +32,10 @@ type RequestDeleteBuddyCommandBody struct {
 }
 
 const (
-	EnvStatusEventTopic                = "EVENT_TOPIC_BUDDY_LIST_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_BUDDY_LIST_STATUS"
+)
+
+const (
 	StatusEventTypeBuddyAdded          = "BUDDY_ADDED"
 	StatusEventTypeBuddyRemoved        = "BUDDY_REMOVED"
 	StatusEventTypeBuddyUpdated        = "BUDDY_UPDATED"

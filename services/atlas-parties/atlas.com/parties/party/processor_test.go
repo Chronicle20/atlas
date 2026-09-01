@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -105,11 +106,11 @@ func createRealCharacter(ctx context.Context, id uint32, partyId uint32) charact
 }
 
 // Helper to assert message exists in buffer for topic
-func assertTopicMessageExists(t *testing.T, buffer *message.Buffer, topic string) {
+func assertTopicMessageExists(t *testing.T, buffer *message.Buffer, tok topic.Token) {
 	t.Helper()
 	messages := buffer.GetAll()
-	if _, exists := messages[topic]; !exists {
-		t.Errorf("Expected message for topic %s", topic)
+	if _, exists := messages[tok]; !exists {
+		t.Errorf("Expected message for topic %s", tok)
 	}
 }
 

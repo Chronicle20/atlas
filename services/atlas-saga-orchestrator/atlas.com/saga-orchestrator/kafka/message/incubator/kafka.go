@@ -1,7 +1,9 @@
 package incubator
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvEventTopicIncubatorResult = "EVENT_TOPIC_INCUBATOR_RESULT"
+	EnvEventTopicIncubatorResult topic.Token = "EVENT_TOPIC_INCUBATOR_RESULT"
 )
 
 // ResultEvent delivers the outcome of an incubator use to the channel, which

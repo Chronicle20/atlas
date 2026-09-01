@@ -2,6 +2,8 @@ package reactor_test
 
 import (
 	consumer2 "atlas-reactors/kafka/consumer/reactor"
+	"atlas-reactors/reactor"
+	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -11,6 +13,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
+
+func TestMain(m *testing.M) {
+	_ = os.Setenv(string(reactor.EnvCommandTopic), string(reactor.EnvCommandTopic))
+	os.Exit(m.Run())
+}
 
 func testLogger() logrus.FieldLogger {
 	l, _ := test.NewNullLogger()

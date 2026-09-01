@@ -12,10 +12,14 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic                 = "COMMAND_TOPIC_NPC"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_NPC"
+)
+
+const (
 	CommandTypeStartConversation    = "START_CONVERSATION"
 	CommandTypeContinueConversation = "CONTINUE_CONVERSATION"
 	CommandTypeEndConversation      = "END_CONVERSATION"
@@ -24,13 +28,18 @@ const (
 	// (the 243xxxx family). Unlike START_CONVERSATION the conversation is keyed
 	// by item id, not by NPC — NpcId carries only the avatar it renders with.
 	CommandTypeStartItemConversation = "START_ITEM_CONVERSATION"
+)
 
-	EnvConversationCommandTopic = "COMMAND_TOPIC_NPC_CONVERSATION"
-	CommandTypeSimple           = "SIMPLE"
-	CommandTypeText             = "TEXT"
-	CommandTypeStyle            = "STYLE"
-	CommandTypeNumber           = "NUMBER"
-	CommandTypeSlideMenu        = "SLIDE_MENU"
+const (
+	EnvConversationCommandTopic topic.Token = "COMMAND_TOPIC_NPC_CONVERSATION"
+)
+
+const (
+	CommandTypeSimple    = "SIMPLE"
+	CommandTypeText      = "TEXT"
+	CommandTypeStyle     = "STYLE"
+	CommandTypeNumber    = "NUMBER"
+	CommandTypeSlideMenu = "SLIDE_MENU"
 )
 
 type Command[E any] struct {
@@ -108,7 +117,10 @@ type CommandSlideMenuBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
 	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
 )
 
@@ -131,8 +143,10 @@ const (
 	// start. atlas-npc-conversations produced no status topic before task-230;
 	// it only consumed EVENT_TOPIC_SAGA_STATUS for sagas a conversation
 	// initiates. The awaited-step saga needs the opposite direction.
-	EnvStatusEventTopic = "EVENT_TOPIC_NPC_CONVERSATION_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_NPC_CONVERSATION_STATUS"
+)
 
+const (
 	StatusEventTypeStarted = "STARTED"
 
 	// StatusEventTypeStartError is deliberately a distinct type rather than a

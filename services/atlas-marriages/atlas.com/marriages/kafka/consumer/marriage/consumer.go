@@ -23,7 +23,7 @@ import (
 )
 
 // NewConfig creates a new consumer configuration for marriage commands
-func NewConfig(l logrus.FieldLogger) func(name string) func(token string) func(groupId string) consumer.Config {
+func NewConfig(l logrus.FieldLogger) func(name string) func(token topic.Token) func(groupId string) consumer.Config {
 	return localConsumer.NewConfig(l)
 }
 
@@ -32,8 +32,14 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
-			t, _ = topic.EnvProvider(l)(marriageMsg.EnvCommandTopic)()
-			// Proposal command handlers
+			var err error
+			t, err = topic.EnvProvider(l)(marriageMsg.EnvCommandTopic)()
+			if err !=
+				// Proposal command handlers
+				nil {
+				return err
+			}
+
 			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handlePropose(marriageService.NewProcessor, db)))); err != nil {
 				return err
 			}

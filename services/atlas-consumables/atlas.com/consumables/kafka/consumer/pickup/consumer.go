@@ -32,7 +32,10 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, de
 
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		t, _ := topic.EnvProvider(l)(pickupmsg.EnvCommandTopic)()
+		t, err := topic.EnvProvider(l)(pickupmsg.EnvCommandTopic)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, kmessage.AdaptHandler(kmessage.PersistentConfig(handlePickup))); err != nil {
 			return err
 		}
@@ -49,13 +52,7 @@ func handlePickup(l logrus.FieldLogger, ctx context.Context, cmd pickupmsg.Comma
 		return
 	}
 
-	t, err := topic.EnvProvider(l)(mbmsg.EnvCommandTopic)()
-	if err != nil {
-		l.WithError(err).Errorf("Unable to resolve monster book command topic.")
-		return
-	}
-
-	if err := producer.ProviderImpl(l)(ctx)(t)(cardPickedUpProvider(cmd)); err != nil {
+	if err := producer.ProviderImpl(l)(ctx)(mbmsg.EnvCommandTopic)(cardPickedUpProvider(cmd)); err != nil {
 		l.WithError(err).Errorf("Failed to emit MONSTER_BOOK.CARD_PICKED_UP for character %d card %d.", cmd.CharacterId, cmd.ItemId)
 	}
 }

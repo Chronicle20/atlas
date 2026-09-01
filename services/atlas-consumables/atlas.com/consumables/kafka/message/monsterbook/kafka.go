@@ -1,9 +1,16 @@
 package monsterbook
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvCommandTopic         = "COMMAND_TOPIC_MONSTER_BOOK"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER_BOOK"
+)
+
+const (
 	CommandTypeCardPickedUp = "CARD_PICKED_UP"
 )
 

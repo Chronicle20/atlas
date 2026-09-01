@@ -153,7 +153,7 @@ func TestTeleportAndForCharacterPosition(t *testing.T) {
 
 				deadline := time.Now().Add(time.Second)
 				for {
-					got := sharedCapture.Messages(movement2.EnvCommandCharacterMovement)
+					got := sharedCapture.Messages(string(movement2.EnvCommandCharacterMovement))
 					if len(got) > 0 {
 						var cmd movement2.Command[any]
 						if err := json.Unmarshal(got[0].Value, &cmd); err != nil {

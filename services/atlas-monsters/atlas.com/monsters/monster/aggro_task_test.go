@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -37,7 +38,7 @@ func newAggroTaskWithRecorder(t *testing.T, bossIds map[uint32]bool) (*MonsterAg
 			bossCalls++
 			return bossIds[monsterId]
 		},
-		emit: func(_ tenant.Model, topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(_ tenant.Model, tok topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
 				t.Fatalf("provider err: %v", err)
@@ -54,7 +55,7 @@ func newAggroTaskWithRecorder(t *testing.T, bossIds map[uint32]bool) (*MonsterAg
 					t.Fatalf("decode: %v", err)
 				}
 				events = append(events, recordedEmit{
-					Topic:                 topic,
+					Topic:                 string(tok),
 					Type:                  env.Type,
 					ControllerCharacterId: env.Body.ControllerCharacterId,
 					ControllerHasAggro:    env.Body.ControllerHasAggro,

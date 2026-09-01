@@ -31,7 +31,10 @@ func InitHandlers(l logrus.FieldLogger) func(ten tenant.Model) func(wp writer.Pr
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var handles []listener.HandlerHandle
-				t, _ := topic.EnvProvider(l)(account2.EnvEventTopicAccountStatus)()
+				t, err := topic.EnvProvider(l)(account2.EnvEventTopicAccountStatus)()
+				if err != nil {
+					return nil, err
+				}
 				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(ten))))
 				if err != nil {
 					return nil, err

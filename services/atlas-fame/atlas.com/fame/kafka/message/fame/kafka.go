@@ -6,18 +6,27 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicFameStatus             = "EVENT_TOPIC_FAME_STATUS"
+	EnvEventTopicFameStatus topic.Token = "EVENT_TOPIC_FAME_STATUS"
+)
+
+const (
 	StatusEventTypeError                = "ERROR"
 	StatusEventErrorTypeNotToday        = "NOT_TODAY"
 	StatusEventErrorTypeNotThisMonth    = "NOT_THIS_MONTH"
 	StatusEventErrorInvalidName         = "INVALID_NAME"
 	StatusEventErrorTypeNotMinimumLevel = "NOT_MINIMUM_LEVEL"
 	StatusEventErrorTypeUnexpected      = "UNEXPECTED"
+)
 
-	EnvCommandTopic          = "COMMAND_TOPIC_FAME"
+const (
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_FAME"
+)
+
+const (
 	CommandTypeRequestChange = "REQUEST_CHANGE"
 )
 

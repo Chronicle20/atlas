@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // TestExecuteDiseaseCaller verifies executeDispel and executeBanish inherit
@@ -21,7 +22,7 @@ func TestExecuteDiseaseCaller(t *testing.T) {
 		infoModel      func() information.Model
 		execute        func(p *ProcessorImpl, m Model, sd mobskill.Model)
 		wantEventCount int
-		wantTopic      string
+		wantTopic      topic.Token
 	}{
 		{
 			name:    "dispel targets only in-box characters",

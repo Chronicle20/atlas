@@ -1,0 +1,12 @@
+package consumer
+
+func NewConfig(l logrus.FieldLogger) func(name string) func(token string) func(groupId string) consumer.Config {
+	return func(name string) func(token string) func(groupId string) consumer.Config {
+		return func(token string) func(groupId string) consumer.Config {
+			t, _ := topic.EnvProvider(l)(token)()
+			return func(groupId string) consumer.Config {
+				return consumer.NewConfig(brokers(), name, t, groupId)
+			}
+		}
+	}
+}

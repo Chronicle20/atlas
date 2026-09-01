@@ -50,11 +50,11 @@ func TestConsumeMonsterCardConsumesAndEmitsCardPickedUp(t *testing.T) {
 
 	// The reservation must be committed — otherwise the card stays in the
 	// inventory and the book gains a card the character still holds.
-	if got := len(emitted.Messages(compartmentmsg.EnvCommandTopic)); got != 1 {
+	if got := len(emitted.Messages(string(compartmentmsg.EnvCommandTopic))); got != 1 {
 		t.Fatalf("expected 1 compartment command, got %d", got)
 	}
 
-	msgs := emitted.Messages(mbmsg.EnvCommandTopic)
+	msgs := emitted.Messages(string(mbmsg.EnvCommandTopic))
 	if len(msgs) != 1 {
 		t.Fatalf("expected 1 monster book message, got %d", len(msgs))
 	}

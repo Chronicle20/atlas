@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Command represents a generic command wrapper for family operations
@@ -169,10 +170,10 @@ type LinkErrorEventBody struct {
 
 // Environment Variable Topic Constants
 const (
-	EnvCommandTopic     = "COMMAND_TOPIC_FAMILY"
-	EnvEventTopicStatus = "EVENT_TOPIC_FAMILY_STATUS"
-	EnvEventTopicErrors = "EVENT_TOPIC_FAMILY_ERRORS"
-	EnvEventTopicRep    = "EVENT_TOPIC_FAMILY_REPUTATION"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_FAMILY"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_FAMILY_STATUS"
+	EnvEventTopicErrors topic.Token = "EVENT_TOPIC_FAMILY_ERRORS"
+	EnvEventTopicRep    topic.Token = "EVENT_TOPIC_FAMILY_REPUTATION"
 )
 
 // Command Type Constants

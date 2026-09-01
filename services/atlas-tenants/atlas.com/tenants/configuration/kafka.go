@@ -5,11 +5,15 @@ import (
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const (
-	EventTopicConfigurationStatus   = "EVENT_TOPIC_CONFIGURATION_STATUS"
+	EventTopicConfigurationStatus topic.Token = "EVENT_TOPIC_CONFIGURATION_STATUS"
+)
+
+const (
 	EventTypeRouteCreated           = "ROUTE_CREATED"
 	EventTypeRouteUpdated           = "ROUTE_UPDATED"
 	EventTypeRouteDeleted           = "ROUTE_DELETED"

@@ -37,7 +37,11 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
-			t, _ = topic.EnvProvider(l)(mbmsg.EnvCommandTopic)()
+			var err error
+			t, err = topic.EnvProvider(l)(mbmsg.EnvCommandTopic)()
+			if err != nil {
+				return err
+			}
 			if _, err := rf(t, kmessage.AdaptHandler(kmessage.PersistentConfig(handleCardPickedUp(db)))); err != nil {
 				return err
 			}

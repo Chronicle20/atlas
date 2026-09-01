@@ -3,10 +3,14 @@ package character
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventMemberStatusTopic              = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
+	EnvEventMemberStatusTopic topic.Token = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
+)
+
+const (
 	EventPartyMemberStatusTypeLogin        = "LOGIN"
 	EventPartyMemberStatusTypeLogout       = "LOGOUT"
 	EventPartyMemberStatusTypeLevelChanged = "LEVEL_CHANGED"

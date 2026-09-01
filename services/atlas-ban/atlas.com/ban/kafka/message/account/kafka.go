@@ -4,11 +4,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventSessionStatusTopic = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
+	EnvEventSessionStatusTopic topic.Token = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
+)
 
+const (
 	SessionEventStatusTypeCreated      = "CREATED"
 	SessionEventStatusTypeStateChanged = "STATE_CHANGED"
 	SessionEventStatusTypeError        = "ERROR"

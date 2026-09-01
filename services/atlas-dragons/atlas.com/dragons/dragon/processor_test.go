@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -56,11 +57,11 @@ func newTestProcessor(t *testing.T, cs *stubCharacters) (*ProcessorImpl, tenant.
 	p := &ProcessorImpl{
 		l: logrus.New(), ctx: ctx, t: ten,
 		characters: cs,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(t topic.Token, provider model.Provider[[]kafka.Message]) error {
 			if _, err := provider(); err != nil {
 				return err
 			}
-			emitted = append(emitted, capturedEvent{topic: topic})
+			emitted = append(emitted, capturedEvent{topic: string(t)})
 			return nil
 		},
 	}
@@ -88,7 +89,7 @@ func newTestProcessorWithMiniredis(t *testing.T, cs *stubCharacters) (*Processor
 	p := &ProcessorImpl{
 		l: logrus.New(), ctx: ctx, t: ten,
 		characters: cs,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(t topic.Token, provider model.Provider[[]kafka.Message]) error {
 			_, err := provider()
 			return err
 		},

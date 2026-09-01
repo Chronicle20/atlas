@@ -7,6 +7,7 @@ import (
 	"atlas-buddies/list"
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/google/uuid"
@@ -22,6 +23,14 @@ import (
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// TestMain sets every topic token env var this package's tests rely on to
+// its own name, so topic.EnvProvider resolves to the same literal the
+// pre-existing assertions were already written against.
+func TestMain(m *testing.M) {
+	_ = os.Setenv(string(listmessage.EnvStatusEventTopic), string(listmessage.EnvStatusEventTopic))
+	os.Exit(m.Run())
+}
 
 func setupTestLogger(t *testing.T) logrus.FieldLogger {
 	t.Helper()

@@ -25,6 +25,8 @@ import (
 var testMiniRedis *miniredis.Miniredis
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(EnvEventTopicMonsterStatus), string(EnvEventTopicMonsterStatus))
+	_ = os.Setenv(string(EnvEventTopicMonsterCatch), string(EnvEventTopicMonsterCatch))
 	producertest.InstallNoop()
 
 	mr, err := miniredis.Run()

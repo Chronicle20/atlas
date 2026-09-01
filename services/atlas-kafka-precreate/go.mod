@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.10.2
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -4,10 +4,14 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic                               = "COMMAND_TOPIC_CASH_SHOP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CASH_SHOP"
+)
+
+const (
 	CommandTypeRequestPurchase                    = "REQUEST_PURCHASE"
 	CommandTypeRequestInventoryIncreaseByType     = "REQUEST_INVENTORY_INCREASE_BY_TYPE"
 	CommandTypeRequestInventoryIncreaseByItem     = "REQUEST_INVENTORY_INCREASE_BY_ITEM"
@@ -233,7 +237,10 @@ type ExtendEquipSlotCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CASH_SHOP_STATUS"
+)
+
+const (
 	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
 	StatusEventTypePurchase                   = "PURCHASE"
 	StatusEventTypeError                      = "ERROR"

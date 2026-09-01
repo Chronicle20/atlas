@@ -5,11 +5,14 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_PARTY_QUEST"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY_QUEST"
+)
 
+const (
 	CommandTypeRegister          = "REGISTER"
 	CommandTypeStart             = "START"
 	CommandTypeStageClearAttempt = "STAGE_CLEAR_ATTEMPT"
@@ -20,9 +23,13 @@ const (
 	CommandTypeUpdateCustomData  = "UPDATE_CUSTOM_DATA"
 	CommandTypeBroadcastMessage  = "BROADCAST_MESSAGE"
 	CommandTypeEnterBonus        = "ENTER_BONUS"
+)
 
-	EnvEventStatusTopic = "EVENT_TOPIC_PARTY_QUEST_STATUS"
+const (
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_QUEST_STATUS"
+)
 
+const (
 	EventTypeInstanceCreated     = "INSTANCE_CREATED"
 	EventTypeRegistrationOpened  = "REGISTRATION_OPENED"
 	EventTypeStarted             = "STARTED"

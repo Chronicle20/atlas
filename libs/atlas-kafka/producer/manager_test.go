@@ -9,6 +9,8 @@ import (
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // fakeWriter is a Writer implementation used by manager tests. Tracks how many
@@ -38,6 +40,7 @@ func TestManager_LazyCreate(t *testing.T) {
 	}
 	m := GetManager(ConfigWriterFactory(factory))
 	l, _ := test.NewNullLogger()
+	t.Setenv("MY_TOPIC", "MY_TOPIC")
 
 	w1, err := m.Writer(l, "MY_TOPIC")
 	if err != nil {
@@ -64,6 +67,7 @@ func TestManager_ConcurrentFirstTouch(t *testing.T) {
 	}
 	m := GetManager(ConfigWriterFactory(factory))
 	l, _ := test.NewNullLogger()
+	t.Setenv("RACE_TOPIC", "RACE_TOPIC")
 
 	const goroutines = 64
 	results := make([]Writer, goroutines)
@@ -102,6 +106,7 @@ func TestManager_IdempotentClose(t *testing.T) {
 	factory := func(topicName string) Writer { return fw }
 	m := GetManager(ConfigWriterFactory(factory))
 	l, _ := test.NewNullLogger()
+	t.Setenv("ANY_TOPIC", "ANY_TOPIC")
 
 	if _, err := m.Writer(l, "ANY_TOPIC"); err != nil {
 		t.Fatalf("Writer: %v", err)
@@ -127,9 +132,12 @@ func TestManager_CloseErrorsDoNotShortCircuit(t *testing.T) {
 	factory := func(topicName string) Writer { return writers[topicName] }
 	m := GetManager(ConfigWriterFactory(factory))
 	l, _ := test.NewNullLogger()
+	t.Setenv("A", "A")
+	t.Setenv("B", "B")
+	t.Setenv("C", "C")
 
 	for _, k := range []string{"A", "B", "C"} {
-		if _, err := m.Writer(l, k); err != nil {
+		if _, err := m.Writer(l, topic.Token(k)); err != nil {
 			t.Fatalf("Writer(%s): %v", k, err)
 		}
 	}
@@ -148,6 +156,8 @@ func TestManager_WriterAfterClose(t *testing.T) {
 	factory := func(topicName string) Writer { return &fakeWriter{topicName: topicName} }
 	m := GetManager(ConfigWriterFactory(factory))
 	l, _ := test.NewNullLogger()
+	t.Setenv("PRE", "PRE")
+	t.Setenv("POST", "POST")
 
 	if _, err := m.Writer(l, "PRE"); err != nil {
 		t.Fatalf("pre-close Writer: %v", err)

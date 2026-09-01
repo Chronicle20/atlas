@@ -136,7 +136,7 @@ func (t *NotificationTask) run() {
 // never actually errors on a missing var (libs/atlas-kafka/topic/provider.go),
 // so it cannot express "operator has not wired this topic yet, don't run."
 func (t *NotificationTask) Run() {
-	if _, ok := os.LookupEnv(parcelmsg.EnvStatusEventTopic); !ok {
+	if _, ok := os.LookupEnv(string(parcelmsg.EnvStatusEventTopic)); !ok {
 		t.l.Warnf("Parcel status event topic [%s] not configured, skipping notifications.", parcelmsg.EnvStatusEventTopic)
 		return
 	}

@@ -1,0 +1,55 @@
+{
+  "service": "task-276-kafka-topic-manifest (delta)",
+  "path": "b5552f669~1..HEAD",
+  "date": "2026-09-01",
+  "build": "pass",
+  "testsPassed": 8,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "libs/atlas-kafka/consumer",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement / no catch-all", "status": "pass", "evidence": "libs/atlas-kafka/consumer/manager.go:199-207"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "libs/atlas-kafka/consumer/manager.go:205-206 -- wg.Add(1) before routine.Go(l, ctx, func(_ context.Context) { con.start(l, ctx, wg) })"},
+        {"id": "DOM-33", "name": "Interface change updates all mocks", "status": "n-a", "evidence": "Consumer.start / Manager.AddConsumer signatures unchanged"},
+        {"id": "DOM-20", "name": "New/changed tests are table-driven", "status": "fail", "evidence": "libs/atlas-kafka/consumer/manager_test.go:1472 TestAddConsumerRegistersWaitGroupBeforeLaunch is a new, non-table-driven test with no applicable DOM-20 exception"},
+        {"id": "DOM-20", "name": "wg.Add(1) insertions into pre-existing tests", "status": "n-a", "evidence": "libs/atlas-kafka/consumer/engine_group_test.go one-line insertions into already-existing, already-non-tabular test functions, not newly authored"},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "n-a", "evidence": "manager_test.go / engine_group_test.go reach no AndEmit / message.Emit / producer.Produce path"}
+      ]
+    },
+    {
+      "name": "libs/atlas-kafka/gen",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement / no catch-all", "status": "pass", "evidence": "libs/atlas-kafka/gen/manifest.go:48 struct-conversion lint fix only"},
+        {"id": "manifest-drift", "name": "topics.yaml matches workspace scan", "status": "pass", "evidence": "go run . --check -> OK: generated files are up to date (161 topics)"},
+        {"id": "DOM-23", "name": "Topic env var naming/configmap/overlay hygiene", "status": "n-a", "evidence": "libs/atlas-kafka/gen/topics.yaml:332-337,879-884 -- only package-reference lines added under two pre-existing tokens; no topic env var added or renamed"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../kafka/consumer/playernpc",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement / no catch-all", "status": "pass", "evidence": "kafka.go unchanged shape (topic const + wire envelope models); consumer.go unmodified this range"},
+        {"id": "retype-verify", "name": "Topic const retyped string -> topic.Token", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/playernpc/kafka.go:21"},
+        {"id": "retype-verify", "name": "Every call site accepts topic.Token, no string-recast", "status": "pass", "evidence": "consumer.go:53 consumer2.NewConfig(l)(name)(EnvEventTopicStatus)(groupId) matches func(name string) func(token topic.Token) func(groupId string) consumer.Config (services/atlas-channel/atlas.com/channel/kafka/consumer/consumer.go:12); consumer.go:66 topic.EnvProvider(l)(EnvEventTopicStatus)()"},
+        {"id": "sibling-verify", "name": "No sibling call site of same token left untyped", "status": "pass", "evidence": "EVENT_TOPIC_PLAYER_NPC_STATUS already topic.Token in atlas-player-npcs kafka/message/playernpc/kafka.go:20, atlas-messages kafka/message/playernpc/kafka.go:25, atlas-saga-orchestrator kafka/message/playernpc/kafka.go:24 -- atlas-channel was the only remaining holdout"},
+        {"id": "DOM-25", "name": "No client-interpreted byte as Go literal", "status": "n-a", "evidence": "kafka.go change is const retype + import only, no wire byte touched"}
+      ]
+    },
+    {
+      "name": "tools/ shell scripts",
+      "type": "support (non-Go, informational only -- no numbered rule applies)",
+      "checks": [
+        {"id": "n/a", "name": "check_workspace_drift() fail-closed contract", "status": "n-a", "evidence": "tools/lib/go-work.sh new function; tools/verify.sh:91-101,262-273 wires it fatal except under --facts; no numbered checklist rule covers shell scripts"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-20: libs/atlas-kafka/consumer/manager_test.go:1472 -- TestAddConsumerRegistersWaitGroupBeforeLaunch is a new, non-table-driven test function"
+  ]
+}

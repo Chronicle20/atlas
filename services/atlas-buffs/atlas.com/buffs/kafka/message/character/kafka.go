@@ -8,10 +8,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER_BUFF"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
+)
+
+const (
 	CommandTypeApply         = "APPLY"
 	CommandTypeCancel        = "CANCEL"
 	CommandTypeCancelAll     = "CANCEL_ALL"
@@ -127,7 +131,10 @@ type UpdateStatValueCommandBody struct {
 }
 
 const (
-	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+)
+
+const (
 	EventStatusTypeBuffApplied = "APPLIED"
 	EventStatusTypeBuffExpired = "EXPIRED"
 	EventStatusTypeStatUpdated = "STAT_UPDATED"
@@ -213,8 +220,11 @@ type PeriodicEffectStatusEventBody struct {
 }
 
 const (
-	EnvCommandTopicCharacter = "COMMAND_TOPIC_CHARACTER"
-	CommandChangeHP          = "CHANGE_HP"
+	EnvCommandTopicCharacter topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
+	CommandChangeHP = "CHANGE_HP"
 )
 
 type CharacterCommand[E any] struct {

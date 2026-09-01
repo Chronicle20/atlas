@@ -1,6 +1,7 @@
 package note
 
 import (
+	notemsg "atlas-notes/kafka/message/note"
 	"os"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(notemsg.EnvEventTopicNoteStatus), string(notemsg.EnvEventTopicNoteStatus))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

@@ -15,7 +15,7 @@ import (
 // Same semantics as services.Backfill — idempotent on (topic, key),
 // no-op when EnvTenantStatusTopic is unset.
 func Backfill(db *gorm.DB) (int, error) {
-	topic := os.Getenv(EnvTenantStatusTopic)
+	topic := os.Getenv(string(EnvTenantStatusTopic))
 	if topic == "" {
 		return 0, nil
 	}

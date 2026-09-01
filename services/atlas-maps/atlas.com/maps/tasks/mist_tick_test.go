@@ -12,6 +12,7 @@ import (
 	mistKafka "atlas-maps/kafka/message/mist"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -28,15 +29,15 @@ import (
 // without going through Kafka.
 type recordingProducer struct {
 	mu       sync.Mutex
-	messages map[string][]kafka.Message
+	messages map[topic.Token][]kafka.Message
 }
 
 func newRecordingProducer() *recordingProducer {
-	return &recordingProducer{messages: map[string][]kafka.Message{}}
+	return &recordingProducer{messages: map[topic.Token][]kafka.Message{}}
 }
 
 func (m *recordingProducer) Provider() producer.Provider {
-	return func(token string) producer.MessageProducer {
+	return func(token topic.Token) producer.MessageProducer {
 		return func(prov model.Provider[[]kafka.Message]) error {
 			msgs, err := prov()
 			if err != nil {
@@ -50,7 +51,7 @@ func (m *recordingProducer) Provider() producer.Provider {
 	}
 }
 
-func (m *recordingProducer) Messages(topic string) []kafka.Message {
+func (m *recordingProducer) Messages(topic topic.Token) []kafka.Message {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return append([]kafka.Message(nil), m.messages[topic]...)
@@ -58,7 +59,7 @@ func (m *recordingProducer) Messages(topic string) []kafka.Message {
 
 // MessagesOn is an alias for Messages(topic), named to read naturally at
 // call sites like rec.MessagesOn(EnvCommandTopicCharacter).
-func (m *recordingProducer) MessagesOn(topic string) []kafka.Message {
+func (m *recordingProducer) MessagesOn(topic topic.Token) []kafka.Message {
 	return m.Messages(topic)
 }
 

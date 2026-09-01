@@ -1,11 +1,12 @@
 package saga
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_SAGA"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SAGA"
 )
 
 // Re-export types from atlas-saga shared library

@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
+	"os"
 	"sync"
 	"testing"
 
@@ -21,6 +23,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -37,14 +40,14 @@ import (
 // not an injected producer.Provider.
 type recorder struct {
 	mu   sync.Mutex
-	msgs map[string][]kafka.Message
+	msgs map[topic.Token][]kafka.Message
 	fail bool
 }
 
-func newRecorder() *recorder { return &recorder{msgs: make(map[string][]kafka.Message)} }
+func newRecorder() *recorder { return &recorder{msgs: make(map[topic.Token][]kafka.Message)} }
 
 func (r *recorder) provider() producer.Provider {
-	return func(t string) producer.MessageProducer {
+	return func(t topic.Token) producer.MessageProducer {
 		return func(p model.Provider[[]kafka.Message]) error {
 			if r.fail {
 				return errors.New("emit failed")
@@ -78,6 +81,13 @@ func nullLogger() logrus.FieldLogger {
 	l := logrus.New()
 	l.SetOutput(io.Discard)
 	return l
+}
+
+func TestMain(m *testing.M) {
+	if err := os.Setenv(string(kiteMsg.EnvEventTopicStatus), string(kiteMsg.EnvEventTopicStatus)); err != nil {
+		log.Fatalf("failed to set %s: %v", kiteMsg.EnvEventTopicStatus, err)
+	}
+	os.Exit(m.Run())
 }
 
 // A map change must destroy the kite against the OLD field, instance included.
@@ -124,7 +134,7 @@ func TestMapChangedDestroysAgainstOldFieldWithInstance(t *testing.T) {
 		t.Error("kite survived the owner's map change")
 	}
 
-	msgs := capture.Messages(kiteMsg.EnvEventTopicStatus)
+	msgs := capture.Messages(string(kiteMsg.EnvEventTopicStatus))
 	if len(msgs) != 1 {
 		t.Fatalf("emitted %d status events, want 1 (DESTROYED)", len(msgs))
 	}

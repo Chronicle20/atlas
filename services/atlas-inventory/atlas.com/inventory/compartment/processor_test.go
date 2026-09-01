@@ -80,6 +80,16 @@ func installCapturingProducer() (*map[string][]kafka.Message, func()) {
 }
 
 func TestMain(m *testing.M) {
+	if err := os.Setenv(string(assetMsg.EnvEventTopicStatus), string(assetMsg.EnvEventTopicStatus)); err != nil {
+		panic(err)
+	}
+	if err := os.Setenv(string(compartmentMsg.EnvEventTopicStatus), string(compartmentMsg.EnvEventTopicStatus)); err != nil {
+		panic(err)
+	}
+	if err := os.Setenv(string(dropMsg.EnvCommandTopic), string(dropMsg.EnvCommandTopic)); err != nil {
+		panic(err)
+	}
+
 	// Failure-path rejections/commands (Accept/Release/AttemptXPickUp) fire
 	// via the DIRECT producer path (see D7 fix). Swap in a no-op writer so
 	// those real-Kafka calls succeed instantly instead of retrying against
@@ -834,7 +844,7 @@ func TestAttemptItemPickUpSplitOverflowThenFail(t *testing.T) {
 
 	// The direct path must carry the CREATION_FAILED rejection.
 	var sawCreationFailed bool
-	for _, msg := range capturedMsgs[compartmentMsg.EnvEventTopicStatus] {
+	for _, msg := range capturedMsgs[string(compartmentMsg.EnvEventTopicStatus)] {
 		var ev compartmentMsg.StatusEvent[compartmentMsg.CreationFailedStatusEventBody]
 		if err := json.Unmarshal(msg.Value, &ev); err != nil {
 			continue
@@ -844,13 +854,13 @@ func TestAttemptItemPickUpSplitOverflowThenFail(t *testing.T) {
 		}
 	}
 	if !sawCreationFailed {
-		t.Fatalf("expected CREATION_FAILED on the direct producer path, got %v", capturedMsgs[compartmentMsg.EnvEventTopicStatus])
+		t.Fatalf("expected CREATION_FAILED on the direct producer path, got %v", capturedMsgs[string(compartmentMsg.EnvEventTopicStatus)])
 	}
 
 	// The direct path must NOT carry the QuantityChanged success event
 	// buffered by the UpdateQuantity call that filled the existing asset to
 	// slotMax before the follow-on CreateAsset failed and rolled the tx back.
-	for _, msg := range capturedMsgs[assetMsg.EnvEventTopicStatus] {
+	for _, msg := range capturedMsgs[string(assetMsg.EnvEventTopicStatus)] {
 		var ev assetMsg.StatusEvent[assetMsg.QuantityChangedEventBody]
 		if err := json.Unmarshal(msg.Value, &ev); err != nil {
 			continue
@@ -863,7 +873,7 @@ func TestAttemptItemPickUpSplitOverflowThenFail(t *testing.T) {
 	// The direct path must also carry the CANCEL_RESERVATION command to the
 	// separate atlas-drop service, same as the plain inventory-full case.
 	var sawCancelReservation bool
-	for _, msg := range capturedMsgs[dropMsg.EnvCommandTopic] {
+	for _, msg := range capturedMsgs[string(dropMsg.EnvCommandTopic)] {
 		var cmd dropMsg.Command[dropMsg.CancelReservationCommandBody]
 		if err := json.Unmarshal(msg.Value, &cmd); err != nil {
 			continue
@@ -873,7 +883,7 @@ func TestAttemptItemPickUpSplitOverflowThenFail(t *testing.T) {
 		}
 	}
 	if !sawCancelReservation {
-		t.Fatalf("expected CANCEL_RESERVATION on the direct producer path, got %v", capturedMsgs[dropMsg.EnvCommandTopic])
+		t.Fatalf("expected CANCEL_RESERVATION on the direct producer path, got %v", capturedMsgs[string(dropMsg.EnvCommandTopic)])
 	}
 }
 
@@ -922,7 +932,7 @@ func TestCreateAssetAndEmitInventoryFull(t *testing.T) {
 	// The CREATION_FAILED rejection must be published on the direct producer
 	// path, carrying the INVENTORY_FULL error code atlas-channel renders.
 	var sawInventoryFull bool
-	for _, msg := range (*captured)[compartmentMsg.EnvEventTopicStatus] {
+	for _, msg := range (*captured)[string(compartmentMsg.EnvEventTopicStatus)] {
 		var ev compartmentMsg.StatusEvent[compartmentMsg.CreationFailedStatusEventBody]
 		if err := json.Unmarshal(msg.Value, &ev); err != nil {
 			continue
@@ -932,7 +942,7 @@ func TestCreateAssetAndEmitInventoryFull(t *testing.T) {
 		}
 	}
 	if !sawInventoryFull {
-		t.Fatalf("expected CREATION_FAILED(INVENTORY_FULL) on the direct producer path, got %v", (*captured)[compartmentMsg.EnvEventTopicStatus])
+		t.Fatalf("expected CREATION_FAILED(INVENTORY_FULL) on the direct producer path, got %v", (*captured)[string(compartmentMsg.EnvEventTopicStatus)])
 	}
 }
 

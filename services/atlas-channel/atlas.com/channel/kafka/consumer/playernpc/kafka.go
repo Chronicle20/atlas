@@ -12,11 +12,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvEventTopicStatus is the Player NPC status event topic env key.
 // Byte-identical to atlas-player-npcs' EnvEventTopicStatus.
-const EnvEventTopicStatus = "EVENT_TOPIC_PLAYER_NPC_STATUS"
+const EnvEventTopicStatus topic.Token = "EVENT_TOPIC_PLAYER_NPC_STATUS"
 
 const (
 	EventTypeDeployed     = "DEPLOYED"

@@ -1,9 +1,14 @@
 package account
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvEventTopicStatus = "EVENT_TOPIC_ACCOUNT_STATUS"
-	EventStatusCreated  = "CREATED"
-	EventStatusDeleted  = "DELETED"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_ACCOUNT_STATUS"
+)
+
+const (
+	EventStatusCreated = "CREATED"
+	EventStatusDeleted = "DELETED"
 )
 
 type StatusEvent struct {

@@ -4,10 +4,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventStatusTopic = "EVENT_TOPIC_INVITE_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_INVITE_STATUS"
 )
 
 type StatusEvent[E any] struct {

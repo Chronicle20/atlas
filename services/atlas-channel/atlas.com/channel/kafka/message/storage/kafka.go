@@ -5,11 +5,15 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	// Storage command topic for operations
-	EnvCommandTopic         = "COMMAND_TOPIC_STORAGE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_STORAGE"
+)
+
+const (
 	CommandTypeShowStorage  = "SHOW_STORAGE"
 	CommandTypeCloseStorage = "CLOSE_STORAGE"
 	CommandTypeArrange      = "ARRANGE"
@@ -58,15 +62,18 @@ type UpdateMesosCommandBody struct {
 
 const (
 	// Storage status event topic
-	EnvEventTopicStatus                   = "EVENT_TOPIC_STORAGE_STATUS"
-	EnvEventTopicStorageCompartmentStatus = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
-	StatusEventTypeDeposited              = "DEPOSITED"
-	StatusEventTypeWithdrawn              = "WITHDRAWN"
-	StatusEventTypeMesosUpdated           = "MESOS_UPDATED"
-	StatusEventTypeArranged               = "ARRANGED"
-	StatusEventTypeError                  = "ERROR"
-	StatusEventTypeProjectionCreated      = "PROJECTION_CREATED"
-	StatusEventTypeProjectionDestroyed    = "PROJECTION_DESTROYED"
+	EnvEventTopicStatus                   topic.Token = "EVENT_TOPIC_STORAGE_STATUS"
+	EnvEventTopicStorageCompartmentStatus topic.Token = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
+)
+
+const (
+	StatusEventTypeDeposited           = "DEPOSITED"
+	StatusEventTypeWithdrawn           = "WITHDRAWN"
+	StatusEventTypeMesosUpdated        = "MESOS_UPDATED"
+	StatusEventTypeArranged            = "ARRANGED"
+	StatusEventTypeError               = "ERROR"
+	StatusEventTypeProjectionCreated   = "PROJECTION_CREATED"
+	StatusEventTypeProjectionDestroyed = "PROJECTION_DESTROYED"
 
 	// Storage compartment event types
 	StatusEventTypeCompartmentAccepted = "ACCEPTED"

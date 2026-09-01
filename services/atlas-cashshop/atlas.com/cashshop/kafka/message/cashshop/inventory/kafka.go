@@ -1,7 +1,12 @@
 package inventory
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvEventTopicStatus    = "EVENT_TOPIC_CASH_INVENTORY_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CASH_INVENTORY_STATUS"
+)
+
+const (
 	StatusEventTypeCreated = "CREATED"
 	StatusEventTypeUpdated = "UPDATED"
 	StatusEventTypeDeleted = "DELETED"

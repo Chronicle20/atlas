@@ -6,6 +6,7 @@ use (
 	./libs/atlas-database
 	./libs/atlas-env
 	./libs/atlas-kafka
+	./libs/atlas-kafka/gen
 	./libs/atlas-lock
 	./libs/atlas-model
 	./libs/atlas-object-id

@@ -1,7 +1,9 @@
 package gachapon
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvEventTopicGachaponRewardWon = "EVENT_TOPIC_GACHAPON_REWARD_WON"
+	EnvEventTopicGachaponRewardWon topic.Token = "EVENT_TOPIC_GACHAPON_REWARD_WON"
 )
 
 type RewardWonEvent struct {

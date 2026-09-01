@@ -8,10 +8,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic            = "COMMAND_TOPIC_STORAGE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_STORAGE"
+)
+
+const (
 	CommandTypeDeposit         = "DEPOSIT"
 	CommandTypeWithdraw        = "WITHDRAW"
 	CommandTypeUpdateMesos     = "UPDATE_MESOS"
@@ -62,7 +66,10 @@ type DepositRollbackBody struct {
 }
 
 const (
-	EnvStatusEventTopic        = "EVENT_TOPIC_STORAGE_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_STORAGE_STATUS"
+)
+
+const (
 	StatusEventTypeDeposited   = "DEPOSITED"
 	StatusEventTypeWithdrawn   = "WITHDRAWN"
 	StatusEventTypeMesosUpdate = "MESOS_UPDATED"

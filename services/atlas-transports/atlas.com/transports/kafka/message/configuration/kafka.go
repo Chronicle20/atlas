@@ -1,9 +1,13 @@
 package configuration
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvEventTopicConfigurationStatus = "EVENT_TOPIC_CONFIGURATION_STATUS"
+	EnvEventTopicConfigurationStatus topic.Token = "EVENT_TOPIC_CONFIGURATION_STATUS"
 )
 
 type StatusEvent struct {

@@ -27,8 +27,11 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer2.Config, deco
 func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
-			t, _ := topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
-			_, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLogout(db))))
+			t, err := topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
+			if err != nil {
+				return err
+			}
+			_, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleLogout(db))))
 			return err
 		}
 	}

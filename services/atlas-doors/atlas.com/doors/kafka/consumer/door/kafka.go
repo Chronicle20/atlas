@@ -9,9 +9,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
-const EnvCommandTopic = "COMMAND_TOPIC_DOOR"
+const EnvCommandTopic topic.Token = "COMMAND_TOPIC_DOOR"
 
 const (
 	CommandTypeSpawn  = "SPAWN"

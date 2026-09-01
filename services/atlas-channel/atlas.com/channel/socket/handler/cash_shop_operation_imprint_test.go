@@ -227,7 +227,7 @@ func TestBuyNameChangeCreatesAPendingRequest(t *testing.T) {
 
 	var purchaseEmittedBeforePost bool
 	onPost := func() {
-		purchaseEmittedBeforePost = len((*captured)[messageCashShop.EnvCommandTopic]) > 0
+		purchaseEmittedBeforePost = len((*captured)[string(messageCashShop.EnvCommandTopic)]) > 0
 	}
 
 	srv, capturedPost := newBuyHandlerTestServer(t, "Romeo", 5990000, http.StatusCreated,
@@ -256,7 +256,7 @@ func TestBuyNameChangeCreatesAPendingRequest(t *testing.T) {
 		t.Fatal("purchase command was already emitted when the pending-change POST arrived -- insert-first violated")
 	}
 
-	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	msgs := (*captured)[string(messageCashShop.EnvCommandTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1", len(msgs))
 	}
@@ -305,7 +305,7 @@ func TestBuyWorldTransferCreatesAPendingRequest(t *testing.T) {
 
 	var purchaseEmittedBeforePost bool
 	onPost := func() {
-		purchaseEmittedBeforePost = len((*captured)[messageCashShop.EnvCommandTopic]) > 0
+		purchaseEmittedBeforePost = len((*captured)[string(messageCashShop.EnvCommandTopic)]) > 0
 	}
 
 	srv, capturedPost := newBuyHandlerTestServer(t, "Romeo", 5990001, http.StatusCreated,
@@ -334,7 +334,7 @@ func TestBuyWorldTransferCreatesAPendingRequest(t *testing.T) {
 		t.Fatal("purchase command was already emitted when the pending-change POST arrived -- insert-first violated")
 	}
 
-	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	msgs := (*captured)[string(messageCashShop.EnvCommandTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1", len(msgs))
 	}
@@ -463,7 +463,7 @@ func TestBuyWorldTransferStorageWarningLookupFailsOpen(t *testing.T) {
 	if rec.storageWarningWasAnnounced() {
 		t.Fatal("a failed lookup must not emit the warning")
 	}
-	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	msgs := (*captured)[string(messageCashShop.EnvCommandTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1 -- a courtesy lookup failure must not block the purchase", len(msgs))
 	}
@@ -518,7 +518,7 @@ func TestBuyNameChangeAbortsPurchaseWhenTransactionIdInvalid(t *testing.T) {
 	rec := &gaugeProducerRecorder{}
 	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyNameChangePacket(t, "Romeo", "Sierra", 22345), cashShopOperationsOptions())
 
-	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	msgs := (*captured)[string(messageCashShop.EnvCommandTopic)]
 	if len(msgs) != 0 {
 		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 0 -- a transaction id parse failure must not charge the player", len(msgs))
 	}
@@ -550,7 +550,7 @@ func TestBuyWorldTransferAbortsPurchaseWhenTransactionIdInvalid(t *testing.T) {
 	rec := &gaugeProducerRecorder{}
 	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyWorldTransferPacket(t, 2, 22346), cashShopOperationsOptions())
 
-	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	msgs := (*captured)[string(messageCashShop.EnvCommandTopic)]
 	if len(msgs) != 0 {
 		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 0 -- a transaction id parse failure must not charge the player", len(msgs))
 	}

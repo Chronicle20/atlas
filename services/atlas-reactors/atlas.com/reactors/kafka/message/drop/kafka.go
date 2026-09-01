@@ -6,16 +6,23 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
-	StatusEventTypeCreated  = "CREATED"
+	EnvEventTopicDropStatus topic.Token = "EVENT_TOPIC_DROP_STATUS"
 )
 
 const (
-	EnvCommandTopicDrop = "COMMAND_TOPIC_DROP"
-	CommandTypeConsume  = "CONSUME"
+	StatusEventTypeCreated = "CREATED"
+)
+
+const (
+	EnvCommandTopicDrop topic.Token = "COMMAND_TOPIC_DROP"
+)
+
+const (
+	CommandTypeConsume = "CONSUME"
 )
 
 type StatusEvent[E any] struct {

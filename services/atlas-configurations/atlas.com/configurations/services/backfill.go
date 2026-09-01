@@ -19,7 +19,7 @@ import (
 // Returns the number of new outbox rows inserted. Steady-state restarts
 // return 0. When EnvServiceStatusTopic is unset, returns 0 with no error.
 func Backfill(db *gorm.DB) (int, error) {
-	topic := os.Getenv(EnvServiceStatusTopic)
+	topic := os.Getenv(string(EnvServiceStatusTopic))
 	if topic == "" {
 		return 0, nil
 	}

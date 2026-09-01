@@ -9,10 +9,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_COMPARTMENT"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+)
+
+const (
 	CommandEquip              = "EQUIP"
 	CommandUnequip            = "UNEQUIP"
 	CommandMove               = "MOVE"
@@ -182,7 +186,10 @@ type ExtendExpirationCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
+)
+
+const (
 	StatusEventTypeCreated              = "CREATED"
 	StatusEventTypeDeleted              = "DELETED"
 	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"

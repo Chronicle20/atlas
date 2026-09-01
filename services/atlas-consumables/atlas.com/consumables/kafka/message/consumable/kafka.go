@@ -9,11 +9,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
+)
 
+const (
 	CommandRequestItemConsume     = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll          = "REQUEST_SCROLL"
 	CommandRequestVegaScroll      = "REQUEST_VEGA_SCROLL"
@@ -104,7 +107,10 @@ type CancelConsumableEffectBody struct {
 }
 
 const (
-	EnvEventTopic            = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
+)
+
+const (
 	EventTypeError           = "ERROR"
 	EventTypeScroll          = "SCROLL"
 	EventTypeVegaScroll      = "VEGA_SCROLL"

@@ -25,6 +25,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -114,7 +115,7 @@ type emitted struct {
 // messages returns the values published to one topic token, in publication
 // order. Tokens resolve to themselves in tests, because no topic env var is set
 // (topic.EnvProvider falls back to the token).
-func (e *emitted) messages(t *testing.T, token string) [][]byte {
+func (e *emitted) messages(t *testing.T, token topic.Token) [][]byte {
 	t.Helper()
 	var rows []outbox.Entity
 	if err := e.db.Order("id asc").Find(&rows).Error; err != nil {
@@ -122,7 +123,7 @@ func (e *emitted) messages(t *testing.T, token string) [][]byte {
 	}
 	var out [][]byte
 	for _, r := range rows {
-		if r.Topic == token {
+		if r.Topic == string(token) {
 			out = append(out, r.MessageValue)
 		}
 	}

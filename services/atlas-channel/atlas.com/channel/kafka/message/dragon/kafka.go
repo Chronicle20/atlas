@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // This file MIRRORS the atlas-dragons contract across a module boundary.
@@ -21,7 +22,7 @@ import (
 // — it decodes into a zero-valued body at runtime, silently. kafka_test.go
 // pins the wire shape from literal JSON so that divergence fails a test instead.
 
-const EnvCommandTopic = "COMMAND_TOPIC_DRAGON"
+const EnvCommandTopic topic.Token = "COMMAND_TOPIC_DRAGON"
 
 const (
 	CommandTypeCreate  = "CREATE"
@@ -54,7 +55,7 @@ type MoveCommandBody struct {
 	RawMovement []byte `json:"rawMovement"`
 }
 
-const EnvEventTopicDragonStatus = "EVENT_TOPIC_DRAGON_STATUS"
+const EnvEventTopicDragonStatus topic.Token = "EVENT_TOPIC_DRAGON_STATUS"
 
 const (
 	EventDragonStatusCreated   = "CREATED"

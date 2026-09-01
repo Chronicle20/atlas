@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -35,7 +34,7 @@ func createTestContext() context.Context {
 }
 
 // setupMockDataServerForConsumer creates an httptest server for consumer tests
-func setupMockDataServerForConsumer(responses map[string]interface{}) (*httptest.Server, func()) {
+func setupMockDataServerForConsumer(t *testing.T, responses map[string]interface{}) (*httptest.Server, func()) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fullPath := r.URL.Path
 		if r.URL.RawQuery != "" {
@@ -54,16 +53,11 @@ func setupMockDataServerForConsumer(responses map[string]interface{}) (*httptest
 		})
 	}))
 
-	originalURL := os.Getenv("DATA_SERVICE_URL")
-	os.Setenv("DATA_SERVICE_URL", server.URL+"/api/")
+	// Set mock server URL; t.Setenv restores it automatically after the test.
+	t.Setenv("DATA_SERVICE_URL", server.URL+"/api/")
 
 	cleanup := func() {
 		server.Close()
-		if originalURL != "" {
-			os.Setenv("DATA_SERVICE_URL", originalURL)
-		} else {
-			os.Unsetenv("DATA_SERVICE_URL")
-		}
 	}
 
 	return server, cleanup
@@ -86,7 +80,7 @@ func TestHandleEnterCommand_ParameterExtraction(t *testing.T) {
 		},
 	}
 
-	_, cleanup := setupMockDataServerForConsumer(map[string]interface{}{
+	_, cleanup := setupMockDataServerForConsumer(t, map[string]interface{}{
 		"/api/data/maps/100000000/portals/5": map[string]interface{}{"data": portalResource},
 	})
 	defer cleanup()
@@ -163,7 +157,7 @@ func TestHandleEnterCommand_DifferentParameters(t *testing.T) {
 			}
 
 			// Use a map that handles both portal IDs
-			_, cleanup := setupMockDataServerForConsumer(map[string]interface{}{
+			_, cleanup := setupMockDataServerForConsumer(t, map[string]interface{}{
 				"/api/data/maps/100000000/portals/0":  map[string]interface{}{"data": portalResource},
 				"/api/data/maps/100000000/portals/10": map[string]interface{}{"data": portalResource},
 				"/api/data/maps/200000000/portals/0":  map[string]interface{}{"data": portalResource},
@@ -194,7 +188,7 @@ func TestHandleEnterCommand_DifferentParameters(t *testing.T) {
 func TestHandleEnterCommand_PortalNotFound(t *testing.T) {
 	setupBlockedRegistry(t)
 	// Empty responses - portal won't be found
-	_, cleanup := setupMockDataServerForConsumer(map[string]interface{}{})
+	_, cleanup := setupMockDataServerForConsumer(t, map[string]interface{}{})
 	defer cleanup()
 
 	logger, hook := logtest.NewNullLogger()
@@ -277,7 +271,7 @@ func TestHandleWarpCommand_Precedence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, cleanup := setupMockDataServerForConsumer(map[string]interface{}{
+			_, cleanup := setupMockDataServerForConsumer(t, map[string]interface{}{
 				"/api/data/maps/200000000/portals?name=st00": map[string]interface{}{"data": []interface{}{portalResource}},
 				"/api/data/maps/200000000/portals":           map[string]interface{}{"data": []interface{}{portalResource}},
 			})

@@ -7,13 +7,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvCommandTopic is the channel -> consumables command topic for taming-mob
 // (mount) food. Task 32's consumables consumer MUST decode this Command shape.
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_TAMING_MOB_FOOD"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_TAMING_MOB_FOOD"
+)
 
+const (
 	CommandRequestFeed = "REQUEST_FEED"
 )
 

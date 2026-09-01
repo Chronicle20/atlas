@@ -5,10 +5,14 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopic           = "EVENT_TOPIC_INSTANCE_TRANSPORT"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_INSTANCE_TRANSPORT"
+)
+
+const (
 	EventTypeTransitEntered = "TRANSIT_ENTERED"
 )
 

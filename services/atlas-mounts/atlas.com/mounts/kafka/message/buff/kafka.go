@@ -4,13 +4,17 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // These structs mirror the character buff-status event shapes emitted by
 // atlas-buffs (services/atlas-buffs/.../kafka/message/character/kafka.go). The
 // field names and json tags must stay byte-compatible with the producer.
 const (
-	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+)
+
+const (
 	EventStatusTypeBuffApplied = "APPLIED"
 	EventStatusTypeBuffExpired = "EXPIRED"
 )

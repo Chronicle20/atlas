@@ -9,6 +9,7 @@ import (
 	"atlas-events/kafka/message/buff"
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"sync"
 	"testing"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -214,6 +216,9 @@ func registryOccurrence(o occurrence.Model) registry.Occurrence {
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	if err := os.Setenv(string(buff.EnvCommandTopic), string(buff.EnvCommandTopic)); err != nil {
+		log.Fatalf("failed to set %s: %v", buff.EnvCommandTopic, err)
+	}
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }
@@ -235,10 +240,10 @@ func newEmitCapture(t *testing.T) *emitCapture {
 
 // emitted decodes every message captured on topic whose Type equals wantType
 // as a buff.Command[buff.CancelByCorrelationCommandBody].
-func (f *emitCapture) emitted(topic, wantType string) []buff.Command[buff.CancelByCorrelationCommandBody] {
+func (f *emitCapture) emitted(topic topic.Token, wantType string) []buff.Command[buff.CancelByCorrelationCommandBody] {
 	f.t.Helper()
 	var out []buff.Command[buff.CancelByCorrelationCommandBody]
-	for _, m := range emitted.Messages(topic) {
+	for _, m := range emitted.Messages(string(topic)) {
 		var c buff.Command[buff.CancelByCorrelationCommandBody]
 		if err := json.Unmarshal(m.Value, &c); err != nil {
 			f.t.Fatalf("decode buff command: %v", err)

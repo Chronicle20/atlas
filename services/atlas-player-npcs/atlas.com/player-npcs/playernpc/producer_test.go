@@ -15,6 +15,10 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	// topic.EnvProvider is fail-closed: an unset token resolves to an error
+	// and nothing is emitted. Setting the token to its own name keeps the
+	// Capture keyed by the token, which is what the assertions look up.
+	_ = os.Setenv(string(msg.EnvEventTopicStatus), string(msg.EnvEventTopicStatus))
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }
@@ -48,7 +52,7 @@ func TestNewEmitter(t *testing.T) {
 		m := buildEmitterTestNpc(t, uuid.New(), 42)
 		emit(Event{Type: EventTypeDeployed, WorldId: 0, MapId: 102000004, Models: []Model{m}})
 
-		msgs := emitted.Messages(msg.EnvEventTopicStatus)
+		msgs := emitted.Messages(string(msg.EnvEventTopicStatus))
 		if len(msgs) != 1 {
 			t.Fatalf("emitted messages = %d, want 1", len(msgs))
 		}
@@ -66,7 +70,7 @@ func TestNewEmitter(t *testing.T) {
 		m := buildEmitterTestNpc(t, uuid.New(), 42)
 		emit(Event{Type: EventTypeRemoved, WorldId: 0, MapId: 102000004, Models: []Model{m}})
 
-		msgs := emitted.Messages(msg.EnvEventTopicStatus)
+		msgs := emitted.Messages(string(msg.EnvEventTopicStatus))
 		if len(msgs) != 1 {
 			t.Fatalf("emitted messages = %d, want 1", len(msgs))
 		}
@@ -85,7 +89,7 @@ func TestNewEmitter(t *testing.T) {
 		m2 := buildEmitterTestNpc(t, uuid.New(), 2)
 		emit(Event{Type: EventTypeRepositioned, WorldId: 0, MapId: 102000004, Models: []Model{m1, m2}})
 
-		msgs := emitted.Messages(msg.EnvEventTopicStatus)
+		msgs := emitted.Messages(string(msg.EnvEventTopicStatus))
 		if len(msgs) != 1 {
 			t.Fatalf("emitted messages = %d, want 1", len(msgs))
 		}
@@ -101,7 +105,7 @@ func TestNewEmitter(t *testing.T) {
 	t.Run("unknown event type does not publish and does not panic", func(t *testing.T) {
 		emitted.Reset()
 		emit(Event{Type: "BOGUS"})
-		if msgs := emitted.Messages(msg.EnvEventTopicStatus); len(msgs) != 0 {
+		if msgs := emitted.Messages(string(msg.EnvEventTopicStatus)); len(msgs) != 0 {
 			t.Errorf("emitted messages = %d, want 0", len(msgs))
 		}
 	})

@@ -8,6 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // TestStatusEventSerialization tests serialization and deserialization of compartment status events
@@ -525,7 +527,7 @@ func TestCreateAndEquipEventFlow(t *testing.T) {
 func TestEnvironmentVariableConstants(t *testing.T) {
 	tests := []struct {
 		name        string
-		constant    string
+		constant    topic.Token
 		expected    string
 		description string
 	}{
@@ -545,7 +547,7 @@ func TestEnvironmentVariableConstants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.constant, tt.description)
+			assert.Equal(t, tt.expected, string(tt.constant), tt.description)
 		})
 	}
 }

@@ -305,7 +305,7 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 	t.Run("validates message topic routing", func(t *testing.T) {
 		// Verify that the message would be sent to the correct topic
 		// This is tested by ensuring the provider is created with the correct topic
-		assert.Equal(t, "COMMAND_TOPIC_COMPARTMENT", compartment.EnvCommandTopic,
+		assert.Equal(t, "COMMAND_TOPIC_COMPARTMENT", string(compartment.EnvCommandTopic),
 			"Command topic should match compartment service expectation")
 	})
 

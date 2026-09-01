@@ -23,12 +23,32 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=lib/build-slot.sh
+. "$ROOT/tools/lib/build-slot.sh"
+# shellcheck source=lib/module-graph.sh
+. "$ROOT/tools/lib/module-graph.sh"
+
 BASE=""
 ALL=0
 NO_DOCKER=0
 NO_UI=0
 QUICK=0
 FACTS=0
+
+# Bounded parallelism for the Go layer. The default is the per-slot CPU budget
+# from the build broker (tools/lib/build-slot.sh, K=4 slots on 24 threads).
+GO_JOBS="${ATLAS_VERIFY_GO_JOBS:-4}"
+case "$GO_JOBS" in
+    ''|*[!0-9]*|0) echo "verify.sh: ATLAS_VERIFY_GO_JOBS must be a positive integer (got '$GO_JOBS')" >&2; exit 2 ;;
+esac
+
+# Capacity preflight thresholds (Task 7). Not a guess at what the host needs —
+# the floor below which the heavy phases (the Go pool, the bake) are known to
+# starve rather than merely slow down. See docs/verification.md, "Build slots"
+# for how these relate to the per-slot budget, and "Host tuning (WSL2)" for why
+# TMPDIR matters on this host.
+MIN_FREE_MB="${ATLAS_MIN_FREE_MB:-4096}"
+MIN_TMP_MB="${ATLAS_MIN_TMP_MB:-8192}"
 
 usage() {
     cat <<'EOF'
@@ -110,6 +130,37 @@ skip() {
     SKIPPED+=("$1")
 }
 
+# preflight — capacity gate for the heavy phases (the Go pool, the bake).
+# Fails CLOSED: a starved host must fail the gate rather than let a build
+# proceed into a slow, possibly-flaky run. Also reports (never assumes) the
+# un-tuned WSL2 TMPDIR condition from docs/verification.md, "Host tuning
+# (WSL2)" — host state cannot be inferred from repo state.
+preflight() {
+    local free_mb tmp_mb tmpdir="${TMPDIR:-/tmp}" rc=0
+    free_mb="$(free -m | awk '/^Mem:/ {print $NF}')"
+    tmp_mb="$(df -Pm "$tmpdir" | awk 'NR==2 {print $4}')"
+
+    # Not a failure — a report. The host tuning in docs/verification.md is host
+    # state, not repo state, so the gate detects the un-tuned condition rather
+    # than assuming it was applied.
+    case "$tmpdir" in
+        /tmp|/tmp/*)
+            echo "verify.sh: TMPDIR is ${tmpdir} — on this WSL2 host /tmp is tmpfs (RAM)." >&2
+            echo "           See docs/verification.md, 'Host tuning (WSL2)'." >&2
+            ;;
+    esac
+
+    if [ "$free_mb" -lt "$MIN_FREE_MB" ]; then
+        echo "verify.sh: insufficient free RAM — ${free_mb} MiB available, ${MIN_FREE_MB} MiB required." >&2
+        rc=1
+    fi
+    if [ "$tmp_mb" -lt "$MIN_TMP_MB" ]; then
+        echo "verify.sh: insufficient free space under TMPDIR (${tmpdir}) — ${tmp_mb} MiB free, ${MIN_TMP_MB} MiB required." >&2
+        rc=1
+    fi
+    return "$rc"
+}
+
 resolve_base() {
     if [ -n "$BASE" ]; then
         echo "$BASE"
@@ -183,10 +234,52 @@ all_modules() {
         | xargs -0 -r -n1 dirname | sort -u
 }
 
-# The one predicate that decides whether this run fans out to every module.
-# Extracted so `--facts` can name the reason without restating the rule.
-fanout_paths() {
-    printf '%s\n' "$CHANGED" | grep -E '^(go\.work|libs/)' || true
+# go.work in the change set — the exact filename, not go.work.sum. Anchored
+# at both ends: go.work.sum is a checksum artifact of resolving the workspace
+# (an ordinary local `go build`/`go mod tidy` dirties it as a matter of
+# course), not a change to the require graph, so it must not trigger this
+# branch. A real graph edit that also happens to dirty go.work.sum still gets
+# picked up on its own merits — either as a go.work change here, or as a
+# libs/ or services/ path below.
+gowork_changed() {
+    printf '%s\n' "$CHANGED" | grep -E '^go\.work$' || true
+}
+
+libs_paths() {
+    printf '%s\n' "$CHANGED" | grep -E '^libs/' || true
+}
+
+# libs_changed_module_dirs — the module directory owning each changed libs/
+# path, one absolute dir per line, sorted and unique. Most libs live directly
+# under libs/<name>, but at least one (libs/atlas-constants/gen) is a nested
+# module in its own right, so this maps by longest module-directory prefix
+# over the discovered module set rather than assuming one path depth.
+libs_changed_module_dirs() {
+    local -a mods=()
+    local m rel f best best_len len
+    while IFS= read -r m; do mods+=("$m"); done < <(all_modules)
+
+    local -A seen=()
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        best="" best_len=0
+        for m in "${mods[@]}"; do
+            rel="${m#"$ROOT"/}"
+            case "$f" in
+                "$rel"|"$rel"/*)
+                    len="${#rel}"
+                    if [ "$len" -gt "$best_len" ]; then
+                        best="$rel"
+                        best_len="$len"
+                    fi
+                    ;;
+            esac
+        done
+        [ -n "$best" ] && seen["$ROOT/$best"]=1
+    done < <(libs_paths)
+
+    local k
+    for k in "${!seen[@]}"; do printf '%s\n' "$k"; done | sort -u
 }
 
 changed_modules() {
@@ -194,46 +287,107 @@ changed_modules() {
         all_modules
         return
     fi
-    # go.work, or ANY shared lib, reaches every module: services consume libs
-    # through the workspace, so a lib edit can break a service that has no
-    # changed file of its own. Conservative on purpose — use --quick to skip
-    # the -race pass while iterating.
-    #
-    # The trap this fan-out sets: CHANGED is the whole branch against its merge
-    # base, so ONE libs/ commit makes every later run on that branch a full
-    # 86-module build, forever. On a long branch that is ~10 minutes per run
-    # instead of ~1. Say so out loud, and name the remedy — an iteration gate
-    # should pass --base <last-gated-commit> so the change set is the increment
-    # under test, not the accumulated branch.
-    local fanout
-    fanout="$(fanout_paths)"
-    if [ -n "$fanout" ]; then
+
+    # The trap a full fan-out sets: CHANGED is the whole branch against its
+    # merge base, so ONE such commit makes every later run on that branch a
+    # full 86-module build, forever. On a long branch that is ~10 minutes per
+    # run instead of ~1. Say so out loud, and name the remedy — an iteration
+    # gate should pass --base <last-gated-commit> so the change set is the
+    # increment under test, not the accumulated branch.
+
+    # go.work reaches every module unconditionally: it is the workspace
+    # membership list itself, not a require edge, so the closure has nothing
+    # to compute from it.
+    local gowork
+    gowork="$(gowork_changed)"
+    if [ -n "$gowork" ]; then
         if [ -z "$BASE" ]; then
-            printf '\033[33mverify.sh: shared-lib change fans out to ALL modules (%s path(s) under go.work/libs/).\n' \
-                "$(printf '%s\n' "$fanout" | wc -l | tr -d ' ')" >&2
-            printf '           first: %s\n' "$(printf '%s\n' "$fanout" | head -1)" >&2
+            printf '\033[33mverify.sh: go.work change fans out to ALL modules.\n' >&2
             printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
             printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
         else
             # stderr, NOT stdout: this function's stdout IS the module list the
             # caller cd's into, so a chatty line here becomes a phantom module
-            # ("cd: verify.sh: shared-lib change...: No such file or directory")
+            # ("cd: verify.sh: go.work changed...: No such file or directory")
             # and fails the gate. Matches the no-BASE branch above.
-            echo "verify.sh: shared-lib change in this increment — fanning out to all modules" >&2
+            echo "verify.sh: go.work changed in this increment — fanning out to all modules" >&2
         fi
         all_modules
         return
     fi
+
+    local libs
+    libs="$(libs_paths)"
+
+    # ATLAS_LIBS_FANOUT=all is the one-variable escape hatch back to the old
+    # "any libs/ change reaches every module" behaviour — for Step 4's
+    # validation against the closure, and for any future doubt about the
+    # closure's correctness.
+    if [ -n "$libs" ] && [ "${ATLAS_LIBS_FANOUT:-}" = "all" ]; then
+        if [ -z "$BASE" ]; then
+            printf '\033[33mverify.sh: shared-lib change fans out to ALL modules (ATLAS_LIBS_FANOUT=all; %s path(s) under libs/).\n' \
+                "$(printf '%s\n' "$libs" | wc -l | tr -d ' ')" >&2
+            printf '           first: %s\n' "$(printf '%s\n' "$libs" | head -1)" >&2
+            printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
+            printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
+        else
+            echo "verify.sh: shared-lib change in this increment (ATLAS_LIBS_FANOUT=all) — fanning out to all modules" >&2
+        fi
+        all_modules
+        return
+    fi
+
+    # all_modules() walks only $ROOT/services and $ROOT/libs — the workspace
+    # also has tools/ modules (go.work's `use` list), which all_modules() has
+    # never built and which the closure must not start building either.
+    # module_consumers walks the whole $ROOT to build its graph (it has no
+    # opinion on which subtrees are "in scope" — the unit test's own fixture
+    # uses arbitrary directory names), so its output is intersected with
+    # this same services+libs set below rather than trusted as-is.
+    local -A mods_set=()
     local mods=() m rel
-    while IFS= read -r m; do mods+=("$m"); done < <(all_modules)
+    while IFS= read -r m; do mods+=("$m"); mods_set["$m"]=1; done < <(all_modules)
+
+    local -A result=()
+
+    if [ -n "$libs" ]; then
+        # A libs/ change reaches its transitive reverse-dependency closure
+        # over the workspace require graph (tools/lib/module-graph.sh),
+        # rather than every module: services consume libs through the
+        # workspace, so a lib edit can break a consumer with no changed file
+        # of its own, but it cannot break a module that never named the lib.
+        local -a lib_dirs=()
+        while IFS= read -r m; do [ -n "$m" ] && lib_dirs+=("$m"); done \
+            < <(libs_changed_module_dirs)
+
+        local first_lib="${libs%%$'\n'*}"
+        if [ "${#lib_dirs[@]}" -gt 0 ]; then
+            first_lib="${lib_dirs[0]#"$ROOT"/}"
+            while IFS= read -r m; do
+                [ -n "$m" ] && [ -n "${mods_set[$m]:-}" ] && result["$m"]=1
+            done < <(module_consumers "$ROOT" "${lib_dirs[@]}")
+        fi
+
+        echo "verify.sh: shared-lib change (${first_lib}) fans out to its ${#result[@]}-module reverse-dependency closure — ATLAS_LIBS_FANOUT=all restores the old whole-workspace behaviour." >&2
+    fi
+
     for m in "${mods[@]}"; do
         rel="${m#"$ROOT"/}"
         # See touched(): no `-q` under pipefail.
         if printf '%s\n' "$CHANGED" | grep -E "^${rel}/" >/dev/null; then
-            echo "$m"
+            result["$m"]=1
         fi
     done
+
+    local k
+    for k in "${!result[@]}"; do printf '%s\n' "$k"; done | sort -u
 }
+
+if [ "$QUICK" -eq 0 ]; then
+    step "preflight (capacity)" preflight
+else
+    skip "preflight (capacity) (--quick)"
+fi
 
 MODULES=()
 while IFS= read -r m; do [ -n "$m" ] && MODULES+=("$m"); done < <(changed_modules | sort -u)
@@ -242,20 +396,87 @@ go_layer() {
     local mod="$1" rel="${1#"$ROOT"/}"
     (
         cd "$mod"
-        go build ./... && go vet ./... || exit 1
+        # Per-slot CPU budget from the build broker (tools/lib/build-slot.sh,
+        # docs/verification.md "Build slots"): GOMAXPROCS=6, go build -p 6,
+        # go test -p 2 — four slots at 6 threads apiece cover a 24-thread host
+        # without oversubscribing it.
+        export GOMAXPROCS="${ATLAS_GOMAXPROCS:-6}"
+        go build -p "${ATLAS_GO_P:-6}" ./... && go vet ./... || exit 1
         if [ "$QUICK" -eq 0 ]; then
-            go test -race ./... || exit 1
+            go test -p "${ATLAS_GO_TEST_P:-2}" -race ./... || exit 1
         fi
     )
 }
 
+# launch_go_layers runs go_layer for every changed module through a bounded
+# worker pool (GO_JOBS concurrent), each writing its output and exit code to
+# its own file under GO_LOG_DIR. replay_go_layer then feeds those files back
+# through step() in module order, so concurrency changes wall time only —
+# PASSED/FAILED/SELECTED bookkeeping and per-module output order are exactly
+# what a serial run would produce.
+GO_LOG_DIR=""
+launch_go_layers() {
+    GO_LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/verify-go.XXXXXX")"
+    trap 'rm -rf "$GO_LOG_DIR"' EXIT
+    local i=0
+    for mod in "${MODULES[@]}"; do
+        while [ "$(jobs -rp | wc -l)" -ge "$GO_JOBS" ]; do wait -n; done
+        (
+            # `cmd; rc=$?` would abort the subshell under set -e before the rc
+            # file is written, and the replay would then read an empty rc and
+            # report a pass. The `if` is load-bearing.
+            if go_layer "$mod" >"$GO_LOG_DIR/$i.log" 2>&1; then
+                echo 0 >"$GO_LOG_DIR/$i.rc"
+            else
+                echo $? >"$GO_LOG_DIR/$i.rc"
+            fi
+        ) &
+        i=$((i + 1))
+    done
+    wait
+}
+
+replay_go_layer() {
+    cat "$GO_LOG_DIR/$1.log"
+    return "$(cat "$GO_LOG_DIR/$1.rc")"
+}
+
+GO_POOL_SLOT_OK=1
 if [ "${#MODULES[@]}" -eq 0 ]; then
     skip "go build/vet/test (no Go module changed)"
 else
-    info "verify.sh: ${#MODULES[@]} changed Go module(s)"
-    for mod in "${MODULES[@]}"; do
-        step "go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race')  ${mod#"$ROOT"/}" go_layer "$mod"
-    done
+    info "verify.sh: ${#MODULES[@]} changed Go module(s), ${GO_JOBS} job(s)"
+    # Under --facts step() executes nothing, so launching the work would be
+    # pure waste and would break the "--facts runs no check" contract that
+    # verify_test.sh:168-177 times.
+    #
+    # One build slot covers the whole parallel phase, held around the
+    # launch_go_layers *function* rather than as a subprocess — a slot held by
+    # a subprocess would release the instant that subprocess exits, before the
+    # build it guards even starts (docs/verification.md, "Build slots"). Only
+    # acquired when -race is actually running: a --quick pass is the cheap
+    # inner loop and must not compete for machine-wide capacity.
+    if [ "$FACTS" -eq 0 ]; then
+        if [ "$QUICK" -eq 0 ]; then
+            if acquire_build_slot "go test -race"; then
+                launch_go_layers
+                release_build_slot
+            else
+                FAILED+=("build slot (go test -race)")
+                GO_POOL_SLOT_OK=0
+            fi
+        else
+            launch_go_layers
+        fi
+    fi
+    if [ "$FACTS" -eq 1 ] || [ "$GO_POOL_SLOT_OK" -eq 1 ]; then
+        i=0
+        for mod in "${MODULES[@]}"; do
+            step "go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race')  ${mod#"$ROOT"/}" \
+                replay_go_layer "$i"
+            i=$((i + 1))
+        done
+    fi
 fi
 
 # ------------------------------------------------------------------- docker
@@ -282,6 +503,12 @@ fi
 # A broken build still FAILS under cacheonly (every stage runs; only the export
 # is dropped) — verified against both a bad COPY path and a Go type error.
 # To actually PRODUCE runnable `<svc>:local` images, use tools/build-services.sh.
+#
+# All selected targets go into a single `docker buildx bake` invocation rather
+# than one bake per target: BuildKit solves the whole target graph in one
+# call, so a failure is BuildKit's own solve output naming the failing target
+# and step, recorded here as one `FAILED` entry with the full solve output
+# printed — not re-derived by re-running targets individually.
 BAKE_OUTPUT='*.output=type=cacheonly'
 
 bake_targets() {
@@ -333,9 +560,13 @@ else
     elif [ "${#TARGETS[@]}" -eq 0 ]; then
         skip "docker buildx bake (no go.mod touched)"
     else
-        for t in "${TARGETS[@]}"; do
-            step "docker buildx bake $t" docker buildx bake --set "$BAKE_OUTPUT" "$t"
-        done
+        step "buildx builder" ./tools/buildx-bootstrap.sh --check
+        # The bake is an external process, so the CLI wrapper is the right
+        # tool (unlike the Go pool below, which holds a slot around a shell
+        # function and must source the library directly).
+        step "docker buildx bake (${#TARGETS[@]} target(s))" \
+            ./tools/with-build-slot.sh "bake" -- \
+            docker buildx bake --builder "${ATLAS_BUILDER:-atlas}" --set "$BAKE_OUTPUT" "${TARGETS[@]}"
     fi
 fi
 
@@ -670,7 +901,8 @@ if [ "$FACTS" -eq 1 ]; then
         printf '%s' "${v:-none}"
     }
 
-    fanout="$(fanout_paths)"
+    gowork="$(gowork_changed)"
+    libs="$(libs_paths)"
     changed_services="$(printf '%s\n' "$CHANGED" | sed -n 's|^services/\([^/]*\)/.*|\1|p' | sort -u)"
     changed_libs="$(printf '%s\n' "$CHANGED" | sed -n 's|^libs/\([^/]*\)/.*|\1|p' | sort -u)"
     module_rel=""
@@ -688,10 +920,21 @@ if [ "$FACTS" -eq 1 ]; then
     echo "changed_libs=$(csv "$changed_libs")"
     echo "go_changed=$(touched '\.go$' && echo true || echo false)"
     echo "ui_changed=$([ "$UI_CHANGED" -eq 1 ] && echo true || echo false)"
-    if [ -n "$fanout" ]; then
-        echo "fanout_reason=shared-lib:$(printf '%s\n' "$fanout" | head -1)"
-    elif [ "$ALL" -eq 1 ]; then
+    if [ "$ALL" -eq 1 ]; then
         echo "fanout_reason=--all"
+    elif [ -n "$gowork" ]; then
+        echo "fanout_reason=shared-lib:go.work"
+    elif [ -n "$libs" ] && [ "${ATLAS_LIBS_FANOUT:-}" = "all" ]; then
+        echo "fanout_reason=shared-lib:$(printf '%s\n' "$libs" | head -1)"
+    elif [ -n "$libs" ]; then
+        # Same mapping changed_modules() uses, so the reason names the
+        # module the closure was actually computed from — not just the first
+        # raw changed path, which might be a nested module like
+        # libs/atlas-constants/gen.
+        lib_dirs_facts="$(libs_changed_module_dirs)"
+        first_lib_facts="$(printf '%s\n' "$lib_dirs_facts" | head -1)"
+        first_lib_facts="${first_lib_facts#"$ROOT"/}"
+        echo "fanout_reason=shared-lib-closure:${first_lib_facts} (${#MODULES[@]} consumers)"
     else
         echo "fanout_reason=none"
     fi

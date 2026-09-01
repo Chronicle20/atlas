@@ -1,10 +1,24 @@
-# Node / Next.js build artifacts that would otherwise be pulled into
-# image builds from the repo root context and collide with in-container builds.
+# Allowlist. Every root-context image build in docker-bake.hcl COPYs only from
+# libs/ and services/<name>/ — the shared go-service Dockerfile (COPY
+# libs/*/go.mod, COPY services/${SERVICE}/, COPY libs/*/) and
+# services/atlas-ui/Dockerfile (COPY services/atlas-ui/). Everything else at
+# the repo root is host-only: the gitignored tmp/ holds ~8 GiB of WZ assets and
+# .worktrees/ holds ~26 GiB of sibling checkouts, and both were being tarred and
+# uploaded on every solve.
+#
+# services/atlas-ui is deliberately NOT excluded. docker-bake.hcl's "atlas-ui"
+# target uses context "." and is a member of the all-services and default
+# groups, so excluding it breaks that build. Its bulk is node_modules, already
+# excluded below; the tracked tree is ~9 MiB.
+#
+# Adding a new root-context Dockerfile means checking that everything it COPYs
+# lives under libs/ or services/ — or adding another `!` line here.
+*
+!libs
+!services
+
+# Host-only artifacts inside the allowlisted trees. Last match wins, so these
+# re-exclude after the `!services` re-inclusion above.
 **/node_modules
 **/.next
-**/.next/**
-
-# Host-only tooling output — none of this is needed inside images.
 **/*.log
-.git
-.github

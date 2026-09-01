@@ -1779,7 +1779,7 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 		err = NewHandler(logger, ctx).WithPlayerNpcLocationProcessor(locP).handleDeployPlayerNpc(s, step)
 		assert.NoError(t, err)
 
-		msgs := capture.Messages(playernpcmsg.EnvCommandTopic)
+		msgs := capture.Messages(string(playernpcmsg.EnvCommandTopic))
 		require.Len(t, msgs, 1, "handler must emit exactly one DEPLOY command")
 		var cmd playernpcmsg.Command[playernpcmsg.CommandDeployBody]
 		require.NoError(t, json.Unmarshal(msgs[0].Value, &cmd))

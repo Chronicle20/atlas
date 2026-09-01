@@ -19,6 +19,7 @@ const (
 	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_PLAYER_NPC"
 	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_PLAYER_NPC_STATUS"
 )
+
 const (
 	CommandTypeDeploy   = "DEPLOY"
 	CommandTypeRedeploy = "REDEPLOY"

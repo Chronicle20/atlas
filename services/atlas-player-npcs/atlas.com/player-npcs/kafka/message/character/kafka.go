@@ -15,6 +15,7 @@ import (
 const (
 	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
 )
+
 const (
 	StatusEventTypeLevelChanged = "LEVEL_CHANGED"
 )

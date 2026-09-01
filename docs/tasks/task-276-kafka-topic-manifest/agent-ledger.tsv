@@ -113,3 +113,9 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-30T14:12:33Z	agent	Fix F	task-implementer	sonnet	-	-	-	-	DONE	3a1a7b8d4	-	-	-	-
 2026-08-30T14:12:33Z	agent	Fix F	task-reviewer	sonnet	-	-	-	-	dispatched	3a1a7b8d4	-	-	-	-
 2026-08-30T14:15:55Z	agent	Fix F	task-reviewer	sonnet	-	-	-	-	DONE	3a1a7b8d4	APPROVED	no	.superpowers/sdd/plan/fixF-review.md	-
+2026-09-01T11:48:48Z	agent	Fix G	task-implementer	sonnet	-	-	-	-	dispatched	695210c29	-	-	-	-
+2026-09-01T17:19:14Z	agent	Fix G	task-implementer	sonnet	-	-	-	-	DONE	a961930e7	-	-	-	-
+2026-09-01T17:19:15Z	agent	Fix G5	task-implementer	sonnet	-	-	-	-	dispatched	a961930e7	-	-	-	-
+2026-09-01T17:21:53Z	agent	Fix G	task-reviewer	sonnet	-	-	-	-	DONE	a961930e7	APPROVED	no	-	-
+2026-09-01T17:25:23Z	agent	Fix G5	task-implementer	sonnet	-	-	-	-	STALLED	a961930e7	-	-	-	-
+2026-09-01T17:28:10Z	agent	Fix G5	task-implementer	sonnet	-	-	-	-	STALLED	a961930e7	-	-	-	-

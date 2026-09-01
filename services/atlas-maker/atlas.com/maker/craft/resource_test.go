@@ -575,42 +575,144 @@ func TestPostCraftReturnsSagaId(t *testing.T) {
 // rather than reasoned about: for every rejection condition, capture the
 // character's materials, mesos and equips before the request, issue it, and
 // assert the post-request state is identical field-for-field, and that the
-// saga emitter was called zero times.
+// saga emitter was called zero times. This mirrors every row of
+// TestEveryErrorCodeIsReturnedByItsOwnCondition's table (all 11 rejection
+// conditions), not a subset.
 func TestFailureLeavesStateUnchanged(t *testing.T) {
 	r := rEligibleRecipeFixture(t)
 
+	t.Run("recipe_not_found", func(t *testing.T) {
+		h := rNewEligibleHarness(t)
+		beforeCharacter := h.character
+		beforeEtc := h.etc
+		beforeEquip := h.equip
+
+		d := rNewDeps()
+		d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return recipe.Model{}, recipe.ErrNotFound }
+		p, rp := rBuildProcessor(t, h, d)
+		router := setupRouter(newTestFactory(p, rp))
+		srv := httptest.NewServer(router)
+		defer srv.Close()
+
+		url := fmt.Sprintf("%s/characters/%d/maker/recipes/9999999", srv.URL, h.characterId)
+		req := requestWithTenant(http.MethodGet, url, "", uuid.New())
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		assert.Equal(t, beforeCharacter, h.character, "character must be unchanged after a rejected lookup")
+		assert.Equal(t, beforeEtc, h.etc, "etc compartment must be unchanged after a rejected lookup")
+		assert.Equal(t, beforeEquip, h.equip, "equip compartment must be unchanged after a rejected lookup")
+		assert.Empty(t, d.em.calls, "a rejection must emit no saga")
+	})
+
 	tests := []struct {
 		name   string
-		mutate func(t *testing.T, h *rharness)
+		mutate func(t *testing.T, h *rharness, d *rdeps)
+		body   string
 	}{
-		{name: "level too low", mutate: func(t *testing.T, h *rharness) { h.character = rBuildCharacter(t, 1, 1200) }},
-		{name: "insufficient mesos", mutate: func(t *testing.T, h *rharness) { h.character = rBuildCharacter(t, 40, 0) }},
-		{name: "inventory full", mutate: func(t *testing.T, h *rharness) { h.accommodate = false }},
-		{name: "missing quest", mutate: func(t *testing.T, h *rharness) { h.quests = nil }},
+		{
+			name:   "level_too_low",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) { h.character = rBuildCharacter(t, 1, 1200) },
+			body:   craftBody(1, uint32(r.Id())),
+		},
+		{
+			name:   "skill_level_too_low",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) { h.skills = nil },
+			body:   craftBody(1, uint32(r.Id())),
+		},
+		{
+			name: "insufficient_materials",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) {
+				h.etc = compartment.NewBuilder(inventory.TypeValueETC).
+					AddAsset(compartment.NewAssetModel(item.Id(4000021), 1, 2)).
+					Build()
+			},
+			body: craftBody(1, uint32(r.Id())),
+		},
+		{
+			name: "missing_prerequisite_item",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) {
+				h.etc = compartment.NewBuilder(inventory.TypeValueETC).
+					AddAsset(compartment.NewAssetModel(item.Id(4011001), 5, 1)).
+					Build()
+			},
+			body: craftBody(1, uint32(r.Id())),
+		},
+		{
+			name:   "missing_prerequisite_quest",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) { h.quests = nil },
+			body:   craftBody(1, uint32(r.Id())),
+		},
+		{
+			name:   "insufficient_mesos",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) { h.character = rBuildCharacter(t, 40, 0) },
+			body:   craftBody(1, uint32(r.Id())),
+		},
+		{
+			name:   "inventory_full",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) { h.accommodate = false },
+			body:   craftBody(1, uint32(r.Id())),
+		},
+		{
+			name: "equip_not_found",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) {
+				h.equip = compartment.NewBuilder(inventory.TypeValueEquip).
+					AddAsset(compartment.NewAssetModel(item.Id(1002419), 1, 5)).
+					Build()
+			},
+			body: `{"data":{"type":"makerCrafts","attributes":{"mode":4,"equipItemId":1002419,"slotPos":99}}}`,
+		},
+		{
+			name: "no_crystal_mapping",
+			mutate: func(t *testing.T, h *rharness, d *rdeps) {
+				d.rp.GetByLeftoverFunc = func(item.Id) (recipe.Model, error) { return recipe.Model{}, recipe.ErrNoCrystalMapping }
+			},
+			body: `{"data":{"type":"makerCrafts","attributes":{"mode":3,"leftoverItemId":4200099}}}`,
+		},
+		{
+			name:   "craft_in_progress",
+			mutate: nil,
+			body:   craftBody(1, uint32(r.Id())),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := rNewEligibleHarness(t)
-			tt.mutate(t, h)
+			d := rNewDeps()
+			d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+			if tt.mutate != nil {
+				tt.mutate(t, h, d)
+			}
+			p, rp := rBuildProcessor(t, h, d)
+			router := setupRouter(newTestFactory(p, rp))
+
+			// craft_in_progress is provoked by a first, accepted call that
+			// legitimately emits one saga and mutates state; the state
+			// snapshot is taken after that call, since only the second
+			// (rejected) call's effect on state is under test here.
+			expectedCalls := 0
+			if tt.name == "craft_in_progress" {
+				resp1 := postCraft(t, router, uuid.New(), h.characterId, tt.body)
+				require.Equal(t, http.StatusOK, resp1.StatusCode)
+				_ = resp1.Body.Close()
+				expectedCalls = 1
+			}
 
 			beforeCharacter := h.character
 			beforeEtc := h.etc
 			beforeEquip := h.equip
 
-			d := rNewDeps()
-			d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
-			p, rp := rBuildProcessor(t, h, d)
-			router := setupRouter(newTestFactory(p, rp))
-
-			resp := postCraft(t, router, uuid.New(), h.characterId, craftBody(1, uint32(r.Id())))
+			resp := postCraft(t, router, uuid.New(), h.characterId, tt.body)
 			defer func() { _ = resp.Body.Close() }()
 			require.NotEqual(t, http.StatusOK, resp.StatusCode)
 
 			assert.Equal(t, beforeCharacter, h.character, "character must be unchanged after a rejected craft")
 			assert.Equal(t, beforeEtc, h.etc, "etc compartment must be unchanged after a rejected craft")
 			assert.Equal(t, beforeEquip, h.equip, "equip compartment must be unchanged after a rejected craft")
-			assert.Empty(t, d.em.calls, "a rejection must emit no saga")
+			assert.Len(t, d.em.calls, expectedCalls, "the rejected call must emit no additional saga")
 		})
 	}
 }

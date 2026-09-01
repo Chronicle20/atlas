@@ -15,10 +15,15 @@ import (
 )
 
 // makerResultFailedValue is the MAKER_RESULT nResult sent for every rejection
-// and every atlas-maker-unreachable outcome. Design §4.3.2 (C-1): the
-// client's guard treats any nResult > 1 as the bodyless FAILED arm, and that
-// arm carries no room to distinguish PRD §5 rejection codes on the wire -- a
-// single sentinel is therefore sufficient; the code itself is only logged.
+// and every atlas-maker-unreachable outcome. The value 2 is the wire-verified
+// FAILED sentinel: libs/atlas-packet/character/clientbound/maker_result_test.go
+// (NewMakerResultFailed(2)) asserts the encoded byte fixture `02 00 00 00`
+// with length exactly 4 (nResult only, no mode) against IDA evidence that the
+// client's nResult guard treats any value outside {0, 1} as the bodyless
+// FAILED arm and reads nothing further (docs/tasks/task-285-maker-skill-crafting/plan.md:1455-1458).
+// The FAILED arm carries no room to distinguish PRD §5 rejection codes on the
+// wire, so a single sentinel is sufficient; the rejection code itself is only
+// logged.
 const makerResultFailedValue = uint32(2)
 
 // craftRequestFromMakerSkill maps the decoded, UNVALIDATED MakerSkill request

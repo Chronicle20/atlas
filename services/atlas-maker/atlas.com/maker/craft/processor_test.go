@@ -24,8 +24,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
@@ -757,4 +759,41 @@ func TestEveryStepUsesACompensableAction(t *testing.T) {
 			assert.True(t, craft.CompensableActions[st.Action], "action %q is not in the compensable set", st.Action)
 		}
 	}
+}
+
+// TestNonZeroWorldAndChannelReachEmittedSaga guards against WorldId/ChannelId
+// silently dropping to their zero value on the way to AwardMesosPayload:
+// Request carries the calling channel's own scope (processor.go's Request
+// doc), so a non-zero value driven in must survive verbatim onto the
+// emitted saga's AwardMesos step.
+func TestNonZeroWorldAndChannelReachEmittedSaga(t *testing.T) {
+	r := eligibleRecipeFixture(t)
+	h := newEligibleHarness(t)
+	d := newDeps()
+	d.rp.GetByIdFunc = func(item.Id) (recipe.Model, error) { return r, nil }
+	p := buildCreateProcessor(t, h, d)
+
+	txId, err := p.Create(h.characterId, craft.Request{
+		Mode:         craft.ModeCreate,
+		TargetItemId: r.Id(),
+		WorldId:      world.Id(3),
+		ChannelId:    channel.Id(7),
+	})
+	require.NoError(t, err)
+	assert.NotZero(t, txId)
+
+	require.Len(t, d.em.calls, 1)
+	steps := d.em.calls[0].Steps
+	var mesos saga.AwardMesosPayload
+	found := false
+	for _, st := range steps {
+		if st.Action == saga.AwardMesos {
+			mesos = st.Payload.(saga.AwardMesosPayload)
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected an AwardMesos step in the emitted saga")
+	assert.Equal(t, world.Id(3), mesos.WorldId)
+	assert.Equal(t, channel.Id(7), mesos.ChannelId)
 }

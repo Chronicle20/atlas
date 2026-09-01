@@ -14,5 +14,11 @@ versions:
 fields:
   - "MAKER_SKILL: no version gate expected (design C-2); confirm per version"
   - "MAKER_RESULT: result-code prefix precedes the mode (design C-1)"
-out_of_scope:
-  - model/asset
+# out_of_scope intentionally empty: the branch's only libs/atlas-packet delta
+# (git diff 9cd1ec5af..HEAD --stat -- libs/atlas-packet) is
+# character/clientbound/maker_result{,_test}.go, character/maker_result_body{,_test}.go
+# and character/serverbound/maker_skill{,_test}.go -- all claimed above under
+# ops. No model/asset (or any other) file was touched, so the previous
+# `out_of_scope: model/asset` entry was the PROCESS.md schema example
+# (docs/packets/PROCESS.md's `out_of_scope:` sample) carried over unedited,
+# not a real declaration for this task; it is removed rather than justified.

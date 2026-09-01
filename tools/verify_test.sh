@@ -377,6 +377,38 @@ flock -u 8
 assert_eq "no per-target bake loop remains" "0" \
   "$(grep -c 'for t in .\{0,4\}TARGETS' "$VERIFY")"
 
+# --- workspace drift: --facts reports it, does not abort on it -------------
+#
+# H4 regression: check_workspace_drift() (tools/lib/go-work.sh) is reached
+# from changed_modules() -> all_modules() unconditionally, before the FACTS
+# branch is ever tested — --facts still needs the module list to answer
+# modules_selected. A services/ or libs/ go.mod missing from go.work's
+# 'use' list must still fail a REAL run loudly (unchanged — see
+# tools/lib/go-work.sh's own contract, untouched here); --facts's entire
+# job is to answer "what would this select" without running anything, so it
+# must not inherit that abort. Reuses the bake block's probe path — the
+# same "services/ go.mod outside go.work" condition, this time read for its
+# drift, not its bake selection.
+flock 8
+mkdir -p "$probe_ban_dir"
+: > "$probe_bake_ban"
+
+drift_out="$("$VERIFY" --facts --quick --base HEAD 2>/dev/null)"
+drift_rc=$?
+assert_eq "--facts exits 0 with a go.work drift present" "0" "$drift_rc"
+assert_true "--facts still prints modules_selected with drift present" \
+  "$(printf '%s\n' "$drift_out" | grep '^modules_selected=' >/dev/null && echo true)"
+assert_true "--facts reports the drift as a fact instead of aborting on it" \
+  "$(printf '%s\n' "$drift_out" | grep "^workspace_drift=.*services/atlas-ban/zz-verify-probe-${probe_tag}" >/dev/null && echo true)"
+
+rm -f "$probe_bake_ban"
+rmdir "$probe_ban_dir" 2>/dev/null || true
+
+no_drift_out="$("$VERIFY" --facts --quick --base HEAD 2>/dev/null)"
+assert_true "no probe, no drift fact" \
+  "$(printf '%s\n' "$no_drift_out" | grep '^workspace_drift=$' >/dev/null && echo true)"
+flock -u 8
+
 # --- pool: GO_JOBS changes wall time, not what is reported -----------------
 #
 # The claim under test: a bounded worker pool must be observably identical to
@@ -482,7 +514,7 @@ assert_true "--facts --all reports the fan-out reason" \
 
 out="$("$VERIFY" --facts --quick --base HEAD 2>/dev/null)"
 for k in base changed_paths changed_services changed_libs go_changed ui_changed \
-         fanout_reason modules_selected guard_suites gates_selected gates_skipped; do
+         fanout_reason modules_selected workspace_drift guard_suites gates_selected gates_skipped; do
   assert_true "fact block carries '$k'" \
     "$(printf '%s\n' "$out" | grep "^${k}=" >/dev/null && echo true)"
 done

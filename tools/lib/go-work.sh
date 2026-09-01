@@ -60,11 +60,11 @@ workspace_module_dirs() {
     done | sort -u
 }
 
-# check_workspace_drift <caller> <found> <workspace> — fails loudly, naming
-# every offender, when <found> (a newline-separated set of module
+# check_workspace_drift <caller> <found> <workspace> — reports, on stdout,
+# every offender when <found> (a newline-separated set of module
 # directories a caller discovered under services/ or libs/) contains a
 # directory absent from <workspace> (workspace_module_dirs()'s go.work
-# `use` set).
+# `use` set). Nothing is printed to stdout when there is no drift.
 #
 # The intersection callers take between found and workspace (`comm -12`)
 # must never silently drop a module nobody added to go.work: that module
@@ -72,6 +72,14 @@ workspace_module_dirs() {
 # green. It already happened once on this branch (libs/atlas-kafka/gen —
 # see plan.md:18 for task-276, Fix G5), so this check runs before the
 # intersection is taken, not after.
+#
+# This function reports; it does not decide fatality. It returns 1 (and
+# names every offender on stderr, unchanged) whenever drift is found — the
+# caller decides whether that return is fatal. Every current caller in
+# tools/verify.sh, tools/lint.sh, and tools/lib/analyzer-guard.sh treats it
+# as fatal (`|| exit 1` / `|| return 1`) on a real run; tools/verify.sh's
+# --facts path is the one exception, capturing this function's stdout to
+# report the drift as a fact instead of aborting.
 #
 # Both sets are re-sorted LC_ALL=C here so `comm` never refuses regardless
 # of which locale/order the caller collated them in.
@@ -88,6 +96,7 @@ check_workspace_drift() {
             echo "${caller}: ERROR —   $d" >&2
         done
         echo "${caller}: ERROR — add the missing module(s) to go.work's 'use' list to fix this" >&2
+        printf '%s\n' "$dropped"
         return 1
     fi
 }

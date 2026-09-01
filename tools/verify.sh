@@ -88,6 +88,21 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# all_modules() is invoked through command substitutions (changed_modules()'s
+# `all="$(all_modules)"`, and the top-level `changed_modules | sort -u`
+# below), each of which runs in its own subshell — a plain variable set
+# inside all_modules() when check_workspace_drift() finds go.work drift
+# would not survive back to this shell. WORKSPACE_DRIFT_FILE is the side
+# channel that does: only opened under --facts, since only --facts needs to
+# report drift rather than exit 1 on it (see all_modules()). No EXIT trap
+# conflict — under --facts no gate ever runs, so launch_go_layers()'s own
+# `trap ... EXIT` (which would otherwise clobber this one) is never reached.
+WORKSPACE_DRIFT_FILE=""
+if [ "$FACTS" -eq 1 ]; then
+    WORKSPACE_DRIFT_FILE="$(mktemp "${TMPDIR:-/tmp}/verify-drift.XXXXXX")"
+    trap 'rm -f "$WORKSPACE_DRIFT_FILE"' EXIT
+fi
+
 PASSED=()
 FAILED=()
 SKIPPED=()
@@ -241,11 +256,27 @@ changed_tool_suites() {
 source "$ROOT/tools/lib/go-work.sh"
 
 all_modules() {
-    local found workspace result
+    local found workspace result drift drift_rc
     found="$(find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
         | xargs -0 -r -n1 dirname | sort -u)"
     workspace="$(workspace_module_dirs "verify.sh")" || exit 1
-    check_workspace_drift "verify.sh" "$found" "$workspace" || exit 1
+    # check_workspace_drift() reports drift on stdout (the dropped module
+    # dirs) and its ERROR lines on stderr; it does not decide fatality
+    # itself. On a real run, drift is fatal — exactly as before this
+    # comment. Under --facts, --facts executes no gate and must not abort
+    # on a hygiene fact it is perfectly able to report; the dropped set is
+    # appended to WORKSPACE_DRIFT_FILE for the fact block to print instead
+    # (a plain variable set here would not survive — this function runs
+    # inside a command substitution's subshell every time it is called).
+    drift_rc=0
+    drift="$(check_workspace_drift "verify.sh" "$found" "$workspace")" || drift_rc=$?
+    if [ "$drift_rc" -ne 0 ]; then
+        if [ "$FACTS" -eq 1 ]; then
+            printf '%s\n' "$drift" >> "$WORKSPACE_DRIFT_FILE"
+        else
+            exit 1
+        fi
+    fi
     result="$(comm -12 <(printf '%s\n' "$found") <(printf '%s\n' "$workspace"))"
     if [ -n "$found" ] && [ -z "$result" ]; then
         echo "verify.sh: ERROR — workspace filter produced zero modules from a non-empty candidate set;" >&2
@@ -953,6 +984,12 @@ if [ "$FACTS" -eq 1 ]; then
     for m in ${MODULES[@]+"${MODULES[@]}"}; do
         module_rel="$module_rel${m#"$ROOT"/}"$'\n'
     done
+    workspace_drift_rel=""
+    if [ -s "$WORKSPACE_DRIFT_FILE" ]; then
+        while IFS= read -r d; do
+            [ -n "$d" ] && workspace_drift_rel="$workspace_drift_rel${d#"$ROOT"/}"$'\n'
+        done < <(sort -u "$WORKSPACE_DRIFT_FILE")
+    fi
 
     echo "base=$BASE_SHA"
     if [ "$ALL" -eq 1 ]; then
@@ -983,6 +1020,12 @@ if [ "$FACTS" -eq 1 ]; then
         echo "fanout_reason=none"
     fi
     echo "modules_selected=${#MODULES[@]}"
+    # Empty when go.work has no drift, a comma list of the offending
+    # module dirs when it does. A real run treats this as fatal
+    # (all_modules(), tools/lib/go-work.sh); --facts reports it instead of
+    # aborting so the answer to "what would this select" is never
+    # silently withheld by a hygiene defect.
+    echo "workspace_drift=$(printf '%s\n' "$workspace_drift_rel" | sed '/^$/d' | paste -sd, -)"
     # A full fan-out lists 80+ modules; the count above is the fact, the list is
     # only useful when it is short enough to act on.
     if [ "${#MODULES[@]}" -le 12 ]; then

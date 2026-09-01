@@ -121,6 +121,8 @@ data:
         cleanup: delete
       - token: COMMAND_TOPIC_PET_MOVEMENT
         cleanup: delete
+      - token: COMMAND_TOPIC_PLAYER_NPC
+        cleanup: delete
       - token: COMMAND_TOPIC_PORTAL
         cleanup: delete
       - token: COMMAND_TOPIC_PORTAL_ACTIONS
@@ -290,6 +292,8 @@ data:
       - token: EVENT_TOPIC_PARTY_STATUS
         cleanup: delete
       - token: EVENT_TOPIC_PET_STATUS
+        cleanup: delete
+      - token: EVENT_TOPIC_PLAYER_NPC_STATUS
         cleanup: delete
       - token: EVENT_TOPIC_QUEST_STATUS
         cleanup: delete

@@ -75,7 +75,10 @@ func InitHandlers(l logrus.FieldLogger) func(pp ProcessorProvider) func(oe Outco
 	return func(pp ProcessorProvider) func(oe OutcomeEmitter) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(oe OutcomeEmitter) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
-				t, _ := topic.EnvProvider(l)(msg.EnvCommandTopic)()
+				t, err := topic.EnvProvider(l)(msg.EnvCommandTopic)()
+				if err != nil {
+					return err
+				}
 				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDeploy(pp, oe)))); err != nil {
 					return err
 				}

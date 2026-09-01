@@ -329,6 +329,10 @@ topics:
     packages:
       - atlas-channel/kafka/message/movement
       - atlas-pets/kafka/message/pet
+  - token: COMMAND_TOPIC_PLAYER_NPC
+    cleanup: delete
+    packages:
+      - atlas-player-npcs/kafka/message/playernpc
   - token: COMMAND_TOPIC_PORTAL
     cleanup: delete
     packages:
@@ -588,6 +592,7 @@ topics:
       - atlas-parties/kafka/consumer/character
       - atlas-party-quests/kafka/message/character
       - atlas-pets/kafka/message/character
+      - atlas-player-npcs/kafka/message/character
       - atlas-portal-actions/character
       - atlas-portals/character
       - atlas-portals/kafka/message/character
@@ -869,6 +874,10 @@ topics:
       - atlas-channel/kafka/message/pet
       - atlas-pets/kafka/message/pet
       - atlas-saga-orchestrator/kafka/message/pet
+  - token: EVENT_TOPIC_PLAYER_NPC_STATUS
+    cleanup: delete
+    packages:
+      - atlas-player-npcs/kafka/message/playernpc
   - token: EVENT_TOPIC_QUEST_STATUS
     cleanup: delete
     packages:

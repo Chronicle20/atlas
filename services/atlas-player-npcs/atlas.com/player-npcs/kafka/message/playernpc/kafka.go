@@ -12,12 +12,14 @@ import (
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic     = "COMMAND_TOPIC_PLAYER_NPC"
-	EnvEventTopicStatus = "EVENT_TOPIC_PLAYER_NPC_STATUS"
-
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_PLAYER_NPC"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_PLAYER_NPC_STATUS"
+)
+const (
 	CommandTypeDeploy   = "DEPLOY"
 	CommandTypeRedeploy = "REDEPLOY"
 	CommandTypeRemove   = "REMOVE"

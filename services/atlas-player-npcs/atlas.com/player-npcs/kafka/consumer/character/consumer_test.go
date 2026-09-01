@@ -29,6 +29,12 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	// topic.EnvProvider is fail-closed: an unset token resolves to an error
+	// and nothing is emitted, so every token this package's code under test
+	// publishes to must carry a value. Setting each to its own name keeps the
+	// Capture keyed by the token, which is what the assertions look up.
+	_ = os.Setenv(string(npcmsg.EnvCommandTopic), string(npcmsg.EnvCommandTopic))
+	_ = os.Setenv(string(charmsg.EnvEventTopicCharacterStatus), string(charmsg.EnvEventTopicCharacterStatus))
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }
@@ -152,7 +158,7 @@ func TestLevelChangedConsumer(t *testing.T) {
 		if cp.fetches != 1 {
 			t.Errorf("character fetches = %d, want 1", cp.fetches)
 		}
-		msgs := emitted.Messages(npcmsg.EnvCommandTopic)
+		msgs := emitted.Messages(string(npcmsg.EnvCommandTopic))
 		if len(msgs) != 1 {
 			t.Fatalf("emitted DEPLOY commands = %d, want 1", len(msgs))
 		}
@@ -195,7 +201,7 @@ func TestLevelChangedConsumer(t *testing.T) {
 		if cp.fetches != 0 {
 			t.Errorf("character fetches = %d, want 0 (cheap path)", cp.fetches)
 		}
-		if msgs := emitted.Messages(npcmsg.EnvCommandTopic); len(msgs) != 0 {
+		if msgs := emitted.Messages(string(npcmsg.EnvCommandTopic)); len(msgs) != 0 {
 			t.Errorf("emitted DEPLOY commands = %d, want 0", len(msgs))
 		}
 	})
@@ -219,7 +225,7 @@ func TestLevelChangedConsumer(t *testing.T) {
 		}
 		handleLevelChanged(deps)(l, testContext(t), e)
 
-		if msgs := emitted.Messages(npcmsg.EnvCommandTopic); len(msgs) != 0 {
+		if msgs := emitted.Messages(string(npcmsg.EnvCommandTopic)); len(msgs) != 0 {
 			t.Errorf("emitted DEPLOY commands = %d, want 0", len(msgs))
 		}
 	})
@@ -243,7 +249,7 @@ func TestLevelChangedConsumer(t *testing.T) {
 		}
 		handleLevelChanged(deps)(l, testContext(t), e)
 
-		if msgs := emitted.Messages(npcmsg.EnvCommandTopic); len(msgs) != 0 {
+		if msgs := emitted.Messages(string(npcmsg.EnvCommandTopic)); len(msgs) != 0 {
 			t.Errorf("emitted DEPLOY commands = %d, want 0", len(msgs))
 		}
 	})
@@ -275,7 +281,7 @@ func TestLevelChangedConsumer(t *testing.T) {
 		if pp.calls != 1 {
 			t.Errorf("GetByMap calls = %d, want 1", pp.calls)
 		}
-		if msgs := emitted.Messages(npcmsg.EnvCommandTopic); len(msgs) != 0 {
+		if msgs := emitted.Messages(string(npcmsg.EnvCommandTopic)); len(msgs) != 0 {
 			t.Errorf("emitted DEPLOY commands = %d, want 0", len(msgs))
 		}
 	})
@@ -307,7 +313,7 @@ func TestLevelChangedConsumer(t *testing.T) {
 			handleLevelChanged(deps)(l, testContext(t), e)
 		}()
 
-		if msgs := emitted.Messages(npcmsg.EnvCommandTopic); len(msgs) != 0 {
+		if msgs := emitted.Messages(string(npcmsg.EnvCommandTopic)); len(msgs) != 0 {
 			t.Errorf("emitted DEPLOY commands = %d, want 0", len(msgs))
 		}
 		if len(hook.Entries) == 0 || hook.LastEntry().Level != logrus.WarnLevel {
@@ -344,7 +350,7 @@ func TestLevelChangedConsumer(t *testing.T) {
 		handleLevelChanged(deps)(l, ctx, e)
 		handleLevelChanged(deps)(l, ctx, e)
 
-		msgs := emitted.Messages(npcmsg.EnvCommandTopic)
+		msgs := emitted.Messages(string(npcmsg.EnvCommandTopic))
 		if len(msgs) != 2 {
 			t.Fatalf("emitted DEPLOY commands = %d, want 2 (one per delivery -- the storage-layer unique constraint is the backstop, not this consumer)", len(msgs))
 		}

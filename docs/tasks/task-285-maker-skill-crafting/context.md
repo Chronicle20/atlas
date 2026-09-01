@@ -261,6 +261,7 @@ the flagless `tools/verify.sh` exited 0 with the bake included.
 | `plan-adherence-reviewer`, Tasks 1-14 shard | `plan-adherence-reviewer` / sonnet | APPROVED_WITH_FINDINGS, 0 blocking | No — one non-blocking finding, closed by the controller directly (not a fix round): review artifacts for Tasks 3, 12, 13, 14 had never been mirrored into `docs/tasks/task-285-maker-skill-crafting/reviews/`. All missing artifacts except Task 3's were copied in from `.superpowers/sdd/plan/task-N-review.md` (commit `493bf669f`). **Task 3 has no review artifact anywhere** — it was never written; its APPROVED verdict exists only in `progress.md`'s ledger entry ("Task 3: complete (commits `cda7f3f1e..f6d91735e`, review clean)"). |
 | `plan-adherence-reviewer`, Tasks 15-27 shard (incl. 26a, 26b) | `plan-adherence-reviewer` / sonnet | APPROVED, 0 blocking | No |
 | `packet-completeness-critic` | `packet-completeness-critic` / sonnet | CLEAN, 0 findings (CHANGED-BUT-UNCLAIMED: 0, CLAIMED-BUT-UNVERIFIED: 0) | No |
+| Task 3 (`cda7f3f1e..f6d91735e`), gap-closing re-review | `task-reviewer` / sonnet | APPROVED_WITH_FINDINGS, 0 blocking, 2 non-blocking | No |
 
 Fix rounds on this branch, end to end: Task 27 code slice fix round 1 (`3877d5047`), backend-audit
 fix round A (`8ada1d8ba`), backend-audit fix round B (`e25600ea5`), and fix round 3 for the

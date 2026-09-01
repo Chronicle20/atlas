@@ -3,6 +3,8 @@ package crystalband
 import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 func Migration(db *gorm.DB) error {
@@ -31,4 +33,27 @@ type entity struct {
 
 func (e entity) TableName() string {
 	return "crystal_bands"
+}
+
+// Make builds a Model from e, the canonical entity-to-model conversion
+// (DOM-02).
+func Make(e entity) (Model, error) {
+	return NewBuilder(e.TenantId).
+		SetMinLevel(e.MinLevel).
+		SetMaxLevel(e.MaxLevel).
+		SetCrystalItemId(item.Id(e.CrystalItemId)).
+		SetCount(e.Count).
+		Build()
+}
+
+// ToEntity builds the entity for m, the canonical model-to-entity conversion
+// (DOM-03).
+func (m Model) ToEntity() entity {
+	return entity{
+		TenantId:      m.TenantId(),
+		MinLevel:      m.MinLevel(),
+		MaxLevel:      m.MaxLevel(),
+		CrystalItemId: uint32(m.CrystalItemId()),
+		Count:         m.Count(),
+	}
 }

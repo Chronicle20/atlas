@@ -44,8 +44,7 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 }
 
 func Extract(rm RestModel) (Model, error) {
-	return Model{
-		id:       item.Id(rm.Id),
-		reqLevel: rm.ReqLevel,
-	}, nil
+	return NewBuilder(item.Id(rm.Id)).
+		SetReqLevel(rm.ReqLevel).
+		Build()
 }

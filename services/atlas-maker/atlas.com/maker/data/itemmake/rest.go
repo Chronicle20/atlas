@@ -86,21 +86,20 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	return Model{
-		id:            item.Id(rm.Id),
-		group:         rm.Group,
-		reqLevel:      rm.ReqLevel,
-		reqSkillLevel: rm.ReqSkillLevel,
-		itemNum:       rm.ItemNum,
-		tuc:           rm.Tuc,
-		meso:          rm.Meso,
-		catalyst:      rm.Catalyst,
-		reqItem:       rm.ReqItem,
-		reqEquip:      rm.ReqEquip,
-		recipe:        recipe,
-		randomReward:  rewards,
-		reqQuest:      reqQuest,
-	}, nil
+	return NewBuilder(item.Id(rm.Id)).
+		SetGroup(rm.Group).
+		SetReqLevel(rm.ReqLevel).
+		SetReqSkillLevel(rm.ReqSkillLevel).
+		SetItemNum(rm.ItemNum).
+		SetTuc(rm.Tuc).
+		SetMeso(rm.Meso).
+		SetCatalyst(rm.Catalyst).
+		SetReqItem(rm.ReqItem).
+		SetReqEquip(rm.ReqEquip).
+		SetRecipe(recipe).
+		SetRandomReward(rewards).
+		SetReqQuest(reqQuest).
+		Build()
 }
 
 func extractMaterial(rm MaterialRestModel) (Material, error) {

@@ -46,10 +46,9 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 }
 
 func Extract(rm RestModel) (Model, error) {
-	return Model{
-		id:          rm.Id,
-		characterId: rm.CharacterId,
-		questId:     rm.QuestId,
-		state:       rm.State,
-	}, nil
+	return NewBuilder(rm.Id).
+		SetCharacterId(rm.CharacterId).
+		SetQuestId(rm.QuestId).
+		SetState(rm.State).
+		Build()
 }

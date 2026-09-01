@@ -44,12 +44,12 @@ func (p *ProcessorImpl) GetAll() ([]Model, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.SliceMap(modelFromEntity)(model.FixedProvider(es))(model.ParallelMap())()
+	return model.SliceMap(Make)(model.FixedProvider(es))(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetAllPaged(page model.Page) model.Provider[model.Paged[Model]] {
 	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
-	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByItemId(itemId item.Id) (Model, error) {
@@ -60,5 +60,5 @@ func (p *ProcessorImpl) GetByItemId(itemId item.Id) (Model, error) {
 		}
 		return Model{}, err
 	}
-	return modelFromEntity(e)
+	return Make(e)
 }

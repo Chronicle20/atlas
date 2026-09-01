@@ -21,6 +21,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
@@ -144,17 +145,25 @@ func handleListRecipes(pf processorFactory) rest.GetHandler {
 					return
 				}
 
-				eligible := make([]RecipeRestModel, 0, len(recipes))
-				for _, rc := range recipes {
-					elig, err := p.Evaluate(characterId, snap, rc)
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Evaluating recipe [%d] for character [%d].", rc.Id(), characterId)
-						writeProcessorError(d.Logger(), w, err)
-						return
+				evaluated, err := model.SliceMap(evaluateRecipe(p, characterId, snap))(model.FixedProvider(recipes))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Evaluating recipes for character [%d].", characterId)
+					writeProcessorError(d.Logger(), w, err)
+					return
+				}
+
+				var eligibleRecipes []recipeEligibility
+				for _, e := range evaluated {
+					if e.elig.Eligible {
+						eligibleRecipes = append(eligibleRecipes, e)
 					}
-					if elig.Eligible {
-						eligible = append(eligible, TransformRecipe(rc, elig))
-					}
+				}
+
+				eligible, err := model.SliceMap(transformEligibleRecipe)(model.FixedProvider(eligibleRecipes))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Transforming recipes for character [%d].", characterId)
+					writeProcessorError(d.Logger(), w, err)
+					return
 				}
 				sort.SliceStable(eligible, func(i, j int) bool { return eligible[i].ItemId < eligible[j].ItemId })
 
@@ -165,6 +174,31 @@ func handleListRecipes(pf processorFactory) rest.GetHandler {
 			}
 		})
 	}
+}
+
+// recipeEligibility pairs one recipe with its already-computed eligibility
+// verdict, carrying both from evaluateRecipe to transformEligibleRecipe.
+type recipeEligibility struct {
+	recipe recipe.Model
+	elig   Eligibility
+}
+
+// evaluateRecipe builds a model.Transformer that evaluates rc against
+// characterId and snap, for use with model.SliceMap over a recipe list.
+func evaluateRecipe(p Processor, characterId uint32, snap Snapshot) func(rc recipe.Model) (recipeEligibility, error) {
+	return func(rc recipe.Model) (recipeEligibility, error) {
+		elig, err := p.Evaluate(characterId, snap, rc)
+		if err != nil {
+			return recipeEligibility{}, err
+		}
+		return recipeEligibility{recipe: rc, elig: elig}, nil
+	}
+}
+
+// transformEligibleRecipe adapts TransformRecipe to model.SliceMap's
+// Transformer shape.
+func transformEligibleRecipe(e recipeEligibility) (RecipeRestModel, error) {
+	return TransformRecipe(e.recipe, e.elig), nil
 }
 
 // handleGetRecipe returns one recipe with characterId's eligibility verdict

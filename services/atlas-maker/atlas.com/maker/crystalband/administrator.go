@@ -8,15 +8,9 @@ import (
 )
 
 func CreateCrystalBand(db *gorm.DB, m Model) error {
-	e := &entity{
-		Id:            uuid.New(),
-		TenantId:      m.TenantId(),
-		MinLevel:      m.MinLevel(),
-		MaxLevel:      m.MaxLevel(),
-		CrystalItemId: uint32(m.CrystalItemId()),
-		Count:         m.Count(),
-	}
-	return db.Create(e).Error
+	e := m.ToEntity()
+	e.Id = uuid.New()
+	return db.Create(&e).Error
 }
 
 func BulkCreateCrystalBand(db *gorm.DB, models []Model) error {

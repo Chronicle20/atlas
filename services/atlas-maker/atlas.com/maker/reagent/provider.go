@@ -25,10 +25,3 @@ func getByItemId(itemId item.Id) database.EntityProvider[entity] {
 		return database.Query[entity](db, &entity{ReagentItemId: uint32(itemId)})
 	}
 }
-
-func modelFromEntity(e entity) (Model, error) {
-	return NewBuilder(e.TenantId, item.Id(e.ReagentItemId)).
-		SetStat(e.Stat).
-		SetValue(e.Value).
-		Build()
-}

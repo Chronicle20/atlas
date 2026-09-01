@@ -54,12 +54,12 @@ func (p *ProcessorImpl) GetAll() ([]Model, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.SliceMap(modelFromEntity)(model.FixedProvider(es))(model.ParallelMap())()
+	return model.SliceMap(Make)(model.FixedProvider(es))(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetAllPaged(page model.Page) model.Provider[model.Paged[Model]] {
 	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
-	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByMinLevel(minLevel uint32) (Model, error) {
@@ -70,7 +70,7 @@ func (p *ProcessorImpl) GetByMinLevel(minLevel uint32) (Model, error) {
 		}
 		return Model{}, err
 	}
-	return modelFromEntity(e)
+	return Make(e)
 }
 
 // CrystalForLevel loads the tenant's bands once and resolves reqLevel in

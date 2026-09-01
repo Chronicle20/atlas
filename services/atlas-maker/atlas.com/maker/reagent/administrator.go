@@ -8,14 +8,9 @@ import (
 )
 
 func CreateReagent(db *gorm.DB, m Model) error {
-	e := &entity{
-		Id:            uuid.New(),
-		TenantId:      m.TenantId(),
-		ReagentItemId: uint32(m.ReagentItemId()),
-		Stat:          m.Stat(),
-		Value:         m.Value(),
-	}
-	return db.Create(e).Error
+	e := m.ToEntity()
+	e.Id = uuid.New()
+	return db.Create(&e).Error
 }
 
 func BulkCreateReagent(db *gorm.DB, models []Model) error {

@@ -1,10 +1,15 @@
 package craft
 
 import (
+	"atlas-maker/character"
 	"atlas-maker/compartment"
 	"atlas-maker/crystalband"
+	"atlas-maker/data/equipment"
+	"atlas-maker/quest"
 	"atlas-maker/reagent"
 	"atlas-maker/recipe"
+	"atlas-maker/skill"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -76,6 +81,66 @@ type Request struct {
 // zero emissions without a broker.
 type SagaEmitter interface {
 	Emit(s saga.Saga) error
+}
+
+// Processor evaluates per-character recipe eligibility (FR-2.1, FR-2.2,
+// FR-3.5) and, per Task 23, validates and executes a craft. Create lives
+// here rather than on a separately named type because Task 21 already
+// claimed the package's obvious "the craft processor" name for eligibility;
+// splitting validation-only and validate-and-execute processors would
+// fragment one cohesive dependency set (character/skill/compartment/quest
+// plus, as of Task 23, recipe/reagent/crystalband/equipment) across two
+// types for no benefit to a caller, who always wants both.
+type Processor interface {
+	// NewSnapshot reads characterId's EQUIP, USE, and ETC compartments once
+	// each, for repeated in-memory evaluation of every candidate recipe
+	// (design §4.2.2 NFR).
+	NewSnapshot(characterId uint32) (Snapshot, error)
+	// Evaluate checks r against characterId and snap, in the cheapest-first
+	// order design §4.2.2 specifies, returning on the first failed check.
+	Evaluate(characterId uint32, snap Snapshot, r recipe.Model) (Eligibility, error)
+	// Create validates req against characterId's live state and, on
+	// acceptance, emits the craft saga and returns its transaction id
+	// (design §3.2 steps 2-4). On rejection it returns a *CraftError whose
+	// Code maps 1:1 onto PRD §5 and mutates nothing (design §7 "rejection is
+	// pre-mutation").
+	Create(characterId uint32, req Request) (uuid.UUID, error)
+	// ReleaseInFlight clears the in-flight craft guard entry Track-ed under
+	// transactionId (design §7). Called by kafka/consumer/saga's terminal
+	// event handler on both COMPLETED and FAILED -- the only handle a
+	// terminal event carries is the transaction id, never a character id.
+	// A rejected Create already releases its own guard before returning.
+	ReleaseInFlight(transactionId uuid.UUID)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  character.Processor
+	sp  skill.Processor
+	kp  compartment.Processor
+	qp  quest.Processor
+	rp  recipe.Processor
+	rgp reagent.Processor
+	cbp crystalband.Processor
+	eqp equipment.Processor
+	em  SagaEmitter
+}
+
+// NewProcessor builds a Processor backed by the upstream character, skill,
+// compartment, and quest processors (Task 19), the recipe cache (Task 20),
+// the reagent stat table and crystal-band table (Task 17/18), the equipment
+// data client (Task 19), and em, the caller-supplied saga emission seam
+// (Task 23; the concrete Kafka-backed implementation is Task 24's to wire).
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, cp character.Processor, sp skill.Processor, kp compartment.Processor, qp quest.Processor, rp recipe.Processor, rgp reagent.Processor, cbp crystalband.Processor, eqp equipment.Processor, em SagaEmitter) Processor {
+	return &ProcessorImpl{l: l, ctx: ctx, cp: cp, sp: sp, kp: kp, qp: qp, rp: rp, rgp: rgp, cbp: cbp, eqp: eqp, em: em}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+// NewSnapshot implements Processor.NewSnapshot.
+func (p *ProcessorImpl) NewSnapshot(characterId uint32) (Snapshot, error) {
+	return NewSnapshot(p.kp, characterId)
 }
 
 // CompensableActions is the closed set of saga actions every craft sequence

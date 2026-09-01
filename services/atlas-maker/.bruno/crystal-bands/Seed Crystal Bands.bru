@@ -1,0 +1,20 @@
+meta {
+  name: Seed Crystal Bands
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/crystal-bands/seed
+  body: none
+  auth: none
+}
+
+docs {
+  # Seed Crystal Bands
+
+  This endpoint triggers an asynchronous re-seed of the tenant's crystal
+  band catalog from the filesystem catalog source. The response is empty
+  with a 202 Accepted status; poll `GET /api/crystal-bands/seed/status`
+  for the outcome.
+}

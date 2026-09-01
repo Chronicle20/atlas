@@ -1,0 +1,47 @@
+meta {
+  name: Create Craft
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/maker/crafts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "makerCrafts",
+      "attributes": {
+        "mode": 0,
+        "worldId": 0,
+        "channelId": 0,
+        "targetItemId": 2049100
+      }
+    }
+  }
+}
+
+docs {
+  # Create Craft
+
+  This endpoint submits a maker craft request for the calling character. It
+  validates eligibility and, if eligible, emits the craft saga; the response
+  carries the saga's transaction id rather than the finished item, since
+  crafting completes asynchronously.
+
+  ## Response
+
+  ```json
+  {
+    "data": {
+      "type": "makerCrafts",
+      "attributes": {
+        "transactionId": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+  ```
+}

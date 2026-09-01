@@ -1,0 +1,35 @@
+meta {
+  name: Get Crystal Bands
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/crystal-bands
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Crystal Bands
+
+  This endpoint retrieves every crystal band in the tenant's seed catalog.
+
+  ## Response
+
+  ```json
+  {
+    "data": [
+      {
+        "id": "1",
+        "type": "crystalBands",
+        "attributes": {
+          "maxLevel": 40,
+          "crystalItemId": 4260000,
+          "count": 1
+        }
+      }
+    ]
+  }
+  ```
+}

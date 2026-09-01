@@ -1,0 +1,41 @@
+meta {
+  name: Get Recipe
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/maker/recipes/{{itemId}}
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Recipe
+
+  This endpoint retrieves a single maker recipe by its target item id,
+  annotated with the calling character's eligibility verdict.
+
+  ## Response
+
+  ```json
+  {
+    "data": {
+      "id": "2049100",
+      "type": "makerRecipes",
+      "attributes": {
+        "itemId": 2049100,
+        "reqLevel": 1,
+        "reqSkillLevel": 1,
+        "itemNum": 1,
+        "tuc": 7,
+        "meso": 1000,
+        "materials": [
+          { "itemId": 4020000, "count": 2 }
+        ],
+        "eligible": true
+      }
+    }
+  }
+  ```
+}

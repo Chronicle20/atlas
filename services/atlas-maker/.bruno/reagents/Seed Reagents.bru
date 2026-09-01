@@ -1,0 +1,19 @@
+meta {
+  name: Seed Reagents
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/reagents/seed
+  body: none
+  auth: none
+}
+
+docs {
+  # Seed Reagents
+
+  This endpoint triggers an asynchronous re-seed of the tenant's reagent
+  catalog from the filesystem catalog source. The response is empty with a
+  202 Accepted status; poll `GET /api/reagents/seed/status` for the outcome.
+}

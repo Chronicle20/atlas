@@ -325,6 +325,20 @@ services:
       LOG_LEVEL: debug
       DB_NAME: atlas-keys
 
+  atlas-maker:
+    <<: [*atlas-defaults, *seed-catalog]
+    container_name: atlas-maker
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-maker
+    image: atlas-maker:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-maker
+      SEED_CATALOG_ROOT: /var/run/seed-catalog
+
   atlas-map-actions:
     <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-map-actions

@@ -1,0 +1,35 @@
+meta {
+  name: Get Reagent Seed Status
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/reagents/seed/status
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Reagent Seed Status
+
+  This endpoint retrieves the tenant's reagent seed catalog status.
+
+  ## Response
+
+  ```json
+  {
+    "groupName": "reagents",
+    "subdomains": {
+      "reagents": {
+        "count": 12,
+        "updatedAt": "2026-01-01T00:00:00Z"
+      }
+    },
+    "updatedAt": "2026-01-01T00:00:00Z",
+    "catalogRevision": "abc123",
+    "tenantSeededRevision": "abc123",
+    "tenantSeededAt": "2026-01-01T00:00:00Z"
+  }
+  ```
+}

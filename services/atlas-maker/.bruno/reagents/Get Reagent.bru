@@ -1,0 +1,32 @@
+meta {
+  name: Get Reagent
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/reagents/{{itemId}}
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Reagent
+
+  This endpoint retrieves a single reagent by its item id.
+
+  ## Response
+
+  ```json
+  {
+    "data": {
+      "id": "4021000",
+      "type": "reagents",
+      "attributes": {
+        "stat": "STR",
+        "value": 1
+      }
+    }
+  }
+  ```
+}

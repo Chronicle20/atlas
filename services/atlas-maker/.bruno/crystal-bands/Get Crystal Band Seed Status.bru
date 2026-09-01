@@ -1,0 +1,35 @@
+meta {
+  name: Get Crystal Band Seed Status
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/crystal-bands/seed/status
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Crystal Band Seed Status
+
+  This endpoint retrieves the tenant's crystal band seed catalog status.
+
+  ## Response
+
+  ```json
+  {
+    "groupName": "crystalBands",
+    "subdomains": {
+      "crystalBands": {
+        "count": 5,
+        "updatedAt": "2026-01-01T00:00:00Z"
+      }
+    },
+    "updatedAt": "2026-01-01T00:00:00Z",
+    "catalogRevision": "abc123",
+    "tenantSeededRevision": "abc123",
+    "tenantSeededAt": "2026-01-01T00:00:00Z"
+  }
+  ```
+}

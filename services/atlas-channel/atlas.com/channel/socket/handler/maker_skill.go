@@ -20,7 +20,7 @@ import (
 // (NewMakerResultFailed(2)) asserts the encoded byte fixture `02 00 00 00`
 // with length exactly 4 (nResult only, no mode) against IDA evidence that the
 // client's nResult guard treats any value outside {0, 1} as the bodyless
-// FAILED arm and reads nothing further (docs/tasks/task-285-maker-skill-crafting/plan.md:1455-1458).
+// FAILED arm and reads nothing further (docs/tasks/task-285-maker-skill-crafting/plan.md:1455-1461).
 // The FAILED arm carries no room to distinguish PRD §5 rejection codes on the
 // wire, so a single sentinel is sufficient; the rejection code itself is only
 // logged.

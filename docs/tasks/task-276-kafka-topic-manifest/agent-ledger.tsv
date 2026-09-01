@@ -119,3 +119,9 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-01T17:21:53Z	agent	Fix G	task-reviewer	sonnet	-	-	-	-	DONE	a961930e7	APPROVED	no	-	-
 2026-09-01T17:25:23Z	agent	Fix G5	task-implementer	sonnet	-	-	-	-	STALLED	a961930e7	-	-	-	-
 2026-09-01T17:28:10Z	agent	Fix G5	task-implementer	sonnet	-	-	-	-	STALLED	a961930e7	-	-	-	-
+2026-09-01T17:59:24Z	agent	Fix G5	task-implementer	sonnet	-	-	-	-	DONE	b5552f669	-	-	-	-
+2026-09-01T18:36:24Z	agent	Fix H	task-implementer	sonnet	-	-	-	-	dispatched	598cc6c27	-	-	-	-
+2026-09-01T18:38:48Z	agent	H4 diagnosis	general-purpose	sonnet	-	-	-	-	DONE	598cc6c27	-	-	-	-
+2026-09-01T18:40:06Z	agent	Fix H	task-implementer	sonnet	-	-	-	-	DONE	7ac724175	-	-	-	-
+2026-09-01T18:40:06Z	agent	Fix H4	task-implementer	sonnet	-	-	-	-	dispatched	7ac724175	-	-	-	-
+2026-09-01T18:41:41Z	agent	Fix H	task-reviewer	sonnet	-	-	-	-	DONE	7ac724175	APPROVED_WITH_FINDINGS	no	-	-

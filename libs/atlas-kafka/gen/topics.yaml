@@ -332,7 +332,9 @@ topics:
   - token: COMMAND_TOPIC_PLAYER_NPC
     cleanup: delete
     packages:
+      - atlas-messages/kafka/message/playernpc
       - atlas-player-npcs/kafka/message/playernpc
+      - atlas-saga-orchestrator/kafka/message/playernpc
   - token: COMMAND_TOPIC_PORTAL
     cleanup: delete
     packages:
@@ -877,7 +879,10 @@ topics:
   - token: EVENT_TOPIC_PLAYER_NPC_STATUS
     cleanup: delete
     packages:
+      - atlas-channel/kafka/consumer/playernpc
+      - atlas-messages/kafka/message/playernpc
       - atlas-player-npcs/kafka/message/playernpc
+      - atlas-saga-orchestrator/kafka/message/playernpc
   - token: EVENT_TOPIC_QUEST_STATUS
     cleanup: delete
     packages:

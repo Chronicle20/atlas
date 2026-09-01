@@ -47,7 +47,7 @@ type yamlManifest struct {
 func (m Manifest) EmitTopicsYAML() []byte {
 	ym := yamlManifest{Topics: make([]yamlEntry, 0, len(m.Topics))}
 	for _, e := range m.Topics {
-		ym.Topics = append(ym.Topics, yamlEntry{Token: e.Token, Cleanup: e.Cleanup, Packages: e.Packages})
+		ym.Topics = append(ym.Topics, yamlEntry(e))
 	}
 
 	var buf bytes.Buffer

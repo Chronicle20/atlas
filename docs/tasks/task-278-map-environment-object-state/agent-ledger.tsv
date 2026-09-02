@@ -48,3 +48,9 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-28T18:46:15Z	agent	Final flagless gate (attempt 3)	verify.sh	-	-	-	-	-	FAIL	741d1636d	-	-	.superpowers/sdd/plan/tmp/gate-final3.log	-
 2026-08-28T19:11:44Z	agent	Final flagless gate (attempt 4)	verify.sh	-	-	-	-	-	ERROR	2a78f5505	-	-	.superpowers/sdd/plan/tmp/gate-final4.log	-
 2026-08-28T20:31:38Z	agent	Final flagless gate (attempt 5)	verify.sh	-	-	-	-	-	FAIL	2a78f5505	-	-	.superpowers/sdd/plan/tmp/gate-final5.log	-
+2026-09-02T20:15:54Z	agent	Post-merge fix round (9b7817a13..HEAD)	task-reviewer	sonnet	-	-	-	-	DONE	5efddd01b	APPROVED	no	docs/tasks/task-278-map-environment-object-state/reviews/post-merge-fix-round.md	-
+2026-09-02T20:22:57Z	agent	Post-merge backend audit (9b7817a13..HEAD)	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	5efddd01b	CHANGES_REQUIRED	yes	docs/tasks/task-278-map-environment-object-state/audit-postmerge.md	-
+2026-09-02T20:27:57Z	agent	Fix round 2	task-implementer	sonnet	-	-	-	-	DONE	6c9acd433	-	-	-	-
+2026-09-02T20:29:54Z	agent	Fix round 2	task-reviewer	sonnet	-	-	-	-	DONE	6c9acd433	APPROVED	no	docs/tasks/task-278-map-environment-object-state/reviews/fix-round-2.md	-
+2026-09-02T20:55:43Z	agent	Fix round 3 (lint QF1012)	task-implementer	sonnet	-	-	-	-	DONE	0054591a5	-	-	-	-
+2026-09-02T21:20:57Z	agent	Final flagless gate (attempt 7)	verify.sh	-	-	-	-	-	PASS	0054591a5	-	-	/tmp/t278/verify4.log	-

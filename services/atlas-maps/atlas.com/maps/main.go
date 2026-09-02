@@ -4,6 +4,7 @@ import (
 	characterClient "atlas-maps/character"
 	"atlas-maps/character/location"
 	"atlas-maps/character/warp"
+	mapField "atlas-maps/field"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	data2 "atlas-maps/kafka/consumer/data"
@@ -145,6 +146,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(_map.InitResource(GetServer())).
+		AddRouteInitializer(mapField.InitResource(GetServer())).
 		AddRouteInitializer(weather.InitResource(GetServer())).
 		AddRouteInitializer(jukebox.InitResource(GetServer())).
 		AddRouteInitializer(visit.InitResource(GetServer())(db)).

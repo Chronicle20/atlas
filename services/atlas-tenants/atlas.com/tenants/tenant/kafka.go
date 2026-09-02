@@ -5,14 +5,23 @@ import (
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
+// EventTopicTenantStatus is the environment variable name carrying the
+// per-environment tenant status topic, never the topic name itself. It was
+// previously the untyped constant "tenant.status", which reached Buffer.Put's
+// topic.Token parameter by implicit conversion and was then looked up as an
+// environment variable of that literal name -- resolving only because
+// topic.EnvProvider used to fall back to the token string when the variable
+// was unset. Once that fallback became an error every tenant emit failed.
+const EventTopicTenantStatus topic.Token = "EVENT_TOPIC_TENANT_STATUS"
+
 const (
-	EventTopicTenantStatus = "tenant.status"
-	EventTypeCreated       = "CREATED"
-	EventTypeUpdated       = "UPDATED"
-	EventTypeDeleted       = "DELETED"
+	EventTypeCreated = "CREATED"
+	EventTypeUpdated = "UPDATED"
+	EventTypeDeleted = "DELETED"
 )
 
 // StatusEvent is a generic event for tenant status changes

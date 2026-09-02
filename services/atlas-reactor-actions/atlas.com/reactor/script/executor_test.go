@@ -182,85 +182,97 @@ func TestExecuteDropItems_MesoParams(t *testing.T) {
 	}
 }
 
-func TestExecuteSprayItems_SetsDropType(t *testing.T) {
-	params := map[string]string{
-		"meso":       "true",
-		"mesoChance": "1",
-		"mesoMin":    "50",
-		"mesoMax":    "100",
-		"minItems":   "15",
+// TestExecuteSprayItems covers executeSprayItems's two scenarios:
+//
+//   - "SetsDropType": a full set of meso params produces a
+//     SpawnReactorDropsPayload with DropType "spray" and the meso fields
+//     carried through unchanged.
+//   - "NoParams" pins the invariant that executeSprayItems injects
+//     params["dropType"] = "spray" into whatever map op.Params() returns.
+//     operation.NewBuilder always seeds a non-nil params map, and
+//     convertJsonOperation only calls SetParams when the seed JSON has a
+//     non-nil params object, so a spray_items operation decoded from a seed
+//     with no params key must still execute without panicking.
+func TestExecuteSprayItems(t *testing.T) {
+	tests := []struct {
+		name             string
+		params           map[string]string
+		wantDropType     string
+		checkMesoDetails bool
+		wantMesoMin      uint32
+		wantMesoMax      uint32
+		wantMinItems     uint32
+	}{
+		{
+			name: "SetsDropType",
+			params: map[string]string{
+				"meso":       "true",
+				"mesoChance": "1",
+				"mesoMin":    "50",
+				"mesoMax":    "100",
+				"minItems":   "15",
+			},
+			wantDropType:     "spray",
+			checkMesoDetails: true,
+			wantMesoMin:      50,
+			wantMesoMax:      100,
+			wantMinItems:     15,
+		},
+		{
+			name:         "NoParams",
+			params:       nil,
+			wantDropType: "spray",
+		},
 	}
 
-	op, err := operation.NewBuilder().SetType("spray_items").SetParams(params).Build()
-	if err != nil {
-		t.Fatalf("failed to build operation: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			builder := operation.NewBuilder().SetType("spray_items")
+			if tt.params != nil {
+				builder = builder.SetParams(tt.params)
+			}
+			op, err := builder.Build()
+			if err != nil {
+				t.Fatalf("failed to build operation: %v", err)
+			}
 
-	fake := &fakeSagaProcessor{}
-	executor := newTestExecutor(fake)
-	rc := newTestReactorContext()
+			fake := &fakeSagaProcessor{}
+			executor := newTestExecutor(fake)
+			rc := newTestReactorContext()
 
-	if err := executor.ExecuteOperation(rc, 12345, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v", err)
-	}
+			if err := executor.ExecuteOperation(rc, 12345, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v", err)
+			}
 
-	if len(fake.created) != 1 {
-		t.Fatalf("expected 1 saga created, got %d", len(fake.created))
-	}
+			if len(fake.created) != 1 {
+				t.Fatalf("expected 1 saga created, got %d", len(fake.created))
+			}
 
-	s := fake.created[0]
-	if len(s.Steps) != 1 {
-		t.Fatalf("expected 1 step, got %d", len(s.Steps))
-	}
+			s := fake.created[0]
+			if len(s.Steps) != 1 {
+				t.Fatalf("expected 1 step, got %d", len(s.Steps))
+			}
 
-	payload, ok := s.Steps[0].Payload.(saga.SpawnReactorDropsPayload)
-	if !ok {
-		t.Fatalf("step payload is not a SpawnReactorDropsPayload: %T", s.Steps[0].Payload)
-	}
+			payload, ok := s.Steps[0].Payload.(saga.SpawnReactorDropsPayload)
+			if !ok {
+				t.Fatalf("step payload is not a SpawnReactorDropsPayload: %T", s.Steps[0].Payload)
+			}
 
-	if payload.DropType != "spray" {
-		t.Errorf("DropType = %q, want %q", payload.DropType, "spray")
-	}
-	if payload.MesoMin != 50 {
-		t.Errorf("MesoMin = %d, want 50", payload.MesoMin)
-	}
-	if payload.MesoMax != 100 {
-		t.Errorf("MesoMax = %d, want 100", payload.MesoMax)
-	}
-	if payload.MinItems != 15 {
-		t.Errorf("MinItems = %d, want 15", payload.MinItems)
-	}
-}
+			if payload.DropType != tt.wantDropType {
+				t.Errorf("DropType = %q, want %q", payload.DropType, tt.wantDropType)
+			}
 
-// TestExecuteSprayItems_NoParams pins the invariant that executeSprayItems
-// injects params["dropType"] = "spray" into whatever map op.Params() returns.
-// operation.NewBuilder always seeds a non-nil params map, and
-// convertJsonOperation only calls SetParams when the seed JSON has a
-// non-nil params object, so a spray_items operation decoded from a seed
-// with no params key must still execute without panicking.
-func TestExecuteSprayItems_NoParams(t *testing.T) {
-	op, err := operation.NewBuilder().SetType("spray_items").Build()
-	if err != nil {
-		t.Fatalf("failed to build operation: %v", err)
-	}
-
-	fake := &fakeSagaProcessor{}
-	executor := newTestExecutor(fake)
-	rc := newTestReactorContext()
-
-	if err := executor.ExecuteOperation(rc, 12345, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v", err)
-	}
-
-	if len(fake.created) != 1 {
-		t.Fatalf("expected 1 saga created, got %d", len(fake.created))
-	}
-
-	payload, ok := fake.created[0].Steps[0].Payload.(saga.SpawnReactorDropsPayload)
-	if !ok {
-		t.Fatalf("step payload is not a SpawnReactorDropsPayload: %T", fake.created[0].Steps[0].Payload)
-	}
-	if payload.DropType != "spray" {
-		t.Errorf("DropType = %q, want %q", payload.DropType, "spray")
+			if tt.checkMesoDetails {
+				if payload.MesoMin != tt.wantMesoMin {
+					t.Errorf("MesoMin = %d, want %d", payload.MesoMin, tt.wantMesoMin)
+				}
+				if payload.MesoMax != tt.wantMesoMax {
+					t.Errorf("MesoMax = %d, want %d", payload.MesoMax, tt.wantMesoMax)
+				}
+				if payload.MinItems != tt.wantMinItems {
+					t.Errorf("MinItems = %d, want %d", payload.MinItems, tt.wantMinItems)
+				}
+			}
+		})
 	}
 }

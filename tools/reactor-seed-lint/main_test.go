@@ -19,107 +19,114 @@ func buildLint(t *testing.T) string {
 	return exe
 }
 
-func TestLint_GoodCorpusExitsZero(t *testing.T) {
+func TestLint(t *testing.T) {
 	exe := buildLint(t)
-	cmd := exec.Command(exe, "testdata/good", schemaPath)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("expected exit 0, got %v\n%s", err, out)
-	}
-}
 
-func TestLint_LegacyKeysExitNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, "testdata/bad/legacy-keys", schemaPath)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected non-zero exit")
+	tests := []struct {
+		name          string
+		root          func(t *testing.T) string
+		wantExitOK    bool
+		wantSubstr    []string
+		wantAnySubstr []string
+		wantNoSubstr  []string
+	}{
+		{
+			name:       "GoodCorpusExitsZero",
+			root:       func(t *testing.T) string { return "testdata/good" },
+			wantExitOK: true,
+		},
+		{
+			name:          "LegacyKeysExitNonZero",
+			root:          func(t *testing.T) string { return "testdata/bad/legacy-keys" },
+			wantExitOK:    false,
+			wantAnySubstr: []string{"mesoRange", "additionalProperties"},
+		},
+		{
+			name:       "TypeMismatchExitsNonZero",
+			root:       func(t *testing.T) string { return "testdata/bad/type-mismatch" },
+			wantExitOK: false,
+			wantSubstr: []string{"type"},
+		},
+		{
+			name:       "IDMismatchExitsNonZero",
+			root:       func(t *testing.T) string { return "testdata/bad/id-mismatch" },
+			wantExitOK: false,
+		},
+		{
+			name:       "MissingRequiredExitsNonZero",
+			root:       func(t *testing.T) string { return "testdata/bad/missing-required" },
+			wantExitOK: false,
+		},
+		{
+			name:       "MissingDescriptionExitsNonZero",
+			root:       func(t *testing.T) string { return "testdata/bad/no-description" },
+			wantExitOK: false,
+			wantSubstr: []string{"description"},
+		},
+		{
+			name:       "DivergentCopiesExitNonZero",
+			root:       func(t *testing.T) string { return "testdata/bad/divergent-copies" },
+			wantExitOK: false,
+			wantSubstr: []string{"2001"},
+		},
+		{
+			name:       "MissingCopyExitsNonZero",
+			root:       func(t *testing.T) string { return "testdata/bad/missing-copy" },
+			wantExitOK: false,
+		},
+		{
+			name:       "EmptyRootExitsNonZero",
+			root:       func(t *testing.T) string { return t.TempDir() },
+			wantExitOK: false,
+			wantSubstr: []string{"no reactor-*.json files found"},
+		},
+		{
+			name:         "NonexistentRootExitsNonZero",
+			root:         func(t *testing.T) string { return filepath.Join(t.TempDir(), "does-not-exist") },
+			wantExitOK:   false,
+			wantNoSubstr: []string{"nil pointer", "panic"},
+		},
 	}
-	if !strings.Contains(string(out), "mesoRange") && !strings.Contains(string(out), "additionalProperties") {
-		t.Fatalf("expected output to mention mesoRange or additionalProperties, got:\n%s", out)
-	}
-}
 
-func TestLint_TypeMismatchExitsNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, "testdata/bad/type-mismatch", schemaPath)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected non-zero exit")
-	}
-	if !strings.Contains(string(out), "type") {
-		t.Fatalf("expected output to mention type, got:\n%s", out)
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := exec.Command(exe, tt.root(t), schemaPath)
+			out, err := cmd.CombinedOutput()
 
-func TestLint_IDMismatchExitsNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, "testdata/bad/id-mismatch", schemaPath)
-	if err := cmd.Run(); err == nil {
-		t.Fatalf("expected non-zero exit")
-	}
-}
+			if tt.wantExitOK {
+				if err != nil {
+					t.Fatalf("expected exit 0, got %v\n%s", err, out)
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("expected non-zero exit, got exit 0\n%s", out)
+				}
+			}
 
-func TestLint_MissingRequiredExitsNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, "testdata/bad/missing-required", schemaPath)
-	if err := cmd.Run(); err == nil {
-		t.Fatalf("expected non-zero exit")
-	}
-}
+			for _, substr := range tt.wantSubstr {
+				if !strings.Contains(string(out), substr) {
+					t.Fatalf("expected output to contain %q, got:\n%s", substr, out)
+				}
+			}
 
-func TestLint_MissingDescriptionExitsNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, "testdata/bad/no-description", schemaPath)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected non-zero exit")
-	}
-	if !strings.Contains(string(out), "description") {
-		t.Fatalf("expected output to mention description, got:\n%s", out)
-	}
-}
+			if len(tt.wantAnySubstr) > 0 {
+				found := false
+				for _, substr := range tt.wantAnySubstr {
+					if strings.Contains(string(out), substr) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("expected output to contain one of %v, got:\n%s", tt.wantAnySubstr, out)
+				}
+			}
 
-func TestLint_DivergentCopiesExitNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, "testdata/bad/divergent-copies", schemaPath)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected non-zero exit")
-	}
-	if !strings.Contains(string(out), "2001") {
-		t.Fatalf("expected output to mention 2001, got:\n%s", out)
-	}
-}
-
-func TestLint_MissingCopyExitsNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, "testdata/bad/missing-copy", schemaPath)
-	if err := cmd.Run(); err == nil {
-		t.Fatalf("expected non-zero exit")
-	}
-}
-
-func TestLint_EmptyRootExitsNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, t.TempDir(), schemaPath)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected non-zero exit for a root with no reactor-*.json files, got exit 0\n%s", out)
-	}
-	if !strings.Contains(string(out), "no reactor-*.json files found") {
-		t.Fatalf("expected output to explain that no files were found, got:\n%s", out)
-	}
-}
-
-func TestLint_NonexistentRootExitsNonZero(t *testing.T) {
-	exe := buildLint(t)
-	cmd := exec.Command(exe, filepath.Join(t.TempDir(), "does-not-exist"), schemaPath)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected non-zero exit for a nonexistent root, got exit 0\n%s", out)
-	}
-	if strings.Contains(string(out), "nil pointer") || strings.Contains(string(out), "panic") {
-		t.Fatalf("expected a clean error, not a panic, got:\n%s", out)
+			for _, substr := range tt.wantNoSubstr {
+				if strings.Contains(string(out), substr) {
+					t.Fatalf("expected output not to contain %q, got:\n%s", substr, out)
+				}
+			}
+		})
 	}
 }

@@ -1191,3 +1191,84 @@ func TestAnnounceEnvironmentState_BadKindSkipped(t *testing.T) {
 
 	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter})
 }
+
+// objectStateAnnounce is one captured announceObjectState call, decoded via
+// the real SetObjectState codec so the assertion sees the wire value the
+// client would.
+type objectStateAnnounce struct {
+	Writer string
+	Name   string
+	State  uint32
+}
+
+// stubDoorAnnounceForObjectState records the name/state of every
+// SetObjectState announcement, so a test can assert the value restored --
+// which the writer-name-only capture cannot see.
+func stubDoorAnnounceForObjectState(t *testing.T) (restore func(), captured *[]objectStateAnnounce) {
+	t.Helper()
+	var seen []objectStateAnnounce
+	orig := doorAnnounce
+	doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
+		a := objectStateAnnounce{Writer: writerName}
+		if writerName == fieldcb.SetObjectStateWriter {
+			body := enc(l, ctx)(nil)
+			req := request.Request(body)
+			reader := request.NewRequestReader(&req, 0)
+			var m fieldcb.SetObjectState
+			m.Decode(l, ctx)(&reader, nil)
+			a.Name, a.State = m.Name(), m.State()
+		}
+		seen = append(seen, a)
+		return nil
+	}
+	return func() { doorAnnounce = orig }, &seen
+}
+
+// TestHandleStatusEventEnvironmentReset_RestoresCarriedDefaultState pins the
+// NEW cross-service contract: EnvironmentReset.Cleared[] carries each object's
+// declared default state and a non-obstacle object is restored to it, not to
+// a hardcoded 0 -- the Kerning PQ `gate` (declared default 1) must not stay in
+// its cleared appearance. An obstacle is still zeroed, because
+// FieldObstacleAllReset means "all off".
+func TestHandleStatusEventEnvironmentReset_RestoresCarriedDefaultState(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceForObjectState(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	// The obstacle writer is deliberately unrouted so the obstacle also lands
+	// on SetObjectState and its restored state is observable.
+	wp := routed(fieldcb.SetObjectStateWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body: _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{
+			{Kind: "ENVIRONMENT", Name: "gate", State: 1},
+			{Kind: "OBSTACLE", Name: "obs3", State: 7},
+		}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	want := []objectStateAnnounce{
+		{Writer: fieldcb.SetObjectStateWriter, Name: "gate", State: 1},
+		{Writer: fieldcb.SetObjectStateWriter, Name: "obs3", State: 0},
+	}
+	if len(*captured) != len(want) {
+		t.Fatalf("captured announcements = %v, want %v", *captured, want)
+	}
+	for i, w := range want {
+		if (*captured)[i] != w {
+			t.Fatalf("captured announcements = %v, want %v", *captured, want)
+		}
+	}
+}

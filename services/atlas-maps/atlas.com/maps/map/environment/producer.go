@@ -33,7 +33,7 @@ func EnvironmentResetEventProvider(transactionId uuid.UUID, f field.Model, clear
 	key := producer.CreateKey(int(f.MapId()))
 	objects := make([]mapKafka.EnvironmentObject, 0, len(cleared))
 	for _, e := range cleared {
-		objects = append(objects, mapKafka.EnvironmentObject{Kind: string(e.Kind), Name: e.Name})
+		objects = append(objects, mapKafka.EnvironmentObject{Kind: string(e.Kind), Name: e.Name, State: e.DefaultState})
 	}
 	value := &mapKafka.StatusEvent[mapKafka.EnvironmentReset]{
 		TransactionId: transactionId,

@@ -1,6 +1,7 @@
 package environment
 
 import (
+	"atlas-maps/data/map/object"
 	"context"
 	"errors"
 	"strings"
@@ -26,10 +27,11 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
+	op  object.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &ProcessorImpl{l: l, ctx: ctx}
+	return &ProcessorImpl{l: l, ctx: ctx, op: object.NewProcessor(l, ctx)}
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
@@ -39,16 +41,39 @@ func (p *ProcessorImpl) Set(f field.Model, kind field.ObjectKind, name string, s
 		return ObjectEntry{}, ErrBlankName
 	}
 	t := tenant.MustFromContext(p.ctx)
-	entry := ObjectEntry{Kind: kind, Name: name, State: state}
-	getRegistry().Set(FieldKey{Tenant: t, Field: f}, entry)
-	p.l.Debugf("Environment object [%s] kind [%s] set to state [%d] in map [%d] instance [%s].", name, kind, state, f.MapId(), f.Instance())
+	key := FieldKey{Tenant: t, Field: f}
+	def, tracked := getRegistry().DefaultState(key, kind, name)
+	if !tracked {
+		def = p.defaultStateOf(f, kind, name)
+	}
+	entry := ObjectEntry{Kind: kind, Name: name, State: state, DefaultState: def}
+	getRegistry().Set(key, entry)
+	p.l.Debugf("Environment object [%s] kind [%s] set to state [%d] in map [%d] instance [%s]; declared default [%d].", name, kind, state, f.MapId(), f.Instance(), def)
 	return entry, nil
+}
+
+// defaultStateOf resolves the state a reset must restore the object to. An
+// obstacle is restored by FieldObstacleAllReset, whose semantics are "all
+// off", so its default is always 0 and atlas-data is not consulted. Any other
+// object's default is the state the map declares for it; an unreachable
+// atlas-data or an object the map does not declare falls back to 0, because a
+// reset must never fail.
+func (p *ProcessorImpl) defaultStateOf(f field.Model, kind field.ObjectKind, name string) uint32 {
+	if kind == field.ObjectKindObstacle {
+		return 0
+	}
+	def, err := p.op.GetDefaultState(f.MapId(), name)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to resolve declared default state for object [%s] in map [%d]; resetting it to [0].", name, f.MapId())
+		return 0
+	}
+	return def
 }
 
 // Reset clears the field's tracked entries and returns what was cleared, so the
 // caller can build the per-object reset sweep. FieldObstacleAllReset restores
-// only the client's obstacle list, so non-obstacle named objects must be zeroed
-// explicitly -- see design.md section 1.2.
+// only the client's obstacle list, so non-obstacle named objects must be
+// restored to their declared default explicitly -- see design.md section 1.2.
 func (p *ProcessorImpl) Reset(f field.Model) []ObjectEntry {
 	t := tenant.MustFromContext(p.ctx)
 	cleared := getRegistry().Clear(FieldKey{Tenant: t, Field: f})

@@ -73,15 +73,20 @@ type EnvironmentStateChanged struct {
 	State uint32 `json:"state"`
 }
 
+// EnvironmentObject is one cleared object. State is the state the reset must
+// restore the object to -- the default the map declares for it, not the state
+// it was cleared from.
 type EnvironmentObject struct {
-	Kind string `json:"kind"`
-	Name string `json:"name"`
+	Kind  string `json:"kind"`
+	Name  string `json:"name"`
+	State uint32 `json:"state"`
 }
 
 // EnvironmentReset carries every entry that was tracked. It is not an empty
 // body: FieldObstacleAllReset restores only the client's obstacle list, so the
-// channel must be told which non-obstacle objects to zero explicitly, and the
-// channel keeps no registry of its own -- see design.md section 1.2.
+// channel must be told which non-obstacle objects to restore, and to what
+// state, and the channel keeps no registry of its own -- see design.md
+// section 1.2.
 type EnvironmentReset struct {
 	Cleared []EnvironmentObject `json:"cleared"`
 }

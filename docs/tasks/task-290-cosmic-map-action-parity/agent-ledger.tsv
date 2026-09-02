@@ -69,3 +69,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-02T19:37:53Z	agent	Plan B batch 2 (B3+B4)	task-reviewer	sonnet	-	21	-	-	DONE	8603682f5	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan-b/batch-2-review.md	-
 2026-09-02T19:39:18Z	agent	Plan B batch 3 (B5+B6+B7)	task-implementer	sonnet	-	38	-	-	DONE_WITH_CONCERNS	3dc057036	-	-	-	-
 2026-09-02T19:42:07Z	agent	Plan B batch 3 (B5+B6+B7)	task-reviewer	sonnet	-	22	-	-	DONE	3dc057036	APPROVED	no	.superpowers/sdd/plan-b/batch-3-review.md	-
+2026-09-02T19:42:47Z	handoff	after Plan B (B1-B7)	-	-	-	-	-	-	-	-	-	-	-	150000
+2026-09-02T19:49:33Z	agent	Final branch review (A1-A12 + B1-B7)	plan-adherence-reviewer	sonnet	-	-	-	-	completed	08974f64b	APPROVED	no	docs/tasks/task-290-cosmic-map-action-parity/audit-final.md	-
+2026-09-02T20:23:05Z	agent	Final gate	verify.sh	-	-	-	-	-	PASS	08974f64b	-	-	-	-

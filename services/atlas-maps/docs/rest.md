@@ -434,4 +434,3 @@ Results are ordered by (worldId, channelId, mapId, instanceId) in ascending orde
 | Status | Condition |
 |--------|-----------|
 | 400 | Malformed filter value (non-numeric or out of range), or invalid page[number]/page[size] |
-| 500 | Failed to read the character registry |

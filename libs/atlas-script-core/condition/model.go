@@ -11,9 +11,12 @@ type Model struct {
 	value           string
 	referenceId     string // String from JSON, will be converted to uint32 when needed
 	step            string
-	worldId         string // String from JSON, will be resolved from context for mapCapacity
-	channelId       string // String from JSON, will be resolved from context for mapCapacity
-	includeEquipped bool   // For item conditions: also check equipped items
+	worldId         string   // String from JSON, will be resolved from context for mapCapacity
+	channelId       string   // String from JSON, will be resolved from context for mapCapacity
+	includeEquipped bool     // For item conditions: also check equipped items
+	values          []string // For the `in` operator: the candidate set. Kept as
+	// strings for the same reason value/referenceId are —
+	// a context reference must survive to the boundary.
 }
 
 // Type returns the condition type
@@ -68,6 +71,11 @@ func (c Model) ChannelId() string {
 // IncludeEquipped returns whether to include equipped items in item condition checks
 func (c Model) IncludeEquipped() bool {
 	return c.includeEquipped
+}
+
+// Values returns the candidate set for the `in` operator. Nil for scalar conditions.
+func (c Model) Values() []string {
+	return c.values
 }
 
 // Evaluator is the interface for evaluating conditions

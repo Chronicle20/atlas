@@ -10,12 +10,13 @@ import (
 
 // SpawnInputRestModel represents the input for spawning a monster.
 type SpawnInputRestModel struct {
-	Id        string `json:"-"`
-	MonsterId uint32 `json:"monsterId"`
-	X         int16  `json:"x"`
-	Y         int16  `json:"y"`
-	Fh        int16  `json:"fh"`
-	Team      int8   `json:"team"`
+	Id            string `json:"-"`
+	MonsterId     uint32 `json:"monsterId"`
+	X             int16  `json:"x"`
+	Y             int16  `json:"y"`
+	Fh            int16  `json:"fh"`
+	Team          int8   `json:"team"`
+	SpawnIfAbsent bool   `json:"spawnIfAbsent,omitempty"`
 }
 
 func (r SpawnInputRestModel) GetName() string {
@@ -61,23 +62,25 @@ func (r *SpawnResponseRestModel) SetID(id string) error {
 
 // SpawnRequest contains the parameters needed to spawn a monster.
 type SpawnRequest struct {
-	WorldId   world.Id
-	ChannelId channel.Id
-	MapId     _map.Id
-	MonsterId uint32
-	X         int16
-	Y         int16
-	Fh        int16
-	Team      int8
+	WorldId       world.Id
+	ChannelId     channel.Id
+	MapId         _map.Id
+	MonsterId     uint32
+	X             int16
+	Y             int16
+	Fh            int16
+	Team          int8
+	SpawnIfAbsent bool
 }
 
 func (r SpawnRequest) ToRestModel() SpawnInputRestModel {
 	return SpawnInputRestModel{
-		Id:        strconv.FormatUint(uint64(r.MonsterId), 10),
-		MonsterId: r.MonsterId,
-		X:         r.X,
-		Y:         r.Y,
-		Fh:        r.Fh,
-		Team:      r.Team,
+		Id:            strconv.FormatUint(uint64(r.MonsterId), 10),
+		MonsterId:     r.MonsterId,
+		X:             r.X,
+		Y:             r.Y,
+		Fh:            r.Fh,
+		Team:          r.Team,
+		SpawnIfAbsent: r.SpawnIfAbsent,
 	}
 }

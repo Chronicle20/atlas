@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 // TemplateId is additive (task-125): absent in old payloads → 0; round-trips when set.
@@ -81,5 +83,62 @@ func TestCharacterCreatePayloadCarriesApAndSp(t *testing.T) {
 	}
 	if strings.Contains(zs, `"sp"`) {
 		t.Errorf("expected sp absent from omitempty zero value, got %s", zs)
+	}
+}
+
+// SpawnIfAbsent rides the spawn_monster step to atlas-monsters (task-290 A6):
+// the decision of whether to suppress the spawn is made by atlas-monsters
+// against its own registry, not here — this payload only carries the flag.
+func TestSpawnMonsterPayloadRoundTripsSpawnIfAbsent(t *testing.T) {
+	in := SpawnMonsterPayload{
+		CharacterId:   1,
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         926000000,
+		Instance:      uuid.MustParse("11111111-2222-3333-4444-555555555555"),
+		MonsterId:     9100013,
+		X:             82,
+		Y:             200,
+		Count:         1,
+		SpawnIfAbsent: true,
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	s := string(b)
+	if !strings.Contains(s, `"spawnIfAbsent":true`) {
+		t.Errorf("expected \"spawnIfAbsent\":true in %s", s)
+	}
+
+	var out SpawnMonsterPayload
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if out.SpawnIfAbsent != true {
+		t.Errorf("SpawnIfAbsent: got %v, want true", out.SpawnIfAbsent)
+	}
+}
+
+func TestSpawnMonsterPayloadOmitsSpawnIfAbsentWhenFalse(t *testing.T) {
+	in := SpawnMonsterPayload{
+		CharacterId:   1,
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         926000000,
+		Instance:      uuid.MustParse("11111111-2222-3333-4444-555555555555"),
+		MonsterId:     9100013,
+		X:             82,
+		Y:             200,
+		Count:         1,
+		SpawnIfAbsent: false,
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	s := string(b)
+	if strings.Contains(s, "spawnIfAbsent") {
+		t.Errorf("expected spawnIfAbsent absent from omitempty false value, got %s", s)
 	}
 }

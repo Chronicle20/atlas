@@ -510,16 +510,17 @@ type UnblockPortalPayload struct {
 
 // SpawnMonsterPayload represents the payload required to spawn monsters.
 type SpawnMonsterPayload struct {
-	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
-	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
-	MapId       _map.Id    `json:"mapId"`       // MapId where monsters should spawn
-	Instance    uuid.UUID  `json:"instance"`
-	MonsterId   uint32     `json:"monsterId"` // MonsterId to spawn
-	X           int16      `json:"x"`         // X coordinate for spawn
-	Y           int16      `json:"y"`         // Y coordinate for spawn
-	Team        int8       `json:"team"`      // Team assignment (optional, defaults to 0)
-	Count       int        `json:"count"`     // Number of monsters to spawn (optional, defaults to 1)
+	CharacterId   uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId       world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId     channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId         _map.Id    `json:"mapId"`       // MapId where monsters should spawn
+	Instance      uuid.UUID  `json:"instance"`
+	MonsterId     uint32     `json:"monsterId"`               // MonsterId to spawn
+	X             int16      `json:"x"`                       // X coordinate for spawn
+	Y             int16      `json:"y"`                       // Y coordinate for spawn
+	Team          int8       `json:"team"`                    // Team assignment (optional, defaults to 0)
+	Count         int        `json:"count"`                   // Number of monsters to spawn (optional, defaults to 1)
+	SpawnIfAbsent bool       `json:"spawnIfAbsent,omitempty"` // FR-2.1: suppress the spawn when a monster of this template is already on the field. The decision is made by atlas-monsters against its own registry, not here.
 }
 
 // DeployPlayerNpcPayload represents the payload required to deploy a

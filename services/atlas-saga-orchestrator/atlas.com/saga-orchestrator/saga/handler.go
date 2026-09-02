@@ -2089,9 +2089,19 @@ func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
 		Build()
 
 	// Spawn monsters
+	req := monster.SpawnRequest{
+		WorldId:       payload.WorldId,
+		ChannelId:     payload.ChannelId,
+		MapId:         payload.MapId,
+		MonsterId:     payload.MonsterId,
+		X:             payload.X,
+		Y:             payload.Y,
+		Fh:            int16(fh),
+		Team:          payload.Team,
+		SpawnIfAbsent: payload.SpawnIfAbsent,
+	}
 	for i := 0; i < count; i++ {
-		err := h.monsterP.SpawnMonster(f, payload.MonsterId, payload.X, payload.Y, int16(fh), payload.Team)
-		if err != nil {
+		if err := h.monsterP.SpawnMonster(f, req); err != nil {
 			h.logActionError(s, st, err, fmt.Sprintf("Failed to spawn monster %d/%d", i+1, count))
 			return err
 		}

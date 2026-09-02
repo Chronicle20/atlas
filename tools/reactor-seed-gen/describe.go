@@ -15,6 +15,8 @@ var (
 	licenseParagraphPattern = regexp.MustCompile(`(?s)This file is part of.*?<http://www\.gnu\.org/licenses/>\.`)
 	authorTagPattern        = regexp.MustCompile(`@[Aa]uthor\s+\S+`)
 	purposeTagPattern       = regexp.MustCompile(`@purpose\s+`)
+	mapTagPattern           = regexp.MustCompile(`@map\s+(?:[A-Z][A-Za-z]*\s*)+`)
+	remainingTagPattern     = regexp.MustCompile(`@\w+\s*`)
 	urlPattern              = regexp.MustCompile(`\bhttps?://\S+`)
 	gnuLicenseUrlPattern    = regexp.MustCompile(`www\.gnu\.org/licenses/>\.`)
 	blogspotPattern         = regexp.MustCompile(`mymapleland\.blogspot\.com/\S+`)
@@ -47,10 +49,18 @@ func clean(comment string) string {
 	// 1. remove the HeavenMS/OdinMS license paragraph.
 	s = licenseParagraphPattern.ReplaceAllString(s, "")
 
-	// 2. remove @Author/@author tags and the @purpose tag (keeping the text
-	// that follows @purpose).
+	// 2. remove @-tags. @author's trailing name and @map's trailing map
+	// name are metadata about the comment, not the reactor's behaviour, so
+	// both the tag and its value are dropped. @purpose's trailing text is
+	// the actual description content, so only the tag itself is stripped
+	// and the text after it is kept. remainingTagPattern is a catch-all
+	// for any other "@tag" this corpus does not otherwise name — it must
+	// run last, after the tag-specific patterns, so it never eats a value
+	// one of them needs to preserve.
 	s = authorTagPattern.ReplaceAllString(s, "")
+	s = mapTagPattern.ReplaceAllString(s, "")
 	s = purposeTagPattern.ReplaceAllString(s, "")
+	s = remainingTagPattern.ReplaceAllString(s, "")
 
 	// 3. remove URL debris. urlPattern runs before blogspotPattern so a
 	// scheme-prefixed link ("http://mymapleland.blogspot.com/...") is
@@ -163,10 +173,12 @@ var descriptionOverrides = map[string]string{
 
 	"3102000": "Box - drops items",
 
-	// Shares CWKPQ chest-bonus family's id prefix and its bare
-	// act() { rm.dropItems() }; 6102002-6102005 are labeled "Drops CWKPQ
-	// chest bonuses".
-	"6102001": "CWKPQ chest - drops bonus items",
+	// No source comment; bare act() { rm.dropItems() }. The adjacent
+	// 6102002-6102005 family is labeled "Drops CWKPQ chest bonuses", but
+	// those ids run rm.sprayItems(...), a different operation, so that
+	// label does not ground a name for this id. No location/quest name
+	// appears anywhere in this corpus for 6102001 itself.
+	"6102001": "Box - drops items",
 
 	// No source comment, no location context in this corpus.
 	"6741001": "Spawns a monster",

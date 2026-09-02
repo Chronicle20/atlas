@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -122,6 +123,7 @@ func TestDescribe_NoBoilerplateLeaks(t *testing.T) {
 		"http",
 		"://",
 		"  ",
+		"@",
 	}
 
 	for _, s := range scripts {
@@ -137,6 +139,52 @@ func TestDescribe_NoBoilerplateLeaks(t *testing.T) {
 		for _, bad := range forbidden {
 			if strings.Contains(got, bad) {
 				t.Errorf("describe(%q) = %q leaks %q", s.Id, got, bad)
+			}
+		}
+	}
+}
+
+// capitalizedWordPattern extracts individual capitalized words (proper-noun
+// candidates) from an override description, e.g. "Snow" and "Witch" out of
+// "Altar - weakens the Snow Witch".
+var capitalizedWordPattern = regexp.MustCompile(`\b[A-Z][a-z]+\b`)
+
+// nonLocativeAllowlist is the short, literal list of capitalized common
+// words that legitimately open a description without naming a place, NPC,
+// or quest. Every one of these is a sentence-initial common noun/verb, not a
+// proper noun, so it is exempt from the "must appear in the corpus" check
+// below. Do not add a place, NPC, or quest name to this list — that would
+// smuggle an ungrounded proper noun past the audit this test exists to run.
+var nonLocativeAllowlist = map[string]bool{
+	"Box":    true,
+	"Spawns": true,
+	"Drops":  true,
+	"Sprays": true,
+	"Altar":  true,
+	"Relic":  true,
+}
+
+// TestDescribe_OverridesAreGrounded programmatically audits every entry in
+// descriptionOverrides for the defect class two prior reviews found by hand
+// and missed by hand: a proper noun (map, NPC, or quest name) that does not
+// appear anywhere in the checked-in tier1-inventory.md corpus. For every
+// override value, every capitalized word not on nonLocativeAllowlist must
+// appear somewhere in the real inventory file, or the override is inventing
+// a name the corpus does not support.
+func TestDescribe_OverridesAreGrounded(t *testing.T) {
+	corpus, err := os.ReadFile("../../docs/tasks/task-291-reactor-tier1-conversion/tier1-inventory.md")
+	if err != nil {
+		t.Fatalf("read real inventory: %v", err)
+	}
+	corpusText := string(corpus)
+
+	for id, description := range descriptionOverrides {
+		for _, word := range capitalizedWordPattern.FindAllString(description, -1) {
+			if nonLocativeAllowlist[word] {
+				continue
+			}
+			if !strings.Contains(corpusText, word) {
+				t.Errorf("descriptionOverrides[%q] = %q: proper-noun candidate %q does not appear anywhere in tier1-inventory.md", id, description, word)
 			}
 		}
 	}

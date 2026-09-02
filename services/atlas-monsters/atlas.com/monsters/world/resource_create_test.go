@@ -63,7 +63,7 @@ func TestCreateMonsterInMapSuppressedSpawnReturns204(t *testing.T) {
 
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 

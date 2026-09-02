@@ -14,8 +14,11 @@ import (
 
 // SummonMoveHandleFunc decodes an inbound MOVE_SUMMON packet and emits a
 // COMMAND_TOPIC_SUMMON MOVE command. atlas-summons verifies ownership and
-// rebroadcasts the raw movement blob byte-faithfully to the rest of the map.
-// The startPos carried in the packet seeds the persisted position; the raw
+// rebroadcasts the raw movement blob to the rest of the map. The blob travels
+// unchanged through the command and event, but is re-serialized at encode time
+// for each RECEIVING client (see writer.SummonMoveBody): GMS v87 reads the
+// per-element XOffset/YOffset pair this handler receives and must never be sent
+// it back. The startPos carried in the packet seeds the persisted position; the
 // movement blob is what other clients actually render.
 func SummonMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

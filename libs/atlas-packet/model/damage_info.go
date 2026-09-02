@@ -10,6 +10,15 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// perMobCrc reports whether each per-target DamageInfo entry ends with the
+// anti-hack CRC word. GMS v61+ (IDA-verified per version, see Decode) and
+// jms v185 (live-capture derived — the jms sender's encode tail is
+// code-flow-virtualized; see attackDrBlocks in attack_info.go and
+// docs/tasks/fix-jms185-attack-decode/diagnosis.md).
+func perMobCrc(t tenant.Model) bool {
+	return (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS"
+}
+
 func NewDamageInfo(hits byte) *DamageInfo {
 	return &DamageInfo{hits: hits}
 }
@@ -69,8 +78,13 @@ func (m *DamageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *r
 		// (sub_85DDD2 @0x85fb50, Encode4 sub_61F8A5) writes it too, and the v61
 		// melee sender (sub_7A45F1 @0x7a5f14, Encode4 sub_5CF2AF) writes it as the
 		// final per-target field as well, so the field predates v72 — lowered from
-		// `>= 72` to `>= 61`. No in-range variant (v83..jms) changes.
-		if t.Region() == "GMS" && t.MajorVersion() >= 61 {
+		// `>= 72` to `>= 61`.
+		//
+		// jms v185 writes it too: in the live 79-byte melee capture the four
+		// bytes after the damage line (`66 1d a1 07`) precede a characterX/Y
+		// pair that decodes to the caster's real position, and dropping them
+		// leaves the packet four bytes unconsumed. See perMobCrc.
+		if perMobCrc(t) {
 			m.crc = r.ReadUint32()
 		}
 	}
@@ -99,8 +113,9 @@ func (m *DamageInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		for _, d := range m.damages {
 			w.WriteInt(d)
 		}
-		// Symmetric with Decode: per-mob CRC present GMS v61+ (see Decode note).
-		if t.Region() == "GMS" && t.MajorVersion() >= 61 {
+		// Symmetric with Decode: per-mob CRC present GMS v61+ and jms v185
+		// (see Decode note).
+		if perMobCrc(t) {
 			w.WriteInt(m.crc)
 		}
 		return w.Bytes()

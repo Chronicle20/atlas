@@ -1,0 +1,24 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Resistance tutorial - plays the resistance/tutorialGuide effect",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "guide_effect",
+          "operations": [
+            {
+              "params": {
+                "path": "resistance/tutorialGuide"
+              },
+              "type": "field_effect"
+            }
+          ]
+        }
+      ],
+      "scriptName": "Resi_tutor20"
+    },
+    "id": "Resi_tutor20",
+    "type": "map-action"
+  }
+}

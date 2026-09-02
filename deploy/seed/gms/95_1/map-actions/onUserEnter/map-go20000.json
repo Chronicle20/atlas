@@ -1,0 +1,27 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map entry for map 20000 - unlocks the UI, then plays maplemap/enter/20000",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "enter_effect",
+          "operations": [
+            {
+              "type": "unlock_ui"
+            },
+            {
+              "params": {
+                "path": "maplemap/enter/20000"
+              },
+              "type": "field_effect"
+            }
+          ]
+        }
+      ],
+      "scriptName": "go20000"
+    },
+    "id": "go20000",
+    "type": "map-action"
+  }
+}

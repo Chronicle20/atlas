@@ -86,7 +86,7 @@ func TestRequestItemConsume_LockedInScopeRejects(t *testing.T) {
 	}
 	_ = p.RequestItemConsume(channel.Model{}, 555, 3, item2.Id(2000000), 1, 0)
 
-	msgs := emitted.Messages(consumable.EnvEventTopic)
+	msgs := emitted.Messages(string(consumable.EnvEventTopic))
 	if assert.Len(t, msgs, 1) {
 		var evt consumable.Event[consumable.ErrorBody]
 		assert.NoError(t, json.Unmarshal(msgs[0].Value, &evt))
@@ -177,9 +177,9 @@ func TestRequestItemConsume_BuffReadErrorFailsOpen(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, reserveCalled)
 
-	// Filter to the buff-read Warn specifically: RegisterHandler's topic
-	// lookup also logs a Warn (unset EVENT_TOPIC_COMPARTMENT_STATUS env var
-	// in this test environment) that is unrelated to the fail-open path.
+	// Filter to the buff-read Warn specifically: the consume path can log
+	// other Warns (consumer registration, topic resolution) that are
+	// unrelated to the fail-open path.
 	var warnEntries []string
 	var degradeEntries []string
 	for _, e := range hook.AllEntries() {

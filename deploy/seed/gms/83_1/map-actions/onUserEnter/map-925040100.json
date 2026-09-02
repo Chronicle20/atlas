@@ -1,0 +1,41 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map 925040100 - spawns 9300351 at (897, 51) while quest 21747 is started and its 9300351 progress is 0",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "21747",
+              "type": "questStatus",
+              "value": "2"
+            },
+            {
+              "operator": "=",
+              "referenceId": "21747",
+              "step": "9300351",
+              "type": "questProgress",
+              "value": "0"
+            }
+          ],
+          "id": "spawn_quest_monster",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9300351",
+                "spawnIfAbsent": "true",
+                "x": "897",
+                "y": "51"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "scriptName": "925040100"
+    },
+    "id": "925040100",
+    "type": "map-action"
+  }
+}

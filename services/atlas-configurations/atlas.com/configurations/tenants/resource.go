@@ -7,10 +7,8 @@ import (
 	"atlas-configurations/scope"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants/characters/preset"
-	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"strconv"
 
@@ -34,7 +32,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/{tenantId}", rest.RegisterHandler(l)(si)("get_configuration_tenant", handleGetConfigurationTenant(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{tenantId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_tenant", handleUpdateConfigurationTenant(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/{tenantId}", rest.RegisterHandler(l)(si)("delete_configuration_tenant", handleDeleteConfigurationTenant(db))).Methods(http.MethodDelete)
-			r.HandleFunc("/{tenantId}/reset", normalizeResetBody(rest.RegisterInputHandler[ResetRestModel](l)(si)("reset_configuration_tenant", handleResetConfigurationTenant(db)))).Methods(http.MethodPost)
+			r.HandleFunc("/{tenantId}/reset", rest.RegisterOptionalInputHandler[ResetRestModel](l)(si)("reset_configuration_tenant", handleResetConfigurationTenant(db))).Methods(http.MethodPost)
 		}
 	}
 }
@@ -46,92 +44,6 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func viewProcessor(d *rest.HandlerDependency, db *gorm.DB) Processor {
 	return NewProcessor(d.Logger(), d.Context(), db).
 		WithTemplates(templates.NewProcessor(d.Logger(), d.Context(), db))
-}
-
-// normalizeResetBody rewrites an absent or `{}` reset request body into the
-// canonical empty `tenants` envelope before rest.RegisterInputHandler's
-// jsonapi.Unmarshal decode step. jsonapi.Unmarshal treats a zero-length body
-// and `{}` as decode errors, but FR-4.2 requires both (and an absent
-// `sections` key, and `sections: []`) to mean "reset every comparable
-// section" -- so they must reach the handler as a successfully decoded,
-// empty ResetRestModel rather than fail at the framework's generic decode
-// step, which writes a bare, non-JSON:API-shaped 400.
-//
-// A body that is present but not valid JSON is rejected here, in the same
-// errors-array shape every other error response on this endpoint uses, for
-// the same reason: jsonapi.Unmarshal's own decode-failure path can't.
-//
-// A body that is valid JSON but is not a JSON:API envelope -- missing a
-// top-level "data" object or a "data.type" -- is rejected here too, for the
-// same reason. FR-4.2 only defines "reset everything" for an absent or `{}`
-// body; it does not extend that meaning to an arbitrary envelope-less JSON
-// object, so this case stays a 400 rather than being folded into the
-// "reset everything" normalization above. Left unhandled, it would fall
-// through to jsonapi.Unmarshal's own "Source JSON is empty and has no
-// \"attributes\" payload object" error, which the framework surfaces as a
-// bare, content-type-less 400 -- the one input class on this endpoint that
-// would escape the vnd.api+json errors-array shape every other error uses.
-func normalizeResetBody(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		raw, err := io.ReadAll(r.Body)
-		_ = r.Body.Close()
-		if err != nil {
-			w.Header().Set("Content-Type", "application/vnd.api+json")
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
-				"status": strconv.Itoa(http.StatusBadRequest),
-				"title":  "malformed request body",
-				"detail": "The reset request body could not be read: " + err.Error(),
-			}}})
-			return
-		}
-
-		trimmed := bytes.TrimSpace(raw)
-		switch {
-		case len(trimmed) == 0, string(trimmed) == "{}":
-			trimmed = []byte(`{"data":{"type":"tenants","attributes":{}}}`)
-		case !json.Valid(trimmed):
-			w.Header().Set("Content-Type", "application/vnd.api+json")
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
-				"status": strconv.Itoa(http.StatusBadRequest),
-				"title":  "malformed request body",
-				"detail": "The reset request body could not be decoded.",
-			}}})
-			return
-		case !hasResetEnvelope(trimmed):
-			w.Header().Set("Content-Type", "application/vnd.api+json")
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
-				"status": strconv.Itoa(http.StatusBadRequest),
-				"title":  "malformed request body",
-				"detail": "The reset request body must be a JSON:API document with a top-level \"data\" object naming a \"type\".",
-			}}})
-			return
-		}
-
-		r.Body = io.NopCloser(bytes.NewReader(trimmed))
-		r.ContentLength = int64(len(trimmed))
-		next(w, r)
-	}
-}
-
-// hasResetEnvelope reports whether raw is a JSON:API document with a
-// top-level "data" object naming a non-empty "type" -- the minimum
-// jsonapi.Unmarshal needs to reach setDataIntoTarget instead of failing at
-// its own "Source JSON is empty" check. It does not validate the type name
-// or attributes; RegisterInputHandler's decode step and preset validation
-// still do that work.
-func hasResetEnvelope(raw []byte) bool {
-	var doc struct {
-		Data *struct {
-			Type string `json:"type"`
-		} `json:"data"`
-	}
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return false
-	}
-	return doc.Data != nil && doc.Data.Type != ""
 }
 
 func handleGetConfigurationTenants(db *gorm.DB) rest.GetHandler {

@@ -885,6 +885,20 @@ else
     skip "topic manifest drift (no manifest or topic deploy surface changed)"
 fi
 
+if touched '^(deploy/seed/|tools/catalog-lint/|libs/atlas-seeder/|services/atlas-map-actions/docs/map_script_schema\.json)'; then
+    step "catalog lint"            bash -c 'cd tools/catalog-lint && GOWORK=off go run . ../../deploy/seed'
+    step "catalog lint tests"      bash -c 'cd tools/catalog-lint && GOWORK=off go test ./...'
+else
+    skip "catalog lint (no seed, catalog-lint, seeder or map-action schema change)"
+fi
+
+if touched '^(libs/atlas-saga/validation\.go|services/atlas-map-actions/atlas\.com/map-actions/script/(executor|evaluator)\.go|services/atlas-map-actions/docs/map_script_schema\.json|tools/gen-map-action-schema)'; then
+    step "map-action schema drift"      ./tools/gen-map-action-schema.sh --check
+    step "map-action schema gen tests"  bash -c 'cd tools/gen-map-action-schema && GOWORK=off go test ./...'
+else
+    skip "map-action schema drift (no saga condition, executor, schema or generator change)"
+fi
+
 if touched '^(deploy/k8s/overlays/pr/|deploy/k8s/overlays/pr-sparse/|tools/pr-sparse-mirror-guard\.sh)'; then
     step "pr-sparse mirror drift" ./tools/pr-sparse-mirror-guard.sh
 else

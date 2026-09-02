@@ -150,7 +150,8 @@
             "lock_ui",
             "unlock_ui",
             "set_quest_progress",
-            "start_quest"
+            "start_quest",
+            "open_npc"
           ]
         },
         "params": {
@@ -405,6 +406,31 @@
                   "npcId": {
                     "type": "string",
                     "description": "NPC credited with starting the quest (default 0)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "open_npc"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "npcId"
+                ],
+                "properties": {
+                  "npcId": {
+                    "type": "string",
+                    "description": "NPC template ID whose conversation the server starts"
                   }
                 }
               }

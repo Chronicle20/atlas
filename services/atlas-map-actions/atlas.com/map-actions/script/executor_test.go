@@ -509,3 +509,72 @@ func TestExecuteStartQuestParamValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestExecuteOpenNpc(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).SetInstance(inst).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("open_npc").
+		SetParams(map[string]string{"npcId": "2159012"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.StartNpcConversationPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.StartNpcConversationPayload")
+	}
+	want := saga.StartNpcConversationPayload{
+		CharacterId:   1,
+		AccountId:     0,
+		NpcTemplateId: 2159012,
+		WorldId:       world.Id(0),
+		ChannelId:     channel.Id(1),
+		MapId:         _map.Id(931000400),
+		Instance:      inst,
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}
+
+func TestExecuteOpenNpcParamValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "missing npcId", params: map[string]string{}, wantErrSubstr: "open_npc operation missing npcId parameter"},
+		{name: "bad npcId", params: map[string]string{"npcId": "x"}, wantErrSubstr: "invalid npcId [x]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, _ := newTestOperationExecutor()
+
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).SetInstance(inst).Build()
+
+			op, err := operation.NewBuilder().SetType("open_npc").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+				t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+			}
+		})
+	}
+}

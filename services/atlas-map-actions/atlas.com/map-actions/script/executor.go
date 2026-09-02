@@ -52,6 +52,8 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeSetQuestProgress(f, characterId, op)
 	case "start_quest":
 		return e.executeStartQuest(f, characterId, op)
+	case "open_npc":
+		return e.executeOpenNpc(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -349,6 +351,49 @@ func (e *OperationExecutor) executeStartQuest(f field.Model, characterId uint32,
 				WorldId:     f.WorldId(),
 				QuestId:     uint32(questId),
 				NpcId:       uint32(npcId),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executeOpenNpc(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	npcIdStr, ok := params["npcId"]
+	if !ok {
+		return fmt.Errorf("open_npc operation missing npcId parameter")
+	}
+	npcId, err := strconv.ParseUint(npcIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid npcId [%s]: %w", npcIdStr, err)
+	}
+
+	e.l.Debugf("Opening NPC [%d] conversation for character [%d].", npcId, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-open-npc").
+		AddStep(
+			fmt.Sprintf("open-npc-%d-%d", characterId, npcId),
+			saga.Pending,
+			saga.StartNpcConversation,
+			saga.StartNpcConversationPayload{
+				CharacterId: characterId,
+				// AccountId is deliberately 0: handleStartNpcConversation does
+				// read it (saga-orchestrator/saga/producer.go, propagated into
+				// npc.Command.Body.AccountId), but the map-enter command this
+				// service consumes (script/consumer.go's enterBody) carries no
+				// account id at all -- the enter command is published by
+				// atlas-channel without one. Threading a real value would mean
+				// changing that cross-service kafka contract, which is outside
+				// this task's scope; see task-C2 report.
+				AccountId:     0,
+				NpcTemplateId: uint32(npcId),
+				WorldId:       f.WorldId(),
+				ChannelId:     f.ChannelId(),
+				MapId:         f.MapId(),
+				Instance:      f.Instance(),
 			},
 		).Build()
 

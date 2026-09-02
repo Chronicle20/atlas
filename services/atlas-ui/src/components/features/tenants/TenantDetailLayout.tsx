@@ -7,8 +7,15 @@ import {
   DetailActionBarProvider,
 } from "@/components/DetailActionBarContext";
 import { ConfigExportButton } from "@/components/features/config/ConfigExportButton";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { supportsMapleLife } from "@/components/features/characters/maple-life/mapleLifeSupport";
+import { TenantResetButton } from "@/components/features/tenants/TenantResetButton";
 
 interface TenantDetailLayoutProps {
   children: ReactNode;
@@ -35,6 +42,13 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
     { title: "MTS Configuration", href: `/tenants/${id}/mts-config` },
     { title: "Diagnostics", href: `/tenants/${id}/diagnostics` },
   ];
+  // Strictly `=== true` per key, so an older backend that omits
+  // sectionDrift renders nothing rather than six false positives.
+  const sectionDrift = tenantQuery.data?.attributes.sectionDrift;
+  const driftedSections =
+    tenantQuery.data?.attributes.templateDrift === true && sectionDrift
+      ? Object.keys(sectionDrift).filter((k) => sectionDrift[k] === true)
+      : [];
   return (
     <DetailActionBarProvider>
       <div className="flex flex-1 flex-col overflow-hidden space-y-6 p-10 pb-6">
@@ -45,7 +59,24 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
             </h2>
             <p className="text-muted-foreground">{id}</p>
           </div>
-          <ConfigExportButton kind="tenant" id={id} />
+          <div className="flex items-center gap-2">
+            {driftedSections.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="secondary">
+                    Differs from template: {driftedSections.join(", ")}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  These sections diverge from the template this tenant derives
+                  from. Drift is advisory - a template edit makes its tenants
+                  report drift with no tenant-side change.
+                </TooltipContent>
+              </Tooltip>
+            )}
+            <ConfigExportButton kind="tenant" id={id} />
+            <TenantResetButton id={id} />
+          </div>
         </div>
         <Separator className="my-6" />
         <div className="flex flex-1 flex-col overflow-hidden space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">

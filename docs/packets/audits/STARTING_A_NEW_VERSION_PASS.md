@@ -154,6 +154,61 @@ template opcode does NOT automatically update existing tenants — you must patc
 the live tenant's config and restart the channel (handler/writer projections
 don't hot-reload).
 
+#### Character-creation rows — the race carousel
+
+Opcodes are not the only version-dependent content in the template. The
+`characters.templates` array keys on `(jobIndex, subJobIndex, gender)`, where
+`jobIndex` is the **race ordinal into the carousel that client version's login
+screen drew** — not a job id. Its meaning changes between versions (ordinal 0 is
+Cygnus on `gms_v84` and Citizen on `gms_v95`), so it cannot be copied from the
+previous column.
+
+Omitting this step does not fail loudly. `carouselFor`
+(`services/atlas-character-factory/atlas.com/character-factory/job/carousel.go`)
+is an ordered predicate chain, so an unlisted new column silently inherits the
+nearest-lower arm — a new GMS major above 95 gets `race5Carousel`, a new region
+gets `unverifiedCarousel` and can create only Explorer. Either way character
+creation resolves the wrong job id or rejects valid ordinals, and no packet-audit
+check sees it.
+
+Do these five in order; the fixture drives the two parity tests, so starting
+anywhere else produces failures that point at the wrong file.
+
+1. **`docs/packets/race-carousels.json`** — add a `versions.<key>` entry with
+   `region`, `majorVersion`, and one `slots` row per selectable
+   `(raceIndex, subJobIndex)`. Each row cites the IDA function and address that
+   established it (`CLogin::Update`'s switch arms, or
+   `CLogin::SendNewCharPacket` when the version encodes no race member at all).
+   `jobId: null` is the only permitted value for a slot whose mapping could not
+   be established — never a guess. Read the file's `_comment` first: `verified`
+   records confidence in the `class` **label**, which is a separate axis from
+   `jobId`.
+2. **`job/carousel.go`** — add the `carouselFor` arm and its `Carousel` table.
+   Predicates use `IsRegion` / `MajorAtLeast` / `MajorInRange` only; a raw `> N`
+   is a review failure. Reuse an existing table only when the new column's job
+   ids are identical, not merely its ordinal count. `TestCarouselsMatchParityFixture`
+   iterates the fixture, so step 1 without step 2 fails immediately — which is
+   the intended forcing function.
+3. **Seed template `characters.templates` rows** — one per carousel slot, for
+   **both genders**, with that slot's start `mapId` from the findings.
+4. **`job/correspondence_test.go`** — add the column to `correspondenceCases`
+   (version key, region, major, minor, template filename). This table is
+   hand-maintained; a column missing from it is simply not checked.
+   `TestCarouselMatchesSeedTemplates` then enforces steps 2 and 3 against each
+   other in both directions. A slot deliberately present on only one side needs
+   an entry in `direction1Exempt` / `direction2Exempt` with a findings citation.
+5. **`services/atlas-ui/src/components/features/characters/templates/jobNames.ts`**
+   — add the class-label table and its `classesForVersion` branch. Labels are
+   display-only and may split where the Go carousel does not (`gms_v79` and
+   `gms_v83` share one carousel but carry different labels, because ordinal 2 is
+   class-unverified on `gms_v79`). `raceCarousels.parity.test.ts` also iterates
+   the fixture, so this is likewise forced by step 1.
+
+Evidence for steps 1–2 belongs in the task folder alongside the findings that
+produced it, in the shape of
+`docs/tasks/task-283-race-index-job-mapping/findings.md` — version × slot ×
+class × address.
+
 ### 1.3 IDA export
 
 The export is a machine-harvested JSON of the IDB's `Encode`/`Decode` read-order
@@ -524,6 +579,11 @@ Rules:
 - 🟡 cells count as done if and only if they have an evidence record in
   `docs/packets/evidence/<version>/<packet>.yaml` whose `decompile_sha256` still
   matches the current IDA export (no hash drift).
+- A pass that stood up a new column is not done until the race carousel is
+  carried through all five artifacts of §1.2 "Character-creation rows" and
+  `go test ./services/atlas-character-factory/atlas.com/character-factory/job/...`
+  passes. The matrix cannot see this: character creation is green on the packet
+  side while resolving the wrong job id.
 
 ---
 

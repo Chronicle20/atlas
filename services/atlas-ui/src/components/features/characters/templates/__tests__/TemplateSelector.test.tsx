@@ -3,6 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { TemplateSelector } from "../TemplateSelector";
 
+vi.mock("@/context/tenant-context", () => ({
+  useTenant: () => ({
+    activeTenant: {
+      id: "t1",
+      attributes: { region: "GMS", majorVersion: 95, minorVersion: 1 },
+    },
+  }),
+}));
+
 const templates = [
   { jobIndex: 1, gender: 0 },
   { jobIndex: 1, gender: 1 },
@@ -20,16 +29,16 @@ describe("TemplateSelector", () => {
       />,
     );
     expect(screen.getByRole("tablist")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Adventurer · M" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Explorer · M" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    expect(screen.getByRole("tab", { name: "Adventurer · F" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Explorer · F" })).toHaveAttribute(
       "aria-selected",
       "false",
     );
     expect(
-      screen.getByRole("tab", { name: "Adventurer · M (2)" }),
+      screen.getByRole("tab", { name: "Explorer · M (2)" }),
     ).toBeInTheDocument();
   });
 
@@ -44,7 +53,7 @@ describe("TemplateSelector", () => {
         onAdd={onAdd}
       />,
     );
-    await userEvent.click(screen.getByRole("tab", { name: "Adventurer · F" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Explorer · F" }));
     expect(onSelect).toHaveBeenCalledWith(1);
     await userEvent.click(screen.getByRole("button", { name: /new/i }));
     expect(onAdd).toHaveBeenCalled();

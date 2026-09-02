@@ -132,11 +132,19 @@ func categorizeError(err error) int {
 		return http.StatusOK
 	}
 
-	// Validation errors (user input problems)
+	switch {
+	case errors.Is(err, ErrInvalidRaceIndex):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrTemplateNotFound):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrNameDuplicate):
+		return http.StatusConflict
+	}
+
+	// Validation errors (user input problems) that have no sentinel of their own.
 	validationErrors := []string{
 		"character name must be between 1 and 12 characters and contain only valid characters",
 		"gender must be 0 or 1",
-		"must provide valid job index",
 		"chosen face is not valid for job",
 		"chosen hair is not valid for job",
 		"chosen hair color is not valid for job",

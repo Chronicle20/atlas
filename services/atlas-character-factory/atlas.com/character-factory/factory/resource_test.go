@@ -3,6 +3,7 @@ package factory
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -140,6 +141,35 @@ func TestCategorizePresetError(t *testing.T) {
 			got := categorizePresetError(tt.err)
 			if got != tt.wantStatus {
 				t.Errorf("categorizePresetError(%v) = %d, want %d", tt.err, got, tt.wantStatus)
+			}
+		})
+	}
+}
+
+// TestCategorizeError_InvalidRaceIndexIsBadRequest covers task-283's new sentinel and
+// the errors.Is switch categorizeError now leads with. ErrTemplateNotFound and
+// ErrNameDuplicate previously fell through the substring list to a 500 because their
+// messages are not in that list; routing them through errors.Is is what makes them
+// reachable at all (FR-17).
+func TestCategorizeError_InvalidRaceIndexIsBadRequest(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantStatus int
+	}{
+		{"nil error", nil, http.StatusOK},
+		{"ErrInvalidRaceIndex", ErrInvalidRaceIndex, http.StatusBadRequest},
+		{"wrapped ErrInvalidRaceIndex", fmt.Errorf("create: %w", ErrInvalidRaceIndex), http.StatusBadRequest},
+		{"ErrTemplateNotFound", ErrTemplateNotFound, http.StatusBadRequest},
+		{"ErrNameDuplicate", ErrNameDuplicate, http.StatusConflict},
+		{"unknown error", errors.New("boom"), http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := categorizeError(tt.err)
+			if got != tt.wantStatus {
+				t.Errorf("categorizeError(%v) = %d, want %d", tt.err, got, tt.wantStatus)
 			}
 		})
 	}

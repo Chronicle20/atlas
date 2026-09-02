@@ -54,7 +54,7 @@ func IsFourthJob(jobId Id) bool {
 }
 
 func IsBeginner(jobId Id) bool {
-	return IsA(jobId, BeginnerId, NoblesseId, LegendId, EvanId)
+	return IsA(jobId, BeginnerId, NoblesseId, LegendId, EvanId, CitizenId)
 }
 
 func GetType(jobId Id) Type {
@@ -101,22 +101,4 @@ var mpEaterSkillIds = map[Id]skill.Id{
 func MpEaterSkillId(jobId Id) (skill.Id, bool) {
 	id, ok := mpEaterSkillIds[jobId]
 	return id, ok
-}
-
-func FromIndex(jobIndex uint32, subJobIndex uint32) Id {
-	jobId := BeginnerId
-	if jobIndex == 0 {
-		jobId = NoblesseId
-	} else if jobIndex == 1 {
-		if subJobIndex == 0 {
-			jobId = BeginnerId
-		} else if subJobIndex == 1 {
-			// jobId = job.BladeRecruit TODO
-		}
-	} else if jobIndex == 2 {
-		jobId = LegendId
-	} else if jobIndex == 3 {
-		jobId = EvanId
-	}
-	return jobId
 }

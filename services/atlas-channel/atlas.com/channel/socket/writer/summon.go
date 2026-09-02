@@ -18,9 +18,13 @@ func SummonRemoveBody(ownerCharacterId uint32, summonId uint32, animated bool) p
 }
 
 // SummonMoveBody builds the SummonMove clientbound packet for a moved summon,
-// rebroadcasting the raw movement blob byte-faithfully to other sessions. The
-// blob already carries the start position (CMovePath), so it is NOT written
-// separately — see summoncb.SummonMove.
+// rebroadcasting the raw movement blob to other sessions. The blob is NOT echoed
+// verbatim: summoncb.SummonMove re-serializes it at encode time for the
+// RECEIVING client, because GMS v87 reads the per-element XOffset/YOffset pair
+// the client sends but is never sent it back (CMovePath::Encode @0x6c70fe writes
+// the pair, ::Decode @0x6c6e86 never reads it) — echoing it desyncs the observer's
+// whole fragment loop. The blob already carries the start position (CMovePath),
+// so it is NOT written separately — see summoncb.SummonMove.
 func SummonMoveBody(ownerCharacterId uint32, summonId uint32, rawMovement []byte) packet.Encode {
 	return summoncb.NewSummonMove(ownerCharacterId, summonId, rawMovement).Encode
 }

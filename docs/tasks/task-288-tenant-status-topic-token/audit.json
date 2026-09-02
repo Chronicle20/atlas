@@ -1,0 +1,139 @@
+{
+  "service": "atlas-tenants",
+  "path": "services/atlas-tenants/atlas.com/tenants (+ tools/topicguard)",
+  "date": "2026-09-02",
+  "build": "pass",
+  "testsPassed": 9,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "tenant",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-21",
+          "name": "No redeclaration of a type, helper, or numeric constant that already exists in libs/atlas-constants/",
+          "status": "pass",
+          "evidence": "no TENANT_STATUS/TenantStatus hit in libs/atlas-constants/; kafka.go:19 matches fleet topic.Token convention (services/atlas-dragons/atlas.com/dragons/dragon/kafka.go:12)"
+        },
+        {
+          "id": "DOM-23",
+          "name": "Kafka topic env vars follow COMMAND_TOPIC_*/EVENT_TOPIC_*, KEY:\"KEY\" in base configmap, listed in both overlays, never a literal service-manifest env value",
+          "status": "pass",
+          "evidence": "deploy/k8s/base/env-configmap.yaml:183; deploy/k8s/overlays/main/kustomization.yaml:213; deploy/k8s/overlays/pr/kustomization.yaml:330; deploy/k8s/overlays/pr-sparse/kustomization.yaml:493; deploy/k8s/base/atlas-tenants.yaml has no literal EVENT_TOPIC_TENANT_STATUS in env:"
+        },
+        {
+          "id": "DOM-30",
+          "name": "Writes emit through AndEmit + message.Buffer, not a direct producer.ProviderImpl call",
+          "status": "pass",
+          "evidence": "services/atlas-tenants/atlas.com/tenants/tenant/processor.go:88 mb.Put(EventTopicTenantStatus, ...) inside Create, wired through message.EmitWithResult(outbox.EmitProvider(...)) in CreateAndEmit (processor.go:112-118)"
+        },
+        {
+          "id": "DOM-26",
+          "name": "Every goroutine spawned via routine.Go; bare go needs a justified marker",
+          "status": "pass",
+          "evidence": "GUARD_MODULES=services/atlas-tenants/atlas.com/tenants ./tools/goroutine-guard.sh exit 0"
+        },
+        {
+          "id": "DOM-31",
+          "name": "Tenant and trace identifiers travel in context only",
+          "status": "pass",
+          "evidence": "kafka.go, kafka_test.go, testmain_test.go read no tenant/trace context, pass no tenantId, open no DB session"
+        },
+        {
+          "id": "DOM-10",
+          "name": "Test DB setup calls database.RegisterTenantCallbacks",
+          "status": "n-a",
+          "evidence": "neither kafka_test.go nor testmain_test.go opens a GORM DB"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Tests are table-driven (tests := []struct{...} + t.Run)",
+          "status": "fail",
+          "evidence": "services/atlas-tenants/atlas.com/tenants/tenant/kafka_test.go:27,41,59 — three standalone func Test... bodies, none using tests := []struct{...} + t.Run"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Test packages reaching an emit path install producertest / inject no-op producer",
+          "status": "n-a",
+          "evidence": "kafka_test.go/testmain_test.go call only topic.EnvProvider, never AndEmit/message.Emit/producer.Produce"
+        },
+        {
+          "id": "DOM-33",
+          "name": "Interface change updates every mock implementation in the same diff",
+          "status": "n-a",
+          "evidence": "no Processor/Provider/Administrator interface method added, removed, or re-signed"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file carrying >=2 of FILE-01..05's responsibilities",
+          "status": "pass",
+          "evidence": "kafka.go carries only a topic-token constant, event-type constants, and a Kafka message-body/provider — none of FILE-01..05's categories"
+        },
+        {
+          "id": "FILE-01..05",
+          "name": "Processor/RestModel/requests/Entity/Builder-Model-administrator-provider-state each in their own file",
+          "status": "n-a",
+          "evidence": "none of kafka.go's changed content is one of these five responsibilities"
+        }
+      ]
+    },
+    {
+      "name": "topicguard",
+      "type": "support",
+      "checks": [
+        {
+          "id": "DOM-26",
+          "name": "Every goroutine spawned via routine.Go; bare go needs a justified marker",
+          "status": "pass",
+          "evidence": "grep -n \"^\\s*go |go func\" tools/topicguard/analyzer.go — no match; tools/ is outside goroutine-guard.sh's SCAN_ROOTS (services, libs), verified manually instead"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No redeclaration of an existing shared constant",
+          "status": "n-a",
+          "evidence": "rawEnvTopicPattern is an analyzer-local regex for diagnostic 2, unrelated to libs/atlas-constants; still referenced at analyzer.go:244, not dead code"
+        },
+        {
+          "id": "FILE-01..06",
+          "name": "Domain package file responsibilities",
+          "status": "n-a",
+          "evidence": "tools/topicguard has no model.go/resource.go/processor.go/etc.; it is a go/analysis checker plus testdata fixtures, not a domain/sub-domain package"
+        },
+        {
+          "id": "SUB/EXT/SCAFFOLD/SEC",
+          "name": "Sub-domain, external-client, scaffolding, and security families",
+          "status": "n-a",
+          "evidence": "not a service package: no HTTP routes, no cross-service client, no new service directory, no auth/secrets"
+        }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-01: builder.go/NewBuilder/Build() — services/atlas-tenants/atlas.com/tenants/tenant/builder.go not touched by this diff",
+    "DOM-02: entity.go Model.ToEntity() — tenant/entity.go not touched",
+    "DOM-03: entity.go Make(Entity) — tenant/entity.go not touched",
+    "DOM-04: rest.go Transform(Model) — tenant/rest.go not touched",
+    "DOM-05: rest.go TransformSlice — tenant/rest.go not touched",
+    "DOM-06: processor.go logger constructor arg — full processor.go read beyond the three mb.Put sites not performed",
+    "DOM-07: resource.go d.Logger() plumbing — tenant/resource.go not touched",
+    "DOM-08: resource.go RegisterInputHandler usage — tenant/resource.go not touched",
+    "DOM-09: resource.go Transform error checks — tenant/resource.go not touched",
+    "DOM-11: provider.go lazy evaluation — tenant/provider.go not touched",
+    "DOM-12: resource.go os.Getenv absence — tenant/resource.go not touched",
+    "DOM-13: resource.go cross-domain orchestration — tenant/resource.go not touched",
+    "DOM-14: resource.go processor-only calls — tenant/resource.go not touched",
+    "DOM-15: resource.go no direct db writes — tenant/resource.go not touched",
+    "DOM-16: administrator.go write functions — tenant/administrator.go not touched",
+    "DOM-17: resource.go HTTP status mapping — tenant/resource.go not touched",
+    "DOM-18: rest.go JSON:API interface — tenant/rest.go not touched",
+    "DOM-19: rest.go flat request models — tenant/rest.go not touched",
+    "DOM-32: resource.go route registration style — tenant/resource.go not touched",
+    "DOM-31 (rest.go's own no-tenant-in-payload compliance): tenant/rest.go RestModel fields not read; only the changed-code portion of DOM-31 was evaluated"
+  ],
+  "blocking": [
+    "DOM-20: services/atlas-tenants/atlas.com/tenants/tenant/kafka_test.go:27,41,59: three new test functions are not table-driven (tests := []struct{...} + t.Run)"
+  ],
+  "nonBlocking": []
+}

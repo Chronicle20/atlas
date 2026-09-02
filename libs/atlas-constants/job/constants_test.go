@@ -8,8 +8,8 @@ import "testing"
 // preset validators use the key set as their "does this job exist" check, and
 // atlas-character reads IsFourthJob off it.
 func TestJobsTableShape(t *testing.T) {
-	if got := len(Jobs); got != 82 {
-		t.Fatalf("len(Jobs) = %d; want 82", got)
+	if got := len(Jobs); got != 83 {
+		t.Fatalf("len(Jobs) = %d; want 83", got)
 	}
 	fourth := 0
 	for id, j := range Jobs {

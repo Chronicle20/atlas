@@ -10,9 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { KNOWN_CLASSES, worldNameFromJobIndex } from "./jobNames";
+import { classesForVersion, worldNameFromJobIndex } from "./jobNames";
 import type { IdentityField } from "./editorState";
 import { MapPicker } from "./MapPicker";
+import { useTenant } from "@/context/tenant-context";
 
 interface IdentitySectionProps {
   template: CharacterTemplate;
@@ -27,16 +28,20 @@ export function IdentitySection({
   actions,
 }: IdentitySectionProps) {
   const [advanced, setAdvanced] = useState(false);
+  const { activeTenant } = useTenant();
+  const region = activeTenant?.attributes.region;
+  const majorVersion = activeTenant?.attributes.majorVersion;
 
   const classValue = `${template.jobIndex}.${template.subJobIndex}`;
-  const known = KNOWN_CLASSES.find(
+  const classes = classesForVersion(region, majorVersion);
+  const known = classes.find(
     (c) =>
       c.jobIndex === template.jobIndex &&
       c.subJobIndex === template.subJobIndex,
   );
   const classLabel =
     known?.label ??
-    `${worldNameFromJobIndex(template.jobIndex)} (${classValue})`;
+    `${worldNameFromJobIndex(template.jobIndex, region, majorVersion)} (${classValue})`;
 
   const parseNumeric = (raw: string): number | undefined => {
     const n = Number(raw);
@@ -66,9 +71,9 @@ export function IdentitySection({
               <SelectValue placeholder={classLabel}>{classLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {KNOWN_CLASSES.map((c) => (
+              {classes.map((c) => (
                 <SelectItem
-                  key={c.label}
+                  key={`${c.jobIndex}.${c.subJobIndex}`}
                   value={`${c.jobIndex}.${c.subJobIndex}`}
                 >
                   {c.label}

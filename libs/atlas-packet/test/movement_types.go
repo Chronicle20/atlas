@@ -65,3 +65,52 @@ func MovementTypesV95() map[string]interface{} {
 		},
 	}
 }
+
+// MovementTypesJMS185 returns the JMS v185.1 movement "types" options table —
+// the 33-entry array the jms tenant template ships for the movement handlers
+// (services/atlas-configurations/seed-data/templates/template_jms_185_1.json,
+// "opCode": "0x20" CharacterMoveHandle and its MOB/PET/SUMMON/NPC siblings).
+//
+// A movement fixture MUST pass this rather than nil options: without it every
+// element falls through resolveMovementPathAttr to the bare Element codec,
+// which consumes the wrong number of bytes and hides a header misalignment
+// behind a plausible-looking partial decode.
+func MovementTypesJMS185() map[string]interface{} {
+	return map[string]interface{}{
+		"types": []interface{}{
+			map[string]interface{}{"Name": "NORMAL", "Type": "NORMAL"},                   // 0
+			map[string]interface{}{"Name": "JUMP", "Type": "JUMP"},                       // 1
+			map[string]interface{}{"Name": "IMPACT", "Type": "JUMP"},                     // 2
+			map[string]interface{}{"Name": "IMMEDIATE", "Type": "TELEPORT"},              // 3
+			map[string]interface{}{"Name": "TELEPORT", "Type": "TELEPORT"},               // 4
+			map[string]interface{}{"Name": "HANG_ON_BACK", "Type": "NORMAL"},             // 5
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 6
+			map[string]interface{}{"Name": "ASSAULTER", "Type": "TELEPORT"},              // 7
+			map[string]interface{}{"Name": "ASSASSINATION", "Type": "TELEPORT"},          // 8
+			map[string]interface{}{"Name": "RUSH", "Type": "TELEPORT"},                   // 9
+			map[string]interface{}{"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},         // 10
+			map[string]interface{}{"Name": "SIT_DOWN", "Type": "TELEPORT"},               // 11
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 12
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 13
+			map[string]interface{}{"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"}, // 14
+			map[string]interface{}{"Name": "FALL_DOWN", "Type": "NORMAL"},                // 15
+			map[string]interface{}{"Name": "START_WINGS", "Type": "JUMP"},                // 16
+			map[string]interface{}{"Name": "WINGS", "Type": "NORMAL"},                    // 17
+			map[string]interface{}{"Name": "ARAN_ADJUST", "Type": "JUMP"},                // 18
+			map[string]interface{}{"Name": "MOB_TOSS", "Type": "JUMP"},                   // 19
+			map[string]interface{}{"Name": "DASH_SLIDE", "Type": "JUMP"},                 // 20
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "DEFAULT"},                 // 21
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "DEFAULT"},                 // 22
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 23
+			map[string]interface{}{"Name": "FLYING_BLOCK", "Type": "FLYING_BLOCK"},       // 24
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 25
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "DEFAULT"},                 // 26
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 27
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 28
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 29
+			map[string]interface{}{"Name": "UNKNOWN", "Type": "JUMP"},                    // 30
+			map[string]interface{}{"Name": "MOB_ATK_RUSH", "Type": "NORMAL"},             // 31
+			map[string]interface{}{"Name": "MOB_ATK_RUSH_STOP", "Type": "NORMAL"},        // 32
+		},
+	}
+}

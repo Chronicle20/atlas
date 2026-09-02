@@ -30,6 +30,7 @@ var (
 	ErrPresetValidation     = errors.New("preset validation failed")
 	ErrNameDuplicate        = errors.New("name duplicate")
 	ErrTemplateNotFound     = errors.New("no character creation template for the chosen job/subjob/gender")
+	ErrInvalidRaceIndex     = errors.New("race index is not selectable on this client version")
 )
 
 // NameInvalidError is returned when the name validity check rejects the name for a
@@ -97,11 +98,17 @@ func (p *ProcessorImpl) Create(ctx context.Context, input RestModel) (string, er
 		return "", errors.New("gender must be 0 or 1")
 	}
 
-	if !validJob(input.JobIndex, input.SubJobIndex) {
-		return "", errors.New("must provide valid job index")
+	t := tenant.MustFromContext(ctx)
+
+	// task-283: the race ordinal is an index into the carousel THIS client version drew,
+	// so it can only be resolved once the tenant is in hand. Resolved once here and
+	// reused at the saga payload, so the validator and the payload cannot disagree.
+	jobId, ok := job2.FromIndex(t, input.JobIndex, input.SubJobIndex)
+	if !ok {
+		p.l.Errorf("Race index [%d] subJobIndex [%d] is not selectable on region [%s] version [%d.%d]; rejecting creation so the client receives a failure instead of hanging.", input.JobIndex, input.SubJobIndex, t.Region(), t.MajorVersion(), t.MinorVersion())
+		return "", ErrInvalidRaceIndex
 	}
 
-	t := tenant.MustFromContext(ctx)
 	tc, err := configuration.GetTenantConfig(t.Id())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find template validation configuration")
@@ -164,7 +171,7 @@ func (p *ProcessorImpl) Create(ctx context.Context, input RestModel) (string, er
 	p.l.Debugf("Beginning character creation saga for account [%d] in world [%d] with transaction [%s].", input.AccountId, input.WorldId, characterCreationId.String())
 
 	// Build the unified character creation saga
-	characterCreationSaga := buildCharacterCreationSaga(characterCreationId, input, tmpl)
+	characterCreationSaga := buildCharacterCreationSaga(characterCreationId, input, tmpl, jobId)
 
 	// Emit the character creation saga
 	sagaProcessor := saga.NewProcessor(p.l, ctx)
@@ -182,7 +189,7 @@ func (p *ProcessorImpl) Create(ctx context.Context, input RestModel) (string, er
 // all items, equipment, and skills in a single transaction. Subsequent steps use characterId=0
 // as a sentinel value; the saga orchestrator's result forwarding will inject the actual
 // characterId after the CreateCharacter step completes.
-func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, tmpl template.RestModel) saga.Saga {
+func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, tmpl template.RestModel, jobId job.Id) saga.Saga {
 	// Character creation caps the orchestrator's backstop timer at 10s so the
 	// client's socket is released within the login latency budget (see PRD §4.1 /
 	// plan Phase 4.5). The orchestrator otherwise defaults to 30s.
@@ -203,7 +210,7 @@ func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, tmpl t
 		Dexterity:    input.Dexterity,
 		Intelligence: input.Intelligence,
 		Luck:         input.Luck,
-		JobId:        job2.JobFromIndex(input.JobIndex, input.SubJobIndex),
+		JobId:        jobId,
 		Hp:           input.Hp,
 		Mp:           input.Mp,
 		Face:         input.Face,
@@ -644,10 +651,6 @@ func validOption(options []uint32, selection uint32) bool {
 
 func validFace(faces []uint32, face uint32) bool {
 	return validOption(faces, face)
-}
-
-func validJob(_ uint32, _ uint32) bool {
-	return true
 }
 
 func validGender(gender byte) bool {

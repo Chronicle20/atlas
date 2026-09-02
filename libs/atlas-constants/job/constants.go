@@ -89,6 +89,7 @@ var Jobs = map[Id]Job{
 	EvanStage8Id:               {id: EvanStage8Id, fourthJob: true},
 	EvanStage9Id:               {id: EvanStage9Id, fourthJob: true},
 	EvanStage10Id:              {id: EvanStage10Id, fourthJob: true},
+	CitizenId:                  {id: CitizenId},
 }
 
 const (
@@ -174,6 +175,12 @@ const (
 	EvanStage8Id               = Id(2216)
 	EvanStage9Id               = Id(2217)
 	EvanStage10Id              = Id(2218)
+	// CitizenId is the Resistance/Citizen beginner job. It is human-supplied,
+	// not read from any client binary: the character-creation packet never
+	// carries a job id (findings.md, "New job constants required", task-283
+	// execution session, 2026-08-28). See
+	// docs/tasks/task-283-race-index-job-mapping/findings.md.
+	CitizenId = Id(3000)
 )
 
 type Type uint16

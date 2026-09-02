@@ -11,6 +11,7 @@ import {
   type AppearancePoolKey,
 } from "./editorState";
 import { templateLabels } from "./jobNames";
+import { useTenant } from "@/context/tenant-context";
 import { TemplateSelector } from "./TemplateSelector";
 import { TemplateActionsMenu } from "./TemplateActionsMenu";
 import { IdentitySection } from "./IdentitySection";
@@ -52,6 +53,7 @@ const EQUIPMENT_SECTIONS: { poolKey: EquipmentPoolKey; title: string }[] = [
 export function CharacterTemplatesEditor({
   adapter,
 }: CharacterTemplatesEditorProps) {
+  const { activeTenant } = useTenant();
   const [state, dispatch] = useReducer(
     editorReducer,
     undefined,
@@ -179,7 +181,11 @@ export function CharacterTemplatesEditor({
 
   const template = state.templates[state.selectedIndex];
   const picks = picksFor(state, state.selectedIndex);
-  const labels = templateLabels(state.templates);
+  const labels = templateLabels(
+    state.templates,
+    activeTenant?.attributes.region,
+    activeTenant?.attributes.majorVersion,
+  );
 
   if (state.templates.length === 0) {
     return (

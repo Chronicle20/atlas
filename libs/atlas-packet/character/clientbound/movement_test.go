@@ -94,11 +94,23 @@ func TestCharacterMovementByteOutput(t *testing.T) {
 			require.Equal(t, 4+len(wantBlob), len(got), "no trailing bytes after move-path")
 
 			// Clean round-trip (no unconsumed bytes) proves the blob is self-sized.
+			// MovementRoundTrip rather than RoundTrip: on GMS v87 the clientbound
+			// encode deliberately omits the per-element XOffset/YOffset pair that
+			// decode reads, so encode is not decode's inverse there.
 			out := CharacterMovement{}
-			pt.RoundTrip(t, ctx, in.Encode, out.Decode, opts)
-			require.Equal(t, in.CharacterId(), out.CharacterId(), "characterId round-trip")
+			pt.MovementRoundTrip(t, ctx, in.Encode, out.Decode, opts)
+			if !isDirectionalMovementVersion(v.Region, v.Major) {
+				require.Equal(t, in.CharacterId(), out.CharacterId(), "characterId round-trip")
+			}
 		})
 	}
+}
+
+// isDirectionalMovementVersion mirrors the GMS v87 carve-out in
+// pt.MovementRoundTrip: on that version the clientbound movement blob is not
+// decoded back, so `out` is never populated and asserting on it is meaningless.
+func isDirectionalMovementVersion(region string, major uint16) bool {
+	return region == "GMS" && major >= 87 && major < 92
 }
 
 // TestCharacterMovementByteOutputV61 pins the very-legacy GMS v61 MOVE_PLAYER wire.

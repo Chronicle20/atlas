@@ -25,44 +25,72 @@ type MovementCodec interface {
 	EncodeType(w *response.Writer)
 }
 
-// gmsMovementElementOffsets reports whether a NORMAL movement fragment carries
-// the trailing XOffset/YOffset pair. GMS v87+, and every non-GMS region.
+// XOffset/YOffset on an absolute-position (NORMAL) movement fragment are
+// DIRECTIONAL: the boundary for reading them off the wire is not the boundary
+// for writing them back. GMS v87 reads them and does not write them, so the two
+// gates below are deliberately different and must NOT be collapsed again.
 //
-// This was previously v88+, sharing a boundary with Movement's StartVx/StartVy
-// on the assumption that one client rework introduced both. It did not, and the
-// conflation cost the whole "Code [253/254/255] not configured for use in
-// movement" flood on v87 — thousands per minute, with the server's own log
-// warning it would crash the client (task-218 field reports #3/#5).
+// In the client the pair sits at CMovePath::ELEM +0x14/+0x16 (named xOffset /
+// yOffset outright in the v95 symbols, ELEM decoded at CMovePath::Decode
+// @0x667920). It is written/read only for the absolute-position attrs — the
+// case 0/5/15/17 arm — immediately after fh and the attr-15 fhFallStart, and
+// before the common bMoveAction/tElapse tail.
 //
-// The two fields have DIFFERENT boundaries:
+// Per-version, from the client's own CMovePath pair:
 //
-//   - StartVx/StartVy: v87 CMovePath::Encode @0x6c70fe writes Encode2(x),
-//     Encode2(y), Encode1(count) and nothing else, so v87 does NOT have them.
-//     That gate correctly stays at 88 (see Movement.Decode).
-//   - XOffset/YOffset: v87 writes them per element. v83 @0x68a563 and v84
-//     @0x6a0fd0 have no such read/write at all; v87 @0x6c70fe (Encode) and
-//     @0x6c6e86 (Decode) both carry the pair.
+//	version   Encode (client -> server)   Decode (server -> client)
+//	GMS v83   @0x68a563  no               @0x68a33c  no
+//	GMS v84   @0x6a0fd0  no               @0x6a0fd0  no
+//	GMS v87   @0x6c70fe  YES              @0x6c6e86  NO      <- asymmetric
+//	GMS v92   @0x65a260  YES              @0x65ad60  yes
+//	GMS v95   @0x666e20  YES              @0x667920  yes
+//	JMS v185  @0x70b6c4  YES              @0x70b3ce  yes
 //
-// Confirmed empirically as well as by disassembly, which is what settled it:
-// eight distinct live v87 monster-move frames captured by
-// logUnconfiguredMovementCode were replayed against both element-size models.
-// With the pair present all 8 parse cleanly end-to-end as all-NORMAL elements;
-// without it, 1 of 8 parses and that one only coincidentally. The failure
-// signature in the field was every EVEN element failing at an exact 18-byte
-// stride: 18 == 1 type + 10 coords + 4 offsets + 3 tail, i.e. the decoder read
-// 14 for a real 18-byte element and then consumed the 4-byte remainder as a
-// phantom element, re-syncing on every second one.
+// v87's Decode is 154 instructions ending at 0x6c709a (0x6c709a onward is the
+// jump table, so this is the whole function) and its absolute arm reads
+// x/y/vx/vy/fh, the attr-15 fhFallStart, then goes straight to the
+// bMoveAction/tElapse tail. Its Encode at 6c720a/6c7218 does `mov ax,[edi+14h]`
+// and `mov ax,[edi+16h]` and writes both. Every other version listed reads back
+// what it wrote.
 //
-// CAVEAT, deliberately recorded rather than hidden: in the client this pair is
-// gated on CClientOptMan::GetOpt(..., 2) — a RUNTIME option, not a version. A
-// server cannot observe it, so a version gate is the best available
-// approximation and matches what every client Atlas serves actually does. The
-// same option also gates three extra Decode4 (a move-rand seed) in
-// CMobPool::OnMobChangeController @0x6b52c3, which Atlas does NOT send; that
-// packet nonetheless works in the field, so the option's exact scope is not
-// fully understood. Do not "fix" the control packet to match without evidence.
-func gmsMovementElementOffsets(t tenant.Model) bool {
+// Consequence, and the reason this file has been wrong in both directions: on
+// v87 a server that echoes the pair back makes the client read xOffset's low
+// byte as bMoveAction and yOffset as tElapse, then read the real
+// bMoveAction/tElapse as the NEXT fragment's attr and body. NPCs, mobs and
+// remote players then teleport instead of walking.
+//
+// Do not confuse this pair with the one guarded by CClientOptMan::GetOpt(..., 2)
+// four bytes later at +0x18/+0x1A. The v95 symbols name those usRandCnt /
+// usActualRandCnt — move-rand counters, present on EVERY fragment type, not just
+// the absolute ones, and symmetric in Encode and Decode. Atlas neither reads nor
+// writes them, which is consistent with that runtime option being off for the
+// clients Atlas serves; an earlier revision of this comment mistook them for the
+// offsets and recorded a "runtime option" caveat that does not apply here.
+//
+// movementElementOffsetsInbound gates the read. GMS v87+ and every non-GMS
+// region; v83/v84 have no such field on either side.
+//
+// The v87 read is confirmed empirically as well as by disassembly: eight
+// distinct live v87 monster-move frames captured by logUnconfiguredMovementCode
+// were replayed against both element-size models. With the pair present all 8
+// parse cleanly end-to-end as all-NORMAL fragments; without it, 1 of 8 parses
+// and that one only coincidentally. The failure signature in the field was every
+// EVEN fragment failing at an exact 18-byte stride: 18 == 1 attr + 10 coords +
+// 4 offsets + 3 tail (task-218 field reports #3/#5).
+func movementElementOffsetsInbound(t tenant.Model) bool {
 	return !t.IsRegion("GMS") || t.MajorAtLeast(87)
+}
+
+// movementElementOffsetsOutbound gates the write, and excludes GMS v87 for the
+// reason given above.
+//
+// Boundary 92 rather than 88: v87 is IDA-verified not to read the pair and v92
+// is IDA-verified to read it; v88..v91 have no IDB, and deploy/k8s/base/
+// versions.json ships no GMS version between 87 and 92, so every value in
+// 88..92 is behaviourally identical for any tenant Atlas can serve. 92 is the
+// lowest one backed by direct evidence.
+func movementElementOffsetsOutbound(t tenant.Model) bool {
+	return !t.IsRegion("GMS") || t.MajorAtLeast(92)
 }
 
 type Movement struct {
@@ -203,10 +231,10 @@ func (m *NormalElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			m.FhFallStart = r.ReadInt16()
 		}
-		// XOffset/YOffset on NORMAL elements — see gmsMovementElementOffsets.
-		// MUST stay textually identical to Encode or Atlas corrupts its own
-		// movement packets.
-		if gmsMovementElementOffsets(t) {
+		// XOffset/YOffset on NORMAL elements. This gate is deliberately NOT the
+		// one Encode uses — see movementElementOffsetsInbound/Outbound. GMS v87
+		// sends the pair and does not read it back.
+		if movementElementOffsetsInbound(t) {
 			m.XOffset = r.ReadInt16()
 			m.YOffset = r.ReadInt16()
 		}
@@ -304,8 +332,10 @@ func (m *NormalElement) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			w.WriteInt16(m.FhFallStart)
 		}
-		// Paired with the Decode boundary; the two MUST stay textually identical.
-		if gmsMovementElementOffsets(t) {
+		// Deliberately a different gate from Decode's: GMS v87's
+		// CMovePath::Decode @0x6c6e86 never reads this pair, so writing it back
+		// desyncs the client's fragment loop.
+		if movementElementOffsetsOutbound(t) {
 			w.WriteInt16(m.XOffset)
 			w.WriteInt16(m.YOffset)
 		}

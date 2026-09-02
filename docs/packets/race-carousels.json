@@ -1,0 +1,338 @@
+{
+  "_comment": "Machine-readable projection of docs/tasks/task-283-race-index-job-mapping/findings.md. Neither the Go server nor the admin UI loads this at runtime; both assert their compiled tables against it in tests (task-283 design D-9). Adding a slot here without adding it to BOTH tables fails those tests, which is the point. Per-version `verified` is true only when every slot in that version is individually `verified: true`; a slot's `verified` mirrors the corresponding findings.md row's status column (`verified` -> true, anything else -> false). `jobId` and `verified` are two independent axes, not one: `verified` records confidence in the `class` label only (whether IDA could pin the symbolic name), while `jobId` is the mapping itself, which FR-21 freezes for every pre-Big-Bang slot (gms_12 through gms_v92) at its currently-shipped value regardless of label confidence -- `verified: false` on a slot in that range does NOT mean `jobId` is a guess or should be null; the frozen value in services/atlas-character-factory/atlas.com/character-factory/factory/processor_test.go is the authority for it. `jobId: null` is reserved for slots with no established mapping to freeze at all (outside FR-21's range, or genuinely unestablished) -- never a guess. `class` matches the findings.md class column for that row; where findings.md used markdown emphasis purely for rendering (the three no-race versions), the emphasis markers are stripped but the wording is unchanged.",
+  "versions": {
+    "gms_12": {
+      "region": "GMS",
+      "majorVersion": 12,
+      "verified": false,
+      "slots": [
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer",
+          "verified": false,
+          "note": "No IDA export and no IDB for this version. The (1,0) slot is present in every candidate mapping the client could plausibly have used, so it is insensitive to the ambiguity, but it is not confirmed against a binary."
+        }
+      ]
+    },
+    "gms_v48": {
+      "region": "GMS",
+      "majorVersion": 48,
+      "verified": true,
+      "slots": [
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer only; no race index exists on this version",
+          "verified": true,
+          "note": "CLogin::SendNewCharPacket 0x500545 encodes no race member and no sub-job member; the create-character request has no race field at all on this version, so no ordinal other than Explorer exists to select. (1,0) is shown here for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
+        }
+      ]
+    },
+    "gms_v61": {
+      "region": "GMS",
+      "majorVersion": 61,
+      "verified": true,
+      "slots": [
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer only; no race index exists on this version",
+          "verified": true,
+          "note": "CLogin::SendNewCharPacket 0x5653e9 encodes no race member and no sub-job member; the create-character request has no race field at all on this version, so no ordinal other than Explorer exists to select. (1,0) shown for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
+        }
+      ]
+    },
+    "gms_v72": {
+      "region": "GMS",
+      "majorVersion": 72,
+      "verified": true,
+      "slots": [
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer only; no race index exists on this version",
+          "verified": true,
+          "note": "CLogin::SendNewCharPacket 0x5b219a encodes no race member and no sub-job member; the create-character request has no race field at all on this version, so no ordinal other than Explorer exists to select. (1,0) shown for cross-version display consistency, matching the canonical Explorer ordinal used on every later version."
+        }
+      ]
+    },
+    "gms_v79": {
+      "region": "GMS",
+      "majorVersion": 79,
+      "verified": false,
+      "slots": [
+        {
+          "raceIndex": 0,
+          "subJobIndex": 0,
+          "jobId": 1000,
+          "class": "Cygnus Knight",
+          "verified": true
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer",
+          "verified": true
+        },
+        {
+          "raceIndex": 2,
+          "subJobIndex": 0,
+          "jobId": 2000,
+          "class": "Aran-family dialog",
+          "verified": false,
+          "note": "jobId 2000 (job.LegendId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_79/2.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified: ordinal verified, class by geometry only. CreateWnd y=207/width=276 match the Aran fingerprint; z=109 here vs 104 from v83 on. No class symbol in this IDB, unlike v83. Ordinal 3 does not exist on this version -- the switch has only three arms."
+        }
+      ]
+    },
+    "gms_v83": {
+      "region": "GMS",
+      "majorVersion": 83,
+      "verified": true,
+      "slots": [
+        {
+          "raceIndex": 0,
+          "subJobIndex": 0,
+          "jobId": 1000,
+          "class": "Cygnus Knight",
+          "verified": true
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer",
+          "verified": true
+        },
+        {
+          "raceIndex": 2,
+          "subJobIndex": 0,
+          "jobId": 2000,
+          "class": "Aran",
+          "verified": true,
+          "note": "Anchor column -- class symbols are named directly in this IDB. Ordinal 3 does not exist on this version -- the switch has only three arms."
+        }
+      ]
+    },
+    "gms_v84": {
+      "region": "GMS",
+      "majorVersion": 84,
+      "verified": false,
+      "slots": [
+        {
+          "raceIndex": 0,
+          "subJobIndex": 0,
+          "jobId": 1000,
+          "class": "Cygnus Knight",
+          "verified": true
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer",
+          "verified": true
+        },
+        {
+          "raceIndex": 2,
+          "subJobIndex": 0,
+          "jobId": 2000,
+          "class": "Aran",
+          "verified": true
+        },
+        {
+          "raceIndex": 3,
+          "subJobIndex": 0,
+          "jobId": 2001,
+          "class": "fourth race (Evan slot)",
+          "verified": false,
+          "note": "jobId 2001 (job.EvanId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_84/3.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified: ordinal verified, class unverified. Distinct class (own vftables, own singleton), but its CreateWnd geometry equals the shared Explorer/Evan fingerprint and there is no symbol or RTTI string in this IDB, so which class it is could not be established."
+        }
+      ]
+    },
+    "gms_v87": {
+      "region": "GMS",
+      "majorVersion": 87,
+      "verified": false,
+      "slots": [
+        {
+          "raceIndex": 0,
+          "subJobIndex": 0,
+          "jobId": 1000,
+          "class": "Cygnus Knight",
+          "verified": true
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer",
+          "verified": true
+        },
+        {
+          "raceIndex": 2,
+          "subJobIndex": 0,
+          "jobId": 2000,
+          "class": "Aran",
+          "verified": true
+        },
+        {
+          "raceIndex": 3,
+          "subJobIndex": 0,
+          "jobId": 2001,
+          "class": "fourth race (Evan slot)",
+          "verified": false,
+          "note": "jobId 2001 (job.EvanId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_87/3.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified -- same situation as gms_v84 race 3."
+        }
+      ]
+    },
+    "gms_v92": {
+      "region": "GMS",
+      "majorVersion": 92,
+      "verified": false,
+      "slots": [
+        {
+          "raceIndex": 0,
+          "subJobIndex": 0,
+          "jobId": 1000,
+          "class": "Cygnus Knight",
+          "verified": true
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer",
+          "verified": true
+        },
+        {
+          "raceIndex": 2,
+          "subJobIndex": 0,
+          "jobId": 2000,
+          "class": "Aran or Evan (one of the two)",
+          "verified": false,
+          "note": "jobId 2000 (job.LegendId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_92/2.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified: ordinal verified, which of Aran/the fourth-race slot this ordinal is was not established within budget."
+        },
+        {
+          "raceIndex": 3,
+          "subJobIndex": 0,
+          "jobId": 2001,
+          "class": "Aran or Evan (the other)",
+          "verified": false,
+          "note": "jobId 2001 (job.EvanId) is the frozen pre-Big-Bang mapping for this slot (processor_test.go gms_92/3.0) and is preserved per FR-21 regardless of label confidence. The class label itself is unverified: ordinal verified, class unverified -- the complement of ordinal 2 above."
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 1,
+          "jobId": null,
+          "class": "—",
+          "verified": false,
+          "note": "Sub-job is transmitted live on this version, so a non-zero sub-job is possible, but the race-select button handler that would set it was not located within budget. Neither confirmed nor denied."
+        }
+      ]
+    },
+    "gms_v95": {
+      "region": "GMS",
+      "majorVersion": 95,
+      "verified": true,
+      "slots": [
+        {
+          "raceIndex": 0,
+          "subJobIndex": 0,
+          "jobId": 3000,
+          "class": "Resistance / Citizen",
+          "verified": true,
+          "note": "Ordinal and class are IDA-verified (CLogin::Update 0x5dee90 case 0, CUINewCharNameSelectRes ctor). The numeric job.Id 3000 itself is human-supplied, NOT IDA-derived -- the client never carries a job id on the character-creation path (see findings.md 'New job constants required')."
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": 0,
+          "class": "Explorer",
+          "verified": true
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 1,
+          "jobId": 0,
+          "class": "Explorer, sub-job 1 (Dual Blade)",
+          "verified": true,
+          "note": "Not a distinct creation job id -- the client treats this as the Explorer race with sub-job marker 1 and transmits no job id. BeginnerId (0) applies, same as plain Explorer."
+        },
+        {
+          "raceIndex": 2,
+          "subJobIndex": 0,
+          "jobId": 1000,
+          "class": "Cygnus Knight",
+          "verified": true
+        },
+        {
+          "raceIndex": 3,
+          "subJobIndex": 0,
+          "jobId": 2000,
+          "class": "Aran",
+          "verified": true
+        },
+        {
+          "raceIndex": 4,
+          "subJobIndex": 0,
+          "jobId": 2001,
+          "class": "Evan",
+          "verified": true
+        }
+      ]
+    },
+    "gms_jms_185": {
+      "region": "JMS",
+      "majorVersion": 185,
+      "verified": false,
+      "slots": [
+        {
+          "raceIndex": 0,
+          "subJobIndex": 0,
+          "jobId": null,
+          "class": "unverified",
+          "verified": false,
+          "note": "Ordinal 0 exists and constructs a distinct name dialog (CLogin::Update 0x66c17f, arm 0x66c1ff); the class is not named in this IDB and was not fingerprinted within budget. Do not reuse the gms_84/87/92 race4 class labels without checking."
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 0,
+          "jobId": null,
+          "class": "unverified",
+          "verified": false,
+          "note": "CLogin::Update 0x66c17f -> sub_68AEDE, arm 0x66c1df. Ordinal verified, class unverified."
+        },
+        {
+          "raceIndex": 2,
+          "subJobIndex": 0,
+          "jobId": null,
+          "class": "unverified",
+          "verified": false,
+          "note": "CLogin::Update 0x66c17f -> sub_68B1C6, arm 0x66c1bb. Ordinal verified, class unverified."
+        },
+        {
+          "raceIndex": 3,
+          "subJobIndex": 0,
+          "jobId": null,
+          "class": "unverified",
+          "verified": false,
+          "note": "CLogin::Update 0x66c17f -> sub_68B4B3, arm 0x66c197. Ordinal verified, class unverified."
+        },
+        {
+          "raceIndex": 1,
+          "subJobIndex": 1,
+          "jobId": null,
+          "class": "—",
+          "verified": false,
+          "note": "The packet carries a live sub-job field, but the race-select button handler was not reached within budget, so no (1,1) slot is confirmed or denied."
+        }
+      ]
+    }
+  }
+}

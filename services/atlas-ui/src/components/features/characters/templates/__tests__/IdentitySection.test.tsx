@@ -12,6 +12,15 @@ vi.mock("@/lib/hooks/api/useMaps", () => ({
   useMapsByName: () => ({ data: [], isLoading: false }),
 }));
 
+vi.mock("@/context/tenant-context", () => ({
+  useTenant: () => ({
+    activeTenant: {
+      id: "t1",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
+  }),
+}));
+
 import { blankTemplate, normalizeTemplate } from "../editorState";
 import { IdentitySection } from "../IdentitySection";
 
@@ -29,9 +38,7 @@ describe("IdentitySection", () => {
       />,
     );
     await userEvent.click(screen.getByRole("combobox", { name: /class/i }));
-    await userEvent.click(
-      await screen.findByRole("option", { name: /Aran \(2\.0\)/ }),
-    );
+    await userEvent.click(await screen.findByRole("option", { name: "Aran" }));
     expect(onSetIdentity).toHaveBeenCalledWith("jobIndex", 2);
     expect(onSetIdentity).toHaveBeenCalledWith("subJobIndex", 0);
   });
@@ -79,7 +86,7 @@ describe("IdentitySection", () => {
         onSetIdentity={vi.fn()}
       />,
     );
-    expect(screen.getByText(/Adventurer \(1\.1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Explorer \(1\.1\)/)).toBeInTheDocument();
   });
 
   it("renders the actions slot in the header", () => {

@@ -4086,6 +4086,158 @@
         "opCode": "0xCF",
         "writer": "DragonMove",
         "fname": "CDragon::OnMove",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            }
+          ]
+        },
         "services": [
           "channel"
         ]
@@ -4575,6 +4727,158 @@
         "opCode": "0x118",
         "writer": "SummonMove",
         "fname": "CSummonedPool::OnMove",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            }
+          ]
+        },
         "services": [
           "channel"
         ]
@@ -6179,7 +6483,7 @@
       {
         "jobIndex": 0,
         "subJobIndex": 0,
-        "mapId": 130010220,
+        "mapId": 310010000,
         "gender": 0,
         "faces": [
           20000,
@@ -6224,13 +6528,13 @@
           1312004
         ],
         "items": [
-          4161047
+          4161001
         ]
       },
       {
         "jobIndex": 0,
         "subJobIndex": 0,
-        "mapId": 130010220,
+        "mapId": 310010000,
         "gender": 1,
         "faces": [
           21000,
@@ -6276,7 +6580,7 @@
           1312004
         ],
         "items": [
-          4161047
+          4161001
         ]
       },
       {
@@ -6380,172 +6684,6 @@
         ],
         "items": [
           4161001
-        ]
-      },
-      {
-        "jobIndex": 2,
-        "subJobIndex": 0,
-        "mapId": 140090000,
-        "gender": 0,
-        "faces": [
-          20100,
-          20401,
-          20402
-        ],
-        "hairs": [
-          30030,
-          30020,
-          30000
-        ],
-        "hairColors": [
-          0,
-          2,
-          3,
-          7
-        ],
-        "skinColors": [
-          0,
-          1,
-          2,
-          3
-        ],
-        "tops": [
-          1042167
-        ],
-        "bottoms": [
-          1062115
-        ],
-        "shoes": [
-          1072383
-        ],
-        "weapons": [
-          1442079
-        ],
-        "items": [
-          4161048
-        ]
-      },
-      {
-        "jobIndex": 2,
-        "subJobIndex": 0,
-        "mapId": 140090000,
-        "gender": 1,
-        "faces": [
-          21700,
-          21201,
-          21002
-        ],
-        "hairs": [
-          31000,
-          31040,
-          31050
-        ],
-        "hairColors": [
-          0,
-          2,
-          3,
-          7
-        ],
-        "skinColors": [
-          0,
-          1,
-          2,
-          3
-        ],
-        "tops": [
-          1042167
-        ],
-        "bottoms": [
-          1062115
-        ],
-        "shoes": [
-          1072383
-        ],
-        "weapons": [
-          1442079
-        ],
-        "items": [
-          4161048
-        ]
-      },
-      {
-        "jobIndex": 3,
-        "subJobIndex": 0,
-        "mapId": 100030100,
-        "gender": 0,
-        "faces": [
-          20100,
-          20401,
-          20402
-        ],
-        "hairs": [
-          30030,
-          30020,
-          30000
-        ],
-        "hairColors": [
-          0,
-          2,
-          3,
-          7
-        ],
-        "skinColors": [
-          0,
-          1,
-          2,
-          3
-        ],
-        "tops": [
-          1042180
-        ],
-        "bottoms": [
-          1060138
-        ],
-        "shoes": [
-          1072418
-        ],
-        "weapons": [
-          1302132
-        ]
-      },
-      {
-        "jobIndex": 3,
-        "subJobIndex": 0,
-        "mapId": 100030100,
-        "gender": 1,
-        "faces": [
-          21700,
-          21201,
-          21002
-        ],
-        "hairs": [
-          31000,
-          31040,
-          31050
-        ],
-        "hairColors": [
-          0,
-          2,
-          3,
-          7
-        ],
-        "skinColors": [
-          0,
-          1,
-          2,
-          3
-        ],
-        "tops": [
-          1042180
-        ],
-        "bottoms": [
-          1061160
-        ],
-        "shoes": [
-          1072418
-        ],
-        "weapons": [
-          1302132
         ]
       },
       {
@@ -6649,6 +6787,275 @@
         ],
         "items": [
           4161001
+        ]
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1040002,
+          1040006,
+          1040010
+        ],
+        "bottoms": [
+          1060002,
+          1060006
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ]
+      },
+      {
+        "jobIndex": 2,
+        "subJobIndex": 0,
+        "mapId": 130010220,
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1041002,
+          1041006,
+          1041010,
+          1041011
+        ],
+        "bottoms": [
+          1061002,
+          1061008
+        ],
+        "shoes": [
+          1072001,
+          1072005,
+          1072037,
+          1072038
+        ],
+        "weapons": [
+          1302000,
+          1322005,
+          1312004
+        ],
+        "items": [
+          4161047
+        ]
+      },
+      {
+        "jobIndex": 3,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 0,
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ]
+      },
+      {
+        "jobIndex": 3,
+        "subJobIndex": 0,
+        "mapId": 140090000,
+        "gender": 1,
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042167
+        ],
+        "bottoms": [
+          1062115
+        ],
+        "shoes": [
+          1072383
+        ],
+        "weapons": [
+          1442079
+        ],
+        "items": [
+          4161048
+        ]
+      },
+      {
+        "jobIndex": 4,
+        "subJobIndex": 0,
+        "mapId": 100030100,
+        "gender": 0,
+        "faces": [
+          20100,
+          20401,
+          20402
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042180
+        ],
+        "bottoms": [
+          1060138
+        ],
+        "shoes": [
+          1072418
+        ],
+        "weapons": [
+          1302132
+        ]
+      },
+      {
+        "jobIndex": 4,
+        "subJobIndex": 0,
+        "mapId": 100030100,
+        "gender": 1,
+        "faces": [
+          21700,
+          21201,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          2,
+          3,
+          7
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "tops": [
+          1042180
+        ],
+        "bottoms": [
+          1061160
+        ],
+        "shoes": [
+          1072418
+        ],
+        "weapons": [
+          1302132
         ]
       }
     ],

@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import type { CharacterTemplate } from "@/types/models/template";
 import { cn } from "@/lib/utils";
 import { templateLabels } from "./jobNames";
+import { useTenant } from "@/context/tenant-context";
 
 interface TemplateSelectorProps {
   templates: Pick<CharacterTemplate, "jobIndex" | "gender">[];
@@ -21,7 +22,12 @@ export function TemplateSelector({
   onSelect,
   onAdd,
 }: TemplateSelectorProps) {
-  const labels = templateLabels(templates);
+  const { activeTenant } = useTenant();
+  const labels = templateLabels(
+    templates,
+    activeTenant?.attributes.region,
+    activeTenant?.attributes.majorVersion,
+  );
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const moveTo = (index: number) => {

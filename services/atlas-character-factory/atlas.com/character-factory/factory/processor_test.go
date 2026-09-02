@@ -5,6 +5,7 @@ import (
 	job2 "atlas-character-factory/job"
 	"atlas-character-factory/saga"
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	tenantModel "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -227,7 +229,7 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			transactionId := uuid.New()
-			result := buildCharacterCreationSaga(transactionId, tt.input, tt.template)
+			result := buildCharacterCreationSaga(transactionId, tt.input, tt.template, job.BeginnerId)
 
 			if result.TransactionId != transactionId {
 				t.Errorf("Expected TransactionId %v, got %v", transactionId, result.TransactionId)
@@ -266,7 +268,7 @@ func TestBuildCharacterCreationSaga_StepOrdering(t *testing.T) {
 	}
 
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, tmpl)
+	result := buildCharacterCreationSaga(transactionId, input, tmpl, job.BeginnerId)
 
 	// Verify step ordering: create_character, await_inventory_created, then items, then equipment, then skills
 	expectedStepOrder := []struct {
@@ -339,7 +341,7 @@ func TestBuildCharacterCreationSaga_EmptyTemplate(t *testing.T) {
 	}
 
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, tmpl)
+	result := buildCharacterCreationSaga(transactionId, input, tmpl, job.BeginnerId)
 
 	// Should have character creation + await_inventory_created steps
 	if len(result.Steps) != 2 {
@@ -383,7 +385,7 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 	}
 
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, tmpl)
+	result := buildCharacterCreationSaga(transactionId, input, tmpl, job.BeginnerId)
 
 	// Verify character create payload has all fields correctly mapped
 	createStep := result.Steps[0]
@@ -397,7 +399,11 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 		if payload.WorldId != input.WorldId {
 			t.Errorf("WorldId mismatch: expected %d, got %d", input.WorldId, payload.WorldId)
 		}
-		expectedJobId := job2.JobFromIndex(input.JobIndex, input.SubJobIndex)
+		// task-283: literal expectation. buildCharacterCreationSaga does not run the
+		// carousel mapper itself -- job.BeginnerId is passed in directly as the
+		// already-resolved job id, so the payload is expected to carry it unchanged
+		// regardless of JobIndex 500's carousel status.
+		const expectedJobId = job.BeginnerId
 		if payload.JobId != expectedJobId {
 			t.Errorf("JobId mismatch: expected %d, got %d", expectedJobId, payload.JobId)
 		}
@@ -463,7 +469,7 @@ func TestBuildCharacterCreationSaga_Timestamps(t *testing.T) {
 
 	beforeTime := time.Now()
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, tmpl)
+	result := buildCharacterCreationSaga(transactionId, input, tmpl, job.BeginnerId)
 	afterTime := time.Now()
 
 	// Verify all steps have proper timestamps
@@ -508,7 +514,7 @@ func TestBuildCharacterCreationSaga_SentinelCharacterId(t *testing.T) {
 	}
 
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, tmpl)
+	result := buildCharacterCreationSaga(transactionId, input, tmpl, job.BeginnerId)
 
 	// All steps after create_character should use characterId=0 as sentinel
 	for i := 1; i < len(result.Steps); i++ {
@@ -608,20 +614,6 @@ func TestValidationFunctions(t *testing.T) {
 				}
 				if validGender(255) {
 					t.Error("Expected gender 255 to be invalid")
-				}
-			},
-		},
-		{
-			name: "validJob",
-			testFunc: func(t *testing.T) {
-				if !validJob(100, 0) {
-					t.Error("Expected job (100, 0) to be valid")
-				}
-				if !validJob(200, 1) {
-					t.Error("Expected job (200, 1) to be valid")
-				}
-				if !validJob(0, 0) {
-					t.Error("Expected job (0, 0) to be valid")
 				}
 			},
 		},
@@ -960,6 +952,78 @@ func createMockContext(t *testing.T) (context.Context, uuid.UUID) {
 	return ctx, tenantId
 }
 
+// TestFromIndex_PreBigBangFrozen pins today's mapping for every currently-seeded
+// (jobIndex, subJobIndex) row on the pre-Big-Bang templates. These literals were captured
+// from the behavior of JobFromIndex BEFORE task-283's refactor; they are the backward-
+// compatibility gate (PRD §8) and must not be regenerated from the new mapper. A literal
+// changes only when docs/tasks/task-283-race-index-job-mapping/findings.md positively
+// contradicts the row, and the change cites the finding.
+func TestFromIndex_PreBigBangFrozen(t *testing.T) {
+	tests := []struct {
+		name        string
+		region      string
+		major       uint16
+		minor       uint16
+		jobIndex    uint32
+		subJobIndex uint32
+		expectJobId job.Id
+		expectOk    bool
+	}{
+		{"gms_12/1.0", "GMS", 12, 1, 1, 0, job.BeginnerId, true},
+		// gms_48/61/72 (0,0) and (2,0): findings.md positively contradicts these rows.
+		// CLogin::SendNewCharPacket encodes no race member and no sub-job member at all on
+		// these three versions (0x500545/0x5653e9/0x5b219a), so a client on them cannot
+		// select or transmit any ordinal other than (1,0) Explorer. Ruling R-5 (task-283):
+		// these six rows flip from the version-blind mapper's stale ok=true to the
+		// version-aware mapper's correct ok=false; the "no-race" carousel legitimately
+		// contains only (1,0).
+		{"gms_48/0.0", "GMS", 48, 1, 0, 0, 0, false},
+		{"gms_48/1.0", "GMS", 48, 1, 1, 0, job.BeginnerId, true},
+		{"gms_48/2.0", "GMS", 48, 1, 2, 0, 0, false},
+		{"gms_61/0.0", "GMS", 61, 1, 0, 0, 0, false},
+		{"gms_61/1.0", "GMS", 61, 1, 1, 0, job.BeginnerId, true},
+		{"gms_61/2.0", "GMS", 61, 1, 2, 0, 0, false},
+		{"gms_72/0.0", "GMS", 72, 1, 0, 0, 0, false},
+		{"gms_72/1.0", "GMS", 72, 1, 1, 0, job.BeginnerId, true},
+		{"gms_72/2.0", "GMS", 72, 1, 2, 0, 0, false},
+		{"gms_79/0.0", "GMS", 79, 1, 0, 0, job.NoblesseId, true},
+		{"gms_79/1.0", "GMS", 79, 1, 1, 0, job.BeginnerId, true},
+		{"gms_79/2.0", "GMS", 79, 1, 2, 0, job.LegendId, true},
+		{"gms_83/0.0", "GMS", 83, 1, 0, 0, job.NoblesseId, true},
+		{"gms_83/1.0", "GMS", 83, 1, 1, 0, job.BeginnerId, true},
+		{"gms_83/2.0", "GMS", 83, 1, 2, 0, job.LegendId, true},
+		{"gms_84/0.0", "GMS", 84, 1, 0, 0, job.NoblesseId, true},
+		{"gms_84/1.0", "GMS", 84, 1, 1, 0, job.BeginnerId, true},
+		{"gms_84/2.0", "GMS", 84, 1, 2, 0, job.LegendId, true},
+		{"gms_84/3.0", "GMS", 84, 1, 3, 0, job.EvanId, true},
+		{"gms_87/0.0", "GMS", 87, 1, 0, 0, job.NoblesseId, true},
+		{"gms_87/1.0", "GMS", 87, 1, 1, 0, job.BeginnerId, true},
+		{"gms_87/2.0", "GMS", 87, 1, 2, 0, job.LegendId, true},
+		{"gms_87/3.0", "GMS", 87, 1, 3, 0, job.EvanId, true},
+		{"gms_92/0.0", "GMS", 92, 1, 0, 0, job.NoblesseId, true},
+		{"gms_92/1.0", "GMS", 92, 1, 1, 0, job.BeginnerId, true},
+		{"gms_92/2.0", "GMS", 92, 1, 2, 0, job.LegendId, true},
+		{"gms_92/3.0", "GMS", 92, 1, 3, 0, job.EvanId, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testTenant, err := tenantModel.Create(uuid.New(), tc.region, tc.major, tc.minor)
+			if err != nil {
+				t.Fatalf("Failed to create test tenant: %v", err)
+			}
+
+			jobId, ok := job2.FromIndex(testTenant, tc.jobIndex, tc.subJobIndex)
+			if ok != tc.expectOk {
+				t.Fatalf("ok mismatch: expected %v, got %v", tc.expectOk, ok)
+			}
+			if tc.expectOk && jobId != tc.expectJobId {
+				t.Errorf("jobId mismatch: expected %d, got %d", tc.expectJobId, jobId)
+			}
+		})
+	}
+}
+
 // TestCharacterCreationOrchestrationFlow tests the complete orchestration flow
 // with a unified saga that includes create, items, equipment, and skills.
 func TestCharacterCreationOrchestrationFlow(t *testing.T) {
@@ -990,7 +1054,7 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 	}
 
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, tmpl)
+	result := buildCharacterCreationSaga(transactionId, input, tmpl, job.BeginnerId)
 
 	t.Run("saga_metadata", func(t *testing.T) {
 		if result.SagaType != saga.CharacterCreation {
@@ -1067,7 +1131,11 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			if payload.WorldId != input.WorldId {
 				t.Errorf("WorldId mismatch: expected %d, got %d", input.WorldId, payload.WorldId)
 			}
-			expectedJobId := job2.JobFromIndex(input.JobIndex, input.SubJobIndex)
+			// task-283: literal expectation. buildCharacterCreationSaga does not run the
+			// carousel mapper itself -- job.BeginnerId is passed in directly as the
+			// already-resolved job id, so the payload is expected to carry it unchanged
+			// regardless of JobIndex 100's carousel status.
+			const expectedJobId = job.BeginnerId
 			if payload.JobId != expectedJobId {
 				t.Errorf("JobId mismatch: expected %d, got %d", expectedJobId, payload.JobId)
 			}
@@ -1306,23 +1374,6 @@ func TestValidationBoundaryConditions(t *testing.T) {
 				}
 			},
 		},
-		{
-			name: "validJob_always_true",
-			testFunc: func(t *testing.T) {
-				if !validJob(0, 0) {
-					t.Error("Expected job (0, 0) to be valid")
-				}
-				if !validJob(4294967295, 4294967295) {
-					t.Error("Expected job (max, max) to be valid")
-				}
-				if !validJob(100, 0) {
-					t.Error("Expected job (100, 0) to be valid")
-				}
-				if !validJob(0, 100) {
-					t.Error("Expected job (0, 100) to be valid")
-				}
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -1483,7 +1534,7 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 			transactionId, input, tmpl := tt.setupTest(t)
 
 			// This should not panic, even with edge case inputs
-			result := buildCharacterCreationSaga(transactionId, input, tmpl)
+			result := buildCharacterCreationSaga(transactionId, input, tmpl, job.BeginnerId)
 
 			if result.TransactionId != transactionId {
 				t.Errorf("Expected transaction ID %s, got %s", transactionId, result.TransactionId)
@@ -1524,7 +1575,9 @@ func TestBuildCharacterCreationSaga_HasAwaitInventoryCreatedStep(t *testing.T) {
 	input := RestModel{AccountId: 1, WorldId: 0, Name: "Test", JobIndex: 0, SubJobIndex: 0, Hp: 50, Mp: 5, MapId: 100000000}
 	tmpl := template.RestModel{Items: []uint32{2010000}}
 
-	sg := buildCharacterCreationSaga(transactionId, input, tmpl)
+	// task-283: literal expectation. JobIndex/SubJobIndex (0,0) lands in the mapper's
+	// jobIndex==0 branch -> NoblesseId on every verified carousel.
+	sg := buildCharacterCreationSaga(transactionId, input, tmpl, job.NoblesseId)
 
 	// Find indices of the two steps that must be ordered.
 	createIdx, awaitIdx, awardIdx := -1, -1, -1
@@ -1600,7 +1653,7 @@ func TestConcurrentSagaCreation(t *testing.T) {
 		go func(index int) {
 			defer wg.Done()
 			transactionId := uuid.New()
-			results[index] = buildCharacterCreationSaga(transactionId, input, tmpl)
+			results[index] = buildCharacterCreationSaga(transactionId, input, tmpl, job.BeginnerId)
 		}(i)
 	}
 	wg.Wait()
@@ -1624,5 +1677,123 @@ func TestConcurrentSagaCreation(t *testing.T) {
 			t.Errorf("Duplicate transaction ID found in saga %d: %s", i, result.TransactionId)
 		}
 		transactionIds[result.TransactionId] = true
+	}
+}
+
+// TestCreate_RejectsOffCarouselRaceIndex pins FR-1/FR-18: a race ordinal the tenant's
+// client version could not have sent must reject with ErrInvalidRaceIndex, not fall
+// back to Beginner and not be confused with ErrTemplateNotFound (D-7).
+func TestCreate_RejectsOffCarouselRaceIndex(t *testing.T) {
+	tests := []struct {
+		name        string
+		region      string
+		major       uint16
+		minor       uint16
+		jobIndex    uint32
+		subJobIndex uint32
+	}{
+		{"ordinal beyond carousel, v95", "GMS", 95, 0, 9, 0},
+		{"uint32-max ordinal, v95", "GMS", 95, 0, 4294967295, 0},
+		{"bogus subjob on a valid ordinal, v95", "GMS", 95, 0, 1, 7},
+		{"ordinal beyond carousel, v83", "GMS", 83, 1, 9, 0},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testTenant, err := tenantModel.Create(uuid.New(), tc.region, tc.major, tc.minor)
+			if err != nil {
+				t.Fatalf("Failed to create test tenant: %v", err)
+			}
+			ctx := tenantModel.WithContext(context.Background(), testTenant)
+
+			input := RestModel{
+				AccountId:   5001,
+				WorldId:     255,
+				Name:        "CompleteChar",
+				Gender:      1,
+				JobIndex:    tc.jobIndex,
+				SubJobIndex: tc.subJobIndex,
+				Face:        25000,
+				Hair:        35000,
+				HairColor:   9,
+				SkinColor:   4,
+				Top:         1040999,
+				Bottom:      1060999,
+				Shoes:       1072999,
+				Weapon:      1302999,
+			}
+
+			p := NewProcessor(logrus.StandardLogger())
+			transactionId, err := p.Create(ctx, input)
+
+			if !errors.Is(err, ErrInvalidRaceIndex) {
+				t.Fatalf("expected ErrInvalidRaceIndex, got %v", err)
+			}
+			if errors.Is(err, ErrTemplateNotFound) {
+				t.Fatalf("ErrInvalidRaceIndex must stay distinguishable from ErrTemplateNotFound")
+			}
+			if transactionId != "" {
+				t.Errorf("expected empty transactionId, got %q", transactionId)
+			}
+		})
+	}
+}
+
+// TestCreate_ValidatorOrderIsPreserved pins D-7: race-index validation now runs after
+// the tenant fetch, but the pre-existing name/gender validators still run first among
+// themselves, so a bad name or bad gender must be reported ahead of a bad race index.
+func TestCreate_ValidatorOrderIsPreserved(t *testing.T) {
+	tests := []struct {
+		name        string
+		charName    string
+		gender      byte
+		jobIndex    uint32
+		expectMsg   string
+		expectIndex bool
+	}{
+		{"bad name beats bad race index", "", 0, 9, "character name must be between 1 and 12 characters", false},
+		{"bad gender beats bad race index", "Valid", 5, 9, "gender must be 0 or 1", false},
+		{"bad race index alone", "Valid", 0, 9, "", true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testTenant, err := tenantModel.Create(uuid.New(), "GMS", 95, 0)
+			if err != nil {
+				t.Fatalf("Failed to create test tenant: %v", err)
+			}
+			ctx := tenantModel.WithContext(context.Background(), testTenant)
+
+			input := RestModel{
+				AccountId:   5001,
+				WorldId:     255,
+				Name:        tc.charName,
+				Gender:      tc.gender,
+				JobIndex:    tc.jobIndex,
+				SubJobIndex: 0,
+				Face:        25000,
+				Hair:        35000,
+				HairColor:   9,
+				SkinColor:   4,
+				Top:         1040999,
+				Bottom:      1060999,
+				Shoes:       1072999,
+				Weapon:      1302999,
+			}
+
+			p := NewProcessor(logrus.StandardLogger())
+			_, err = p.Create(ctx, input)
+
+			if tc.expectIndex {
+				if !errors.Is(err, ErrInvalidRaceIndex) {
+					t.Fatalf("expected ErrInvalidRaceIndex, got %v", err)
+				}
+				return
+			}
+
+			if err == nil || !strings.Contains(err.Error(), tc.expectMsg) {
+				t.Fatalf("expected error containing %q, got %v", tc.expectMsg, err)
+			}
+		})
 	}
 }

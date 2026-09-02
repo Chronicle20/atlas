@@ -107,5 +107,11 @@ func TestLinkedRest(t *testing.T) {
 }
 
 func compare(m1 RestModel, m2 RestModel) bool {
+	// Objects carries json:"-" and has no relationship hooks yet (those land
+	// in task-292's Task 7), so it never round-trips through
+	// jsonapi.Unmarshal and must be excluded from this comparison the same
+	// way it is absent from the wire format.
+	m1.Objects = nil
+	m2.Objects = nil
 	return reflect.DeepEqual(m1, m2)
 }

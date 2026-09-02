@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
+	"atlas-data/map/object"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	npc2 "atlas-data/npc"
@@ -12,6 +13,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -102,6 +104,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			m.Recovery = i.GetFloatWithDefault("recovery", 1)
 			m.BackgroundTypes = getBackgroundTypes(exml)
 			m.Reactors = getReactors(exml)
+			m.Objects = getObjects(t, exml)
 			monsters, npcs := getLife(t, exml)
 			m.Monsters = monsters
 			m.NPCs = npcs
@@ -335,6 +338,65 @@ func getBackgroundTypes(exml xml.Node) []BackgroundTypeRestModel {
 		results = append(results, BackgroundTypeRestModel{LayerNumber: uint32(layerNum), BackgroundType: uint32(backgroundType)})
 	}
 
+	return results
+}
+
+// getObjects collects the map's named WZ objects. Unlike reactors, which sit
+// at a single top-level node, objects live per numeric layer imgdir under an
+// "obj" child, so this iterates the layers the way getBackgroundTypes does and
+// descends one level further. Only entries carrying a non-empty "name" are
+// exposed: those are the only objects addressable by SetObjectState /
+// FieldObstacleOnOff.
+func getObjects(t tenant.Model, exml xml.Node) []object.RestModel {
+	results := make([]object.RestModel, 0)
+	seen := make(map[string]bool)
+	for _, layer := range exml.ChildNodes {
+		layerNum, err := strconv.Atoi(layer.Name)
+		if err != nil {
+			continue
+		}
+		od, err := layer.ChildByName("obj")
+		if err != nil {
+			continue
+		}
+		for _, o := range od.ChildNodes {
+			name := o.GetString("name", "")
+			if name == "" {
+				continue
+			}
+			oS := o.GetString("oS", "")
+			l0 := o.GetString("l0", "")
+			l1 := o.GetString("l1", "")
+			l2 := o.GetString("l2", "")
+			kind := ResolveObjKind(t, oS, l0, l1, l2)
+			id := kind + ":" + name
+			if seen[id] {
+				// Duplicate {kind}:{name} within one map would produce
+				// duplicate ids in the JSON:API included array. Keep the first.
+				continue
+			}
+			seen[id] = true
+			results = append(results, object.RestModel{
+				Id:           id,
+				Kind:         kind,
+				Name:         name,
+				ObjectSource: oS,
+				L0:           l0,
+				L1:           l1,
+				L2:           l2,
+				X:            int16(o.GetIntegerWithDefault("x", 0)),
+				Y:            int16(o.GetIntegerWithDefault("y", 0)),
+				Z:            o.GetIntegerWithDefault("z", 0),
+				Layer:        uint32(layerNum),
+			})
+		}
+	}
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].Kind != results[j].Kind {
+			return results[i].Kind < results[j].Kind
+		}
+		return results[i].Name < results[j].Name
+	})
 	return results
 }
 

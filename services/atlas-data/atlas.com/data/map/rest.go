@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
+	"atlas-data/map/object"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	"atlas-data/point"
@@ -45,6 +46,7 @@ type RestModel struct {
 	Reactors          []reactor.RestModel       `json:"-"`
 	NPCs              []npc.RestModel           `json:"-"`
 	Monsters          []monster.RestModel       `json:"-"`
+	Objects           []object.RestModel        `json:"-"`
 }
 
 func (r RestModel) GetName() string {

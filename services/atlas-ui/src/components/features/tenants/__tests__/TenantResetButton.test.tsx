@@ -140,11 +140,13 @@ describe("TenantResetButton", () => {
     await screen.findByRole("alertdialog");
     await user.click(screen.getByRole("button", { name: /^reset tenant$/i }));
 
-    await waitFor(() =>
-      expect(mutateAsync).toHaveBeenCalledWith({
-        id: "t1",
-      }),
-    );
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+    const arg = mutateAsync.mock.calls[0]?.[0] as
+      Record<string, unknown> | undefined;
+    expect(arg).toBeDefined();
+    expect(Object.keys(arg ?? {})).toEqual(["id"]);
+    expect("sections" in (arg ?? {})).toBe(false);
+    expect(arg?.["id"]).toBe("t1");
   });
 
   it("confirm calls the mutation with the scoped sections", async () => {

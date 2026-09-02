@@ -65,7 +65,10 @@ export function TenantResetButton({
     if (!id) return;
     setIsResetting(true);
     try {
-      await reset.mutateAsync({ id, sections });
+      await reset.mutateAsync({
+        id,
+        ...(sections !== undefined && { sections }),
+      });
       toast.success(
         sections
           ? `${sectionLabel ?? "This section"} reset to template`

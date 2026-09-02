@@ -143,7 +143,6 @@ describe("TenantResetButton", () => {
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({
         id: "t1",
-        sections: undefined,
       }),
     );
   });

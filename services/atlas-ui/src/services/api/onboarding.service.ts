@@ -115,14 +115,9 @@ class OnboardingService {
         ...(template.attributes.cashShop !== undefined && {
           cashShop: template.attributes.cashShop,
         }),
-        // mapleLife is a non-pointer struct on both Go models, so it is
-        // always present in a template response. Copied unconditionally
-        // rather than behind the cashShop-style `!== undefined` guard: a
-        // conditional would reintroduce exactly the omission being fixed
-        // the first time a template happened to serialize it as absent,
-        // and a tenant missing mapleLife reports drift the moment it is
-        // created (D5, FR-5.1).
-        mapleLife: template.attributes.mapleLife,
+        ...(template.attributes.mapleLife !== undefined && {
+          mapleLife: template.attributes.mapleLife,
+        }),
       };
 
       // Pass tenant ID to ensure configuration uses the same UUID

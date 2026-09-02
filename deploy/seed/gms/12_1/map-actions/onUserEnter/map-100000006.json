@@ -1,0 +1,34 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map 100000006 - spawns monster 9300156 at (-1027, 216) while quest 2175 is started",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "2175",
+              "type": "questStatus",
+              "value": "1"
+            }
+          ],
+          "id": "spawn_quest_monster",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9300156",
+                "spawnIfAbsent": "true",
+                "x": "-1027",
+                "y": "216"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "scriptName": "100000006"
+    },
+    "id": "100000006",
+    "type": "map-action"
+  }
+}

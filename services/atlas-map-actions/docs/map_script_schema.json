@@ -151,7 +151,9 @@
             "unlock_ui",
             "set_quest_progress",
             "start_quest",
-            "open_npc"
+            "open_npc",
+            "update_area_info",
+            "show_info"
           ]
         },
         "params": {
@@ -431,6 +433,61 @@
                   "npcId": {
                     "type": "string",
                     "description": "NPC template ID whose conversation the server starts"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "update_area_info"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "area",
+                  "info"
+                ],
+                "properties": {
+                  "area": {
+                    "type": "string",
+                    "description": "Area/info number (questId in the protocol)"
+                  },
+                  "info": {
+                    "type": "string",
+                    "description": "Semicolon-delimited k=v info string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "show_info"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "OnUserEff path (e.g. Effect/OnUserEff.img/guideEffect/...)"
                   }
                 }
               }

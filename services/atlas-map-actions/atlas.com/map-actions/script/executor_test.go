@@ -578,3 +578,119 @@ func TestExecuteOpenNpcParamValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestExecuteUpdateAreaInfo(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("update_area_info").
+		SetParams(map[string]string{"area": "23007", "info": "exp1=1;exp2=1;exp3=1;exp4=1"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 1 {
+		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+	}
+	if rec.created[0].Steps[0].Action != saga.UpdateAreaInfo {
+		t.Errorf("Steps[0].Action = %v, want saga.UpdateAreaInfo", rec.created[0].Steps[0].Action)
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.UpdateAreaInfoPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.UpdateAreaInfoPayload")
+	}
+	want := saga.UpdateAreaInfoPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		Area:        23007,
+		Info:        "exp1=1;exp2=1;exp3=1;exp4=1",
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}
+
+func TestExecuteShowInfo(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("show_info").
+		SetParams(map[string]string{"path": "Effect/OnUserEff.img/guideEffect/resistanceTutorial/userTalk"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 1 {
+		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+	}
+	if rec.created[0].Steps[0].Action != saga.ShowInfo {
+		t.Errorf("Steps[0].Action = %v, want saga.ShowInfo", rec.created[0].Steps[0].Action)
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.ShowInfoPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.ShowInfoPayload")
+	}
+	want := saga.ShowInfoPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		Path:        "Effect/OnUserEff.img/guideEffect/resistanceTutorial/userTalk",
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}
+
+func TestExecuteAreaInfoParamValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		opType        string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "missing area", opType: "update_area_info", params: map[string]string{"info": "a=1"}, wantErrSubstr: "update_area_info operation missing area parameter"},
+		{name: "missing info", opType: "update_area_info", params: map[string]string{"area": "1"}, wantErrSubstr: "update_area_info operation missing info parameter"},
+		{name: "bad area", opType: "update_area_info", params: map[string]string{"area": "x", "info": "a=1"}, wantErrSubstr: "invalid area [x]"},
+		{name: "area overflows uint16", opType: "update_area_info", params: map[string]string{"area": "70000", "info": "a=1"}, wantErrSubstr: "invalid area [70000]"},
+		{name: "missing path", opType: "show_info", params: map[string]string{}, wantErrSubstr: "show_info operation missing path parameter"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, _ := newTestOperationExecutor()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).Build()
+
+			op, err := operation.NewBuilder().SetType(tt.opType).SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+				t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+			}
+		})
+	}
+}

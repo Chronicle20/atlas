@@ -54,6 +54,10 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeStartQuest(f, characterId, op)
 	case "open_npc":
 		return e.executeOpenNpc(f, characterId, op)
+	case "update_area_info":
+		return e.executeUpdateAreaInfo(f, characterId, op)
+	case "show_info":
+		return e.executeShowInfo(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -428,6 +432,72 @@ func (e *OperationExecutor) executeDropMessage(f field.Model, characterId uint32
 				ChannelId:   f.ChannelId(),
 				MessageType: messageType,
 				Message:     msg,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executeUpdateAreaInfo(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	areaStr, ok := params["area"]
+	if !ok {
+		return fmt.Errorf("update_area_info operation missing area parameter")
+	}
+	area, err := strconv.ParseUint(areaStr, 10, 16)
+	if err != nil {
+		return fmt.Errorf("invalid area [%s]: %w", areaStr, err)
+	}
+
+	info, ok := params["info"]
+	if !ok {
+		return fmt.Errorf("update_area_info operation missing info parameter")
+	}
+
+	e.l.Debugf("Updating area info [%d] for character [%d].", area, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-area-info").
+		AddStep(
+			fmt.Sprintf("area-info-%d-%d", characterId, area),
+			saga.Pending,
+			saga.UpdateAreaInfo,
+			saga.UpdateAreaInfoPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				Area:        uint16(area),
+				Info:        info,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executeShowInfo(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	path, ok := params["path"]
+	if !ok {
+		return fmt.Errorf("show_info operation missing path parameter")
+	}
+
+	e.l.Debugf("Showing info [%s] for character [%d].", path, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-show-info").
+		AddStep(
+			fmt.Sprintf("show-info-%d", characterId),
+			saga.Pending,
+			saga.ShowInfo,
+			saga.ShowInfoPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				Path:        path,
 			},
 		).Build()
 

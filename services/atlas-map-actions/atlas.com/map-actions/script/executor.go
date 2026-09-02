@@ -3,11 +3,12 @@ package script
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"strconv"
+	"strings"
 
 	mapactionsaga "atlas-map-actions/saga"
 
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -127,13 +128,38 @@ func (e *OperationExecutor) executeShowIntro(f field.Model, characterId uint32, 
 func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint32, op operation.Model) error {
 	params := op.Params()
 
-	monsterIdStr, ok := params["monsterId"]
-	if !ok {
-		return fmt.Errorf("spawn_monster operation missing monsterId parameter")
+	monsterIdStr, hasSingle := params["monsterId"]
+	monsterIdsStr, hasList := params["monsterIds"]
+	if hasList && strings.TrimSpace(monsterIdsStr) == "" {
+		hasList = false
 	}
-	monsterId, err := strconv.ParseUint(monsterIdStr, 10, 32)
-	if err != nil {
-		return fmt.Errorf("invalid monsterId [%s]: %w", monsterIdStr, err)
+	if hasSingle == hasList {
+		return fmt.Errorf("spawn_monster operation requires exactly one of monsterId or monsterIds")
+	}
+
+	var monsterId uint64
+	if hasSingle {
+		parsed, err := strconv.ParseUint(monsterIdStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid monsterId [%s]: %w", monsterIdStr, err)
+		}
+		monsterId = parsed
+	} else {
+		// Design D9 (G7): pepeking_effect picks one of three monsters
+		// uniformly. Randomizing here keeps the rule engine stateless — a
+		// `random` rule selector would need a non-deterministic condition
+		// type the aggregator has no concept of.
+		candidates := strings.Split(monsterIdsStr, ",")
+		ids := make([]uint64, 0, len(candidates))
+		for _, c := range candidates {
+			c = strings.TrimSpace(c)
+			parsed, err := strconv.ParseUint(c, 10, 32)
+			if err != nil {
+				return fmt.Errorf("invalid monsterIds entry [%s]: %w", c, err)
+			}
+			ids = append(ids, parsed)
+		}
+		monsterId = ids[rand.Intn(len(ids))]
 	}
 
 	var x int16 = 0
@@ -163,6 +189,19 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 		count = countVal
 	}
 
+	// FR-2.1: Cosmic guards every map spawn with getMonsterById(id) != null.
+	// The guard itself is decided in atlas-monsters against its own registry
+	// (design D5/F6) — a read-then-write here would be a cross-service TOCTOU
+	// two simultaneous map entries would both pass.
+	var spawnIfAbsent bool
+	if s, has := params["spawnIfAbsent"]; has {
+		parsed, err := strconv.ParseBool(s)
+		if err != nil {
+			return fmt.Errorf("invalid spawnIfAbsent [%s]: %w", s, err)
+		}
+		spawnIfAbsent = parsed
+	}
+
 	// Use event mapId by default, allow override
 	mapId := f.MapId()
 	if mapIdStr, hasMapId := params["mapId"]; hasMapId {
@@ -183,15 +222,16 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 			saga.Pending,
 			saga.SpawnMonster,
 			saga.SpawnMonsterPayload{
-				CharacterId: characterId,
-				WorldId:     f.WorldId(),
-				ChannelId:   f.ChannelId(),
-				MapId:       mapId,
-				Instance:    uuid.Nil,
-				MonsterId:   uint32(monsterId),
-				X:           x,
-				Y:           y,
-				Count:       count,
+				CharacterId:   characterId,
+				WorldId:       f.WorldId(),
+				ChannelId:     f.ChannelId(),
+				MapId:         mapId,
+				Instance:      f.Instance(),
+				MonsterId:     uint32(monsterId),
+				X:             x,
+				Y:             y,
+				Count:         count,
+				SpawnIfAbsent: spawnIfAbsent,
 			},
 		).Build()
 

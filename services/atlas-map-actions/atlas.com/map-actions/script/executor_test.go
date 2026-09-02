@@ -2,8 +2,10 @@ package script
 
 import (
 	"context"
+	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -87,5 +89,170 @@ func TestExecuteOperationsAbortsAfterUnknownOperation(t *testing.T) {
 
 	if len(rec.created) != 1 {
 		t.Errorf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+}
+
+func TestExecuteSpawnMonsterCarriesFieldInstance(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("spawn_monster").
+		SetParams(map[string]string{"monsterId": "9100013", "x": "82", "y": "200"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnMonsterPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.SpawnMonsterPayload")
+	}
+	if payload.Instance != inst {
+		t.Errorf("payload.Instance = %v, want %v", payload.Instance, inst)
+	}
+	if payload.MapId != _map.Id(926000000) {
+		t.Errorf("payload.MapId = %v, want %v", payload.MapId, _map.Id(926000000))
+	}
+	if payload.MonsterId != 9100013 {
+		t.Errorf("payload.MonsterId = %d, want %d", payload.MonsterId, 9100013)
+	}
+	if payload.X != 82 {
+		t.Errorf("payload.X = %d, want %d", payload.X, 82)
+	}
+	if payload.Y != 200 {
+		t.Errorf("payload.Y = %d, want %d", payload.Y, 200)
+	}
+	if payload.Count != 1 {
+		t.Errorf("payload.Count = %d, want %d", payload.Count, 1)
+	}
+}
+
+func TestExecuteSpawnMonsterSpawnIfAbsent(t *testing.T) {
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantAbsent    bool
+		wantErrSubstr string
+	}{
+		{name: "absent", params: map[string]string{"monsterId": "9100013"}, wantAbsent: false},
+		{name: "true", params: map[string]string{"monsterId": "9100013", "spawnIfAbsent": "true"}, wantAbsent: true},
+		{name: "false", params: map[string]string{"monsterId": "9100013", "spawnIfAbsent": "false"}, wantAbsent: false},
+		{name: "invalid", params: map[string]string{"monsterId": "9100013", "spawnIfAbsent": "yes"}, wantErrSubstr: "invalid spawnIfAbsent [yes]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
+
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
+
+			op, err := operation.NewBuilder().SetType("spawn_monster").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if tt.wantErrSubstr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+					t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnMonsterPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.SpawnMonsterPayload")
+			}
+			if payload.SpawnIfAbsent != tt.wantAbsent {
+				t.Errorf("payload.SpawnIfAbsent = %t, want %t", payload.SpawnIfAbsent, tt.wantAbsent)
+			}
+		})
+	}
+}
+
+func TestExecuteSpawnMonsterMonsterIdsPicksFromSet(t *testing.T) {
+	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("spawn_monster").
+		SetParams(map[string]string{"monsterIds": "3300005,3300006,3300007", "x": "-28", "y": "-67"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	seen := map[uint32]bool{}
+	for i := 0; i < 200; i++ {
+		e, rec := newTestOperationExecutor()
+		if err := e.ExecuteOperation(f, 1, op); err != nil {
+			t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+		}
+		payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnMonsterPayload)
+		if !ok {
+			t.Fatalf("Steps[0].Payload is not saga.SpawnMonsterPayload")
+		}
+		if payload.MonsterId != 3300005 && payload.MonsterId != 3300006 && payload.MonsterId != 3300007 {
+			t.Fatalf("payload.MonsterId = %d, want one of 3300005, 3300006, 3300007", payload.MonsterId)
+		}
+		seen[payload.MonsterId] = true
+		if payload.X != -28 {
+			t.Errorf("payload.X = %d, want %d", payload.X, -28)
+		}
+		if payload.Y != -67 {
+			t.Errorf("payload.Y = %d, want %d", payload.Y, -67)
+		}
+	}
+
+	for _, id := range []uint32{3300005, 3300006, 3300007} {
+		if !seen[id] {
+			t.Errorf("monsterId %d never chosen across 200 runs", id)
+		}
+	}
+}
+
+func TestExecuteSpawnMonsterIdParamValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "neither", params: map[string]string{"x": "0"}, wantErrSubstr: "spawn_monster operation requires exactly one of monsterId or monsterIds"},
+		{name: "both", params: map[string]string{"monsterId": "1", "monsterIds": "2,3"}, wantErrSubstr: "spawn_monster operation requires exactly one of monsterId or monsterIds"},
+		{name: "empty monsterIds", params: map[string]string{"monsterIds": ""}, wantErrSubstr: "spawn_monster operation requires exactly one of monsterId or monsterIds"},
+		{name: "non-numeric entry", params: map[string]string{"monsterIds": "3300005,abc"}, wantErrSubstr: "invalid monsterIds entry [abc]"},
+		{name: "non-numeric monsterId", params: map[string]string{"monsterId": "abc"}, wantErrSubstr: "invalid monsterId [abc]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, _ := newTestOperationExecutor()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).Build()
+
+			op, err := operation.NewBuilder().SetType("spawn_monster").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+				t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+			}
+		})
 	}
 }

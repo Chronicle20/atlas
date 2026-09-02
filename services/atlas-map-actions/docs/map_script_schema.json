@@ -148,7 +148,9 @@
             "spawn_monster",
             "drop_message",
             "lock_ui",
-            "unlock_ui"
+            "unlock_ui",
+            "set_quest_progress",
+            "start_quest"
           ]
         },
         "params": {
@@ -341,6 +343,70 @@
               "params": {
                 "type": "object",
                 "description": "unlock_ui takes no parameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "set_quest_progress"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "questId",
+                  "infoNumber",
+                  "progress"
+                ],
+                "properties": {
+                  "questId": {
+                    "type": "string",
+                    "description": "Quest ID whose progress is being set"
+                  },
+                  "infoNumber": {
+                    "type": "string",
+                    "description": "Quest info-number sub-key"
+                  },
+                  "progress": {
+                    "type": "string",
+                    "description": "Progress value, passed through verbatim"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "start_quest"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "questId"
+                ],
+                "properties": {
+                  "questId": {
+                    "type": "string",
+                    "description": "Quest ID to force-start"
+                  },
+                  "npcId": {
+                    "type": "string",
+                    "description": "NPC credited with starting the quest (default 0)"
+                  }
+                }
               }
             }
           }

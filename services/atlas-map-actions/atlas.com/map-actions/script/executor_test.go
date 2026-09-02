@@ -341,3 +341,171 @@ func TestExecuteSpawnMonsterIdParamValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestExecuteSetQuestProgress(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("set_quest_progress").
+		SetParams(map[string]string{"questId": "20010", "infoNumber": "20022", "progress": "1"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 1 {
+		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+	}
+	if rec.created[0].Steps[0].Action != saga.SetQuestProgress {
+		t.Errorf("Steps[0].Action = %v, want saga.SetQuestProgress", rec.created[0].Steps[0].Action)
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.SetQuestProgressPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.SetQuestProgressPayload")
+	}
+	want := saga.SetQuestProgressPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		QuestId:     20010,
+		InfoNumber:  20022,
+		Progress:    "1",
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}
+
+func TestExecuteSetQuestProgressParamValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "missing questId", params: map[string]string{"infoNumber": "1", "progress": "1"}, wantErrSubstr: "set_quest_progress operation missing questId parameter"},
+		{name: "missing infoNumber", params: map[string]string{"questId": "1", "progress": "1"}, wantErrSubstr: "set_quest_progress operation missing infoNumber parameter"},
+		{name: "missing progress", params: map[string]string{"questId": "1", "infoNumber": "1"}, wantErrSubstr: "set_quest_progress operation missing progress parameter"},
+		{name: "bad questId", params: map[string]string{"questId": "x", "infoNumber": "1", "progress": "1"}, wantErrSubstr: "invalid questId [x]"},
+		{name: "bad infoNumber", params: map[string]string{"questId": "1", "infoNumber": "x", "progress": "1"}, wantErrSubstr: "invalid infoNumber [x]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, _ := newTestOperationExecutor()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
+
+			op, err := operation.NewBuilder().SetType("set_quest_progress").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+				t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+			}
+		})
+	}
+}
+
+func TestExecuteStartQuest(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("start_quest").
+		SetParams(map[string]string{"questId": "22015", "npcId": "9010000"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.StartQuestPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.StartQuestPayload")
+	}
+	want := saga.StartQuestPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		QuestId:     22015,
+		NpcId:       9010000,
+	}
+	if payload.CharacterId != want.CharacterId || payload.WorldId != want.WorldId || payload.QuestId != want.QuestId || payload.NpcId != want.NpcId {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+	if payload.Rewards != nil {
+		t.Errorf("payload.Rewards = %v, want nil", payload.Rewards)
+	}
+}
+
+func TestExecuteStartQuestDefaultsNpcIdToZero(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("start_quest").
+		SetParams(map[string]string{"questId": "22015"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.StartQuestPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.StartQuestPayload")
+	}
+	if payload.NpcId != 0 {
+		t.Errorf("payload.NpcId = %d, want 0", payload.NpcId)
+	}
+}
+
+func TestExecuteStartQuestParamValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "missing questId", params: map[string]string{}, wantErrSubstr: "start_quest operation missing questId parameter"},
+		{name: "bad questId", params: map[string]string{"questId": "x"}, wantErrSubstr: "invalid questId [x]"},
+		{name: "bad npcId", params: map[string]string{"questId": "1", "npcId": "x"}, wantErrSubstr: "invalid npcId [x]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, _ := newTestOperationExecutor()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
+
+			op, err := operation.NewBuilder().SetType("start_quest").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+				t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+			}
+		})
+	}
+}

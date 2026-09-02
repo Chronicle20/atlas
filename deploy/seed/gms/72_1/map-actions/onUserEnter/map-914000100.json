@@ -1,0 +1,26 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map 914000100 - records quest 21000 progress 21002=1 on entry",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "set_progress",
+          "operations": [
+            {
+              "params": {
+                "infoNumber": "21002",
+                "progress": "1",
+                "questId": "21000"
+              },
+              "type": "set_quest_progress"
+            }
+          ]
+        }
+      ],
+      "scriptName": "914000100"
+    },
+    "id": "914000100",
+    "type": "map-action"
+  }
+}

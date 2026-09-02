@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Baby pig map - unlocks the UI and force-starts quest 22015",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "unlock_and_start",
+          "operations": [
+            {
+              "type": "unlock_ui"
+            },
+            {
+              "params": {
+                "npcId": "9010000",
+                "questId": "22015"
+              },
+              "type": "start_quest"
+            }
+          ]
+        }
+      ],
+      "scriptName": "babyPigMap"
+    },
+    "id": "babyPigMap",
+    "type": "map-action"
+  }
+}

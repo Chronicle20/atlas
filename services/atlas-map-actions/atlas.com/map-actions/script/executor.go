@@ -48,6 +48,10 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeUiLock(f, characterId, true)
 	case "unlock_ui":
 		return e.executeUiLock(f, characterId, false)
+	case "set_quest_progress":
+		return e.executeSetQuestProgress(f, characterId, op)
+	case "start_quest":
+		return e.executeStartQuest(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -258,6 +262,93 @@ func (e *OperationExecutor) executeUiLock(f field.Model, characterId uint32, ena
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),
 				Enable:      enable,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executeSetQuestProgress(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	questIdStr, ok := params["questId"]
+	if !ok {
+		return fmt.Errorf("set_quest_progress operation missing questId parameter")
+	}
+	questId, err := strconv.ParseUint(questIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid questId [%s]: %w", questIdStr, err)
+	}
+
+	infoNumberStr, ok := params["infoNumber"]
+	if !ok {
+		return fmt.Errorf("set_quest_progress operation missing infoNumber parameter")
+	}
+	infoNumber, err := strconv.ParseUint(infoNumberStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid infoNumber [%s]: %w", infoNumberStr, err)
+	}
+
+	progress, ok := params["progress"]
+	if !ok {
+		return fmt.Errorf("set_quest_progress operation missing progress parameter")
+	}
+
+	e.l.Debugf("Setting quest [%d] progress [%d]=[%s] for character [%d].", questId, infoNumber, progress, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-quest-progress").
+		AddStep(
+			fmt.Sprintf("quest-progress-%d-%d", characterId, questId),
+			saga.Pending,
+			saga.SetQuestProgress,
+			saga.SetQuestProgressPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				QuestId:     uint32(questId),
+				InfoNumber:  uint32(infoNumber),
+				Progress:    progress,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executeStartQuest(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	questIdStr, ok := params["questId"]
+	if !ok {
+		return fmt.Errorf("start_quest operation missing questId parameter")
+	}
+	questId, err := strconv.ParseUint(questIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid questId [%s]: %w", questIdStr, err)
+	}
+
+	var npcId uint64
+	if npcIdStr, has := params["npcId"]; has {
+		npcId, err = strconv.ParseUint(npcIdStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid npcId [%s]: %w", npcIdStr, err)
+		}
+	}
+
+	e.l.Debugf("Force-starting quest [%d] for character [%d].", questId, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-start-quest").
+		AddStep(
+			fmt.Sprintf("start-quest-%d-%d", characterId, questId),
+			saga.Pending,
+			saga.StartQuest,
+			saga.StartQuestPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				QuestId:     uint32(questId),
+				NpcId:       uint32(npcId),
 			},
 		).Build()
 

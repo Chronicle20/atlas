@@ -13,6 +13,7 @@ import { MapHeader } from "@/components/features/maps/MapHeader";
 import { MapImagePanel } from "@/components/features/maps/MapImagePanel";
 import { MapEntitySummary } from "@/components/features/maps/MapEntitySummary";
 import { ConnectedMapsRow } from "@/components/features/maps/ConnectedMapsRow";
+import { LiveFieldsSection } from "@/components/features/maps/LiveFieldsSection";
 import { MapDetailTabs } from "@/components/features/maps/MapDetailTabs";
 import { HoverHighlightProvider } from "@/components/features/maps/HoverHighlightContext";
 
@@ -75,6 +76,8 @@ export function MapDetailPage() {
         </div>
 
         <ConnectedMapsRow mapId={id} portals={portals} />
+
+        <LiveFieldsSection mapId={id} />
 
         <MapDetailTabs
           mapId={id}

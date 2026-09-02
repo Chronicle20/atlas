@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 // buildSampleAttack mirrors model.sampleAttackInfo: a plain (skillId 0) attack so
@@ -43,7 +46,12 @@ func buildSampleAttack(at model.AttackType) model.AttackInfo {
 // packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v84 ida=0x989692
 // packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v87 ida=0x9d8efc
 // packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=gms_v95 ida=0x9123c0
-// packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=jms_v185 ida=0xa122be
+//
+// jms_v185 is deliberately NOT verified here. A pt.RoundTrip is symmetric and
+// passes for any self-consistent layout, including a wrong one — which is
+// exactly how the jms cell held ✅ while the live client was 28 bytes out of
+// step. The jms marker lives on TestAttackMeleeRequestBytesJMS185 below, which
+// pins observed wire.
 func TestAttackMeleeRequest(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -665,4 +673,175 @@ func TestAttackMeleeRequestMesoExplosion(t *testing.T) {
 			pt.RoundTrip(t, ctx, m.Encode, m.Decode, nil)
 		})
 	}
+}
+
+// --- JMS v185.1 (live-capture derived) ---
+//
+// The jms v185 CLOSE_RANGE_ATTACK wire could NOT be derived from the client
+// binary. The only v185 IDB available is the retail SCY dump; its sender
+// CUserLocal::TryDoingNormalAttack @0xa122be decompiles, but the packet-encode
+// tail is code-flow-virtualized — the last reachable call in the function is
+// DR_check @0xa16b74 and nothing between there and the function end @0xa18dda
+// is decodable. (docs/packets/audits/jms_v185/CharacterAttackMeleeRequest.md
+// records the same limitation from the task-150 pass, and its generated
+// wire-diff reads every client field as an untyped byte.)
+//
+// So these two fixtures are pinned to WIRE OBSERVED FROM THE LIVE CLIENT —
+// `[PKT IN ]` dumps from atlas-channel on the atlas-main k3s environment,
+// tenant abedf3b4-1d7c-4b3b-bc52-70f62ab09418, region JMS, ms.version 185.1,
+// op=0x0023 (CLOSE_RANGE_ATTACK, opcode 35 per docs/packets/registry/jms_v185.yaml),
+// 2026-09-02. Both are decoded and then re-encoded: decode proves the reader
+// consumes the packet exactly and lands every field on a sensible value, and
+// the byte-equality proves Encode is the symmetric mirror on this version.
+// Derivation and the full annotated byte tables:
+// docs/tasks/fix-jms185-attack-decode/diagnosis.md.
+//
+// Before this fixture the jms cell was ✅ on a pt.RoundTrip alone; the live
+// client was 28 bytes (head) + 4 bytes per mob out of step, skillId decoded
+// out of dr0/dr1 as 0x27FFE51C, and atlas-channel's unowned-skill cheat check
+// destroyed the session on every swing.
+
+// captureA is a swing that connected with nothing: 51 body bytes (53 on the
+// wire including the 2-byte opcode), numAttacked=0 so no DamageInfo entries.
+// Session 898eb528, 2026-09-02T10:13:55.697Z.
+var jms185MeleeCaptureA = []byte{
+	0x01,                   // fieldKey
+	0x8f, 0x1c, 0xe5, 0xff, // dr0
+	0x27, 0x0c, 0x32, 0xff, // dr1
+	0x01,                   // (hits=1)|(numAttacked=0<<4)
+	0xff, 0xff, 0xff, 0xff, // dr2
+	0xf3, 0xff, 0x62, 0x81, // dr3
+	0x00, 0x00, 0x00, 0x00, // skillId = 0 (plain swing)
+	0x5b, 0xa3, 0x0a, 0x00, // randomDr
+	0x3d, 0xec, 0x6c, 0x8e, // crc32
+	0x00, 0x00, 0x00, 0x00, // skillDataCrc (ONE crc on jms, as on GMS <79)
+	0x00,       // mask1
+	0x11, 0x00, // mask2 -> nAction 17, bLeft false
+	0x01,                   // attackActionType
+	0x05,                   // attackSpeed
+	0x86, 0x8c, 0xfe, 0x0d, // attackTime tick
+	0x00, 0x00, 0x00, 0x00, // melee trailing word (GMS v95 "battle mage" slot)
+	0xa3, 0xff, // characterX = -93
+	0xd5, 0x01, // characterY = 469
+}
+
+// captureB is a swing that connected with one mob: 77 body bytes (79 on the
+// wire), numAttacked=1 and hits=1, so exactly one DamageInfo carrying one
+// damage line and the trailing per-mob CRC.
+// Session 81e50c2e, 2026-09-02T10:24:21.503Z.
+var jms185MeleeCaptureB = []byte{
+	0x00,                   // fieldKey
+	0x27, 0x0c, 0x32, 0xff, // dr0
+	0xff, 0xff, 0xff, 0xff, // dr1
+	0x11,                   // (hits=1)|(numAttacked=1<<4)
+	0x77, 0xb6, 0xe5, 0x8c, // dr2
+	0xc3, 0x3f, 0x65, 0x81, // dr3
+	0x00, 0x00, 0x00, 0x00, // skillId = 0 (plain swing)
+	0x30, 0x43, 0x97, 0x00, // randomDr
+	0x6a, 0x92, 0x48, 0x13, // crc32
+	0x00, 0x00, 0x00, 0x00, // skillDataCrc (ONE crc)
+	0x00,       // mask1
+	0x05, 0x00, // mask2 -> nAction 5, bLeft false
+	0x01,                   // attackActionType
+	0x05,                   // attackSpeed
+	0x6d, 0x1c, 0x08, 0x0e, // attackTime tick
+	0x00, 0x00, 0x00, 0x00, // melee trailing word
+	// --- DamageInfo[0] ---
+	0x42, 0x42, 0x0f, 0x00, // monsterId = 1000002
+	0x07,       // hitAction
+	0x81,       // forceAction
+	0x01,       // frameIdx
+	0x00,       // calcDamageStatIndex
+	0x35, 0x01, // hitPositionX = 309
+	0x9b, 0x00, // hitPositionY = 155
+	0x35, 0x01, // previousPositionX = 309
+	0x9b, 0x00, // previousPositionY = 155
+	0xa5, 0x01, // delay = 421
+	0x02, 0x00, 0x00, 0x00, // damage[0] = 2
+	0x66, 0x1d, 0xa1, 0x07, // per-mob CRC (present on jms)
+	// --- trailer ---
+	0x07, 0x01, // characterX = 263
+	0x9b, 0x00, // characterY = 155
+}
+
+// packet-audit:verify packet=character/serverbound/CharacterAttackMeleeRequest version=jms_v185 ida=0xa122be
+func TestAttackMeleeRequestBytesJMS185(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("JMS", 185, 1)
+
+	t.Run("captureA_no_mobs", func(t *testing.T) {
+		req := request.Request(jms185MeleeCaptureA)
+		reader := request.NewRequestReader(&req, 0)
+		var m AttackMeleeRequest
+		m.Decode(l, ctx)(&reader, nil)
+
+		if reader.Available() != 0 {
+			t.Fatalf("reader has %d unconsumed bytes after decode", reader.Available())
+		}
+		ai := m.AttackInfo()
+		if ai.SkillId() != 0 {
+			t.Errorf("skillId = %d, want 0", ai.SkillId())
+		}
+		if ai.Hits() != 1 {
+			t.Errorf("hits = %d, want 1", ai.Hits())
+		}
+		if ai.Damage() != 0 {
+			t.Errorf("numAttacked = %d, want 0", ai.Damage())
+		}
+		if len(ai.DamageInfo()) != 0 {
+			t.Errorf("damageInfo entries = %d, want 0", len(ai.DamageInfo()))
+		}
+		if ai.AttackAction() != 17 || ai.Left() {
+			t.Errorf("attackAction/left = %d/%v, want 17/false", ai.AttackAction(), ai.Left())
+		}
+		if ai.ActionSpeed() != 5 {
+			t.Errorf("attackSpeed = %d, want 5", ai.ActionSpeed())
+		}
+		// -93 and 469 as unsigned shorts.
+		if ai.CharacterX() != 0xffa3 || ai.CharacterY() != 469 {
+			t.Errorf("character position = %d,%d, want 65443,469", ai.CharacterX(), ai.CharacterY())
+		}
+
+		if got := pt.Encode(t, ctx, m.Encode, nil); !bytes.Equal(got, jms185MeleeCaptureA) {
+			t.Fatalf("jms185 melee captureA re-encode:\n got=% X\nwant=% X", got, jms185MeleeCaptureA)
+		}
+	})
+
+	t.Run("captureB_one_mob", func(t *testing.T) {
+		req := request.Request(jms185MeleeCaptureB)
+		reader := request.NewRequestReader(&req, 0)
+		var m AttackMeleeRequest
+		m.Decode(l, ctx)(&reader, nil)
+
+		if reader.Available() != 0 {
+			t.Fatalf("reader has %d unconsumed bytes after decode", reader.Available())
+		}
+		ai := m.AttackInfo()
+		if ai.SkillId() != 0 {
+			t.Errorf("skillId = %d, want 0", ai.SkillId())
+		}
+		if ai.Hits() != 1 || ai.Damage() != 1 {
+			t.Errorf("hits/numAttacked = %d/%d, want 1/1", ai.Hits(), ai.Damage())
+		}
+		dis := ai.DamageInfo()
+		if len(dis) != 1 {
+			t.Fatalf("damageInfo entries = %d, want 1", len(dis))
+		}
+		if dis[0].MonsterId() != 1000002 {
+			t.Errorf("monsterId = %d, want 1000002", dis[0].MonsterId())
+		}
+		if got := dis[0].Damages(); len(got) != 1 || got[0] != 2 {
+			t.Errorf("damages = %v, want [2]", got)
+		}
+		if ai.AttackAction() != 5 || ai.Left() {
+			t.Errorf("attackAction/left = %d/%v, want 5/false", ai.AttackAction(), ai.Left())
+		}
+		if ai.CharacterX() != 263 || ai.CharacterY() != 155 {
+			t.Errorf("character position = %d,%d, want 263,155", ai.CharacterX(), ai.CharacterY())
+		}
+
+		if got := pt.Encode(t, ctx, m.Encode, nil); !bytes.Equal(got, jms185MeleeCaptureB) {
+			t.Fatalf("jms185 melee captureB re-encode:\n got=% X\nwant=% X", got, jms185MeleeCaptureB)
+		}
+	})
 }

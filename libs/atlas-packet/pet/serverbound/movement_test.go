@@ -10,8 +10,10 @@ import (
 // packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v83 ida=0x9c4e41
 // packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v87 ida=0xa558b6
 // packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v95 ida=0x99f5a0
-// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=jms_v185 ida=0xaa25ab
 // packet-audit:verify packet=pet/serverbound/PetMovementRequest version=gms_v84 ida=0xa0c600
+//
+// jms_v185 is verified by TestPetMovementBytesJMS185 below. A RoundTrip
+// cannot catch a tail the client sends and the decoder never reads.
 func TestPetMovement(t *testing.T) {
 	p := MovementRequest{}
 	p.petId = 5000001
@@ -119,5 +121,54 @@ func TestPetMovementBytesV48(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v48 = % X, want % X", got, want)
+	}
+}
+
+// TestPetMovementBytesJMS185 pins the jms_v185 MOVE_PET wire, hand-built from
+// the decompiled field order — this is NOT captured wire (no live MOVE_PET
+// frame was obtained). CVecCtrlPet::EndUpdateActive @0xaa25ab writes
+// EncodeBuffer(petId, 8) then CMovePath::Flush @0xaa2609, which
+// unconditionally appends the keypad+rect tail (see petMoveKeyPadTail). See
+// docs/tasks/fix-jms185-attack-decode/sibling-movement-ops-findings.md §3.
+//
+// packet-audit:verify packet=pet/serverbound/PetMovementRequest version=jms_v185 ida=0xaa25ab
+func TestPetMovementBytesJMS185(t *testing.T) {
+	ctx := test.CreateContext("JMS", 185, 1)
+	p := MovementRequest{petId: 0x0102030405060708}
+	// movement stays empty (StartX/StartY + 0 elements = 5 bytes)
+	p.movement.StartX = 10
+	p.movement.StartY = 20
+	// keyPadStates has an EVEN entry count (4), exercising the normal
+	// two-per-byte packing rule (unlike the odd-count monster fixture).
+	p.keyPadStates = []byte{1, 2, 3, 4}
+	p.moveRectLeft = -10
+	p.moveRectTop = 20
+	p.moveRectRight = 30
+	p.moveRectBottom = -40
+
+	got := p.Encode(nil, ctx)(nil)
+	want := []byte{
+		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId (LE)
+		0x0A, 0x00, 0x14, 0x00, 0x00, // movement: StartX=10, StartY=20, count=0
+		// --- keypad + rect tail (petMoveKeyPadTail) ---
+		0x04,       // keypad entry count = 4
+		0x21, 0x43, // packed nibbles: (1|2<<4)=0x21, (3|4<<4)=0x43
+		0xF6, 0xFF, // moveRectLeft -10
+		0x14, 0x00, // moveRectTop 20
+		0x1E, 0x00, // moveRectRight 30
+		0xD8, 0xFF, // moveRectBottom -40
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("jms185 movement bytes:\n got % x\nwant % x", got, want)
+	}
+
+	var out MovementRequest
+	test.RoundTrip(t, ctx, p.Encode, out.Decode, nil)
+	if len(out.KeyPadStates()) != 4 {
+		t.Errorf("expected 4 keypad entries, got %d", len(out.KeyPadStates()))
+	}
+	gl, gt, gr, gb := out.MoveRect()
+	if gl != -10 || gt != 20 || gr != 30 || gb != -40 {
+		t.Errorf("expected move rect -10,20,30,-40, got %d,%d,%d,%d", gl, gt, gr, gb)
 	}
 }

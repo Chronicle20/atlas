@@ -54,3 +54,40 @@ GMS >= 87 family branch and gms_12 the very-legacy GMS < 48 branch; both are
 template-only and unverified (design §2.4). Fixture:
 `libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMeleeRequestMesoExplosion`.
 
+
+---
+
+## fix-jms185-attack-decode note — live-capture verification (hand-added; keep on regeneration)
+
+The wire-diff table above is not usable evidence for this cell: the jms v185
+sender's packet-encode tail is code-flow-virtualized (last reachable call is
+`DR_check` @ `0xa16b74`; nothing decodable between there and the function end at
+`0xa18dda`), so the generated diff reads every client field as an untyped
+`byte`. This is the same limitation the task-150 note records for the Meso
+Explosion variant.
+
+This cell previously held ✅ on `TestAttackMeleeRequest`, a `pt.RoundTrip`. A
+round-trip is symmetric and passes for any self-consistent layout — including a
+wrong one, which is what was shipped: the live JMS 185.1 client sends the GMS
+v84-style damage-randomizer blocks, a single skill-data CRC, a melee trailing
+word, and the per-mob anti-hack CRC, none of which the region-gated decoder
+consumed. The decode ran 28 bytes short in the head plus 4 bytes per attacked
+mob, `skillId` decoded out of dr0/dr1 as `0x27FFE51C`, and atlas-channel's
+unowned-skill check destroyed the session on every attack.
+
+The cell is now carried by `TestAttackMeleeRequestBytesJMS185`
+(`libs/atlas-packet/character/serverbound/attack_request_test.go`), which pins
+two `[PKT IN ]` captures taken from the live client on the atlas-main k3s
+environment (JMS 185.1, op `0x0023`, 2026-09-02): a 53-byte swing hitting
+nothing and a 79-byte swing connecting with one mob. Both decode with zero
+bytes remaining onto self-evidently correct values and re-encode byte-for-byte.
+Per `VERIFYING_A_PACKET.md` ("Producible prerequisite vs genuine blocker") an
+undecompilable binary is a genuine blocker for decompile-derived bytes; live
+wire is the higher-ranked evidence available. Full derivation:
+`docs/tasks/fix-jms185-attack-decode/diagnosis.md`.
+
+**Still unverified on jms v185:** `CharacterAttackMagicRequest` and
+`CharacterAttackRangedRequest`. They share the head fixed here, but the magic
+secondary dr-block, the magic trailing word, and the ranged bullet/exJablin
+fields have no jms capture and remain on GMS-only gates. Their cells rest on
+round-trips and carry the same false-positive risk this note describes.

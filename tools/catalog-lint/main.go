@@ -24,6 +24,7 @@ func main() {
 
 func lint(root string) error {
 	var errs []string
+	var mapActionDocs []mapActionDoc
 
 	// 1. Each <region>/<major>_<minor>/ dir must contain a non-empty CATALOG_REVISION.
 	regionEntries, err := os.ReadDir(root)
@@ -97,8 +98,24 @@ func lint(root string) error {
 				errs = append(errs, fmt.Sprintf("%s: data.id %q, filename id %q", path, env.Data.ID, id))
 			}
 		}
+		if rule.typ == "map-action" {
+			mapActionDocs = append(mapActionDocs, mapActionDoc{
+				path:    path,
+				region:  parts[0],
+				version: parts[1],
+				hook:    parts[len(parts)-2],
+				id:      env.Data.ID,
+				raw:     b,
+			})
+		}
 		return nil
 	})
+
+	schemaPath, ok := mapActionSchemaPath()
+	if !ok {
+		fmt.Fprintln(os.Stderr, "catalog-lint: map-action schema not found; skipping schema validation")
+	}
+	errs = append(errs, checkMapActions(root, mapActionDocs, schemaPath)...)
 
 	if len(errs) > 0 {
 		return fmt.Errorf("linter found %d issue(s):\n%s", len(errs), strings.Join(errs, "\n"))

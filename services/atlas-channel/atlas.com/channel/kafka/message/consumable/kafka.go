@@ -102,6 +102,16 @@ const (
 	// two spellings must agree. See task-280.
 	ErrorTypePotionLocked = "POTION_LOCKED"
 
+	// Writ of Solomon (task-277) rejection reasons. Hand-mirrored from
+	// services/atlas-consumables/.../kafka/message/consumable/kafka.go byte
+	// for byte -- there is no shared constant across the service boundary
+	// (status.md "Residual risk"), so a typo here silently falls through to
+	// the CONSUME_FAILED default. Pinned by TestSolomonErrorWireValues in
+	// this package's tests and by the mirror in atlas-consumables.
+	ErrorTypeSolomonNoExperience    = "SOLOMON_NO_EXPERIENCE"
+	ErrorTypeSolomonLevelExceeded   = "SOLOMON_LEVEL_EXCEEDED"
+	ErrorTypeSolomonBalanceNotEmpty = "SOLOMON_BALANCE_NOT_EMPTY"
+
 	// CatchCauseUseDelay / CatchCauseInventoryFull / CatchCauseInvalidItem are
 	// the pre-reservation bridle-capture failure causes atlas-consumables
 	// emits. The wire-reason mapping is resolved in atlas-channel (DOM-25) --

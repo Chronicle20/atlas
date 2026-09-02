@@ -23,6 +23,23 @@ func routesToSolomon(itemId item2.Id) bool {
 	return item2.GetClassification(itemId) == item2.ClassificationConsumableExpUpItem
 }
 
+// Solomon rejection sentinels. consumeErrorType classifies each into its own
+// producer-side errorType (see kafka/message/consumable/kafka.go) so
+// atlas-channel can give the player a distinct message per reason instead of
+// the silent CONSUME_FAILED unstick.
+var (
+	// ErrSolomonNoExperience is returned when the item's spec/exp is absent or
+	// non-positive -- the tenant's stored atlas-data document predates the
+	// spec/exp parse (see docs/TODO.md task-277 follow-up).
+	ErrSolomonNoExperience = errors.New("writ of solomon has no spec/exp")
+	// ErrSolomonLevelExceeded is returned when the character's level exceeds
+	// the item's info/maxLevel gate.
+	ErrSolomonLevelExceeded = errors.New("character level exceeds writ of solomon maxLevel")
+	// ErrSolomonBalanceNotEmpty is returned when the character already has a
+	// non-zero stored EXP balance banked; the Writ must not overwrite it.
+	ErrSolomonBalanceNotEmpty = errors.New("character already has a non-zero stored exp balance")
+)
+
 // solomonDeps is the collaborator set consumeSolomon needs.
 //
 // Split out from the exported consumer so the ordering contract — every
@@ -60,17 +77,17 @@ func consumeSolomon(l logrus.FieldLogger, ctx context.Context, d solomonDeps, tr
 	amount, ok := ci.GetSpec(consumable3.SpecTypeExperience)
 	if !ok || amount <= 0 {
 		l.Warnf("Character [%d] consumed Writ of Solomon [%d] but its spec/exp is absent or non-positive; the tenant's Item.wz likely predates the spec/exp parse.", characterId, itemId)
-		return d.onError(errors.New("writ of solomon has no spec/exp"))
+		return d.onError(ErrSolomonNoExperience)
 	}
 
 	if ci.MaxLevel() > 0 && uint32(c.Level()) > ci.MaxLevel() {
 		l.Warnf("Character [%d] level [%d] exceeds Writ of Solomon [%d] maxLevel [%d]; rejecting per the item's level gate.", characterId, c.Level(), itemId, ci.MaxLevel())
-		return d.onError(errors.New("character level exceeds writ of solomon maxLevel"))
+		return d.onError(ErrSolomonLevelExceeded)
 	}
 
 	if c.GachaponExperience() != 0 {
 		l.Warnf("Character [%d] has a non-zero stored EXP balance [%d]; rejecting Writ of Solomon [%d] until the banked balance is spent.", characterId, c.GachaponExperience(), itemId)
-		return d.onError(errors.New("character already has a non-zero stored exp balance"))
+		return d.onError(ErrSolomonBalanceNotEmpty)
 	}
 
 	if err := d.compartment.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot); err != nil {

@@ -516,6 +516,15 @@ func consumeErrorType(err error) string {
 	if errors.Is(err, ErrPotionLocked) {
 		return consumable.ErrorTypePotionLocked
 	}
+	if errors.Is(err, ErrSolomonNoExperience) {
+		return consumable.ErrorTypeSolomonNoExperience
+	}
+	if errors.Is(err, ErrSolomonLevelExceeded) {
+		return consumable.ErrorTypeSolomonLevelExceeded
+	}
+	if errors.Is(err, ErrSolomonBalanceNotEmpty) {
+		return consumable.ErrorTypeSolomonBalanceNotEmpty
+	}
 	return consumable.ErrorTypeConsumeFailed
 }
 

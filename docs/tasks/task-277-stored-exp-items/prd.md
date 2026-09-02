@@ -328,7 +328,7 @@ No new entity is introduced.
       character can bank and then redeem gachapon EXP end-to-end without manual DB edits.
 - [ ] `docs/research/missing-features/items-and-consumables.md` "Wholly missing" §3 updated
       to reflect the implemented state.
-- [ ] If a WZ `spec` field was added to `atlas-data`, a tenant re-ingest follow-up is
+- [x] If a WZ `spec` field was added to `atlas-data`, a tenant re-ingest follow-up is
       recorded in `docs/TODO.md`.
 - [ ] Flagless `tools/verify.sh` exits 0.
 - [ ] Code review passes before the PR is opened.

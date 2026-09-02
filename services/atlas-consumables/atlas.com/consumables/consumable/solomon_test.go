@@ -10,6 +10,7 @@ import (
 	charmock "atlas-consumables/character/mock"
 	compmock "atlas-consumables/compartment/mock"
 	consumablemock "atlas-consumables/data/consumable/mock"
+	consumable4 "atlas-consumables/kafka/message/consumable"
 	mapcharmock "atlas-consumables/map/character/mock"
 
 	"github.com/google/uuid"
@@ -284,5 +285,72 @@ func TestRoutesToSolomon(t *testing.T) {
 		if got := routesToSolomon(tc.itemId); got != tc.want {
 			t.Errorf("routesToSolomon(%d) = %t, want %t", tc.itemId, got, tc.want)
 		}
+	}
+}
+
+// TestConsumeSolomonRejectionErrorTypes pins that each of the three Writ of
+// Solomon rejection paths carries its own distinct producer-side errorType
+// (via consumeErrorType) rather than falling through to the shared, silent
+// CONSUME_FAILED -- and that in every case the item stays unconsumed.
+func TestConsumeSolomonRejectionErrorTypes(t *testing.T) {
+	tests := []struct {
+		name      string
+		exp       int32
+		expAbsent bool
+		maxLevel  uint32
+		level     byte
+		balance   uint32
+		wantType  string
+	}{
+		{
+			name:      "spec/exp absent",
+			expAbsent: true,
+			maxLevel:  200,
+			level:     30,
+			balance:   0,
+			wantType:  consumable4.ErrorTypeSolomonNoExperience,
+		},
+		{
+			name:     "level exceeds maxLevel",
+			exp:      3000,
+			maxLevel: 20,
+			level:    30,
+			balance:  0,
+			wantType: consumable4.ErrorTypeSolomonLevelExceeded,
+		},
+		{
+			name:     "balance already non-zero",
+			exp:      3000,
+			maxLevel: 200,
+			level:    30,
+			balance:  1200,
+			wantType: consumable4.ErrorTypeSolomonBalanceNotEmpty,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := map[consumable3.SpecType]int32{}
+			if !tc.expAbsent {
+				spec[consumable3.SpecTypeExperience] = tc.exp
+			}
+			ci := extractSolomonItem(t, spec, tc.maxLevel)
+			c := extractSolomonCharacter(t, tc.level, tc.balance)
+			h := newSolomonHarness(t, ci, nil, c)
+
+			err := consumeSolomon(logrus.New(), context.Background(), h.deps, uuid.New(), 555, 3, 2370000)
+			if err == nil {
+				t.Fatalf("consumeSolomon: err = nil, want rejection error")
+			}
+			if got := consumeErrorType(err); got != tc.wantType {
+				t.Errorf("consumeErrorType(err) = %q, want %q", got, tc.wantType)
+			}
+			if len(h.consumeItems) != 0 {
+				t.Errorf("ConsumeItem call count = %d, want 0 — the Writ must stay in the inventory", len(h.consumeItems))
+			}
+			if len(h.credits) != 0 {
+				t.Errorf("CreditStoredExperience call count = %d, want 0", len(h.credits))
+			}
+		})
 	}
 }

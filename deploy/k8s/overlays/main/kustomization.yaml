@@ -246,7 +246,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
     newTag: main-78e4566
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
-    newTag: main-78e4566
+    newTag: main-4dfded9
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
     newTag: main-78e4566
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors

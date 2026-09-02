@@ -778,6 +778,12 @@ else
     skip "npc-shop contract mirror guard (contract unchanged)"
 fi
 
+if touched '^deploy/seed/.*/reactor-actions/|^services/atlas-reactor-actions/docs/reactor_script_schema\.json$|^tools/reactor-seed-lint|^tools/reactor-seed-gen/'; then
+    step "reactor seed lint" ./tools/reactor-seed-lint.sh
+else
+    skip "reactor seed lint (no reactor seed or schema changed)"
+fi
+
 if touched '^services/.*\.go$|^tools/envguard/|^tools/env-domain-guard\.sh$'; then
     step "env domain guard" ./tools/env-domain-guard.sh
 else

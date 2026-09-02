@@ -2,8 +2,11 @@ package clientbound
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -36,11 +39,16 @@ func movingElement() model.Movement {
 func TestPetMovementRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
-			input := NewPetMovement(2001, 0, movingElement())
+			mv := movingElement()
+			input := NewPetMovement(2001, 0, mv)
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			// MovementRoundTrip rather than RoundTrip because clientbound movement encode is not
 			// the inverse of decode on GMS v87 — see its doc comment.
 			test.MovementRoundTrip(t, ctx, input.Encode, input.Decode, test.MovementTypesV95())
+			// MovementRoundTrip skips the encode/decode identity assertion on
+			// GMS v87 (see its doc comment), so this blob assertion is what keeps
+			// the v87 subtest — and its packet-audit:verify marker — honest.
+			assertMovePathBlob(t, ctx, input.Encode, mv, test.MovementTypesV95())
 		})
 	}
 }
@@ -123,4 +131,23 @@ func TestPetMovementBytesV79(t *testing.T) {
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v79 = % X, want % X", got, want)
 	}
+}
+
+// assertMovePathBlob pins the move-path blob this packet emits to the
+// independently-audited model.Movement encoder output for the SAME tenant, and
+// requires it to be the packet's suffix.
+//
+// It is the v87 safety net for test.MovementRoundTrip, which cannot assert
+// encode/decode identity on that version: GMS v87 reads the per-element
+// XOffset/YOffset pair but is never sent it back (CMovePath::Encode @0x6c70fe
+// vs CMovePath::Decode @0x6c6e86). Without this the GMS v87 subtest would run
+// zero assertions while still carrying a packet-audit:verify marker. The blob's
+// per-version width is pinned in libs/atlas-packet/model/version_bounds_test.go.
+func assertMovePathBlob(t *testing.T, ctx context.Context, encode func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte, mv model.Movement, opts map[string]interface{}) {
+	t.Helper()
+	l, _ := testlog.NewNullLogger()
+	got := encode(l, ctx)(opts)
+	want := mv.Encode(l, ctx)(opts)
+	require.True(t, bytes.HasSuffix(got, want),
+		"move-path blob must equal model.Movement encoder output\n got=% x\nwant=% x", got, want)
 }

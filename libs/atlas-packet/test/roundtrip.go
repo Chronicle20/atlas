@@ -56,8 +56,12 @@ func RoundTrip(t *testing.T, ctx context.Context, encode func(logrus.FieldLogger
 // TestNormalElementOffsetsAreDirectional), which is the same OPAQUE_LEDGER
 // arrangement the individual movement packets already rely on for their blob.
 //
-// Use RoundTrip directly for serverbound packets — there Decode is the
-// production path and the identity holds on every version.
+// Serverbound movement packets still use RoundTrip directly, but NOT because
+// the identity is safe there in general — model.Movement.Encode is shared, so it
+// omits the pair on a v87 tenant in either direction. It is safe only for the
+// serverbound movement tests as they stand, which pass nil options and so build
+// no NORMAL element for the gate to apply to. A serverbound test that adds a
+// NORMAL element on a v87 tenant must come through here instead.
 func MovementRoundTrip(t *testing.T, ctx context.Context, encode func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte, decode func(logrus.FieldLogger, context.Context) func(*request.Reader, map[string]interface{}), options map[string]interface{}) {
 	t.Helper()
 

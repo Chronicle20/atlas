@@ -896,7 +896,7 @@ if touched '^(libs/atlas-saga/validation\.go|services/atlas-map-actions/atlas\.c
     step "map-action schema drift"      ./tools/gen-map-action-schema.sh --check
     step "map-action schema gen tests"  bash -c 'cd tools/gen-map-action-schema && GOWORK=off go test ./...'
 else
-    skip "map-action schema drift (no saga condition, executor, schema or generator change)"
+    skip "map-action schema drift (no saga condition, executor, evaluator, schema or generator change)"
 fi
 
 if touched '^(deploy/k8s/overlays/pr/|deploy/k8s/overlays/pr-sparse/|tools/pr-sparse-mirror-guard\.sh)'; then

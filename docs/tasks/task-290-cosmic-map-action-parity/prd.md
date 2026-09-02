@@ -20,7 +20,7 @@ A material finding from repository inspection, not present in the issue: **six o
 
 Primary goals:
 
-- Correct the four pre-existing defects (schema condition names, schema enum breadth, `/convert-map` output path and envelope, quest-status value shift) before any bulk conversion runs.
+- Correct the four pre-existing defects (schema condition names, schema enum breadth, `/convert-map` output path and envelope, quest-status shift instruction — later found to be a false premise; see the FR-1.4 correction note) before any bulk conversion runs.
 - Give `spawn_monster` a `spawnIfAbsent` guard so map re-entry does not stack duplicate monsters, and retrofit the already-seeded `108010301`.
 - Implement the 14 engine capability gaps G1–G14 identified in issue #1624.
 - Land 72 new map-action seed documents (27 category-#1 + 45 category-#2), each replicated identically to all 11 version directories.
@@ -62,6 +62,16 @@ Non-goals:
 at `deploy/seed/<client>/<version>/map-actions/<hook>/map-<scriptName>.json`, replicated to all 11 version directories. The command doc must be corrected to emit this shape at this path with this replication, and must use the FR-1.1 condition names.
 
 **FR-1.4 — Quest-status value shift.** Cosmic `QuestStatus` is `UNDEFINED(-1), NOT_STARTED(0), STARTED(1), COMPLETED(2)`; Atlas' aggregator is `UNDEFINED=0, NOT_STARTED=1, STARTED=2, COMPLETED=3`. Every ported `getQuestStatus(x) == n` must be emitted as `n + 1`. `/convert-map` must document this shift, and every conversion in this task must apply it.
+
+> **Correction (task A12 fix round 1):** the premise above is factually wrong and is kept here only
+> for history, not as a live requirement. Atlas' aggregator actually numbers quest state
+> `NotStarted=0, Started=1, Completed=2`
+> (`services/atlas-query-aggregator/atlas.com/query-aggregator/quest/model.go:11-14`), and the
+> `QuestStatusCondition` comparison applies no offset to that value
+> (`services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go:402-413`). There
+> is no `UNDEFINED=0`; the aggregator's sentinel is `State(255)`, which does not correspond to
+> Cosmic's `UNDEFINED(-1)`. Every ported `getQuestStatus(x) == n` check ports **1:1, with no
+> offset**. `/convert-map` was corrected to reflect this in task A12 fix round 1.
 
 **FR-1.5 — Schema/aggregator drift check.** Because FR-1.2 duplicates a Go constant list into a JSON schema, a check must exist that fails when they diverge — a test or a `tools/verify.sh` guard that reads `libs/atlas-saga/validation.go` and the schema enum and asserts set equality (modulo the locally-evaluated `map_id`).
 
@@ -126,7 +136,9 @@ Per issue #1624's inventory. All expressible with today's operations once §4.1 
   | `677000009` | 9400613 | (251, -841) | Valefor has appeared! |
   | `677000012` | 9400633 | (842, 0) | Astaroth has appeared! |
 
-- **Quest-gated spawn (1):** `100000006` — `questStatus`, `referenceId 2175`, value `"2"` (FR-1.4) → spawn 9300156 at (-1027, 216).
+- **Quest-gated spawn (1):** `100000006` — `questStatus`, `referenceId 2175`, value `"1"` (corrected in
+  task A12 fix round 1 — FR-1.4's shift premise is wrong; see the correction note there; no offset
+  applies) → spawn 9300156 at (-1027, 216).
 - **Job-instructor duplicates (4):** `108010101`, `108010201`, `108010401`, `108010501` — same 5-rule body as the seeded `108010301`, differing only in `scriptName`/`id`. Each map's WZ `onUserEnter` names its own script, so four separate documents are required.
 
 ### 4.5 Category #2 conversions (45 scripts)
@@ -182,7 +194,7 @@ Migration: none. Seeds are re-applied per deploy; the `108010301` retrofit (FR-2
 | Quest service | `explorer_quest` consumer (G14) |
 | `atlas-channel` | Direction/cutscene packets (G8/G10/G11): `set_direction*`, `start_direction`, `lock_ui2`, `play_sound`, `send_direction_info`, `set_standalone_mode`, `start_map_effect` |
 | `deploy/seed/**` | 72 new documents × 11 directories, plus the `108010301` retrofit × 11 |
-| `.claude/commands/convert-map.md` | Corrected output path, envelope, replication, condition names, quest-status shift |
+| `.claude/commands/convert-map.md` | Corrected output path, envelope, replication, condition names; removed the false quest-status shift instruction (see FR-1.4 correction) |
 
 ## 8. Non-Functional Requirements
 
@@ -211,7 +223,7 @@ Migration: none. Seeds are re-applied per deploy; the `108010301` retrofit (FR-2
 - [ ] Schema operation enum includes every operation the executor switch handles, and vice versa.
 - [ ] A check fails when the schema condition enum and `validation.go` diverge (FR-1.5).
 - [ ] A check fails when a map-action seed is not byte-identical across all 11 version directories (FR-1.6).
-- [ ] `.claude/commands/convert-map.md` documents the JSON:API envelope, the `deploy/seed/<client>/<version>/map-actions/<hook>/map-<scriptName>.json` path, 11-way replication, the saga condition names, and the quest-status +1 shift.
+- [ ] `.claude/commands/convert-map.md` documents the JSON:API envelope, the `deploy/seed/<client>/<version>/map-actions/<hook>/map-<scriptName>.json` path, 11-way replication, the saga condition names, and that quest-status values port 1:1 with no shift (see FR-1.4 correction).
 - [ ] `spawn_monster` accepts `spawnIfAbsent`; when true and a monster of that id is present on the field, no spawn occurs. Covered by a test.
 - [ ] All 11 copies of `map-108010301.json` set `spawnIfAbsent: "true"` on all five rules.
 
@@ -228,7 +240,7 @@ Migration: none. Seeds are re-applied per deploy; the `108010301` retrofit (FR-2
 - [ ] All 27 category-#1 scripts are seeded, in all 11 version directories, matching issue #1624's per-script inventory (monster ids, coordinates, messages, effect paths, quest ids).
 - [ ] All 45 category-#2 scripts are seeded, in all 11 version directories.
 - [ ] Every converted spawn sets `spawnIfAbsent: "true"`.
-- [ ] Every converted quest-status comparison applies the +1 shift.
+- [ ] Every converted quest-status comparison ports its value unchanged, with no shift (see FR-1.4 correction).
 - [ ] Every seeded document validates against the updated schema.
 - [ ] Total map-action seed count is 81 documents × 11 directories.
 

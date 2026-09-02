@@ -105,7 +105,8 @@ converting map scripts:
 | `drop_message` | `ms.dropMessage(msg)` or `ms.getPlayer().dropMessage(type, msg)` | `message`, `messageType` (optional, default: PINK_TEXT) |
 
 The valid `type` values are the `operation.properties.type.enum` list in the schema, derived from
-the `ExecuteOperation` switch in `libs/atlas-saga`. An operation type outside that enum does not
+the `ExecuteOperation` switch in
+`services/atlas-map-actions/atlas.com/map-actions/script/executor.go`. An operation type outside that enum does not
 exist in Atlas — the executor now **errors** on an unrecognized operation type rather than
 silently ignoring it. Never invent an operation name; if the script needs an operation the enum
 doesn't have, treat it as an unsupported feature (see below).
@@ -122,11 +123,15 @@ instead, **every emitted `spawn_monster` operation must set `"spawnIfAbsent": "t
 or not the source script had an explicit guard. `tools/catalog-lint` fails the build if a
 `spawn_monster` operation is missing `spawnIfAbsent`.
 
-### Quest-status value shift (FR-1.4)
+### Quest-status values port 1:1, with no offset (FR-1.4)
 
 Cosmic's `QuestStatus` enum is `UNDEFINED(-1), NOT_STARTED(0), STARTED(1), COMPLETED(2)`. Atlas'
-aggregator uses a different enum: `UNDEFINED=0, NOT_STARTED=1, STARTED=2, COMPLETED=3`. **Every
-ported `getQuestStatus(x) == n` check is emitted with `value` set to `n + 1`, not `n`.**
+aggregator uses `NotStarted=0, Started=1, Completed=2`
+(`services/atlas-query-aggregator/atlas.com/query-aggregator/quest/model.go:11-14`), and the
+`QuestStatusCondition` comparison applies no offset to that value
+(`services/atlas-query-aggregator/atlas.com/query-aggregator/validation/model.go:402-413`). The two
+enums are numerically identical for the three states that matter. **Every ported
+`getQuestStatus(x) == n` check is emitted with `value` set to `n`, unchanged — do not shift it.**
 
 Worked example — Cosmic:
 
@@ -143,11 +148,16 @@ becomes the condition:
   "operator": "=",
   "referenceId": "2175",
   "type": "questStatus",
-  "value": "2"
+  "value": "1"
 }
 ```
 
-(Cosmic's `1` (`STARTED`) becomes Atlas' `2` (`STARTED`), not `1`.)
+(Cosmic's `1` (`STARTED`) stays `1` (`Started`) in Atlas — no shift applies.)
+
+Cosmic's `UNDEFINED` is `-1`; Atlas has no `UNDEFINED` state at all (its `State(255)` is an internal
+sentinel, not a quest status a script would compare against, and it does NOT correspond to Cosmic's
+`-1`). If a source script compares against `UNDEFINED`, there is no direct Atlas equivalent — do not
+invent one; treat it as an unsupported condition and flag it for review instead of guessing a value.
 
 ### NOT YET SUPPORTED (Skip These Scripts)
 The following patterns require additional design work:
@@ -182,7 +192,7 @@ Identify the key patterns:
 - `ms.getPlayer().getJob() == 100` → `jobId` condition
 - `ms.getPlayer().getLevel() >= 10` → `level` condition
 - `ms.getPlayer().getGender() == 0` → `gender` condition
-- `ms.getQuestStatus(2175) == 1` → `questStatus` condition with `referenceId: "2175"` and `value` shifted by +1 (see Quest-status value shift above)
+- `ms.getQuestStatus(2175) == 1` → `questStatus` condition with `referenceId: "2175"` and `value` unchanged (see Quest-status values port 1:1 above)
 
 **Supported Operations:**
 - `ms.fieldEffect("maplemap/enter/1010100")` → `field_effect` operation
@@ -239,7 +249,7 @@ if (ms.getQuestStatus(2175) == 1) {
     ms.spawnMonster(9300156, -1027, 216);
 }
 ```
-→ Rule with `questStatus` condition (`referenceId: "2175"`, `value: "2"` — shifted from Cosmic's `1`)
+→ Rule with `questStatus` condition (`referenceId: "2175"`, `value: "1"` — unchanged from Cosmic's `1`)
 
 **Pattern E: First User Enter with Monster Spawn**
 ```javascript
@@ -265,7 +275,7 @@ function start(ms) {
 - [ ] All map IDs looked up in Map.txt for description
 - [ ] Operations match script actions in correct order
 - [ ] Conditions properly typed with correct operators, using the schema's condition names (`jobId`, `questStatus`, never `job`/`quest_status`)
-- [ ] Every `getQuestStatus(x) == n` check emitted as `value: n + 1`
+- [ ] Every `getQuestStatus(x) == n` check emitted as `value: n`, unchanged (no shift)
 - [ ] Every `spawn_monster` operation carries `"spawnIfAbsent": "true"`
 - [ ] Script does NOT use unsupported features
 - [ ] Output wrapped in the JSON:API envelope (`data.type`, `data.id`, `data.attributes`), no `scriptType`
@@ -291,7 +301,7 @@ The script to convert: **$ARGUMENTS**
 4. Analyze the script:
    - Identify all condition checks (map to the schema's condition names)
    - Identify all operations (map to the schema's operation names; add `spawnIfAbsent: "true"` to every `spawn_monster`)
-   - Apply the quest-status +1 shift to every `questStatus` condition value
+   - Port every `questStatus` condition value unchanged — no shift applies (see Quest-status values port 1:1 above)
    - Map the control flow to rules
 5. Use Grep to look up map IDs in `docs/Map.txt` (pattern: `^<mapId> - `)
 6. Determine the hook (`onUserEnter` or `onFirstUserEnter`) from the file path
@@ -459,7 +469,7 @@ function spawnMob(x, y, id, map) {
 }
 ```
 
-## Example: Quest Status Check with Value Shift
+## Example: Quest Status Check
 
 **Input: goQuestSpawn.js** (from `onUserEnter/`)
 ```javascript
@@ -483,7 +493,7 @@ function start(ms) {
               "operator": "=",
               "referenceId": "2175",
               "type": "questStatus",
-              "value": "2"
+              "value": "1"
             }
           ],
           "id": "spawn_on_quest_started",
@@ -509,7 +519,7 @@ function start(ms) {
 ```
 
 Cosmic's `getQuestStatus(2175) == 1` (`STARTED` under Cosmic's `-1/0/1/2` enum) is emitted as
-`value: "2"` (`STARTED` under Atlas' `0/1/2/3` enum) — the `n + 1` shift.
+`value: "1"` (`Started` under Atlas' `0/1/2` enum) unchanged — no shift applies.
 
 ## Example: Unsupported Script (Skip)
 

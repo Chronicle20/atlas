@@ -1,6 +1,9 @@
 package _map
 
 import (
+	"atlas-data/map/object"
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +16,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type mapsServerInfo struct{}
@@ -106,4 +112,141 @@ func TestMapsSearch_ValidationRejectsZeroLimit(t *testing.T) {
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestGetMapObjectsEmpty(t *testing.T) {
+	db := setupStorageTestDB(t)
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	s := NewStorage(testLogger(t), db)
+	m := RestModel{
+		Id:         _map.Id(100000000),
+		Name:       "Henesys",
+		StreetName: "Victoria Road",
+	}
+	_, err := s.Add(ctx)(m)()
+	require.NoError(t, err)
+
+	router := buildMapsRouter(t, db)
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	req := mapsRequest(ts.URL+"/data/maps/100000000/objects", tn.Id())
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+	data, ok := doc["data"].([]interface{})
+	require.True(t, ok, "expected data to be an array, got %v", doc["data"])
+	assert.Len(t, data, 0)
+}
+
+func TestGetMapObjectsReturnsRows(t *testing.T) {
+	db := setupStorageTestDB(t)
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	s := NewStorage(testLogger(t), db)
+	m := RestModel{
+		Id:         _map.Id(100000000),
+		Name:       "Henesys",
+		StreetName: "Victoria Road",
+		Objects: []object.RestModel{
+			{
+				Id:           "ENVIRONMENT:gate",
+				Kind:         "ENVIRONMENT",
+				Name:         "gate",
+				ObjectSource: "effect",
+				L0:           "quest",
+				L1:           "gate",
+				L2:           "1",
+				X:            640,
+				Y:            120,
+				Z:            0,
+				Layer:        3,
+			},
+			{
+				Id:           "OBSTACLE:menhir0",
+				Kind:         "OBSTACLE",
+				Name:         "menhir0",
+				ObjectSource: "trapGL",
+				L0:           "ckPQ",
+				L1:           "menhir",
+				L2:           "0",
+				X:            -30,
+				Y:            45,
+				Z:            7,
+				Layer:        2,
+			},
+		},
+	}
+	_, err := s.Add(ctx)(m)()
+	require.NoError(t, err)
+
+	router := buildMapsRouter(t, db)
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	req := mapsRequest(ts.URL+"/data/maps/100000000/objects", tn.Id())
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+	data, ok := doc["data"].([]interface{})
+	require.True(t, ok, "expected data to be an array, got %v", doc["data"])
+	require.Len(t, data, 2)
+
+	foundIds := make(map[string]bool)
+	var gateAttrs map[string]interface{}
+	for _, raw := range data {
+		item, ok := raw.(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "map-objects", item["type"])
+		id, _ := item["id"].(string)
+		foundIds[id] = true
+		if id == "ENVIRONMENT:gate" {
+			gateAttrs, _ = item["attributes"].(map[string]interface{})
+		}
+	}
+	assert.True(t, foundIds["ENVIRONMENT:gate"])
+	assert.True(t, foundIds["OBSTACLE:menhir0"])
+
+	require.NotNil(t, gateAttrs)
+	assert.Equal(t, map[string]interface{}{
+		"kind":         "ENVIRONMENT",
+		"name":         "gate",
+		"objectSource": "effect",
+		"l0":           "quest",
+		"l1":           "gate",
+		"l2":           "1",
+		"x":            float64(640),
+		"y":            float64(120),
+		"z":            float64(0),
+		"layer":        float64(3),
+	}, gateAttrs)
+}
+
+func TestGetMapObjectsUnknownMap(t *testing.T) {
+	db := setupStorageTestDB(t)
+	tn := newTestTenant(t)
+
+	router := buildMapsRouter(t, db)
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	req := mapsRequest(ts.URL+"/data/maps/999999999/objects", tn.Id())
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

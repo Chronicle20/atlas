@@ -3,7 +3,6 @@ package field
 import (
 	"atlas-maps/map/character"
 	"atlas-maps/rest"
-	"fmt"
 	"net/http"
 	"net/url"
 	"sort"
@@ -104,7 +103,7 @@ func handleGetFields(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 			}
 
 			models = append(models, RestModel{
-				Id:             fmt.Sprintf("%d:%d:%d:%s", o.Field.WorldId(), o.Field.ChannelId(), o.Field.MapId(), o.Field.Instance().String()),
+				Id:             string(o.Field.Id()),
 				WorldId:        o.Field.WorldId(),
 				ChannelId:      o.Field.ChannelId(),
 				MapId:          o.Field.MapId(),

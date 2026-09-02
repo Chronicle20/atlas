@@ -56,7 +56,7 @@ func doGetFields(t *testing.T, tenantId uuid.UUID, url string) (*http.Response, 
 	req := fieldRequestWithTenant(http.MethodGet, url, tenantId)
 	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var doc jsonapi.Document
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
@@ -238,7 +238,7 @@ func TestGetFieldsMalformedFilter(t *testing.T) {
 			req := fieldRequestWithTenant(http.MethodGet, fmt.Sprintf("%s/fields%s", srv.URL, tc.query), tenantId)
 			resp, err := (&http.Client{}).Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		})
 	}

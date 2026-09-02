@@ -61,3 +61,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-02T18:15:02Z	agent	Fix EXT-01/EXT-02	task-implementer	sonnet	-	38	-	-	DONE	3df6ac945	-	-	-	-
 2026-09-02T18:15:23Z	agent	Fix DOM-20 group A	task-implementer	sonnet	-	20	-	-	DONE	734eaf035	-	-	-	-
 2026-09-02T18:16:49Z	agent	Fix mapId/Instance	task-implementer	sonnet	-	16	-	-	DONE	4365c0bd1	-	-	-	-
+2026-09-02T18:21:19Z	agent	Pre-PR fix round	task-reviewer	sonnet	-	43	-	-	DONE	4365c0bd1	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan/fix-round-review.md	-
+2026-09-02T19:21:51Z	agent	pre-PR	verify.sh-flagless	-	-	-	-	-	PASS	7275e3a61	-	-	/var/tmp/atlas/gates/task290-final-verify2.log	-

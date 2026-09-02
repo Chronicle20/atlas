@@ -68,7 +68,10 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId ui
 
 // Move emits a COMMAND_TOPIC_SUMMON MOVE command requesting atlas-summons
 // reposition the given summon (ownership is verified there) and rebroadcast the
-// raw movement blob byte-faithfully.
+// raw movement blob. The blob crosses the command and event unchanged; the
+// channel writer re-serializes it at encode time for each receiving client,
+// because GMS v87 reads the per-element XOffset/YOffset pair the sender writes
+// and is never sent it back (see writer.SummonMoveBody).
 func (p *ProcessorImpl) Move(f field.Model, summonId uint32, senderCharacterId uint32, x int16, y int16, stance byte, rawMovement []byte) error {
 	p.l.Debugf("Requesting summon move for summon [%d] by character [%d] to [%d,%d].", summonId, senderCharacterId, x, y)
 	return producer.ProviderImpl(p.l)(p.ctx)(summon2.EnvCommandTopic)(MoveCommandProvider(f, summonId, senderCharacterId, x, y, stance, rawMovement))

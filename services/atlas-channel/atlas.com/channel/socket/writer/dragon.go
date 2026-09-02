@@ -13,8 +13,12 @@ func DragonSpawnBody(ownerCharacterId uint32, x int32, y int32, stance byte, job
 }
 
 // DragonMoveBody builds the MOVE_DRAGON packet, rebroadcasting the raw CMovePath
-// blob byte-faithfully to OTHER sessions. The blob already carries the start
-// position, so it is not written separately.
+// blob to OTHER sessions. The blob is NOT echoed verbatim: dragoncb.DragonMove
+// re-serializes it at encode time for the RECEIVING client, because GMS v87 reads
+// the per-element XOffset/YOffset pair the client sends but is never sent it back
+// (CMovePath::Encode @0x6c70fe writes the pair, ::Decode @0x6c6e86 never reads
+// it). The blob already carries the start position, so it is not written
+// separately.
 func DragonMoveBody(ownerCharacterId uint32, rawMovement []byte) packet.Encode {
 	return dragoncb.NewDragonMove(ownerCharacterId, rawMovement).Encode
 }

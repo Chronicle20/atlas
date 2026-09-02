@@ -47,7 +47,18 @@ func MovePathBlob(startVelocity bool, elementOffsets bool) []byte {
 
 // MovePathTrailer is the opaque tail of a MovePathBlob: everything Atlas's
 // move-path codec does not model. A rebroadcast must carry it through unchanged.
-var MovePathTrailer = []byte{0x00, 0xAA, 0xBB, 0xCC, 0xDD}
+//
+// Its WIDTH is not arbitrary. CMovePath::Encode always writes Encode1 keypadLen,
+// the keypad run, then four Encode2 for m_rcMove, so the narrowest trailer a
+// real client can send is nine bytes — an empty keypad run plus the bounding
+// box. model.ReserializeMovePath uses that floor to detect a decode that ran off
+// the end of a truncated blob, so a fixture with a shorter trailer would look
+// unparseable rather than exercising the re-serialize path.
+var MovePathTrailer = []byte{
+	0x00,                   // keypadLen — no keypad input
+	0xAA, 0xBB, 0xCC, 0xDD, // m_rcMove minX, minY
+	0xEE, 0x11, 0x22, 0x33, // m_rcMove maxX, maxY
+}
 
 func appendInt16(b []byte, v int16) []byte {
 	return binary.LittleEndian.AppendUint16(b, uint16(v))

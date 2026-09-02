@@ -119,6 +119,9 @@ func TestDescribe_NoBoilerplateLeaks(t *testing.T) {
 		"HeavenMS",
 		"OdinMS",
 		".js:",
+		"http",
+		"://",
+		"  ",
 	}
 
 	for _, s := range scripts {

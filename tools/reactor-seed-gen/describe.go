@@ -18,6 +18,7 @@ var (
 	urlPattern              = regexp.MustCompile(`\bhttps?://\S+`)
 	gnuLicenseUrlPattern    = regexp.MustCompile(`www\.gnu\.org/licenses/>\.`)
 	blogspotPattern         = regexp.MustCompile(`mymapleland\.blogspot\.com/\S+`)
+	referenceLeadInPattern  = regexp.MustCompile(`\b\w+ reference:\s*`)
 	jsPrefixPattern         = regexp.MustCompile(`^[\s*]*\d+\.js[:\-]?\s*`)
 	jsReferencePattern      = regexp.MustCompile(`\b\d+\.js\b`)
 	whitespacePattern       = regexp.MustCompile(`\s+`)
@@ -51,10 +52,16 @@ func clean(comment string) string {
 	s = authorTagPattern.ReplaceAllString(s, "")
 	s = purposeTagPattern.ReplaceAllString(s, "")
 
-	// 3. remove URL debris.
+	// 3. remove URL debris. urlPattern runs before blogspotPattern so a
+	// scheme-prefixed link ("http://mymapleland.blogspot.com/...") is
+	// removed whole, including its scheme, rather than leaving a dangling
+	// "http://" behind for the schemeless blogspotPattern to skip over.
+	// referenceLeadInPattern then drops an orphaned "<word> reference:"
+	// label whose target URL has already been stripped.
 	s = gnuLicenseUrlPattern.ReplaceAllString(s, "")
-	s = blogspotPattern.ReplaceAllString(s, "")
 	s = urlPattern.ReplaceAllString(s, "")
+	s = blogspotPattern.ReplaceAllString(s, "")
+	s = referenceLeadInPattern.ReplaceAllString(s, "")
 
 	// 4. remove a leading "<digits>.js:" or "<digits>.js -" prefix (allowing
 	// for "*" decorations before it), then any remaining "<digits>.js"
@@ -83,16 +90,17 @@ func clean(comment string) string {
 // rather than emit a guess, so this table is the one place human judgment
 // enters the generated corpus. Review this, not the 1,749 files.
 var descriptionOverrides = map[string]string{
-	// Henesys box family: identical act() { rm.dropItems(...) }, no source
-	// comment at all.
-	"1002008": "Henesys box - drops items",
-	"1002009": "Henesys box - drops items",
+	// Identical act() { rm.dropItems(...) }, no source comment at all. No
+	// location name appears anywhere in this corpus for these ids.
+	"1002008": "Box - drops items",
+	"1002009": "Box - drops items",
 
-	// Ludibrium relic room family (1021000-1021002 "relic room fail",
-	// 1022000 "relic complete", 1022002 "Construction Site" fire hydrant).
-	// 1022001 shares 1022000's act() { rm.dropItems() } and sits directly
-	// between the two labeled relic-room entries.
-	"1022001": "Ludibrium relic room - drops reward items",
+	// Relic room family (1021000-1021002 "relic room fail", 1022000 "relic
+	// complete", 1022002 "Construction Site" fire hydrant). 1022001 shares
+	// 1022000's act() { rm.dropItems() } and sits directly between the two
+	// labeled relic-room entries. No location name for this family appears
+	// anywhere in this corpus.
+	"1022001": "Relic room - drops reward items",
 
 	// No source comment and no location context in this corpus; act() is a
 	// bare drop.
@@ -134,19 +142,24 @@ var descriptionOverrides = map[string]string{
 	// their bare act() { rm.dropItems() } and sits inside that id range.
 	"2112015": "Zakum Party Quest - drops an item",
 
-	// Altar in El Nath - rm.weakenAreaBoss(6090001, "...Snow Witch...").
-	"2119004": "Altar in El Nath - weakens the Snow Witch",
-	"2119005": "Altar in El Nath - weakens the Snow Witch",
-	"2119006": "Altar in El Nath - weakens the Snow Witch",
+	// No source comment; rm.weakenAreaBoss(6090001, "...Snow Witch...").
+	// No location name for this family appears anywhere in this corpus (the
+	// neighboring 2119000-2119003 Tombstones are a different location,
+	// "Forest of Dead Trees").
+	"2119004": "Altar - weakens the Snow Witch",
+	"2119005": "Altar - weakens the Snow Witch",
+	"2119006": "Altar - weakens the Snow Witch",
 
 	// rm.weakenAreaBoss(6090003, "...Scholar Ghost...").
 	"2229009": "Altar - weakens the Scholar Ghost",
 
-	// rm.weakenAreaBoss(6090004, "Rurumo has been poisoned..."); sits among
-	// the CWKPQ reactors (6102002-6102005 "Drops CWKPQ chest bonuses").
-	"2619003": "CWKPQ altar - weakens Rurumo",
-	"2619004": "CWKPQ altar - weakens Rurumo",
-	"2619005": "CWKPQ altar - weakens Rurumo",
+	// No source comment; rm.weakenAreaBoss(6090004, "Rurumo has been
+	// poisoned..."). No location name for this family appears anywhere in
+	// this corpus; the 6102002-6102005 CWKPQ family runs a different
+	// operation (sprayItems, not weakenAreaBoss) and is not adjacent.
+	"2619003": "Altar - weakens Rurumo",
+	"2619004": "Altar - weakens Rurumo",
+	"2619005": "Altar - weakens Rurumo",
 
 	"3102000": "Box - drops items",
 

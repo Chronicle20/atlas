@@ -2,7 +2,7 @@
   "data": {
     "attributes": {
       "actRules": [],
-      "description": "Tombstone in Forest of Dead Trees I MSEA reference: http:// If the chest is destroyed before Riche, killing him should yield no exp",
+      "description": "Tombstone in Forest of Dead Trees I If the chest is destroyed before Riche, killing him should yield no exp",
       "hitRules": [
         {
           "conditions": [

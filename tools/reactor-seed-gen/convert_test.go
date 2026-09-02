@@ -283,6 +283,21 @@ eim.setProperty("statusStg7", "1");`,
 			wantHit:   []ruleDoc{},
 			wantAct:   []ruleDoc{},
 		},
+		{
+			// Verbatim from tier1-inventory.md:1305-1309 (reactor 9208009):
+			// the null guard's closing brace is indented, unlike the
+			// unindented form covered by "null-guard erased" above.
+			name:      "null-guard erased, indented closing brace",
+			reactorId: "9208009",
+			actBody: "if (rm.getEventInstance() != null) {\n" +
+				`        rm.getEventInstance().setProperty("canRevive", "1");` + "\n" +
+				"    }",
+			wantHit: []ruleDoc{},
+			wantAct: []ruleDoc{{
+				Id:         "update_pq_state",
+				Operations: []opDoc{{Type: "update_pq_state", Params: map[string]string{"updates": "canRevive=1"}}},
+			}},
+		},
 	}
 
 	for _, tt := range tests {

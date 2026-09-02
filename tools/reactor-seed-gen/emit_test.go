@@ -11,7 +11,7 @@ import (
 func TestEmit_GoldenBytes(t *testing.T) {
 	doc := scriptDoc{
 		ReactorId:   "2119000",
-		Description: "Tombstone in Forest of Dead Trees I MSEA reference: http:// If the chest is destroyed before Riche, killing him should yield no exp",
+		Description: "Tombstone in Forest of Dead Trees I If the chest is destroyed before Riche, killing him should yield no exp",
 		HitRules: []ruleDoc{
 			{
 				Id: "weaken_area_boss",
@@ -50,7 +50,7 @@ func TestEmit_GoldenBytes(t *testing.T) {
 func TestEmit_BareDropOmitsParams(t *testing.T) {
 	doc := scriptDoc{
 		ReactorId:   "1002008",
-		Description: "Henesys box - drops items",
+		Description: "Box - drops items",
 		ActRules: []ruleDoc{
 			{
 				Id: "drop_items",

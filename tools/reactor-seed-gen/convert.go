@@ -9,7 +9,7 @@ import (
 
 var (
 	stateGuardPattern = regexp.MustCompile(`^if \(rm\.getReactor\(\)\.getState\(\) !== (\d+)\) \{\n\s*return\n\s*\}\n?`)
-	nullGuardPattern  = regexp.MustCompile(`(?s)^if \(rm\.getEventInstance\(\) != null\) \{\n(.*)\n\}$`)
+	nullGuardPattern  = regexp.MustCompile(`(?s)^if \(rm\.getEventInstance\(\) != null\) \{\n(.*)\n[ \t]*\}$`)
 	eimBindPattern    = regexp.MustCompile(`^var \w+ = rm\.(?:getPlayer\(\)\.)?getEventInstance\(\);$`)
 	forHeaderPattern  = regexp.MustCompile(`^for \(var \w+ = 0; \w+ < (\d+); \w+\+\+\) \{$`)
 

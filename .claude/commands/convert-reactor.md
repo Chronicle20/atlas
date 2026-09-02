@@ -103,14 +103,14 @@ function act() {
 → Single actRule with `drop_items` operation. Arguments are positional: `(meso, mesoChance, minMeso, maxMeso, minItems)`.
 ```json
 {
-  "type": "drop_items",
   "params": {
     "meso": "true",
     "mesoChance": "2",
-    "mesoMin": "8",
     "mesoMax": "15",
+    "mesoMin": "8",
     "minItems": "1"
-  }
+  },
+  "type": "drop_items"
 }
 ```
 
@@ -212,8 +212,8 @@ function act() {
               "params": {
                 "meso": "true",
                 "mesoChance": "2",
-                "mesoMin": "8",
                 "mesoMax": "15",
+                "mesoMin": "8",
                 "minItems": "1"
               },
               "type": "drop_items"

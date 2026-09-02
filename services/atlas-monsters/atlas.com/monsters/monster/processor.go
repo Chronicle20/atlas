@@ -258,6 +258,26 @@ func (p *ProcessorImpl) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limi
 // Create creates a new monster in a field
 func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	p.l.Debugf("Attempting to create monster [%d] in field [%s].", input.MonsterId, f.Id())
+
+	// FR-2.1 / design D5: the idempotency decision lives here, against this
+	// service's own registry, because an orchestrator-side GET-then-POST is a
+	// cross-service TOCTOU two simultaneous map entries would both pass.
+	// Scoped to the field — including its instance — so two instances of the
+	// same map each get their own monster.
+	if input.SpawnIfAbsent {
+		existing, err := p.GetInField(f)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to check field [%s] for an existing monster [%d].", f.Id(), input.MonsterId)
+			return Model{}, err
+		}
+		for _, m := range existing {
+			if m.MonsterId() == input.MonsterId {
+				p.l.Debugf("Suppressing spawn of monster [%d] in field [%s]: already present as [%d].", input.MonsterId, f.Id(), m.UniqueId())
+				return Model{}, nil
+			}
+		}
+	}
+
 	ma, err := p.monsterInformation(input.MonsterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)

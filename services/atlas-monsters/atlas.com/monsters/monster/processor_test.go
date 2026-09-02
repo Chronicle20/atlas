@@ -2669,3 +2669,205 @@ func TestDestroyBySourceMatchesOnBothHalves(t *testing.T) {
 		t.Fatalf("non-matching monsters were destroyed")
 	}
 }
+
+// TestCreateSpawnIfAbsentSuppressesWhenPresent asserts the idempotency guard
+// (design D5/F6): a second Create for the same template on an occupied field
+// is suppressed — no new monster, no error, a zero Model.
+func TestCreateSpawnIfAbsentSuppressesWhenPresent(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	tm := newTestTenant(t)
+	tctx := tenant.WithContext(ctx, tm)
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(_ uint32) (information.Model, error) {
+		return information.NewBuilder().Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tctx, t: tm, emit: func(topic.Token, model.Provider[[]kafka.Message]) error { return nil }}
+	f := testField()
+
+	_, err := p.Create(f, RestModel{MonsterId: 9100013, X: 82, Y: 200, Fh: 0, Team: 0})
+	if err != nil {
+		t.Fatalf("first Create: %v", err)
+	}
+	inField, err := p.GetInField(f)
+	if err != nil {
+		t.Fatalf("GetInField: %v", err)
+	}
+	if len(inField) != 1 {
+		t.Fatalf("GetInField after first Create = %d, want 1", len(inField))
+	}
+
+	got, err := p.Create(f, RestModel{MonsterId: 9100013, X: 82, Y: 200, Fh: 0, Team: 0, SpawnIfAbsent: true})
+	if err != nil {
+		t.Fatalf("second Create: %v", err)
+	}
+	if got.UniqueId() != 0 {
+		t.Errorf("suppressed Create returned UniqueId() = %d, want 0", got.UniqueId())
+	}
+	inField, err = p.GetInField(f)
+	if err != nil {
+		t.Fatalf("GetInField: %v", err)
+	}
+	if len(inField) != 1 {
+		t.Errorf("GetInField after suppressed Create = %d, want 1", len(inField))
+	}
+}
+
+// TestCreateSpawnIfAbsentCreatesWhenAbsent asserts SpawnIfAbsent does not
+// suppress the spawn when the field has no monster of that template yet.
+func TestCreateSpawnIfAbsentCreatesWhenAbsent(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	tm := newTestTenant(t)
+	tctx := tenant.WithContext(ctx, tm)
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(_ uint32) (information.Model, error) {
+		return information.NewBuilder().Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tctx, t: tm, emit: func(topic.Token, model.Provider[[]kafka.Message]) error { return nil }}
+	f := testField()
+
+	got, err := p.Create(f, RestModel{MonsterId: 9100013, X: 82, Y: 200, Fh: 0, Team: 0, SpawnIfAbsent: true})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if got.UniqueId() == 0 {
+		t.Errorf("Create on empty field returned UniqueId() = 0, want non-zero")
+	}
+	inField, err := p.GetInField(f)
+	if err != nil {
+		t.Fatalf("GetInField: %v", err)
+	}
+	if len(inField) != 1 {
+		t.Errorf("GetInField after Create = %d, want 1", len(inField))
+	}
+}
+
+// TestCreateSpawnIfAbsentMatchesOnTemplateNotUniqueId asserts the guard
+// compares MonsterId (the template), not UniqueId — a different template
+// spawns even though the field is already occupied.
+func TestCreateSpawnIfAbsentMatchesOnTemplateNotUniqueId(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	tm := newTestTenant(t)
+	tctx := tenant.WithContext(ctx, tm)
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(_ uint32) (information.Model, error) {
+		return information.NewBuilder().Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tctx, t: tm, emit: func(topic.Token, model.Provider[[]kafka.Message]) error { return nil }}
+	f := testField()
+
+	if _, err := p.Create(f, RestModel{MonsterId: 9100013, X: 82, Y: 200, Fh: 0, Team: 0}); err != nil {
+		t.Fatalf("first Create: %v", err)
+	}
+
+	got, err := p.Create(f, RestModel{MonsterId: 9300156, X: 82, Y: 200, Fh: 0, Team: 0, SpawnIfAbsent: true})
+	if err != nil {
+		t.Fatalf("second Create: %v", err)
+	}
+	if got.UniqueId() == 0 {
+		t.Errorf("Create of a different template returned UniqueId() = 0, want non-zero")
+	}
+	inField, err := p.GetInField(f)
+	if err != nil {
+		t.Fatalf("GetInField: %v", err)
+	}
+	if len(inField) != 2 {
+		t.Errorf("GetInField after Create of a different template = %d, want 2", len(inField))
+	}
+}
+
+// TestCreateWithoutSpawnIfAbsentStacks asserts existing behavior is
+// unchanged when SpawnIfAbsent is absent (its zero value): repeated Create
+// calls for the same template stack.
+func TestCreateWithoutSpawnIfAbsentStacks(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	tm := newTestTenant(t)
+	tctx := tenant.WithContext(ctx, tm)
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(_ uint32) (information.Model, error) {
+		return information.NewBuilder().Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tctx, t: tm, emit: func(topic.Token, model.Provider[[]kafka.Message]) error { return nil }}
+	f := testField()
+
+	if _, err := p.Create(f, RestModel{MonsterId: 9100013, X: 82, Y: 200, Fh: 0, Team: 0}); err != nil {
+		t.Fatalf("first Create: %v", err)
+	}
+	if _, err := p.Create(f, RestModel{MonsterId: 9100013, X: 82, Y: 200, Fh: 0, Team: 0}); err != nil {
+		t.Fatalf("second Create: %v", err)
+	}
+	inField, err := p.GetInField(f)
+	if err != nil {
+		t.Fatalf("GetInField: %v", err)
+	}
+	if len(inField) != 2 {
+		t.Errorf("GetInField after two Creates without SpawnIfAbsent = %d, want 2", len(inField))
+	}
+}
+
+// TestCreateSpawnIfAbsentIsFieldScoped asserts the guard is scoped to the
+// field instance (task A5's F3 fix): the same template spawns independently
+// in two different instances of the same map.
+func TestCreateSpawnIfAbsentIsFieldScoped(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	tm := newTestTenant(t)
+	tctx := tenant.WithContext(ctx, tm)
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(_ uint32) (information.Model, error) {
+		return information.NewBuilder().Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tctx, t: tm, emit: func(topic.Token, model.Provider[[]kafka.Message]) error { return nil }}
+
+	instA := uuid.New()
+	instB := uuid.New()
+	f1 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(926000000)).SetInstance(instA).Build()
+	f2 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(926000000)).SetInstance(instB).Build()
+
+	if _, err := p.Create(f1, RestModel{MonsterId: 9100013, X: 82, Y: 200, Fh: 0, Team: 0}); err != nil {
+		t.Fatalf("Create on f1: %v", err)
+	}
+
+	got, err := p.Create(f2, RestModel{MonsterId: 9100013, X: 82, Y: 200, Fh: 0, Team: 0, SpawnIfAbsent: true})
+	if err != nil {
+		t.Fatalf("Create on f2: %v", err)
+	}
+	if got.UniqueId() == 0 {
+		t.Errorf("Create on a different field instance returned UniqueId() = 0, want non-zero")
+	}
+	inField, err := p.GetInField(f2)
+	if err != nil {
+		t.Fatalf("GetInField(f2): %v", err)
+	}
+	if len(inField) != 1 {
+		t.Errorf("GetInField(f2) = %d, want 1", len(inField))
+	}
+}

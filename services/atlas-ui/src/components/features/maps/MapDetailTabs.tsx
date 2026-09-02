@@ -88,7 +88,7 @@ export function MapDetailTabs({
           Portals {portals && `(${portals.length})`}
         </TabsTrigger>
         <TabsTrigger value="monsters">
-          Monsters {monsters && `(${monsters.length})`}
+          Monster Spawns {monsters && `(${monsters.length})`}
         </TabsTrigger>
         <TabsTrigger value="reactors">
           Reactors {reactors && `(${reactors.length})`}

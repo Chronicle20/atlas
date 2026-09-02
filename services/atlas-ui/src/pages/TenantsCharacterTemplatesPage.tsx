@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLayout";
+import { TenantResetButton } from "@/components/features/tenants/TenantResetButton";
 import {
   CharacterTemplatesEditor,
   type TemplatesEditorAdapter,
@@ -46,6 +47,13 @@ export function TenantsCharacterTemplatesPage() {
 
   return (
     <TenantDetailLayout>
+      <div className="flex justify-end">
+        <TenantResetButton
+          id={id}
+          sections={["characters"]}
+          sectionLabel="character templates and presets"
+        />
+      </div>
       <CharacterTemplatesEditor adapter={adapter} />
     </TenantDetailLayout>
   );

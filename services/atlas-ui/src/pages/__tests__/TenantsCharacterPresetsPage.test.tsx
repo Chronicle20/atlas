@@ -12,6 +12,10 @@ vi.mock("@/components/features/tenants/TenantDetailLayout", () => ({
   ),
 }));
 
+vi.mock("@/components/features/tenants/TenantResetButton", () => ({
+  TenantResetButton: () => <button type="button">Reset</button>,
+}));
+
 // Capture the adapter handed to the shared editor.
 const editorMock = vi.fn();
 vi.mock(

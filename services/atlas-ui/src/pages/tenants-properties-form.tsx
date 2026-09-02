@@ -20,6 +20,7 @@ import {
   useUpdateTenantConfiguration,
 } from "@/lib/hooks/api/useTenants";
 import { toast } from "sonner";
+import { TenantResetButton } from "@/components/features/tenants/TenantResetButton";
 
 const propertiesFormSchema = z.object({
   region: z
@@ -183,6 +184,11 @@ export function PropertiesForm() {
           )}
         />
         <div className="flex flex-row gap-2 justify-end">
+          <TenantResetButton
+            id={id}
+            sections={["properties"]}
+            sectionLabel="global properties"
+          />
           <Button type="submit">Save</Button>
         </div>
       </form>

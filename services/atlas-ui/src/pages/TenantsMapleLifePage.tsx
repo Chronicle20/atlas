@@ -6,6 +6,7 @@ import {
   type MapleLifeEditorAdapter,
 } from "@/components/features/characters/maple-life/MapleLifeEditor";
 import { supportsMapleLife } from "@/components/features/characters/maple-life/mapleLifeSupport";
+import { TenantResetButton } from "@/components/features/tenants/TenantResetButton";
 import {
   useTenantConfiguration,
   useUpdateTenantConfiguration,
@@ -66,6 +67,13 @@ export function TenantsMapleLifePage() {
 
   return (
     <TenantDetailLayout>
+      <div className="flex justify-end">
+        <TenantResetButton
+          id={id}
+          sections={["mapleLife"]}
+          sectionLabel="Maple Life configuration"
+        />
+      </div>
       <MapleLifeEditor adapter={adapter} />
     </TenantDetailLayout>
   );

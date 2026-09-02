@@ -38,7 +38,9 @@ func TestMonsterMovementRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			input := NewMonsterMovement(5001, false, true, false, 0, 0, 0, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, movingElement())
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			test.RoundTrip(t, ctx, input.Encode, input.Decode, test.MovementTypesV95())
+			// MovementRoundTrip rather than RoundTrip because clientbound movement encode is not
+			// the inverse of decode on GMS v87 — see its doc comment.
+			test.MovementRoundTrip(t, ctx, input.Encode, input.Decode, test.MovementTypesV95())
 		})
 	}
 }
@@ -48,7 +50,7 @@ func TestMonsterMovementRoundTripWithSkill(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			input := NewMonsterMovement(5001, true, true, true, 1, 100, 5, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, movingElement())
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			test.RoundTrip(t, ctx, input.Encode, input.Decode, test.MovementTypesV95())
+			test.MovementRoundTrip(t, ctx, input.Encode, input.Decode, test.MovementTypesV95())
 		})
 	}
 }

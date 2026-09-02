@@ -30,6 +30,13 @@
       "items": {
         "$ref": "#/definitions/rule"
       }
+    },
+    "touchRules": {
+      "type": "array",
+      "description": "Rules evaluated when reactor is touched (player collision). Optional — when a script declares none, the engine falls back to hitRules (processor.go:185-187).",
+      "items": {
+        "$ref": "#/definitions/rule"
+      }
     }
   },
   "definitions": {
@@ -135,26 +142,62 @@
             "properties": {
               "params": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "meso": {
                     "type": "string",
-                    "description": "Whether to drop meso (true/false)"
+                    "description": "Whether meso may drop (\"true\"/\"false\")"
                   },
-                  "minMeso": {
+                  "mesoChance": {
                     "type": "string",
-                    "description": "Minimum meso multiplier"
+                    "description": "1-in-N chance a drop slot becomes meso (default \"1\")"
                   },
-                  "maxMeso": {
+                  "mesoMin": {
                     "type": "string",
-                    "description": "Maximum meso multiplier"
+                    "description": "Minimum meso multiplier (default \"1\")"
                   },
-                  "mesoRange": {
+                  "mesoMax": {
                     "type": "string",
-                    "description": "Meso range multiplier"
+                    "description": "Maximum meso multiplier (default \"1\")"
                   },
-                  "item": {
+                  "minItems": {
                     "type": "string",
-                    "description": "Item flag (1 = drop items)"
+                    "description": "Minimum guaranteed drops, padded with meso (default \"0\")"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "spray_items" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "meso": {
+                    "type": "string",
+                    "description": "Whether meso may drop (\"true\"/\"false\")"
+                  },
+                  "mesoChance": {
+                    "type": "string",
+                    "description": "1-in-N chance a drop slot becomes meso (default \"1\")"
+                  },
+                  "mesoMin": {
+                    "type": "string",
+                    "description": "Minimum meso multiplier (default \"1\")"
+                  },
+                  "mesoMax": {
+                    "type": "string",
+                    "description": "Maximum meso multiplier (default \"1\")"
+                  },
+                  "minItems": {
+                    "type": "string",
+                    "description": "Minimum guaranteed drops, padded with meso (default \"0\")"
                   }
                 }
               }

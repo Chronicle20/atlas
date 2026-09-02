@@ -1,0 +1,25 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "update_pq_state",
+          "operations": [
+            {
+              "params": {
+                "updates": "statusStg3=0"
+              },
+              "type": "update_pq_state"
+            }
+          ]
+        }
+      ],
+      "description": "Reactor : Orbis PQ LP Player - Makes Chamberlain Eak spawn box.",
+      "hitRules": [],
+      "reactorId": "2008006"
+    },
+    "id": "2008006",
+    "type": "reactor-action"
+  }
+}

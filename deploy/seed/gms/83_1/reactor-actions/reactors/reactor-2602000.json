@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "- Queen's treasure room",
+      "hitRules": [],
+      "reactorId": "2602000"
+    },
+    "id": "2602000",
+    "type": "reactor-action"
+  }
+}

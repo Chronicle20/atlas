@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spawn_monster",
+          "operations": [
+            {
+              "params": {
+                "count": "1",
+                "monsterId": "9400112",
+                "x": "420",
+                "y": "160"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "description": "Spawns a monster",
+      "hitRules": [],
+      "reactorId": "8001000"
+    },
+    "id": "8001000",
+    "type": "reactor-action"
+  }
+}

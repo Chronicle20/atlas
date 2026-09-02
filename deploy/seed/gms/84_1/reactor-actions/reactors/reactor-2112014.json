@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest Giant Chest - drops a Fire Ore when 7 Keys are dropped in front of it",
+      "hitRules": [],
+      "reactorId": "2112014"
+    },
+    "id": "2112014",
+    "type": "reactor-action"
+  }
+}

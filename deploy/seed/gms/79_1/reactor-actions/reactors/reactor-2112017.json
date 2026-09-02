@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Frostprey Egg in El Nath Mountains - part of the Frostprey quest (4th job Marksman)",
+      "hitRules": [],
+      "reactorId": "2112017"
+    },
+    "id": "2112017",
+    "type": "reactor-action"
+  }
+}

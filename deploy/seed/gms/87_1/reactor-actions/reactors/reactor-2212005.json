@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Silo reactor - Gray's Document",
+      "hitRules": [],
+      "reactorId": "2212005"
+    },
+    "id": "2212005",
+    "type": "reactor-action"
+  }
+}

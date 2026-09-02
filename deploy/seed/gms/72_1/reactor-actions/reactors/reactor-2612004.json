@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [],
+      "description": "- Zenumist crystal",
+      "hitRules": [
+        {
+          "conditions": [],
+          "id": "spray_items",
+          "operations": [
+            {
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "reactorId": "2612004"
+    },
+    "id": "2612004",
+    "type": "reactor-action"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Deep Aqua Road Reactor - Treasure Chest - Drops white pots, meso, air bubbles rm.dropItems(true, 2, 105, 140);",
+      "hitRules": [],
+      "reactorId": "2302001"
+    },
+    "id": "2302001",
+    "type": "reactor-action"
+  }
+}

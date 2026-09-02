@@ -1,0 +1,29 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spray_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "360",
+                "mesoMin": "90",
+                "minItems": "15"
+              },
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "description": "Drops CWKPQ chest bonuses...",
+      "hitRules": [],
+      "reactorId": "6102003"
+    },
+    "id": "6102003",
+    "type": "reactor-action"
+  }
+}

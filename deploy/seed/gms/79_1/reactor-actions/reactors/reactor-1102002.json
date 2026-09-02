@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Florina Beach Coconut - drops a coconut",
+      "hitRules": [],
+      "reactorId": "1102002"
+    },
+    "id": "1102002",
+    "type": "reactor-action"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "update_pq_state_spray_items",
+          "operations": [
+            {
+              "params": {
+                "increments": "openedChests"
+              },
+              "type": "update_pq_state"
+            },
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "100",
+                "mesoMin": "50",
+                "minItems": "15"
+              },
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "description": "Pirate PQ Treasure chest",
+      "hitRules": [],
+      "reactorId": "2512001"
+    },
+    "id": "2512001",
+    "type": "reactor-action"
+  }
+}

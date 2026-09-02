@@ -1,0 +1,25 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spawn_monster",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9300091"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "description": "Relic room fail",
+      "hitRules": [],
+      "reactorId": "1021000"
+    },
+    "id": "1021000",
+    "type": "reactor-action"
+  }
+}

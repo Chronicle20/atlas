@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest Chest - drops an item (power elixir)",
+      "hitRules": [],
+      "reactorId": "2112003"
+    },
+    "id": "2112003",
+    "type": "reactor-action"
+  }
+}

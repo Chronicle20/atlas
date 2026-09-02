@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Nautilus bottom shells",
+      "hitRules": [],
+      "reactorId": "1202002"
+    },
+    "id": "1202002",
+    "type": "reactor-action"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "- Pond at Ellin PQ.",
+      "hitRules": [],
+      "reactorId": "3002000"
+    },
+    "id": "3002000",
+    "type": "reactor-action"
+  }
+}

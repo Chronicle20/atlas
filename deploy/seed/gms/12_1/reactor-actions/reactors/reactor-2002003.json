@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items_update_pq_state",
+          "operations": [
+            {
+              "type": "drop_items"
+            },
+            {
+              "params": {
+                "updates": "statusStg7=1"
+              },
+              "type": "update_pq_state"
+            }
+          ]
+        }
+      ],
+      "description": "- Pot of life",
+      "hitRules": [],
+      "reactorId": "2002003"
+    },
+    "id": "2002003",
+    "type": "reactor-action"
+  }
+}

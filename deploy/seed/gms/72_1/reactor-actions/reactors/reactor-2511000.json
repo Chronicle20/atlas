@@ -1,0 +1,39 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "update_pq_state_spawn_monster",
+          "operations": [
+            {
+              "params": {
+                "increments": "openedBoxes"
+              },
+              "type": "update_pq_state"
+            },
+            {
+              "params": {
+                "count": "3",
+                "monsterId": "9300109"
+              },
+              "type": "spawn_monster"
+            },
+            {
+              "params": {
+                "count": "5",
+                "monsterId": "9300110"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "description": "2511000- Reactor for PPQ [Pirate PQ]",
+      "hitRules": [],
+      "reactorId": "2511000"
+    },
+    "id": "2511000",
+    "type": "reactor-action"
+  }
+}

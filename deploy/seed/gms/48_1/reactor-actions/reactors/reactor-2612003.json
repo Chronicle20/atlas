@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spray_items",
+          "operations": [
+            {
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "description": "- MagatiaPQ Box",
+      "hitRules": [],
+      "reactorId": "2612003"
+    },
+    "id": "2612003",
+    "type": "reactor-action"
+  }
+}

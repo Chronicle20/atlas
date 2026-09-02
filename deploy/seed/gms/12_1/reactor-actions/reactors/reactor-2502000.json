@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Mu Lung Reactor - Peach",
+      "hitRules": [],
+      "reactorId": "2502000"
+    },
+    "id": "2502000",
+    "type": "reactor-action"
+  }
+}

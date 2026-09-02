@@ -1,0 +1,26 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "weaken_area_boss",
+          "operations": [
+            {
+              "params": {
+                "message": "The grieving Scholar Ghost has been slightly appeased. You may be able to defeat the Scholar Ghost.",
+                "monsterId": "6090003"
+              },
+              "type": "weaken_area_boss"
+            }
+          ]
+        }
+      ],
+      "description": "Altar - weakens the Scholar Ghost",
+      "hitRules": [],
+      "reactorId": "2229009"
+    },
+    "id": "2229009",
+    "type": "reactor-action"
+  }
+}

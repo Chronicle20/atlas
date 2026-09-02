@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "175",
+                "mesoMin": "125"
+              },
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest Rock - drops an item (~100 meso bundle in Global)",
+      "hitRules": [],
+      "reactorId": "2112013"
+    },
+    "id": "2112013",
+    "type": "reactor-action"
+  }
+}

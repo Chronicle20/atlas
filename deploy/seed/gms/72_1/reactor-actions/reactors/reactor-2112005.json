@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest Chest - drops a document",
+      "hitRules": [],
+      "reactorId": "2112005"
+    },
+    "id": "2112005",
+    "type": "reactor-action"
+  }
+}

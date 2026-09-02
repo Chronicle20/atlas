@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Kerning Swamp Plant - drops Witchgrass Leaves",
+      "hitRules": [],
+      "reactorId": "1072000"
+    },
+    "id": "1072000",
+    "type": "reactor-action"
+  }
+}

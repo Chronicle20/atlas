@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spawn_monster",
+          "operations": [
+            {
+              "params": {
+                "count": "6",
+                "monsterId": "9300124"
+              },
+              "type": "spawn_monster"
+            },
+            {
+              "params": {
+                "count": "6",
+                "monsterId": "9300125"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "description": "Pirate PQ Reactor - Spawns 6 of each Pirate when opened.",
+      "hitRules": [],
+      "reactorId": "2511001"
+    },
+    "id": "2511001",
+    "type": "reactor-action"
+  }
+}

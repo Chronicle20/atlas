@@ -1,0 +1,29 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spray_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "60",
+                "mesoMin": "30",
+                "minItems": "10"
+              },
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "description": "Guild Quest - Bonus Box",
+      "hitRules": [],
+      "reactorId": "9202012"
+    },
+    "id": "9202012",
+    "type": "reactor-action"
+  }
+}

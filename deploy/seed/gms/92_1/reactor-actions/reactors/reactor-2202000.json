@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Real Dollhouse: Drops Pendulum (Quest Item)",
+      "hitRules": [],
+      "reactorId": "2202000"
+    },
+    "id": "2202000",
+    "type": "reactor-action"
+  }
+}

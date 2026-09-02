@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest - drops an item",
+      "hitRules": [],
+      "reactorId": "2112015"
+    },
+    "id": "2112015",
+    "type": "reactor-action"
+  }
+}

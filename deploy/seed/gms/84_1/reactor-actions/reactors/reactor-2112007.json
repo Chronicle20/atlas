@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest Rock - drops an item (red bean porridge)",
+      "hitRules": [],
+      "reactorId": "2112007"
+    },
+    "id": "2112007",
+    "type": "reactor-action"
+  }
+}

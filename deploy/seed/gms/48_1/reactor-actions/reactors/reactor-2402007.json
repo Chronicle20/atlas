@@ -1,0 +1,29 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "2",
+                "mesoMax": "10",
+                "mesoMin": "5",
+                "minItems": "1"
+              },
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Neo City Trash Can",
+      "hitRules": [],
+      "reactorId": "2402007"
+    },
+    "id": "2402007",
+    "type": "reactor-action"
+  }
+}

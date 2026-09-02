@@ -1,0 +1,29 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spray_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "400",
+                "mesoMin": "100",
+                "minItems": "15"
+              },
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "description": "Box - sprays items",
+      "hitRules": [],
+      "reactorId": "6802000"
+    },
+    "id": "6802000",
+    "type": "reactor-action"
+  }
+}

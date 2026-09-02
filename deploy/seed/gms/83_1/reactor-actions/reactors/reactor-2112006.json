@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "800",
+                "mesoMin": "500"
+              },
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest Chest - drops an item (10k+ meso sack in Global)",
+      "hitRules": [],
+      "reactorId": "2112006"
+    },
+    "id": "2112006",
+    "type": "reactor-action"
+  }
+}

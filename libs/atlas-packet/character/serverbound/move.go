@@ -73,22 +73,55 @@ func moveCrc(t tenant.Model) bool {
 // decoder was leaving unread, and the rect decodes to the real bounds of the
 // walk (capture two_elements: left -77, top 215, right -71, bottom 215).
 //
-// THE TAIL IS SERVERBOUND-ONLY, which is why it must live here and not in the
-// shared model.Movement. The client's read side, CMovePath::Decode @0x70b3ce,
-// consumes the keypad block and the rect ONLY under `if (bPassive)`, and the
-// clientbound entry point CUserRemote::OnMove @0xa443ee calls
-// CMovePath::OnMovePacket(..., iPacket, 0) -- bPassive = 0. Adding these
-// fields to model.Movement would make every clientbound movement broadcast
-// emit 18 bytes the client never reads.
+// Nine independent read-only IDA investigations (one per remaining GMS IDB;
+// see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md) confirm
+// CMovePath::Encode appends the identical tail -- same field order, same
+// 1 + ceil(count/2) + 8 size formula -- on every other supported client:
 //
-// Gated to JMS because that is the client whose CMovePath::Encode was read.
-// The GMS senders very likely append the same tail (it is unconditional in
-// this client's encoder), and the existing GMS Move fixtures pin Atlas's own
-// output rather than captured client wire, so they would not have caught it —
-// but each GMS version's CMovePath::Encode must be read before extending this,
-// not assumed.
-func moveKeyPadTail(t tenant.Model) bool {
-	return t.IsRegion("JMS")
+//	gms_v48  Encode @0x56201a  count @0x5621bd  nibbles 0x5621c2-0x5621f9  rect 0x56220b/0x562219/0x562227/0x562235
+//	gms_v61  Encode @0x5e298d  count @0x5e2b72  nibbles 0x5e2b8d-0x5e2bae  rect 0x5e2bc0/0x5e2bce/0x5e2bdc/0x5e2bef
+//	gms_v72  Encode @0x634ddb  count @0x634fc0  nibbles 0x634fdb-0x634ffc  rect 0x63500e/0x63501c/0x63502a/0x635038
+//	gms_v79  Encode @0x6575fa  count @0x6577df  nibbles 0x6577e4-0x65781b  rect 0x65782d/0x65783b/0x657849/0x65785c
+//	gms_v83  Encode @0x68a563  count @0x68a748  nibbles 0x68a763-0x68a784  rect 0x68a796/0x68a7a4/0x68a7b2/0x68a7c0
+//	gms_v84  Encode @0x6a121a  count @0x6a141e  nibbles 0x6a1423-0x6a145a  rect 0x6a146c/0x6a147a/0x6a1488/0x6a1496
+//	gms_v87  Encode @0x6c70fe  count @0x6c734c  nibbles 0x6c7383-0x6c738b  rect 0x6c73a2/0x6c73b0/0x6c73be/0x6c73cc
+//	gms_v92  Encode @0x65a260  count @0x65a61b  nibbles 0x65a620-0x65a68c  rect 0x65a6da/0x65a71c/0x65a75e/0x65a7a1
+//	gms_v95  Encode @0x666e20  count @0x6671db  nibbles 0x6671e0-0x66724c  rect 0x66729a/0x6672dc/0x66731e/0x667361
+//	jms_v185 Encode @0x70b6c4  count @0x70b8ec  nibbles 0x70b8f3-0x70b92b  rect 0x70b942/0x70b950/0x70b95e/0x70b96c
+//
+// v48 and v84 have no exported symbol for the encoder; both were located
+// structurally as the function CMovePath::Flush delegates to, anchored on the
+// Encode2/Encode2/Encode1-header-then-per-element-switch shape. On v92/v95
+// Hex-Rays inlines Encode1/Encode2 into direct buffer stores; the addresses
+// above are the store sites, not call sites. So THE TAIL IS UNCONDITIONAL ON
+// SERVERBOUND MOVE_PLAYER ACROSS ALL TEN SUPPORTED CLIENTS.
+//
+// THE TAIL IS SERVERBOUND-ONLY, which is why it must live here and not in the
+// shared model.Movement. The client's read side, CMovePath::Decode, consumes
+// the keypad block and the rect ONLY under `if (bPassive)` -- but that gate is
+// implemented three different ways across the ten clients, not one:
+//
+//   - gms_v92, gms_v95, jms_v185: a live bPassive parameter. The keypad/rect
+//     block sits inside `if (bPassive)`, and the clientbound entry point
+//     (CUserRemote::OnMove, jms @0xa443ee) calls
+//     CMovePath::OnMovePacket(..., iPacket, 0) -- bPassive = 0 -- so the
+//     clientbound decode path never reads the tail.
+//   - gms_v48, gms_v72, gms_v83, gms_v84, gms_v87: no such parameter is
+//     compiled into the interface at all -- `retn 4`, one stack arg, every
+//     call site pushes exactly one value -- and Decode contains no
+//     tail-reading instructions whatsoever. There is nothing to gate.
+//   - gms_v79: the parameter exists in the mangled signature but is dead --
+//     it is clobbered as scratch at @0x657400 and reused as a "previous X"
+//     cache, so the optimizer never materializes a real bPassive value at any
+//     call site. The tail is unreachable code, not a live-gated read.
+//
+// All three mechanisms reach the same conclusion (serverbound-only, tail
+// never read on the clientbound broadcast path), but they are NOT the same
+// mechanism -- do not describe v48/v72/v79/v83/v84/v87 as "same as jms".
+// Adding these fields to model.Movement would make every clientbound movement
+// broadcast emit bytes the client never reads on any version.
+func moveKeyPadTail(_ tenant.Model) bool {
+	return true
 }
 
 type Move struct {

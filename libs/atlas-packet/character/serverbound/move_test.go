@@ -29,6 +29,14 @@ import (
 // Int16 + count byte), not from a per-field decompile line.
 //
 // packet-audit:verify packet=character/serverbound/Move version=gms_v79 ida=0x91b6e6
+//
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x6575fa (count @0x6577df,
+// nibble loop @0x6577e4-0x65781b, rect @0x65782d/0x65783b/0x657849/0x65785c
+// — see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
 func TestCharacterMoveByteV79(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 79, 1)
@@ -39,7 +47,10 @@ func TestCharacterMoveByteV79(t *testing.T) {
 		0xF4, 0x01, 0x00, 0x00, // crc=500         @0x91b8b2
 		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush @0x91b8c0)
 		0x14, 0x00, // movement StartY=20  (opaque)
-		0x00, // movement element count=0 (opaque)
+		0x00,                   // movement element count=0 (opaque)
+		0x00,                   // keypad entry count=0 (moveKeyPadTail, decompile-derived)
+		0x00, 0x00, 0x00, 0x00, // move rect left/top       (decompile-derived, zero values)
+		0x00, 0x00, 0x00, 0x00, // move rect right/bottom   (decompile-derived, zero values)
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v79 Move: got % x, want % x", got, want)
@@ -64,6 +75,14 @@ func TestCharacterMoveByteV79(t *testing.T) {
 // Int16 + count byte), not a per-field decompile line.
 //
 // packet-audit:verify packet=character/serverbound/Move version=gms_v61 ida=0x801109
+//
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x5e298d (count @0x5e2b72,
+// nibble loop @0x5e2b8d-0x5e2bae, rect @0x5e2bc0/0x5e2bce/0x5e2bdc/0x5e2bef
+// — see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
 func TestCharacterMoveByteV61(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 61, 1)
@@ -74,7 +93,10 @@ func TestCharacterMoveByteV61(t *testing.T) {
 		// NO crc (v61 < 72)
 		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush @0x8012d1)
 		0x14, 0x00, // movement StartY=20  (opaque)
-		0x00, // movement element count=0 (opaque)
+		0x00,                   // movement element count=0 (opaque)
+		0x00,                   // keypad entry count=0 (moveKeyPadTail, decompile-derived)
+		0x00, 0x00, 0x00, 0x00, // move rect left/top       (decompile-derived, zero values)
+		0x00, 0x00, 0x00, 0x00, // move rect right/bottom   (decompile-derived, zero values)
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v61 Move: got % x, want % x", got, want)
@@ -93,6 +115,14 @@ func TestCharacterMoveByteV61(t *testing.T) {
 // CMovePath::Flush; bytes OPAQUE (§5) from the shared model.Movement encoder.
 //
 // packet-audit:verify packet=character/serverbound/Move version=gms_v48 ida=0x6e9923
+//
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x56201a (count @0x5621bd,
+// nibble loop @0x5621c2-0x5621f9, rect @0x56220b/0x562219/0x562227/0x562235
+// — see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
 func TestCharacterMoveByteV48(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 48, 1)
@@ -103,7 +133,10 @@ func TestCharacterMoveByteV48(t *testing.T) {
 		// NO crc (v48 < 72)
 		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush @0x6e9aeb)
 		0x14, 0x00, // movement StartY=20  (opaque)
-		0x00, // movement element count=0 (opaque)
+		0x00,                   // movement element count=0 (opaque)
+		0x00,                   // keypad entry count=0 (moveKeyPadTail, decompile-derived)
+		0x00, 0x00, 0x00, 0x00, // move rect left/top       (decompile-derived, zero values)
+		0x00, 0x00, 0x00, 0x00, // move rect right/bottom   (decompile-derived, zero values)
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v48 Move: got % x, want % x", got, want)
@@ -126,17 +159,45 @@ func TestCharacterMoveByteV48(t *testing.T) {
 // same as v79.
 //
 // packet-audit:verify packet=character/serverbound/Move version=gms_v72 ida=0x8cb63e
+//
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x634ddb (count @0x634fc0,
+// nibble loop @0x634fdb-0x634ffc, rect @0x63500e/0x63501c/0x63502a/0x635038
+// — see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
+//
+// This fixture uses a 3-entry, non-empty keyPadStates so the nibble-packing
+// path is actually exercised: two entries packed per byte (0x1, 0x2 -> 0x21),
+// and the final byte of an odd-length run carrying only the low nibble
+// (0x3 -> 0x03).
 func TestCharacterMoveByteV72(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 72, 1)
-	p := Move{fieldKey: 0x2A, crc: 500, movement: model.Movement{StartX: 10, StartY: 20}}
+	p := Move{
+		fieldKey:       0x2A,
+		crc:            500,
+		movement:       model.Movement{StartX: 10, StartY: 20},
+		keyPadStates:   []byte{0x1, 0x2, 0x3},
+		moveRectLeft:   1,
+		moveRectTop:    2,
+		moveRectRight:  3,
+		moveRectBottom: 4,
+	}
 	got := p.Encode(l, ctx)(nil)
 	want := []byte{
 		0x2A,                   // fieldKey        @0x8cb7f7
 		0xF4, 0x01, 0x00, 0x00, // crc=500         @0x8cb80a
 		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush @0x8cb818)
 		0x14, 0x00, // movement StartY=20  (opaque)
-		0x00, // movement element count=0 (opaque)
+		0x00,       // movement element count=0 (opaque)
+		0x03,       // keypad entry count=3 (moveKeyPadTail, decompile-derived)
+		0x21, 0x03, // packed nibbles: (0x1|0x2<<4)=0x21, then low-nibble-only 0x3
+		0x01, 0x00, // move rect left=1    (decompile-derived)
+		0x02, 0x00, // move rect top=2     (decompile-derived)
+		0x03, 0x00, // move rect right=3   (decompile-derived)
+		0x04, 0x00, // move rect bottom=4  (decompile-derived)
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v72 Move: got % x, want % x", got, want)
@@ -246,17 +307,26 @@ func TestCharacterMoveBytesJMS185(t *testing.T) {
 		rect          [4]int16
 	}{
 		// len 90 on the wire.
-		{"two_elements", "e1ffffffc3795d8d00c33f6581ff17e5ff6fa2eb4b090000000ff0c922" +
-			"b3ffd7000200b3ffd7000000000001000000000004a40100b9ffd7007d000000010000000000025a0011000000000000004404b3ffd700b9ffd700",
-			-77, 215, 2, 17, [4]int16{-77, 215, -71, 215}},
+		{
+			"two_elements", "e1ffffffc3795d8d00c33f6581ff17e5ff6fa2eb4b090000000ff0c922" +
+				"b3ffd7000200b3ffd7000000000001000000000004a40100b9ffd7007d000000010000000000025a0011000000000000004404b3ffd700b9ffd700",
+			-77, 215, 2, 17,
+			[4]int16{-77, 215, -71, 215},
+		},
 		// len 108 on the wire — the frame quoted in the diagnosis.
-		{"three_elements", "e1ffffffc3795d8d01ebbf6581131fe5ff198f2c641a000000a60d9b63" +
-			"a3ffb8010300a3ffce0100002c0100000000000006960000a3ffd5010000000000000000000006140000a3ffd5010000000031000000000004540111000000000000000000a3ffb801a3ffd501",
-			-93, 440, 3, 17, [4]int16{-93, 440, -93, 469}},
+		{
+			"three_elements", "e1ffffffc3795d8d01ebbf6581131fe5ff198f2c641a000000a60d9b63" +
+				"a3ffb8010300a3ffce0100002c0100000000000006960000a3ffd5010000000000000000000006140000a3ffd5010000000031000000000004540111000000000000000000a3ffb801a3ffd501",
+			-93, 440, 3, 17,
+			[4]int16{-93, 440, -93, 469},
+		},
 		// len 188 on the wire — the longest captured.
-		{"eight_elements", "e1ffffffc3795d8d00c33f6581ff17e5ff6fa2eb4b090000000ff0c922" +
-			"e700ce000800e700d70000000000000000000000060f0000e700d600000000000a0000000000026900016400d5fd06000000e700c600000011fe000000000000061e0000e700ac00080089fe000000000000063c0000e700a1000000c5fe000000000000061e0000e80088000800f1ff00000000000006960000e90096000900e10000000000000006780011444444444444444404e7008800e900d700",
-			231, 206, 8, 17, [4]int16{231, 136, 233, 215}},
+		{
+			"eight_elements", "e1ffffffc3795d8d00c33f6581ff17e5ff6fa2eb4b090000000ff0c922" +
+				"e700ce000800e700d70000000000000000000000060f0000e700d600000000000a0000000000026900016400d5fd06000000e700c600000011fe000000000000061e0000e700ac00080089fe000000000000063c0000e700a1000000c5fe000000000000061e0000e80088000800f1ff00000000000006960000e90096000900e10000000000000006780011444444444444444404e7008800e900d700",
+			231, 206, 8, 17,
+			[4]int16{231, 136, 233, 215},
+		},
 	}
 
 	for _, c := range cases {

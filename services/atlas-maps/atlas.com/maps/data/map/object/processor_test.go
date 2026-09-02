@@ -26,10 +26,10 @@ func objectDoc(from, to int, total, number, size, last int) string {
 		if b.Len() > 0 {
 			b.WriteString(",")
 		}
-		b.WriteString(fmt.Sprintf(
+		fmt.Fprintf(&b,
 			`{"id":"object-%d","type":"objects","attributes":{"name":"object-%d","state":%d}}`,
 			id, id, id,
-		))
+		)
 	}
 	return fmt.Sprintf(
 		`{"data":[%s],"meta":{"total":%d,"page":{"number":%d,"size":%d,"last":%d}}}`,

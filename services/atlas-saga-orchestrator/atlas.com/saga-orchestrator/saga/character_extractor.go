@@ -34,6 +34,8 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case UpdateSkillPayload:
 		return p.CharacterId
+	case ClearSkillPayload:
+		return p.CharacterId
 	case ValidateCharacterStatePayload:
 		return p.CharacterId
 	case CreateAndEquipAssetPayload:

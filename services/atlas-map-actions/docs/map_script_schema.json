@@ -153,7 +153,8 @@
             "start_quest",
             "open_npc",
             "update_area_info",
-            "show_info"
+            "show_info",
+            "clear_skill"
           ]
         },
         "params": {
@@ -488,6 +489,31 @@
                   "path": {
                     "type": "string",
                     "description": "OnUserEff path (e.g. Effect/OnUserEff.img/guideEffect/...)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "clear_skill"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "skillId"
+                ],
+                "properties": {
+                  "skillId": {
+                    "type": "string",
+                    "description": "Skill ID to remove from the character entirely"
                   }
                 }
               }

@@ -21,7 +21,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.DeductExperience, sharedsaga.CancelAllBuffs, sharedsaga.ResetStats, sharedsaga.RebalanceAP,
 	sharedsaga.ValidateCharacterState, sharedsaga.IncreaseBuddyCapacity, sharedsaga.GainCloseness,
 	sharedsaga.EvolvePet, sharedsaga.RevivePet, sharedsaga.RenamePet,
-	sharedsaga.CreateSkill, sharedsaga.UpdateSkill,
+	sharedsaga.CreateSkill, sharedsaga.UpdateSkill, sharedsaga.ClearSkill,
 	sharedsaga.CompleteQuest, sharedsaga.StartQuest, sharedsaga.SetQuestProgress, sharedsaga.ForfeitQuest,
 	sharedsaga.ApplyConsumableEffect, sharedsaga.CancelConsumableEffect,
 	sharedsaga.SendMessage, sharedsaga.FieldEffect, sharedsaga.UiLock, sharedsaga.PlayPortalSound,

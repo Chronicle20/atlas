@@ -20,8 +20,9 @@ type Processor interface {
 	RequestCreate(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
 	RequestUpdateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
 	RequestUpdate(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
-	// RequestDeleteSkill is the saga-compensation dispatch for CreateSkill
-	// (plan Phase 5 / Phase 6).
+	// RequestDeleteSkill emits the REQUEST_DELETE command that removes a skill
+	// row outright. Two callers: the CreateSkill saga compensator (plan Phase 5 /
+	// Phase 6) and the forward ClearSkill action (task-290 G13).
 	RequestDeleteSkill(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error
 	// TransferSPAndEmit emits the TRANSFER_SP command (SP Reset, task-126).
 	TransferSPAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, jobId job.Id, fromSkillId uint32, toSkillId uint32, itemTier byte, targetMaxLevel byte) error
@@ -68,7 +69,8 @@ func (p *ProcessorImpl) RequestUpdate(mb *message.Buffer) func(transactionId uui
 }
 
 // RequestDeleteSkill emits the saga-correlated REQUEST_DELETE command used by
-// the character-creation reverse-walk compensator.
+// the character-creation reverse-walk compensator and by the forward
+// ClearSkill action.
 func (p *ProcessorImpl) RequestDeleteSkill(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return mb.Put(skill2.EnvCommandTopic, RequestDeleteProvider(transactionId, worldId, characterId, skillId))

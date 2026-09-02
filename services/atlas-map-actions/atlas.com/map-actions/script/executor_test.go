@@ -694,3 +694,75 @@ func TestExecuteAreaInfoParamValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestExecuteClearSkill(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(914000000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("clear_skill").
+		SetParams(map[string]string{"skillId": "20000014"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 1 {
+		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+	}
+	if rec.created[0].Steps[0].Action != saga.ClearSkill {
+		t.Errorf("Steps[0].Action = %v, want saga.ClearSkill", rec.created[0].Steps[0].Action)
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.ClearSkillPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.ClearSkillPayload")
+	}
+	want := saga.ClearSkillPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		SkillId:     20000014,
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}
+
+func TestExecuteClearSkillParamValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "missing skillId", params: map[string]string{}, wantErrSubstr: "clear_skill operation missing skillId parameter"},
+		{name: "bad skillId", params: map[string]string{"skillId": "x"}, wantErrSubstr: "invalid skillId [x]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(914000000)).Build()
+
+			op, err := operation.NewBuilder().SetType("clear_skill").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+				t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+			}
+			if len(rec.created) != 0 {
+				t.Errorf("len(rec.created) = %d, want 0", len(rec.created))
+			}
+		})
+	}
+}

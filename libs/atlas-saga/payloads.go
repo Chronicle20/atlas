@@ -302,6 +302,15 @@ type UpdateSkillPayload struct {
 	Expiration  time.Time `json:"expiration"`  // New skill expiration time
 }
 
+// ClearSkillPayload represents the payload required to remove a skill entirely.
+// WorldId is carried because the downstream REQUEST_DELETE command and its
+// DELETED status event are world-scoped.
+type ClearSkillPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	SkillId     uint32   `json:"skillId"`     // SkillId to remove
+}
+
 // IncreaseBuddyCapacityPayload represents the payload required to increase a character's buddy list capacity.
 type IncreaseBuddyCapacityPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action

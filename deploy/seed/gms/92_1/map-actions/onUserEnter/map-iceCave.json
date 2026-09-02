@@ -1,0 +1,57 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Ice cave - clears the five Aran tutorial skills, unlocks the UI and plays the ClickLilin intro",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "clear_tutorial_skills",
+          "operations": [
+            {
+              "params": {
+                "skillId": "20000014"
+              },
+              "type": "clear_skill"
+            },
+            {
+              "params": {
+                "skillId": "20000015"
+              },
+              "type": "clear_skill"
+            },
+            {
+              "params": {
+                "skillId": "20000016"
+              },
+              "type": "clear_skill"
+            },
+            {
+              "params": {
+                "skillId": "20000017"
+              },
+              "type": "clear_skill"
+            },
+            {
+              "params": {
+                "skillId": "20000018"
+              },
+              "type": "clear_skill"
+            },
+            {
+              "type": "unlock_ui"
+            },
+            {
+              "params": {
+                "path": "Effect/Direction1.img/aranTutorial/ClickLilin"
+              },
+              "type": "show_intro"
+            }
+          ]
+        }
+      ],
+      "scriptName": "iceCave"
+    },
+    "id": "iceCave",
+    "type": "map-action"
+  }
+}

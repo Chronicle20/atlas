@@ -127,6 +127,7 @@ const (
 	// Skill actions
 	CreateSkill = sharedsaga.CreateSkill
 	UpdateSkill = sharedsaga.UpdateSkill
+	ClearSkill  = sharedsaga.ClearSkill
 
 	// Quest actions
 	CompleteQuest    = sharedsaga.CompleteQuest
@@ -406,6 +407,7 @@ type (
 	IncubatorResultPayload              = sharedsaga.IncubatorResultPayload
 	CreateNotePayload                   = sharedsaga.CreateNotePayload
 	ExtendAssetExpirationPayload        = sharedsaga.ExtendAssetExpirationPayload
+	ClearSkillPayload                   = sharedsaga.ClearSkillPayload
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
 	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
@@ -1190,6 +1192,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case UpdateSkill:
 		var payload UpdateSkillPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ClearSkill:
+		var payload ClearSkillPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

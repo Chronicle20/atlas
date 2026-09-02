@@ -58,6 +58,8 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeUpdateAreaInfo(f, characterId, op)
 	case "show_info":
 		return e.executeShowInfo(f, characterId, op)
+	case "clear_skill":
+		return e.executeClearSkill(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -130,6 +132,41 @@ func (e *OperationExecutor) executeShowIntro(f field.Model, characterId uint32, 
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),
 				Path:        path,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeClearSkill removes a skill from the character outright. Cosmic's
+// teachSkill(id, -1, 0, -1) reaches Character.changeSkillLevel's newLevel <= -1
+// branch, which deletes the skill row rather than changing its level
+// (task-290 G13).
+func (e *OperationExecutor) executeClearSkill(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	skillIdStr, ok := params["skillId"]
+	if !ok {
+		return fmt.Errorf("clear_skill operation missing skillId parameter")
+	}
+	skillId, err := strconv.ParseUint(skillIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid skillId [%s]: %w", skillIdStr, err)
+	}
+
+	e.l.Debugf("Clearing skill [%d] for character [%d].", skillId, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-clear-skill").
+		AddStep(
+			fmt.Sprintf("clear-skill-%d-%d", characterId, skillId),
+			saga.Pending,
+			saga.ClearSkill,
+			saga.ClearSkillPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				SkillId:     uint32(skillId),
 			},
 		).Build()
 

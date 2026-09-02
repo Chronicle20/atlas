@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestUnmarshalRebalanceAPStep(t *testing.T) {
@@ -1661,5 +1662,34 @@ func TestUnmarshalPlayJukeboxStep(t *testing.T) {
 	}
 	if p.WorldId != 0 || p.ChannelId != 1 || p.MapId != 100000000 {
 		t.Fatalf("field coordinates = %+v", p)
+	}
+}
+
+func TestUnmarshalClearSkillStep(t *testing.T) {
+	raw := `{
+		"stepId": "clear-1-20000014",
+		"status": "pending",
+		"action": "clear_skill",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"skillId": 20000014
+		}
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ClearSkill {
+		t.Fatalf("expected action ClearSkill, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ClearSkillPayload)
+	if !ok {
+		t.Fatalf("expected ClearSkillPayload, got %T", step.Payload)
+	}
+	want := ClearSkillPayload{CharacterId: 1, WorldId: world.Id(0), SkillId: 20000014}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
 	}
 }

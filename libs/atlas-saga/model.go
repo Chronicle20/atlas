@@ -141,6 +141,10 @@ const (
 	// Skill actions
 	CreateSkill Action = "create_skill"
 	UpdateSkill Action = "update_skill"
+	// ClearSkill removes a skill from a character outright — the Cosmic
+	// teachSkill(id, -1, ...) path, which deletes the skill row rather than
+	// changing its level (task-290 G13).
+	ClearSkill Action = "clear_skill"
 
 	// Quest actions
 	CompleteQuest    Action = "complete_quest"

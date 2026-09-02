@@ -203,6 +203,10 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Skills.
 	sharedsaga.CreateSkill: {EventKindSkillCreated},
 	sharedsaga.UpdateSkill: {EventKindSkillUpdated},
+	// ClearSkill emits REQUEST_DELETE, which atlas-skills answers with a
+	// DELETED status event even when the row was already absent
+	// (DeleteForSagaCompensation is idempotent), so the step always advances.
+	sharedsaga.ClearSkill: {EventKindSkillDeleted},
 
 	// Note.
 	sharedsaga.CreateNote: {EventKindNoteCreated, EventKindNoteCreateFailed},

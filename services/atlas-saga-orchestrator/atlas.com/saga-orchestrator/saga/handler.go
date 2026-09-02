@@ -122,6 +122,7 @@ type Handler interface {
 	handleChangeSkin(s Saga, st Step[any]) error
 	handleCreateSkill(s Saga, st Step[any]) error
 	handleUpdateSkill(s Saga, st Step[any]) error
+	handleClearSkill(s Saga, st Step[any]) error
 	handleValidateCharacterState(s Saga, st Step[any]) error
 	handleRequestGuildName(s Saga, st Step[any]) error
 	handleRequestGuildEmblem(s Saga, st Step[any]) error
@@ -878,6 +879,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCreateSkill, true
 	case UpdateSkill:
 		return h.handleUpdateSkill, true
+	case ClearSkill:
+		return h.handleClearSkill, true
 	case ValidateCharacterState:
 		return h.handleValidateCharacterState, true
 	case RequestGuildName:
@@ -1606,6 +1609,25 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 	err := h.skillP.RequestUpdateAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
+		return err
+	}
+
+	return nil
+}
+
+// handleClearSkill handles the ClearSkill action: the Cosmic
+// teachSkill(id, -1, 0, -1) path removes the skill outright rather than
+// changing its level (task-290 G13). It reuses the REQUEST_DELETE command
+// atlas-skills already accepts, which is idempotent on an absent row.
+func (h *HandlerImpl) handleClearSkill(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ClearSkillPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.skillP.RequestDeleteSkill(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId)
+	if err != nil {
+		h.logActionError(s, st, err, fmt.Sprintf("Unable to clear skill %d.", payload.SkillId))
 		return err
 	}
 

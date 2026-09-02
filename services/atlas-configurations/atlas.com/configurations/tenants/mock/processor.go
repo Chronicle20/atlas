@@ -23,6 +23,7 @@ type ProcessorMock struct {
 	UpdateByIdFunc                 func(tenantId uuid.UUID, input tenants.RestModel) error
 	DeleteByIdFunc                 func(tenantId uuid.UUID) error
 	CreateFunc                     func(input tenants.RestModel) (uuid.UUID, error)
+	ResetByIdFunc                  func(tenantId uuid.UUID, sections []string) (tenants.ViewRestModel, error)
 }
 
 var _ tenants.Processor = (*ProcessorMock)(nil)
@@ -109,4 +110,11 @@ func (m *ProcessorMock) Create(input tenants.RestModel) (uuid.UUID, error) {
 		return m.CreateFunc(input)
 	}
 	return uuid.Nil, nil
+}
+
+func (m *ProcessorMock) ResetById(tenantId uuid.UUID, sections []string) (tenants.ViewRestModel, error) {
+	if m.ResetByIdFunc != nil {
+		return m.ResetByIdFunc(tenantId, sections)
+	}
+	return tenants.ViewRestModel{}, nil
 }

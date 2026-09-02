@@ -79,6 +79,7 @@ type Processor interface {
 	UpdateById(tenantId uuid.UUID, input RestModel) error
 	DeleteById(tenantId uuid.UUID) error
 	Create(input RestModel) (uuid.UUID, error)
+	ResetById(tenantId uuid.UUID, sections []string) (ViewRestModel, error)
 }
 
 type ProcessorImpl struct {

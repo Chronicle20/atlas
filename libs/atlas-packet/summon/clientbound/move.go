@@ -6,6 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
@@ -13,7 +14,17 @@ import (
 const SummonMoveWriter = "SummonMove"
 
 // SummonMove is the server -> client MOVE_SUMMON packet: int cid, int oid, then
-// the raw CMovePath movement blob rebroadcast byte-faithfully.
+// the client's CMovePath movement blob rebroadcast to the other sessions in the
+// map.
+//
+// The blob is captured verbatim off the wire and crosses Kafka unchanged, but it
+// is NOT written back verbatim: Encode re-serializes it through
+// model.ReserializeMovePath so the per-element layout matches what the RECEIVING
+// client reads. On GMS v87 the client writes the per-element XOffset/YOffset pair
+// and never reads it back (CMovePath::Encode @0x6c70fe vs CMovePath::Decode
+// @0x6c6e86), so echoing the capture made every observer's element loop desync —
+// summons teleported for everyone but their owner. The move-path trailer the
+// codec does not model is carried through verbatim.
 //
 // The blob ALREADY begins with the start position (CMovePath::Encode writes
 // Encode2 startX, Encode2 startY first). The client reads it via
@@ -46,8 +57,11 @@ func (m SummonMove) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.cid)
-		w.WriteInt(m.oid)               // present on all versions (see SummonSpawn)
-		w.WriteByteArray(m.rawMovement) // CMovePath blob — begins with start x,y
+		w.WriteInt(m.oid) // present on all versions (see SummonSpawn)
+		// CMovePath blob — begins with start x,y. Re-serialized for the tenant's
+		// OUTBOUND element layout rather than echoed verbatim; see the comment on
+		// the type.
+		w.WriteByteArray(model.ReserializeMovePath(l, ctx)(m.rawMovement, options))
 		return w.Bytes()
 	}
 }

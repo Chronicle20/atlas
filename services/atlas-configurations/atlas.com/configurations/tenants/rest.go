@@ -45,6 +45,30 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// ResetRestModel is the reset endpoint's request body (FR-4.2): a `tenants`
+// resource carrying only the sections to reset. An absent `sections` key
+// and `sections: []` both mean "every comparable section" -- resource.go
+// additionally normalizes an absent or `{}` body into the equivalent
+// envelope before this decodes, so the same "reset everything" default
+// applies uniformly.
+type ResetRestModel struct {
+	Id       string   `json:"-"`
+	Sections []string `json:"sections"`
+}
+
+func (r ResetRestModel) GetName() string {
+	return "tenants"
+}
+
+func (r ResetRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *ResetRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 // ViewRestModel is the READ-ONLY projection of a tenant configuration:
 // RestModel plus the five computed drift attributes. It is a separate
 // type for the same reason templates.ViewRestModel is (see its comment):

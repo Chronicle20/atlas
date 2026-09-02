@@ -7,6 +7,7 @@ import (
 	"atlas-configurations/scope"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants/characters/preset"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -33,7 +34,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/{tenantId}", rest.RegisterHandler(l)(si)("get_configuration_tenant", handleGetConfigurationTenant(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{tenantId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_tenant", handleUpdateConfigurationTenant(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/{tenantId}", rest.RegisterHandler(l)(si)("delete_configuration_tenant", handleDeleteConfigurationTenant(db))).Methods(http.MethodDelete)
-			r.HandleFunc("/{tenantId}/reset", rest.RegisterHandler(l)(si)("reset_configuration_tenant", handleResetConfigurationTenant(db))).Methods(http.MethodPost)
+			r.HandleFunc("/{tenantId}/reset", normalizeResetBody(rest.RegisterInputHandler[ResetRestModel](l)(si)("reset_configuration_tenant", handleResetConfigurationTenant(db)))).Methods(http.MethodPost)
 		}
 	}
 }
@@ -47,42 +48,52 @@ func viewProcessor(d *rest.HandlerDependency, db *gorm.DB) Processor {
 		WithTemplates(templates.NewProcessor(d.Logger(), d.Context(), db))
 }
 
-// writeJSONAPIError emits the same document shape validationFailureError
-// renders, for the statuses server.WriteErrorResponse cannot express (it
-// maps everything to 500/503). Copied from templates/resource.go:188-202.
-func writeJSONAPIError(w http.ResponseWriter, status int, title string, detail string) {
-	w.Header().Set("Content-Type", "application/vnd.api+json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"errors": []map[string]any{{
-			"status": strconv.Itoa(status),
-			"title":  title,
-			"detail": detail,
-		}},
-	})
-}
+// normalizeResetBody rewrites an absent or `{}` reset request body into the
+// canonical empty `tenants` envelope before rest.RegisterInputHandler's
+// jsonapi.Unmarshal decode step. jsonapi.Unmarshal treats a zero-length body
+// and `{}` as decode errors, but FR-4.2 requires both (and an absent
+// `sections` key, and `sections: []`) to mean "reset every comparable
+// section" -- so they must reach the handler as a successfully decoded,
+// empty ResetRestModel rather than fail at the framework's generic decode
+// step, which writes a bare, non-JSON:API-shaped 400.
+//
+// A body that is present but not valid JSON is rejected here, in the same
+// errors-array shape every other error response on this endpoint uses, for
+// the same reason: jsonapi.Unmarshal's own decode-failure path can't.
+func normalizeResetBody(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		raw, err := io.ReadAll(r.Body)
+		_ = r.Body.Close()
+		if err != nil {
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
+				"status": strconv.Itoa(http.StatusBadRequest),
+				"title":  "malformed request body",
+				"detail": "The reset request body could not be read: " + err.Error(),
+			}}})
+			return
+		}
 
-// resetRequest is the reset endpoint's optional body. An absent body,
-// `{}`, an absent `sections` key and `sections: []` are all equivalent
-// and mean "every comparable section" (FR-4.2).
-type resetRequest struct {
-	Data struct {
-		Attributes struct {
-			Sections []string `json:"sections"`
-		} `json:"attributes"`
-	} `json:"data"`
-}
+		trimmed := bytes.TrimSpace(raw)
+		switch {
+		case len(trimmed) == 0, string(trimmed) == "{}":
+			trimmed = []byte(`{"data":{"type":"tenants","attributes":{}}}`)
+		case !json.Valid(trimmed):
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
+				"status": strconv.Itoa(http.StatusBadRequest),
+				"title":  "malformed request body",
+				"detail": "The reset request body could not be decoded.",
+			}}})
+			return
+		}
 
-func parseResetSections(r *http.Request) ([]string, error) {
-	var body resetRequest
-	err := json.NewDecoder(r.Body).Decode(&body)
-	if errors.Is(err, io.EOF) {
-		return nil, nil
+		r.Body = io.NopCloser(bytes.NewReader(trimmed))
+		r.ContentLength = int64(len(trimmed))
+		next(w, r)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return body.Data.Attributes.Sections, nil
 }
 
 func handleGetConfigurationTenants(db *gorm.DB) rest.GetHandler {
@@ -220,20 +231,14 @@ func handleDeleteConfigurationTenant(db *gorm.DB) rest.GetHandler {
 	}
 }
 
-func handleResetConfigurationTenant(db *gorm.DB) rest.GetHandler {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleResetConfigurationTenant(db *gorm.DB) rest.InputHandler[ResetRestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input ResetRestModel) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				sections, err := parseResetSections(r)
-				if err != nil {
-					writeJSONAPIError(w, http.StatusBadRequest, "malformed request body", "The reset request body could not be decoded: "+err.Error())
-					return
-				}
-
 				// The validator's atlas-data calls are tenant-scoped and
 				// atlas-configurations takes no tenant headers, so
 				// synthesize a tenant context exactly as the PATCH path
-				// does (resource.go:81-93) -- from the URL tenant id and
+				// does (resource.go:152-157) -- from the URL tenant id and
 				// the STORED row's region/version, which the processor
 				// re-reads. Without it the atlas-data-backed preset rules
 				// silently skip.
@@ -251,7 +256,7 @@ func handleResetConfigurationTenant(db *gorm.DB) rest.GetHandler {
 					WithTemplates(templates.NewProcessor(d.Logger(), ctx, db)).
 					WithValidator(preset.NewValidator(data.NewProcessor(d.Logger())))
 
-				view, err := p.ResetById(tenantId, sections)
+				view, err := p.ResetById(tenantId, input.Sections)
 				if err == nil {
 					query := r.URL.Query()
 					queryParams := jsonapi.ParseQueryFields(&query)
@@ -261,13 +266,37 @@ func handleResetConfigurationTenant(db *gorm.DB) rest.GetHandler {
 
 				switch {
 				case errors.Is(err, drift.ErrUnknownSection):
-					writeJSONAPIError(w, http.StatusBadRequest, "unknown section", err.Error())
+					w.Header().Set("Content-Type", "application/vnd.api+json")
+					w.WriteHeader(http.StatusBadRequest)
+					_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
+						"status": strconv.Itoa(http.StatusBadRequest),
+						"title":  "unknown section",
+						"detail": err.Error(),
+					}}})
 				case errors.Is(err, scope.ErrCrossEnvironmentWrite):
-					writeJSONAPIError(w, http.StatusForbidden, "cross-environment write", err.Error())
+					w.Header().Set("Content-Type", "application/vnd.api+json")
+					w.WriteHeader(http.StatusForbidden)
+					_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
+						"status": strconv.Itoa(http.StatusForbidden),
+						"title":  "cross-environment write",
+						"detail": err.Error(),
+					}}})
 				case errors.Is(err, ErrTenantNotFound):
-					writeJSONAPIError(w, http.StatusNotFound, "tenant not found", "No configuration tenant exists with id "+tenantId.String()+".")
+					w.Header().Set("Content-Type", "application/vnd.api+json")
+					w.WriteHeader(http.StatusNotFound)
+					_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
+						"status": strconv.Itoa(http.StatusNotFound),
+						"title":  "tenant not found",
+						"detail": "No configuration tenant exists with id " + tenantId.String() + ".",
+					}}})
 				case errors.Is(err, ErrNoBaselineTemplate):
-					writeJSONAPIError(w, http.StatusConflict, "no baseline template", "No configuration template resolves for this tenant's region and version, so there is nothing to reset to.")
+					w.Header().Set("Content-Type", "application/vnd.api+json")
+					w.WriteHeader(http.StatusConflict)
+					_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]any{{
+						"status": strconv.Itoa(http.StatusConflict),
+						"title":  "no baseline template",
+						"detail": "No configuration template resolves for this tenant's region and version, so there is nothing to reset to.",
+					}}})
 				default:
 					var ve *validationFailureError
 					if errors.As(err, &ve) {

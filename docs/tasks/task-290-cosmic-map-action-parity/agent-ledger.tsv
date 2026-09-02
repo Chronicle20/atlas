@@ -63,3 +63,9 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-02T18:16:49Z	agent	Fix mapId/Instance	task-implementer	sonnet	-	16	-	-	DONE	4365c0bd1	-	-	-	-
 2026-09-02T18:21:19Z	agent	Pre-PR fix round	task-reviewer	sonnet	-	43	-	-	DONE	4365c0bd1	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan/fix-round-review.md	-
 2026-09-02T19:21:51Z	agent	pre-PR	verify.sh-flagless	-	-	-	-	-	PASS	7275e3a61	-	-	/var/tmp/atlas/gates/task290-final-verify2.log	-
+2026-09-02T19:33:09Z	agent	Plan B batch 1 (B1+B2)	task-implementer	sonnet	-	22	-	-	DONE	ceae390d9	-	-	-	-
+2026-09-02T19:34:42Z	agent	Plan B batch 1 (B1+B2)	task-reviewer	sonnet	-	14	-	-	DONE	ceae390d9	APPROVED	no	.superpowers/sdd/plan-b/batch-1-review.md	-
+2026-09-02T19:35:20Z	agent	Plan B batch 2 (B3+B4)	task-implementer	sonnet	-	14	-	-	DONE	8603682f5	-	-	-	-
+2026-09-02T19:37:53Z	agent	Plan B batch 2 (B3+B4)	task-reviewer	sonnet	-	21	-	-	DONE	8603682f5	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan-b/batch-2-review.md	-
+2026-09-02T19:39:18Z	agent	Plan B batch 3 (B5+B6+B7)	task-implementer	sonnet	-	38	-	-	DONE_WITH_CONCERNS	3dc057036	-	-	-	-
+2026-09-02T19:42:07Z	agent	Plan B batch 3 (B5+B6+B7)	task-reviewer	sonnet	-	22	-	-	DONE	3dc057036	APPROVED	no	.superpowers/sdd/plan-b/batch-3-review.md	-

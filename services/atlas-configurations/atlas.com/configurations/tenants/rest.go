@@ -47,10 +47,10 @@ func (r *RestModel) SetID(id string) error {
 
 // ResetRestModel is the reset endpoint's request body (FR-4.2): a `tenants`
 // resource carrying only the sections to reset. An absent `sections` key
-// and `sections: []` both mean "every comparable section" -- resource.go
-// additionally normalizes an absent or `{}` body into the equivalent
-// envelope before this decodes, so the same "reset everything" default
-// applies uniformly.
+// and `sections: []` both mean "every comparable section" -- an absent or
+// `{}` body never reaches this decoder at all: ParseOptionalInput skips
+// jsonapi.Unmarshal and yields the zero value, so the same "reset
+// everything" default applies uniformly.
 type ResetRestModel struct {
 	Id       string   `json:"-"`
 	Sections []string `json:"sections"`

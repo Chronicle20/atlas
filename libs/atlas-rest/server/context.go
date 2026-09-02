@@ -81,7 +81,7 @@ func ParseOptionalInput[M any](d *HandlerDependency, c *HandlerContext, next Inp
 			writeBadRequestJSONAPI(d.l, w, "The request body could not be read: "+err.Error())
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		trimmed := bytes.TrimSpace(body)
 		switch {

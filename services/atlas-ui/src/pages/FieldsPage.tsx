@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 
@@ -11,7 +11,10 @@ import { useFields } from "@/lib/hooks/api/useFields";
 import { useWorlds, useChannels } from "@/lib/hooks/api/useWorlds";
 import { useMapNames } from "@/lib/hooks/api/useMaps";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
+import { useDebounce } from "@/lib/utils/debounce";
 import { cn } from "@/lib/utils";
+
+const DEBOUNCE_MS = 250;
 
 // FR-11..FR-16/FR-40: the runtime read model locator. World/channel filter
 // the server query; the map filter is client-side (FR-13 needs a name-or-id
@@ -29,12 +32,13 @@ export function FieldsPage() {
 
   const [worldOverride, setWorldOverride] = useState<number | null>(null);
   const [channelId, setChannelId] = useState<number | null>(null);
-  const [mapQuery, setMapQuery] = useState(() => searchParams.get("map") ?? "");
-  // Bumped on Clear filters so `FieldsFilterBar` remounts instead of syncing
-  // its local input off a prop change — a remount discards any in-flight
-  // debounce timer outright, so a keystroke typed just before Clear can't
-  // race the reset and repopulate the field a moment later.
-  const [filterResetKey, setFilterResetKey] = useState(0);
+  // `mapInput` is the single owner of the raw map-filter text; it is passed
+  // to `FieldsFilterBar` as a controlled value (no local copy there). The
+  // debounced value drives both filtering and the `?map=` URL param, so
+  // Clear filters just resets this one piece of state and everything else
+  // follows without a remount.
+  const [mapInput, setMapInput] = useState(() => searchParams.get("map") ?? "");
+  const debouncedMapQuery = useDebounce(mapInput.trim(), DEBOUNCE_MS);
 
   const worldId = worldOverride ?? defaultWorldId;
 
@@ -56,7 +60,7 @@ export function FieldsPage() {
   );
   const mapNames = useMapNames(distinctMapIds);
 
-  const trimmedMapQuery = mapQuery.trim().toLowerCase();
+  const trimmedMapQuery = debouncedMapQuery.toLowerCase();
   const filteredFields = useMemo(() => {
     if (!trimmedMapQuery) return fields;
     return fields.filter((field) => {
@@ -71,27 +75,31 @@ export function FieldsPage() {
     fieldsQuery,
   ]);
 
+  // Mirrors MapsPage's `searchInput`/`debounced` pair: the debounced value
+  // is written back to `?map=` once it settles, rather than on every
+  // keystroke.
+  useEffect(() => {
+    const currentMapParam = searchParams.get("map") ?? "";
+    if (debouncedMapQuery === currentMapParam) return;
+    const next = new URLSearchParams(searchParams);
+    if (debouncedMapQuery) {
+      next.set("map", debouncedMapQuery);
+    } else {
+      next.delete("map");
+    }
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires only on debounce settling
+  }, [debouncedMapQuery]);
+
   const handleWorldChange = (nextWorldId: number) => {
     setWorldOverride(nextWorldId);
     setChannelId(null);
   };
 
-  const handleMapQueryChange = (value: string) => {
-    setMapQuery(value);
-    const next = new URLSearchParams(searchParams);
-    if (value) {
-      next.set("map", value);
-    } else {
-      next.delete("map");
-    }
-    setSearchParams(next, { replace: true });
-  };
-
   const handleClearFilters = () => {
     setWorldOverride(null);
     setChannelId(null);
-    setMapQuery("");
-    setFilterResetKey((key) => key + 1);
+    setMapInput("");
     const next = new URLSearchParams(searchParams);
     next.delete("map");
     setSearchParams(next, { replace: true });
@@ -140,15 +148,14 @@ export function FieldsPage() {
       </div>
 
       <FieldsFilterBar
-        key={filterResetKey}
         worlds={worlds}
         channels={channels}
         worldId={worldId}
         channelId={channelId}
-        mapQuery={mapQuery}
+        mapQuery={mapInput}
         onWorldChange={handleWorldChange}
         onChannelChange={setChannelId}
-        onMapQueryChange={handleMapQueryChange}
+        onMapQueryChange={setMapInput}
       />
 
       {fieldsQuery.isLoading && (

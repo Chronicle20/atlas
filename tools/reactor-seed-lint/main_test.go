@@ -68,6 +68,38 @@ func TestLint_MissingRequiredExitsNonZero(t *testing.T) {
 	}
 }
 
+func TestLint_MissingDescriptionExitsNonZero(t *testing.T) {
+	exe := buildLint(t)
+	cmd := exec.Command(exe, "testdata/bad/no-description", schemaPath)
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected non-zero exit")
+	}
+	if !strings.Contains(string(out), "description") {
+		t.Fatalf("expected output to mention description, got:\n%s", out)
+	}
+}
+
+func TestLint_DivergentCopiesExitNonZero(t *testing.T) {
+	exe := buildLint(t)
+	cmd := exec.Command(exe, "testdata/bad/divergent-copies", schemaPath)
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected non-zero exit")
+	}
+	if !strings.Contains(string(out), "2001") {
+		t.Fatalf("expected output to mention 2001, got:\n%s", out)
+	}
+}
+
+func TestLint_MissingCopyExitsNonZero(t *testing.T) {
+	exe := buildLint(t)
+	cmd := exec.Command(exe, "testdata/bad/missing-copy", schemaPath)
+	if err := cmd.Run(); err == nil {
+		t.Fatalf("expected non-zero exit")
+	}
+}
+
 func TestLint_EmptyRootExitsNonZero(t *testing.T) {
 	exe := buildLint(t)
 	cmd := exec.Command(exe, t.TempDir(), schemaPath)

@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "2",
+                "mesoMin": "8",
+                "mesoMax": "15",
+                "minItems": "1"
+              },
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "hitRules": [],
+      "reactorId": "2001"
+    },
+    "id": "2001",
+    "type": "reactor-action"
+  }
+}

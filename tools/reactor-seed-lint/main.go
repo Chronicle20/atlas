@@ -28,7 +28,8 @@ func main() {
 }
 
 type reactorScript struct {
-	ReactorId string `json:"reactorId"`
+	ReactorId   string `json:"reactorId"`
+	Description string `json:"description"`
 }
 
 func lint(root, schemaPath string) error {
@@ -39,6 +40,7 @@ func lint(root, schemaPath string) error {
 
 	var errs []string
 	var filesChecked int
+	seen := map[string]map[string]string{}
 
 	walkErr := filepath.WalkDir(root, func(path string, d fs.DirEntry, entryErr error) error {
 		if entryErr != nil {
@@ -107,8 +109,19 @@ func lint(root, schemaPath string) error {
 			errs = append(errs, fmt.Sprintf("%s: attributes.reactorId %q, data.id %q", path, script.ReactorId, env.Data.ID))
 		}
 
+		if strings.TrimSpace(script.Description) == "" {
+			errs = append(errs, fmt.Sprintf("%s: empty or missing description", path))
+		}
+
 		if err := validateAttributes(schema, env.Data.Attributes); err != nil {
 			errs = append(errs, fmt.Sprintf("%s: %v", path, err))
+		}
+
+		if vk, ok := versionKey(root, path); ok {
+			if seen[vk] == nil {
+				seen[vk] = map[string]string{}
+			}
+			seen[vk][env.Data.ID] = digest(b)
 		}
 
 		return nil
@@ -121,6 +134,8 @@ func lint(root, schemaPath string) error {
 	if filesChecked == 0 {
 		return fmt.Errorf("no reactor-*.json files found under %s/<region>/<version>/reactor-actions/reactors; the lint validated nothing", root)
 	}
+
+	errs = append(errs, checkIdentity(seen)...)
 
 	if len(errs) > 0 {
 		return fmt.Errorf("linter found %d issue(s):\n%s", len(errs), strings.Join(errs, "\n"))

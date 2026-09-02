@@ -33,7 +33,7 @@ func (e *ConditionEvaluator) EvaluateCondition(f field.Model, characterId uint32
 	case "map_id":
 		return e.evaluateMapId(f, cond)
 	default:
-		return e.evaluateViaQueryAggregator(characterId, cond)
+		return e.evaluateViaQueryAggregator(f, characterId, cond)
 	}
 }
 
@@ -50,16 +50,39 @@ func (e *ConditionEvaluator) evaluateMapId(f field.Model, cond condition.Model) 
 		return actualMapId == expectedMapId, nil
 	case "!=":
 		return actualMapId != expectedMapId, nil
+	case ">":
+		return actualMapId > expectedMapId, nil
+	case "<":
+		return actualMapId < expectedMapId, nil
+	case ">=":
+		return actualMapId >= expectedMapId, nil
+	case "<=":
+		return actualMapId <= expectedMapId, nil
 	default:
 		return false, fmt.Errorf("unsupported operator [%s] for map_id condition", cond.Operator())
 	}
 }
 
-func (e *ConditionEvaluator) evaluateViaQueryAggregator(characterId uint32, cond condition.Model) (bool, error) {
-	valueStr := cond.Value()
-	intValue, err := strconv.Atoi(valueStr)
-	if err != nil {
-		return false, fmt.Errorf("invalid condition value [%s]: %w", valueStr, err)
+func (e *ConditionEvaluator) evaluateViaQueryAggregator(f field.Model, characterId uint32, cond condition.Model) (bool, error) {
+	// Parse the scalar value only when one is present. An `in` condition
+	// carries its payload in values and leaves value empty; eagerly Atoi-ing
+	// it here made `in` unreachable from a map-action document.
+	var intValue int
+	if valueStr := cond.Value(); valueStr != "" {
+		parsed, err := strconv.Atoi(valueStr)
+		if err != nil {
+			return false, fmt.Errorf("invalid condition value [%s]: %w", valueStr, err)
+		}
+		intValue = parsed
+	}
+
+	var intValues []int
+	for _, v := range cond.Values() {
+		parsed, err := strconv.Atoi(v)
+		if err != nil {
+			return false, fmt.Errorf("invalid condition values entry [%s]: %w", v, err)
+		}
+		intValues = append(intValues, parsed)
 	}
 
 	var resolvedReferenceId uint32
@@ -72,11 +95,18 @@ func (e *ConditionEvaluator) evaluateViaQueryAggregator(characterId uint32, cond
 		resolvedReferenceId = uint32(refIdInt)
 	}
 
+	// worldId/channelId come from the field the entry event carried, never from
+	// the document — a seed is version-scoped, not world-scoped.
 	validationCondition := validation.ConditionInput{
-		Type:        cond.Type(),
-		Operator:    cond.Operator(),
-		Value:       intValue,
-		ReferenceId: resolvedReferenceId,
+		Type:            cond.Type(),
+		Operator:        cond.Operator(),
+		Value:           intValue,
+		Values:          intValues,
+		ReferenceId:     resolvedReferenceId,
+		Step:            cond.Step(),
+		WorldId:         f.WorldId(),
+		ChannelId:       f.ChannelId(),
+		IncludeEquipped: cond.IncludeEquipped(),
 	}
 
 	result, err := e.validationP.ValidateCharacterState(characterId, []validation.ConditionInput{validationCondition})

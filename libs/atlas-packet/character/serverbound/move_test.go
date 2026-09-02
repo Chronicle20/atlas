@@ -204,13 +204,284 @@ func TestCharacterMoveByteV72(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=character/serverbound/Move version=gms_v87 ida=0xa5c937
-// packet-audit:verify packet=character/serverbound/Move version=gms_v95 ida=0x9a0d20
+// TestCharacterMoveByteV83 pins the gms_v83 MOVE_PLAYER serverbound wire:
+// lean fieldKey+crc header (v83 < 84, no dr-block), pre-v88 movement layout
+// (no StartVx/StartVy).
+//
+// IDA: CVecCtrlUser::EndUpdateActive @0x9cb992 writes only fieldKey+crc before
+// CMovePath::Flush — byte-identical header shape to the verified v72/v79
+// fixtures (see moveDrBlocks/moveCrc doc comments).
+//
+// packet-audit:verify packet=character/serverbound/Move version=gms_v83 ida=0x9cb992
+//
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x68a563 (count @0x68a748,
+// nibble loop @0x68a763-0x68a784, rect @0x68a796/0x68a7a4/0x68a7b2/0x68a7c0 —
+// see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
+//
+// This fixture uses a 3-entry, non-empty keyPadStates and a non-zero
+// bounding rect so the nibble-packing path is actually exercised: two
+// entries packed per byte (0x1, 0x2 -> 0x21), and the final byte of an
+// odd-length run carrying only the low nibble (0x3 -> 0x03).
+func TestCharacterMoveByteV83(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+	p := Move{
+		fieldKey:       0x2A,
+		crc:            500,
+		movement:       model.Movement{StartX: 10, StartY: 20},
+		keyPadStates:   []byte{0x1, 0x2, 0x3},
+		moveRectLeft:   1,
+		moveRectTop:    2,
+		moveRectRight:  3,
+		moveRectBottom: 4,
+	}
+	got := p.Encode(l, ctx)(nil)
+	want := []byte{
+		0x2A,                   // fieldKey        @0x9cb992
+		0xF4, 0x01, 0x00, 0x00, // crc=500
+		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush)
+		0x14, 0x00, // movement StartY=20  (opaque)
+		0x00,       // movement element count=0 (opaque)
+		0x03,       // keypad entry count=3 (moveKeyPadTail, decompile-derived)
+		0x21, 0x03, // packed nibbles: (0x1|0x2<<4)=0x21, then low-nibble-only 0x3
+		0x01, 0x00, // move rect left=1    (decompile-derived)
+		0x02, 0x00, // move rect top=2     (decompile-derived)
+		0x03, 0x00, // move rect right=3   (decompile-derived)
+		0x04, 0x00, // move rect bottom=4  (decompile-derived)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v83 Move: got % x, want % x", got, want)
+	}
+}
+
+// TestCharacterMoveByteV84 pins the gms_v84 MOVE_PLAYER serverbound wire: the
+// dr-block anti-cheat header is added at v84 (see moveDrBlocks doc comment,
+// CVecCtrlUser::EndUpdateActive sub_A1334E @0xa1334e), pre-v88 movement
+// layout (no StartVx/StartVy).
+//
 // packet-audit:verify packet=character/serverbound/Move version=gms_v84 ida=0xa1334e
 //
-// jms_v185 is verified by TestCharacterMoveBytesJMS185 below, against captured
-// wire. A RoundTrip cannot catch a header the client sends and the decoder
-// never reads.
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x6a121a (count @0x6a141e,
+// nibble loop @0x6a1423-0x6a145a, rect @0x6a146c/0x6a147a/0x6a1488/0x6a1496 —
+// see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
+func TestCharacterMoveByteV84(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 84, 1)
+	p := Move{
+		dr0:      100,
+		dr1:      200,
+		fieldKey: 0x2A,
+		dr2:      300,
+		dr3:      400,
+		crc:      500,
+		dwKey:    600,
+		crc32:    700,
+		movement: model.Movement{StartX: 10, StartY: 20},
+	}
+	got := p.Encode(l, ctx)(nil)
+	want := []byte{
+		0x64, 0x00, 0x00, 0x00, // dr0=100         @0xa1334e (dr-block added v84)
+		0xC8, 0x00, 0x00, 0x00, // dr1=200
+		0x2A,                   // fieldKey
+		0x2C, 0x01, 0x00, 0x00, // dr2=300
+		0x90, 0x01, 0x00, 0x00, // dr3=400
+		0xF4, 0x01, 0x00, 0x00, // crc=500
+		0x58, 0x02, 0x00, 0x00, // dwKey=600
+		0xBC, 0x02, 0x00, 0x00, // crc32=700
+		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush)
+		0x14, 0x00, // movement StartY=20  (opaque)
+		0x00,                   // movement element count=0 (opaque)
+		0x00,                   // keypad entry count=0 (moveKeyPadTail, decompile-derived)
+		0x00, 0x00, 0x00, 0x00, // move rect left/top       (decompile-derived, zero values)
+		0x00, 0x00, 0x00, 0x00, // move rect right/bottom   (decompile-derived, zero values)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v84 Move: got % x, want % x", got, want)
+	}
+}
+
+// TestCharacterMoveByteV87 pins the gms_v87 MOVE_PLAYER serverbound wire:
+// same dr-block header shape as v84 (added at v84, not v87 — see
+// moveDrBlocks), pre-v88 movement layout (no StartVx/StartVy — the
+// XOffset/YOffset element rework at v87 is a DIFFERENT boundary, see
+// model.gmsMovementElementOffsets).
+//
+// packet-audit:verify packet=character/serverbound/Move version=gms_v87 ida=0xa5c937
+//
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x6c70fe (count @0x6c734c,
+// nibble loop @0x6c7383-0x6c738b, rect @0x6c73a2/0x6c73b0/0x6c73be/0x6c73cc —
+// see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
+func TestCharacterMoveByteV87(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 87, 1)
+	p := Move{
+		dr0:      100,
+		dr1:      200,
+		fieldKey: 0x2A,
+		dr2:      300,
+		dr3:      400,
+		crc:      500,
+		dwKey:    600,
+		crc32:    700,
+		movement: model.Movement{StartX: 10, StartY: 20},
+	}
+	got := p.Encode(l, ctx)(nil)
+	want := []byte{
+		0x64, 0x00, 0x00, 0x00, // dr0=100         @0xa5c937
+		0xC8, 0x00, 0x00, 0x00, // dr1=200
+		0x2A,                   // fieldKey
+		0x2C, 0x01, 0x00, 0x00, // dr2=300
+		0x90, 0x01, 0x00, 0x00, // dr3=400
+		0xF4, 0x01, 0x00, 0x00, // crc=500
+		0x58, 0x02, 0x00, 0x00, // dwKey=600
+		0xBC, 0x02, 0x00, 0x00, // crc32=700
+		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush)
+		0x14, 0x00, // movement StartY=20  (opaque)
+		0x00,                   // movement element count=0 (opaque)
+		0x00,                   // keypad entry count=0 (moveKeyPadTail, decompile-derived)
+		0x00, 0x00, 0x00, 0x00, // move rect left/top       (decompile-derived, zero values)
+		0x00, 0x00, 0x00, 0x00, // move rect right/bottom   (decompile-derived, zero values)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v87 Move: got % x, want % x", got, want)
+	}
+}
+
+// TestCharacterMoveByteV92 pins the gms_v92 MOVE_PLAYER serverbound wire:
+// dr-block header present (v84+), v88+ movement layout with the extra
+// StartVx/StartVy int16 pair (model.Movement, gated MajorAtLeast(88)).
+//
+// packet-audit:verify packet=character/serverbound/Move version=gms_v92 ida=0x9798f0
+//
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x65a260 (count @0x65a61b,
+// nibble loop @0x65a620-0x65a68c, rect @0x65a6da/0x65a71c/0x65a75e/0x65a7a1 —
+// see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
+//
+// This fixture uses a 3-entry, non-empty keyPadStates and a non-zero
+// bounding rect so the nibble-packing path is actually exercised: two
+// entries packed per byte (0x5|0x6<<4=0x65), and the final byte of an
+// odd-length run carrying only the low nibble (0x7 -> 0x07).
+func TestCharacterMoveByteV92(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 92, 1)
+	p := Move{
+		dr0:            100,
+		dr1:            200,
+		fieldKey:       0x2A,
+		dr2:            300,
+		dr3:            400,
+		crc:            500,
+		dwKey:          600,
+		crc32:          700,
+		movement:       model.Movement{StartX: 10, StartY: 20},
+		keyPadStates:   []byte{0x5, 0x6, 0x7},
+		moveRectLeft:   11,
+		moveRectTop:    22,
+		moveRectRight:  33,
+		moveRectBottom: 44,
+	}
+	got := p.Encode(l, ctx)(nil)
+	want := []byte{
+		0x64, 0x00, 0x00, 0x00, // dr0=100         @0x65a260
+		0xC8, 0x00, 0x00, 0x00, // dr1=200
+		0x2A,                   // fieldKey
+		0x2C, 0x01, 0x00, 0x00, // dr2=300
+		0x90, 0x01, 0x00, 0x00, // dr3=400
+		0xF4, 0x01, 0x00, 0x00, // crc=500
+		0x58, 0x02, 0x00, 0x00, // dwKey=600
+		0xBC, 0x02, 0x00, 0x00, // crc32=700
+		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush)
+		0x14, 0x00, // movement StartY=20  (opaque)
+		0x00, 0x00, // movement StartVx=0 (v88+ pair, opaque)
+		0x00, 0x00, // movement StartVy=0 (v88+ pair, opaque)
+		0x00,       // movement element count=0 (opaque)
+		0x03,       // keypad entry count=3 (moveKeyPadTail, decompile-derived)
+		0x65, 0x07, // packed nibbles: (0x5|0x6<<4)=0x65, then low-nibble-only 0x7
+		0x0B, 0x00, // move rect left=11   (decompile-derived)
+		0x16, 0x00, // move rect top=22    (decompile-derived)
+		0x21, 0x00, // move rect right=33  (decompile-derived)
+		0x2C, 0x00, // move rect bottom=44 (decompile-derived)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v92 Move: got % x, want % x", got, want)
+	}
+}
+
+// TestCharacterMoveByteV95 pins the gms_v95 MOVE_PLAYER serverbound wire:
+// same dr-block + v88+ movement layout as v92 (Hex-Rays inlines
+// Encode1/Encode2 into direct buffer stores on v92/v95; the addresses below
+// are the store sites, not call sites — see moveKeyPadTail doc comment).
+//
+// packet-audit:verify packet=character/serverbound/Move version=gms_v95 ida=0x9a0d20
+//
+// The keypad-history + bounding-rect tail below (moveKeyPadTail) is
+// DECOMPILE-DERIVED from CMovePath::Encode @0x666e20 (count @0x6671db,
+// nibble loop @0x6671e0-0x66724c, rect @0x66729a/0x6672dc/0x66731e/0x667361 —
+// see docs/tasks/fix-jms185-attack-decode/movepath-tail-findings.md). Like
+// the rest of this fixture it pins Atlas's own encoder output, NOT captured
+// client wire; only TestCharacterMoveBytesJMS185 is pinned to observed
+// traffic.
+func TestCharacterMoveByteV95(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 95, 1)
+	p := Move{
+		dr0:      100,
+		dr1:      200,
+		fieldKey: 0x2A,
+		dr2:      300,
+		dr3:      400,
+		crc:      500,
+		dwKey:    600,
+		crc32:    700,
+		movement: model.Movement{StartX: 10, StartY: 20},
+	}
+	got := p.Encode(l, ctx)(nil)
+	want := []byte{
+		0x64, 0x00, 0x00, 0x00, // dr0=100         @0x9a0d20
+		0xC8, 0x00, 0x00, 0x00, // dr1=200
+		0x2A,                   // fieldKey
+		0x2C, 0x01, 0x00, 0x00, // dr2=300
+		0x90, 0x01, 0x00, 0x00, // dr3=400
+		0xF4, 0x01, 0x00, 0x00, // crc=500
+		0x58, 0x02, 0x00, 0x00, // dwKey=600
+		0xBC, 0x02, 0x00, 0x00, // crc32=700
+		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush)
+		0x14, 0x00, // movement StartY=20  (opaque)
+		0x00, 0x00, // movement StartVx=0 (v88+ pair, opaque)
+		0x00, 0x00, // movement StartVy=0 (v88+ pair, opaque)
+		0x00,                   // movement element count=0 (opaque)
+		0x00,                   // keypad entry count=0 (moveKeyPadTail, decompile-derived)
+		0x00, 0x00, 0x00, 0x00, // move rect left/top       (decompile-derived, zero values)
+		0x00, 0x00, 0x00, 0x00, // move rect right/bottom   (decompile-derived, zero values)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v95 Move: got % x, want % x", got, want)
+	}
+}
+
+// gms_v83/v84/v87/v92/v95 are verified above by TestCharacterMoveByteV83/
+// V84/V87/V92/V95 — byte-pinned fixtures asserting the exact wire, including
+// the moveKeyPadTail. A RoundTrip (this test) is symmetric: it passes for
+// any self-consistent layout, including a wrong one, so a verify marker for
+// those cells belongs on a fixture that actually pins the wire, not here.
+// jms_v185 is verified by TestCharacterMoveBytesJMS185, against captured
+// wire, for the same reason.
 func TestCharacterMove(t *testing.T) {
 	p := Move{}
 	p.dr0 = 100

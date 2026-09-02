@@ -207,6 +207,47 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     entityType: "portal",
   },
 
+  // Field routes (runtime read model — live occupancy, not a definition)
+  {
+    pattern: "/fields",
+    label: "Fields",
+    parent: "/",
+  },
+  {
+    pattern: "/fields/[worldId]",
+    label: "World",
+    parent: "/fields",
+    // Grouping node only — no page lives at this path (D11). The world name
+    // is not available from params alone, so the label falls back to the id;
+    // the resolved name is shown in the FieldDetailPage header instead.
+    nonNavigable: true,
+    labelResolver: (params) => `World ${params.worldId ?? ""}`,
+  },
+  {
+    pattern: "/fields/[worldId]/[channelId]",
+    label: "Channel",
+    parent: "/fields/[worldId]",
+    // Grouping node only — no page lives at this path (D11).
+    nonNavigable: true,
+    labelResolver: (params) => `Channel ${params.channelId ?? ""}`,
+  },
+  {
+    pattern: "/fields/[worldId]/[channelId]/[mapId]",
+    label: "Map",
+    parent: "/fields/[worldId]/[channelId]",
+    // Grouping node only — no page lives at this path (D11). The map
+    // definition name is not available from params alone, so the label
+    // falls back to the map id.
+    nonNavigable: true,
+    labelResolver: (params) => params.mapId ?? "",
+  },
+  {
+    pattern: "/fields/[worldId]/[channelId]/[mapId]/[instanceId]",
+    label: "Instance",
+    parent: "/fields/[worldId]/[channelId]/[mapId]",
+    labelResolver: (params) => `Instance ${params.instanceId ?? ""}`,
+  },
+
   // Reactor routes
   {
     pattern: "/reactors",
@@ -681,6 +722,8 @@ export const ROUTE_PATTERNS = {
   MAPS: "/maps",
   MAP_DETAIL: "/maps/[id]",
   MAP_PORTAL_DETAIL: "/maps/[id]/portals/[portalId]",
+  FIELDS: "/fields",
+  FIELD_DETAIL: "/fields/[worldId]/[channelId]/[mapId]/[instanceId]",
   REACTORS: "/reactors",
   REACTOR_DETAIL: "/reactors/[id]",
   MERCHANTS: "/merchants",

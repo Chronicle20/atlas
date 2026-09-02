@@ -267,4 +267,40 @@ describe("TenantResetButton", () => {
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent(/socket handlers and writers/i);
   });
+
+  it("an empty sections array renders whole-document copy, not scoped copy", async () => {
+    mockHooks({ data: tenantConfig({ baselineTemplateId: "b1" }) });
+    const user = userEvent.setup();
+    render(<TenantResetButton id="t1" sections={[]} />);
+
+    const trigger = screen.getByRole("button", { name: /reset to template/i });
+    expect(trigger).toBeInTheDocument();
+
+    await user.click(trigger);
+    const dialog = await screen.findByRole("alertdialog");
+    expect(
+      within(dialog).getByRole("heading", { name: /reset to template\?/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: /^reset tenant$/i }),
+    ).toBeInTheDocument();
+    expect(dialog).toHaveTextContent(
+      /this replaces every comparable section of this tenant's configuration/i,
+    );
+  });
+
+  it("scoped sections with no sectionLabel never render the literal word undefined", async () => {
+    mockHooks({ data: tenantConfig({ baselineTemplateId: "b1" }) });
+    const user = userEvent.setup();
+    render(<TenantResetButton id="t1" sections={["properties"]} />);
+
+    await user.click(
+      screen.getByRole("button", { name: /reset this section/i }),
+    );
+    const dialog = await screen.findByRole("alertdialog");
+    expect(
+      within(dialog).getByRole("heading", { name: /reset this section\?/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/undefined/)).toBeNull();
+  });
 });

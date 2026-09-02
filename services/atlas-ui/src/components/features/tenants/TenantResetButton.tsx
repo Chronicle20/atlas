@@ -61,6 +61,13 @@ export function TenantResetButton({
   const hasBaseline = Boolean(query.data?.attributes.baselineTemplateId);
   const disabled = !id || !query.data || !hasBaseline;
 
+  // An empty sections array is truthy but tenantsService.reset collapses it
+  // to an undefined body, i.e. a whole-document reset. This derived boolean
+  // is the one place that distinguishes "scoped" from "whole document" for
+  // every piece of confirmation copy, so the copy always agrees with what
+  // is actually sent.
+  const scoped = sections !== undefined && sections.length > 0;
+
   const onConfirm = async () => {
     if (!id) return;
     setIsResetting(true);
@@ -70,7 +77,7 @@ export function TenantResetButton({
         ...(sections !== undefined && { sections }),
       });
       toast.success(
-        sections
+        scoped
           ? `${sectionLabel ?? "This section"} reset to template`
           : "Tenant reset to template",
       );
@@ -87,11 +94,15 @@ export function TenantResetButton({
     }
   };
 
-  const triggerLabel = sections
+  const triggerLabel = scoped
     ? `Reset ${sectionLabel ?? "this section"}`
     : "Reset to template";
-  const titleLabel = sections ? `Reset ${sectionLabel}?` : "Reset to template?";
-  const confirmLabel = sections ? `Reset ${sectionLabel}` : "Reset Tenant";
+  const titleLabel = scoped
+    ? `Reset ${sectionLabel ?? "this section"}?`
+    : "Reset to template?";
+  const confirmLabel = scoped
+    ? `Reset ${sectionLabel ?? "this section"}`
+    : "Reset Tenant";
 
   const trigger = (
     <Button
@@ -129,13 +140,13 @@ export function TenantResetButton({
           <AlertDialogHeader>
             <AlertDialogTitle>{titleLabel}</AlertDialogTitle>
             <AlertDialogDescription>
-              {sections ? (
+              {scoped ? (
                 <>
-                  This replaces {sectionLabel} with the template&apos;s. Edits
-                  you have made through the UI to those sections will be lost.
-                  The tenant&apos;s id, region, version, world configuration and
-                  diagnostics are unchanged, and no game data - accounts,
-                  characters, inventories - is affected.
+                  This replaces {sectionLabel ?? "this section"} with the
+                  template&apos;s. Edits you have made through the UI to those
+                  sections will be lost. The tenant&apos;s id, region, version,
+                  world configuration and diagnostics are unchanged, and no game
+                  data - accounts, characters, inventories - is affected.
                 </>
               ) : (
                 <>

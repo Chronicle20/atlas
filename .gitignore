@@ -74,3 +74,4 @@ node_modules/
 # their binary after the directory (gen) — trivially recreated, never a deliverable.
 /libs/atlas-constants/gen/gen
 /libs/atlas-kafka/gen/gen
+/tools/gen-map-action-schema/gen-map-action-schema

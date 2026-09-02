@@ -30,8 +30,12 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 }
 
 func Extract(rm RestModel) (Model, error) {
-	return Model{
-		name:  rm.Name,
-		state: rm.State,
-	}, nil
+	return NewBuilder().
+		SetName(rm.Name).
+		SetState(rm.State).
+		Build(), nil
+}
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{Id: m.Name(), Name: m.Name(), State: m.State()}, nil
 }

@@ -36,33 +36,33 @@ func TestGetObjects(t *testing.T) {
 	}
 	l, _ := test.NewNullLogger()
 
+	// The unnamed layer 0 entry is not addressable by SetObjectState and is
+	// skipped, so the fixture's three named entries land at indexes 0-2.
 	os := getObjects(l, n)
 	if len(os) != 3 {
 		t.Fatalf("len(os) != 3, got %d", len(os))
 	}
 
-	// The unnamed layer 0 entry is not addressable by SetObjectState and is skipped.
-	if os[0].Name != "gate" {
-		t.Fatalf("os[0].Name != \"gate\", got %q", os[0].Name)
-	}
-	if os[0].State != 1 {
-		t.Fatalf("os[0].State != 1, got %d", os[0].State)
-	}
-
-	// A non-numeric l2 falls back to state 0 rather than failing the parse.
-	if os[1].Name != "barricade" {
-		t.Fatalf("os[1].Name != \"barricade\", got %q", os[1].Name)
-	}
-	if os[1].State != 0 {
-		t.Fatalf("os[1].State for non-numeric l2 != 0, got %d", os[1].State)
+	tests := []struct {
+		name      string
+		index     int
+		wantName  string
+		wantState uint32
+	}{
+		{"declared l2 is parsed as the default state", 0, "gate", 1},
+		{"non-numeric l2 falls back to state 0", 1, "barricade", 0},
+		{"absent l2 falls back to state 0", 2, "lever", 0},
 	}
 
-	// An absent l2 also falls back to state 0.
-	if os[2].Name != "lever" {
-		t.Fatalf("os[2].Name != \"lever\", got %q", os[2].Name)
-	}
-	if os[2].State != 0 {
-		t.Fatalf("os[2].State for absent l2 != 0, got %d", os[2].State)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if os[tt.index].Name != tt.wantName {
+				t.Fatalf("os[%d].Name != %q, got %q", tt.index, tt.wantName, os[tt.index].Name)
+			}
+			if os[tt.index].State != tt.wantState {
+				t.Fatalf("os[%d].State != %d, got %d", tt.index, tt.wantState, os[tt.index].State)
+			}
+		})
 	}
 }
 

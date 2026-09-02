@@ -10,6 +10,7 @@ type ConditionInput struct {
 	Type            string     `json:"type"`
 	Operator        string     `json:"operator"`
 	Value           int        `json:"value"`
+	Values          []int      `json:"values,omitempty"`
 	ReferenceId     uint32     `json:"referenceId,omitempty"`
 	Step            string     `json:"step,omitempty"`
 	WorldId         world.Id   `json:"worldId,omitempty"`

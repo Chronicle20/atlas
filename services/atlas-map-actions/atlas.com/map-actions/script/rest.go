@@ -32,10 +32,15 @@ type RestRuleModel struct {
 
 // RestConditionModel represents a condition in REST format
 type RestConditionModel struct {
-	Type        string `json:"type"`
-	Operator    string `json:"operator"`
-	Value       string `json:"value"`
-	ReferenceId string `json:"referenceId,omitempty"`
+	Type            string   `json:"type"`
+	Operator        string   `json:"operator"`
+	Value           string   `json:"value,omitempty"`
+	Values          []string `json:"values,omitempty"`
+	ReferenceId     string   `json:"referenceId,omitempty"`
+	Step            string   `json:"step,omitempty"`
+	WorldId         string   `json:"worldId,omitempty"`
+	ChannelId       string   `json:"channelId,omitempty"`
+	IncludeEquipped bool     `json:"includeEquipped,omitempty"`
 }
 
 // RestOperationModel represents an operation in REST format
@@ -115,10 +120,15 @@ func transformRule(rule Rule) RestRuleModel {
 	conditions := make([]RestConditionModel, 0, len(rule.Conditions()))
 	for _, cond := range rule.Conditions() {
 		conditions = append(conditions, RestConditionModel{
-			Type:        cond.Type(),
-			Operator:    cond.Operator(),
-			Value:       cond.Value(),
-			ReferenceId: cond.ReferenceIdRaw(),
+			Type:            cond.Type(),
+			Operator:        cond.Operator(),
+			Value:           cond.Value(),
+			Values:          cond.Values(),
+			ReferenceId:     cond.ReferenceIdRaw(),
+			Step:            cond.Step(),
+			WorldId:         cond.WorldId(),
+			ChannelId:       cond.ChannelId(),
+			IncludeEquipped: cond.IncludeEquipped(),
 		})
 	}
 
@@ -190,10 +200,23 @@ func extractCondition(r RestConditionModel) (condition.Model, error) {
 	builder := condition.NewBuilder().
 		SetType(r.Type).
 		SetOperator(r.Operator).
-		SetValue(r.Value)
+		SetValue(r.Value).
+		SetIncludeEquipped(r.IncludeEquipped)
 
+	if len(r.Values) > 0 {
+		builder.SetValues(r.Values)
+	}
 	if r.ReferenceId != "" {
 		builder.SetReferenceId(r.ReferenceId)
+	}
+	if r.Step != "" {
+		builder.SetStep(r.Step)
+	}
+	if r.WorldId != "" {
+		builder.SetWorldId(r.WorldId)
+	}
+	if r.ChannelId != "" {
+		builder.SetChannelId(r.ChannelId)
 	}
 
 	return builder.Build()

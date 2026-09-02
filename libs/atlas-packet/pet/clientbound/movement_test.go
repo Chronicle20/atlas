@@ -151,3 +151,49 @@ func assertMovePathBlob(t *testing.T, ctx context.Context, encode func(logrus.Fi
 	require.True(t, bytes.HasSuffix(got, want),
 		"move-path blob must equal model.Movement encoder output\n got=% x\nwant=% x", got, want)
 }
+
+// TestPetMovementV87TemplateOptionsCarryFhFallStart drives the writer with the
+// OPTIONS THE SEED TEMPLATE ACTUALLY REGISTERS IT WITH, and pins the one field
+// whose presence depends on them: NormalElement.Encode writes FhFallStart only
+// when the fragment's attr resolves through options.types to the reserved name
+// FALL_DOWN (index 15 in template_gms_87_1.json's 25-entry table). With no
+// table the check never fires and fhFallStart is silently dropped from the
+// outbound fragment — no error, no log line, just a short fragment on the wire,
+// which is what template_gms_87_1.json shipped before this test existed.
+func TestPetMovementV87TemplateOptionsCarryFhFallStart(t *testing.T) {
+	ctx := test.CreateContext("GMS", 87, 1)
+	mv := model.Movement{
+		StartX: 100,
+		StartY: 200,
+		Elements: []model.MovementCodec{
+			&model.NormalElement{Element: model.Element{
+				ElemType: 15, X: 110, Y: 210, Vx: 5, Vy: -3, Fh: 1,
+				FhFallStart: 9, BMoveAction: 7, TElapse: 50,
+			}},
+		},
+	}
+	input := NewPetMovement(2001, 0, mv)
+
+	options := test.TemplateWriterOptions(t, "template_gms_87_1.json", PetMovementWriter)
+	got := test.Encode(t, ctx, input.Encode, options)
+
+	want := []byte{
+		0xD1, 0x07, 0x00, 0x00, // ownerId 2001
+		0x00,       // slot 0
+		0x64, 0x00, // StartX 100
+		0xC8, 0x00, // StartY 200
+		0x01,       // one fragment
+		0x0F,       // attr 15 == FALL_DOWN, resolves to NORMAL
+		0x6E, 0x00, // X 110
+		0xD2, 0x00, // Y 210
+		0x05, 0x00, // Vx 5
+		0xFD, 0xFF, // Vy -3
+		0x01, 0x00, // Fh 1
+		0x09, 0x00, // FhFallStart 9 — present only because attr 15 is named FALL_DOWN
+		0x07,       // bMoveAction 7 (no XOffset/YOffset: v87 never reads them back)
+		0x32, 0x00, // tElapse 50
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v87 pet movement with template options = % X, want % X", got, want)
+	}
+}

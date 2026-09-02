@@ -29,15 +29,25 @@ Why this is a rule and not just a nicety:
   this version?" is answerable by scanning, and `verify-serverbound` / template
   cross-checks read cleanly.
 
-## Rule: move handlers carry a `types` table (enforced)
+## Rule: move entries carry a `types` table (enforced)
 
-The five **move** handlers — `CharacterMoveHandle`, `MonsterMovementHandle`,
-`PetMovementHandle`, `SummonMoveHandle`, `NPCActionHandle` — MUST each carry a
+**Every entry whose codec encodes or decodes a `model.Movement` carries the
+table — writers as well as handlers.** The attr→shape resolution the table
+provides is needed in BOTH directions: `CMovePath` is one shared client
+function, so the table that parsed a blob inbound is by construction the table
+that must serialize it outbound.
+
+The six **move** handlers — `CharacterMoveHandle`, `MonsterMovementHandle`,
+`PetMovementHandle`, `SummonMoveHandle`, `DragonMoveHandle`, `NPCActionHandle` —
+and the six **move** writers — `CharacterMovement`, `MoveMonster`,
+`PetMovement`, `SummonMove`, `DragonMove`, `NPCAction` — MUST each carry a
 non-empty `options.types` array, and all such arrays within one template MUST
-be byte-identical.
+be byte-identical. (A template legitimately omits an *entry* for a packet its
+version does not have — `template_gms_12_1.json` has no dragon or pet movement
+at all — but an entry that exists carries the table.)
 
 `libs/atlas-packet/model/movement.go` decodes a movement fragment by reading a
-one-byte element type and looking it up **as an array index** in that handler's
+one-byte element type and looking it up **as an array index** in that entry's
 `options.types`. The entry's `Type` selects the concrete element decoder
 (`NORMAL`, `JUMP`, `TELEPORT`, `START_FALL_DOWN`, `FLYING_BLOCK`, `STAT_CHANGE`,
 `DEFAULT` — those seven and no others). `Name` is cosmetic except for the
@@ -50,13 +60,21 @@ rather than omitted. Its length and contents are version-specific and MUST be
 derived from that version's client (`CMovePath::Encode`/`::Decode`), never
 copied from a neighbouring template — the table is renumbered between versions.
 
-Failure modes, both of which have shipped:
+Failure modes, all of which have shipped:
 
-- **Table absent** → the lookup returns `("NOT_FOUND", "DEFAULT")`, no decoder
-  branch matches, and every fragment takes the bare 3-byte `Element` decoder
-  against a fragment 9–15 bytes wide. Loud: one error log line per fragment.
+- **Table absent on a handler** → the lookup returns `("NOT_FOUND", "DEFAULT")`,
+  no decoder branch matches, and every fragment takes the bare 3-byte `Element`
+  decoder against a fragment 9–15 bytes wide. Loud: one error log line per
+  fragment.
 - **One `Type` typo'd** → the same 3-byte degradation for that one index, with
   **no** log line at all.
+- **Table absent on a writer** → silent and invisible server-side; the packet
+  still goes out, just wrong on the wire. `model.ReserializeMovePath` (summon
+  and dragon movement) cannot classify a fragment, bails out, and reships the
+  GMS v87 `XOffset`/`YOffset` pair that v87's `CMovePath::Decode` never reads —
+  the observing client's element loop desyncs and the summon teleports. And
+  `NormalElement.Encode`'s reserved `FALL_DOWN` name check never fires, so
+  `fhFallStart` is dropped from the outbound fragment.
 
 Two name-based traps, in opposite directions:
 
@@ -77,9 +95,13 @@ CLAUDE.md Build & Verification checklist:
   any descent. It runs in CI as the **Template Opcode Order Guard** job in
   `.github/workflows/pr-validation.yml`.
 - `tools/template-movement-types-guard.sh` (repo root) checks every template's
-  move handlers for a non-empty, byte-identical, well-formed `options.types`
-  table and exits non-zero on any violation. It runs in CI as the **Template
-  Movement Types Guard** job in `.github/workflows/pr-validation.yml`.
+  move handlers **and move writers** for a non-empty, byte-identical,
+  well-formed `options.types` table and exits non-zero on any violation. The
+  writer carrier set is derived from `libs/atlas-packet` (a clientbound codec
+  holding a `model.Movement` field or calling `model.ReserializeMovePath`), so a
+  new movement-carrying writer is covered the day it is added. It runs in CI as
+  the **Template Movement Types Guard** job in
+  `.github/workflows/pr-validation.yml`.
 
 Run them locally before committing template edits:
 
@@ -93,10 +115,13 @@ sorted position (the guard prints the exact `0xNN (handler) follows 0xMM
 (handler)` pair). Re-sorting is safe — it changes only array order, never
 behavior.
 
-If `template-movement-types-guard.sh` fails, fix the reported handler's
+If `template-movement-types-guard.sh` fails, fix the reported entry's
 `options.types` array in the reported template — either add the missing
 table, correct the typo'd `Type`, or make it byte-identical to the other move
-handlers' tables in that same template.
+entries' tables in that same template. A writer's table is always copied from
+the matching handler **in the same file** (`SummonMove` ← `SummonMoveHandle`,
+and so on); never hand-author one and never copy across templates, since the
+index position IS the attr code and the numbering is version-specific.
 
 ## Character presets must carry ids
 

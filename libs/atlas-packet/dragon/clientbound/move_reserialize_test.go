@@ -91,3 +91,33 @@ func TestDragonMoveUnparseableBlobIsUnchanged(t *testing.T) {
 		t.Fatalf("dragon move with no types table = % X, want the captured blob unchanged % X", got, want)
 	}
 }
+
+// TestDragonMoveV87TemplateOptionsDropElementOffsets is the same assertion as
+// TestDragonMoveV87DropsElementOffsets, driven from the OPTIONS THE SEED
+// TEMPLATE ACTUALLY REGISTERS THE WRITER WITH instead of a hand-built table.
+//
+// That distinction is the whole point. The fix in bd3a09003 was inert on a live
+// GMS 87.1 tenant for exactly one reason: template_gms_87_1.json's DragonMove
+// writer entry carried no options.types, so ReserializeMovePath could not
+// classify the fragment, took its unparseable-blob fallback, and reshipped the
+// capture verbatim — while the hand-fed test above went on passing. This test
+// fails if the table is ever dropped from the template again.
+func TestDragonMoveV87TemplateOptionsDropElementOffsets(t *testing.T) {
+	captured := test.MovePathBlob(false, true)
+	rebroadcast := test.MovePathBlob(false, false)
+
+	options := test.TemplateWriterOptions(t, "template_gms_87_1.json", DragonMoveWriter)
+	got := test.Encode(t, test.CreateContext("GMS", 87, 1),
+		NewDragonMove(4242, captured).Encode, options)
+
+	want := append(append([]byte{}, dragonMoveHeader...), rebroadcast...)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v87 dragon move with template options = % X, want % X", got, want)
+	}
+	if bytes.Contains(got, captured) {
+		t.Errorf("v87 dragon move with template options still carries the captured blob verbatim: % X", got)
+	}
+	if !bytes.HasSuffix(got, test.MovePathTrailer) {
+		t.Errorf("v87 dragon move with template options dropped the move-path trailer: % X", got)
+	}
+}

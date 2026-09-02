@@ -93,3 +93,33 @@ func TestSummonMoveUnparseableBlobIsUnchanged(t *testing.T) {
 		t.Fatalf("summon move with no types table = % X, want the captured blob unchanged % X", got, want)
 	}
 }
+
+// TestSummonMoveV87TemplateOptionsDropElementOffsets is the same assertion as
+// TestSummonMoveV87DropsElementOffsets, driven from the OPTIONS THE SEED
+// TEMPLATE ACTUALLY REGISTERS THE WRITER WITH instead of a hand-built table.
+//
+// That distinction is the whole point. The fix in bd3a09003 was inert on a live
+// GMS 87.1 tenant for exactly one reason: template_gms_87_1.json's SummonMove
+// writer entry carried no options.types, so ReserializeMovePath could not
+// classify the fragment, took its unparseable-blob fallback, and reshipped the
+// capture verbatim — while the hand-fed test above went on passing. This test
+// fails if the table is ever dropped from the template again.
+func TestSummonMoveV87TemplateOptionsDropElementOffsets(t *testing.T) {
+	captured := test.MovePathBlob(false, true)
+	rebroadcast := test.MovePathBlob(false, false)
+
+	options := test.TemplateWriterOptions(t, "template_gms_87_1.json", SummonMoveWriter)
+	got := test.Encode(t, test.CreateContext("GMS", 87, 1),
+		NewSummonMove(42, 1000001, captured).Encode, options)
+
+	want := append(append([]byte{}, summonMoveHeader...), rebroadcast...)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("v87 summon move with template options = % X, want % X", got, want)
+	}
+	if bytes.Contains(got, captured) {
+		t.Errorf("v87 summon move with template options still carries the captured blob verbatim: % X", got)
+	}
+	if !bytes.HasSuffix(got, test.MovePathTrailer) {
+		t.Errorf("v87 summon move with template options dropped the move-path trailer: % X", got)
+	}
+}

@@ -221,5 +221,18 @@ took the re-ingest themselves. Until Item.wz `Consume` is re-ingested against
 this build, `spec/exp` stays absent and every Writ still rejects — it now says so
 instead of doing nothing, but banking EXP is unverified end-to-end.
 
-Repo-wide gate and cross-seam review over `0aeb0f33a..993b6af7b`: dispatched,
-verdicts recorded in `agent-ledger.tsv`.
+- `d6f0fed60` — corrected this file's own wrong claim about `docs/TODO.md`
+  (see the Correction note under Cause 1).
+
+### Gates over `0aeb0f33a..d6f0fed60`
+
+| Gate | Verdict |
+|---|---|
+| `tools/verify.sh --quick --base 0aeb0f33a` | **PASS**, exit 0 — 13 changed paths, 2 changed Go modules; go build/vet on atlas-channel + atlas-consumables, go analyzer guards, skill/job id, scope, producer seam, env domain, lint & format |
+| `task-reviewer` (cross-seam) | **APPROVED_WITH_FINDINGS**, 0 blocking, 2 non-blocking — `review-bug-solomon.md` |
+
+**The flagless `tools/verify.sh` has NOT been re-run since this fix.** The branch
+was last flagless-green at `648b103ca`, which predates these commits. Per
+CLAUDE.md a `--quick` run does not count for "done / ready for PR"; a flagless
+run (91 modules, `-race`, the bake) is still owed before the PR merges. Check
+`df -h /tmp` first — this branch has lost flagless runs to a full tmpfs.

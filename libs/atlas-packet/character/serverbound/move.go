@@ -52,6 +52,45 @@ func moveCrc(t tenant.Model) bool {
 	return (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.IsRegion("JMS")
 }
 
+// moveKeyPadTail reports whether serverbound MOVE_PLAYER ends with the keypad
+// history + path bounding rectangle that CMovePath::Encode appends after the
+// element loop.
+//
+// IDA-verified for jms v185, CMovePath::Encode @0x70b6c4 (reached from
+// CMovePath::Flush @0x70ba2c, which delegates all encoding to it):
+//
+//	@0x70b8ec  Encode1(len(m_aKeyPadState))        -- entry COUNT, not byte count
+//	@0x70b8f3  loop i += 2, Encode1(nType) where
+//	           nType = state[i]&0xF, and for every i except the last
+//	           nType |= state[i+1]<<4                -- two entries per byte
+//	@0x70b942  Encode2(m_rcMove.left)
+//	@0x70b950  Encode2(m_rcMove.top)
+//	@0x70b95e  Encode2(m_rcMove.right)
+//	@0x70b96c  Encode2(m_rcMove.bottom)
+//
+// so the tail is 1 + ceil(count/2) + 8 bytes. Both jms captures carry
+// count = 0x11 = 17, giving 1 + 9 + 8 = 18 -- exactly the trailing bytes the
+// decoder was leaving unread, and the rect decodes to the real bounds of the
+// walk (capture two_elements: left -77, top 215, right -71, bottom 215).
+//
+// THE TAIL IS SERVERBOUND-ONLY, which is why it must live here and not in the
+// shared model.Movement. The client's read side, CMovePath::Decode @0x70b3ce,
+// consumes the keypad block and the rect ONLY under `if (bPassive)`, and the
+// clientbound entry point CUserRemote::OnMove @0xa443ee calls
+// CMovePath::OnMovePacket(..., iPacket, 0) -- bPassive = 0. Adding these
+// fields to model.Movement would make every clientbound movement broadcast
+// emit 18 bytes the client never reads.
+//
+// Gated to JMS because that is the client whose CMovePath::Encode was read.
+// The GMS senders very likely append the same tail (it is unconditional in
+// this client's encoder), and the existing GMS Move fixtures pin Atlas's own
+// output rather than captured client wire, so they would not have caught it —
+// but each GMS version's CMovePath::Encode must be read before extending this,
+// not assumed.
+func moveKeyPadTail(t tenant.Model) bool {
+	return t.IsRegion("JMS")
+}
+
 type Move struct {
 	dr0      uint32
 	dr1      uint32
@@ -62,6 +101,16 @@ type Move struct {
 	dwKey    uint32
 	crc32    uint32
 	movement model.Movement
+	// keyPadStates is the client's per-move keypad history, one 4-bit value
+	// per entry (see moveKeyPadTail). Nil on versions without the tail.
+	keyPadStates []byte
+	// moveRect is the bounding rectangle of the whole path: the origin
+	// extended by every element's position (CMovePath::Encode maintains
+	// m_rcMove as it walks the elements, @0x70b81c-0x70b842).
+	moveRectLeft   int16
+	moveRectTop    int16
+	moveRectRight  int16
+	moveRectBottom int16
 }
 
 func (m Move) Dr0() uint32                  { return m.dr0 }
@@ -73,6 +122,13 @@ func (m Move) Crc() uint32                  { return m.crc }
 func (m Move) DwKey() uint32                { return m.dwKey }
 func (m Move) Crc32() uint32                { return m.crc32 }
 func (m Move) MovementData() model.Movement { return m.movement }
+func (m Move) KeyPadStates() []byte         { return m.keyPadStates }
+
+// MoveRect reports the path bounding rectangle the client appends after the
+// keypad block: left, top, right, bottom.
+func (m Move) MoveRect() (int16, int16, int16, int16) {
+	return m.moveRectLeft, m.moveRectTop, m.moveRectRight, m.moveRectBottom
+}
 
 func (m Move) Operation() string {
 	return CharacterMoveHandle
@@ -125,6 +181,23 @@ func (m Move) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 			w.WriteInt(m.crc32)
 		}
 		w.WriteByteArray(m.movement.Encode(l, ctx)(options))
+		// Keypad history + path bounding rect — see moveKeyPadTail. Two 4-bit
+		// entries per byte, low nibble first; the final byte of an odd-length
+		// run carries only the low nibble.
+		if moveKeyPadTail(t) {
+			w.WriteByte(byte(len(m.keyPadStates)))
+			for i := 0; i < len(m.keyPadStates); i += 2 {
+				b := m.keyPadStates[i] & 0x0F
+				if i != len(m.keyPadStates)-1 {
+					b |= m.keyPadStates[i+1] << 4
+				}
+				w.WriteByte(b)
+			}
+			w.WriteShort(uint16(m.moveRectLeft))
+			w.WriteShort(uint16(m.moveRectTop))
+			w.WriteShort(uint16(m.moveRectRight))
+			w.WriteShort(uint16(m.moveRectBottom))
+		}
 		return w.Bytes()
 	}
 }
@@ -155,5 +228,26 @@ func (m *Move) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request
 			m.crc32 = r.ReadUint32()
 		}
 		m.movement.Decode(l, ctx)(r, options)
+		// Mirror of Encode: keypad history + path bounding rect, serverbound
+		// only (CMovePath::Decode reads them under bPassive, which the
+		// clientbound OnMove path passes as 0). See moveKeyPadTail.
+		if moveKeyPadTail(t) {
+			count := int(r.ReadByte())
+			states := make([]byte, 0, count)
+			var packed byte
+			for i := 0; i < count; i++ {
+				if i%2 == 0 {
+					packed = r.ReadByte()
+				} else {
+					packed >>= 4
+				}
+				states = append(states, packed&0x0F)
+			}
+			m.keyPadStates = states
+			m.moveRectLeft = r.ReadInt16()
+			m.moveRectTop = r.ReadInt16()
+			m.moveRectRight = r.ReadInt16()
+			m.moveRectBottom = r.ReadInt16()
+		}
 	}
 }

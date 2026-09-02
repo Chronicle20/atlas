@@ -204,13 +204,52 @@ The lesson is the one CLAUDE.md already states: a decompile of *a* function is
 not evidence about *the* function until the opcode-construction site is tied to
 it.
 
-## Not covered
+## The 18-byte tail — modelled, and why it lives in the serverbound codec
 
-`model.Movement` does not model the 18-byte `CMovePath` tail (count byte, eight
-keypad-state bytes, flag byte, origin and final position) that every jms frame
-ends with, on any version. Nothing follows it on the wire and Atlas never reads
-it, so it is harmless; `TestCharacterMoveBytesJMS185` asserts it is exactly 18
-bytes rather than tolerating an open-ended remainder.
+An earlier pass of this write-up called the tail unmodelable. That was wrong;
+it is fully decompile-derived. `CMovePath::Flush` @`0x70ba2c` delegates all
+encoding to `CMovePath::Encode` @`0x70b6c4`, whose tail, after the element
+loop, is:
+
+    @0x70b8ec  Encode1(len(m_aKeyPadState))     entry COUNT, not a byte count
+    @0x70b8f3  loop i += 2, Encode1(nType):
+               nType = state[i] & 0xF, and for every i but the last
+               nType |= state[i+1] << 4         two entries packed per byte
+    @0x70b942  Encode2(m_rcMove.left)
+    @0x70b950  Encode2(m_rcMove.top)
+    @0x70b95e  Encode2(m_rcMove.right)
+    @0x70b96c  Encode2(m_rcMove.bottom)
+
+So the tail is `1 + ceil(count/2) + 8`. Every captured frame carries
+`count = 0x11 = 17`, giving `1 + 9 + 8 = 18` — exactly the bytes that were
+being left unread — and `m_rcMove` is the path bounding box, maintained as the
+encoder walks the elements (@`0x70b81c`-`0x70b842`). It decodes to the real
+bounds of each walk: the 90-byte frame yields left −77, top 215, right −71,
+bottom 215, matching a move from x=−77 to x=−71 at y=215.
+
+**It is serverbound-only, and that is why it must NOT go into
+`model.Movement`.** That model is shared between the serverbound decode and the
+clientbound encode. The client's read side, `CMovePath::Decode` @`0x70b3ce`,
+consumes the keypad block and the rect only under `if (bPassive)`, and the
+clientbound entry point `CUserRemote::OnMove` @`0xa443ee` calls
+`CMovePath::OnMovePacket(..., iPacket, 0)` — `bPassive = 0`. Adding the fields
+to `model.Movement` would make every clientbound movement broadcast emit 18
+bytes the client never reads. They live on `character/serverbound.Move`
+instead, behind `moveKeyPadTail`.
+
+`TestCharacterMoveBytesJMS185` now requires all three frames to decode with
+zero bytes remaining and to re-encode byte-identically to the full captured
+body.
+
+Gated to JMS because jms is the client whose `CMovePath::Encode` was read. The
+tail is unconditional in that encoder, so the GMS senders very likely append it
+too — and the existing GMS `Move` fixtures pin Atlas's own output rather than
+captured client wire, so they would not have caught it. Each GMS version's
+`CMovePath::Encode` must be read before extending the gate; do not assume it.
+
+The same tail applies to the other serverbound movement ops (monster, pet,
+summon, npc, dragon), which share `CMovePath::Encode` client-side. Only
+`character/serverbound.Move` was changed here.
 
 ## Still open after both parts
 

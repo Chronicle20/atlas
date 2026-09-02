@@ -237,24 +237,26 @@ func TestCharacterMoveBytesJMS185(t *testing.T) {
 	// Frame bodies with the 2-byte opcode stripped, exactly as the handler's
 	// reader sees them.
 	cases := []struct {
-		name     string
-		body     string
-		originX  int16
-		originY  int16
-		elements int
+		name          string
+		body          string
+		originX       int16
+		originY       int16
+		elements      int
+		keyPadEntries int
+		rect          [4]int16
 	}{
 		// len 90 on the wire.
 		{"two_elements", "e1ffffffc3795d8d00c33f6581ff17e5ff6fa2eb4b090000000ff0c922" +
 			"b3ffd7000200b3ffd7000000000001000000000004a40100b9ffd7007d000000010000000000025a0011000000000000004404b3ffd700b9ffd700",
-			-77, 215, 2},
+			-77, 215, 2, 17, [4]int16{-77, 215, -71, 215}},
 		// len 108 on the wire — the frame quoted in the diagnosis.
 		{"three_elements", "e1ffffffc3795d8d01ebbf6581131fe5ff198f2c641a000000a60d9b63" +
 			"a3ffb8010300a3ffce0100002c0100000000000006960000a3ffd5010000000000000000000006140000a3ffd5010000000031000000000004540111000000000000000000a3ffb801a3ffd501",
-			-93, 440, 3},
+			-93, 440, 3, 17, [4]int16{-93, 440, -93, 469}},
 		// len 188 on the wire — the longest captured.
 		{"eight_elements", "e1ffffffc3795d8d00c33f6581ff17e5ff6fa2eb4b090000000ff0c922" +
 			"e700ce000800e700d70000000000000000000000060f0000e700d600000000000a0000000000026900016400d5fd06000000e700c600000011fe000000000000061e0000e700ac00080089fe000000000000063c0000e700a1000000c5fe000000000000061e0000e80088000800f1ff00000000000006960000e90096000900e10000000000000006780011444444444444444404e7008800e900d700",
-			231, 206, 8},
+			231, 206, 8, 17, [4]int16{231, 136, 233, 215}},
 	}
 
 	for _, c := range cases {
@@ -268,17 +270,17 @@ func TestCharacterMoveBytesJMS185(t *testing.T) {
 			var m Move
 			m.Decode(l, ctx)(&reader, opts)
 
-			// Every jms MOVE_PLAYER frame ends with an 18-byte CMovePath tail
-			// that model.Movement does not model on ANY version: a count byte,
-			// eight keypad-state bytes, a flag byte, then the origin and final
-			// positions repeated (case two_elements: 11 | 00*7 44 | 04 |
-			// -77,215 | -71,215). Atlas never reads it and nothing follows it
-			// on the wire, so it is harmless — but it is asserted here rather
-			// than tolerated, so that a future header change cannot hide
-			// inside a "some bytes left over" allowance.
-			const tailLen = 18
-			if reader.Available() != tailLen {
-				t.Fatalf("reader has %d unconsumed bytes after decode, want exactly the %d-byte CMovePath tail", reader.Available(), tailLen)
+			// The frame must now be consumed to the last byte, including the
+			// keypad + bounding-rect tail (moveKeyPadTail).
+			if reader.Available() != 0 {
+				t.Fatalf("reader has %d unconsumed bytes after decode", reader.Available())
+			}
+			if got := len(m.KeyPadStates()); got != c.keyPadEntries {
+				t.Errorf("keypad entries = %d, want %d", got, c.keyPadEntries)
+			}
+			gl, gt, gr, gb := m.MoveRect()
+			if gl != c.rect[0] || gt != c.rect[1] || gr != c.rect[2] || gb != c.rect[3] {
+				t.Errorf("move rect = %d,%d,%d,%d, want %v", gl, gt, gr, gb, c.rect)
 			}
 			mv := m.MovementData()
 			if len(mv.Elements) != c.elements {
@@ -288,9 +290,8 @@ func TestCharacterMoveBytesJMS185(t *testing.T) {
 				t.Errorf("origin = %d,%d, want %d,%d", mv.StartX, mv.StartY, c.originX, c.originY)
 			}
 
-			want := body[:len(body)-tailLen]
-			if got := test.Encode(t, ctx, m.Encode, opts); !bytes.Equal(got, want) {
-				t.Fatalf("jms185 move re-encode:\n got=% X\nwant=% X", got, want)
+			if got := test.Encode(t, ctx, m.Encode, opts); !bytes.Equal(got, body) {
+				t.Fatalf("jms185 move re-encode:\n got=% X\nwant=% X", got, body)
 			}
 		})
 	}

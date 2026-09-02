@@ -127,7 +127,7 @@ Non-goals:
   derived surfaces. It is the single source of truth for:
   `libs/atlas-kafka/gen/topics.yaml`, `deploy/k8s/base/env-configmap.yaml`,
   `deploy/k8s/base/kafka-topics-configmap.yaml`,
-  `deploy/k8s/overlays/{main,pr,pr-sparse,pr-cleanup}/kustomization.yaml`, and
+  `deploy/k8s/overlays/{main,pr,pr-sparse}/kustomization.yaml`, and
   `deploy/compose/.env.example`.
 - FR-2.2 After regeneration, `EVENT_TOPIC_TENANT_STATUS` MUST appear in
   `topics.yaml` attributed to package `atlas-tenants/tenant`.
@@ -242,12 +242,15 @@ therefore unread and can be abandoned.
 
 - [ ] `EventTopicTenantStatus` is declared `topic.Token = "EVENT_TOPIC_TENANT_STATUS"`.
 - [ ] `testmain_test.go` no longer sets the token to its own name.
-- [ ] A regression test covers the tenant status emit path's token resolution
-      (FR-4.1) and fails against the pre-fix constant.
+- [ ] A table-driven regression test pins the token's shape (FR-4.1) and fails
+      against the pre-fix constant. Resolution behaviour itself is EnvProvider's
+      and stays covered by `libs/atlas-kafka/topic/provider_test.go`.
 - [ ] `EVENT_TOPIC_TENANT_STATUS` is present in `topics.yaml`,
       `env-configmap.yaml`, `kafka-topics-configmap.yaml` (`cleanup: delete`),
-      all four overlay `kustomization.yaml` files, and `.env.example`, all
-      produced by `tools/gen-topics.sh` rather than hand-edited.
+      the three topic-carrying overlay `kustomization.yaml` files (`main`,
+      `pr`, `pr-sparse` — `pr-cleanup` declares no topic env vars), and
+      `.env.example`, all produced by `tools/gen-topics.sh` rather than
+      hand-edited.
 - [ ] `./tools/gen-topics.sh --check` exits 0.
 - [ ] `topicguard` fires on a lowercase dotted legacy topic name reaching a
       `topic.Token` parameter, proven by a `testdata` fixture.

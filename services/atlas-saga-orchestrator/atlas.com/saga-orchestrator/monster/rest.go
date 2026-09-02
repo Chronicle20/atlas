@@ -60,6 +60,13 @@ func (r *SpawnResponseRestModel) SetID(id string) error {
 	return nil
 }
 
+// Required JSON:API relationship stubs (libs/atlas-rest gotcha): api2go errors
+// out decoding any response unless the target implements these, even with no
+// relationships present.
+func (r *SpawnResponseRestModel) SetToOneReferenceID(_, _ string) error { return nil }
+
+func (r *SpawnResponseRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
 // SpawnRequest contains the parameters needed to spawn a monster.
 type SpawnRequest struct {
 	WorldId       world.Id

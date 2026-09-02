@@ -148,6 +148,7 @@ const (
 	PlayPortalSound = sharedsaga.PlayPortalSound
 	UpdateAreaInfo  = sharedsaga.UpdateAreaInfo
 	ShowInfo        = sharedsaga.ShowInfo
+	PlaySound       = sharedsaga.PlaySound
 	ShowInfoText    = sharedsaga.ShowInfoText
 	ShowIntro       = sharedsaga.ShowIntro
 	ShowHint        = sharedsaga.ShowHint
@@ -332,6 +333,7 @@ type (
 	UiLockPayload                       = sharedsaga.UiLockPayload
 	PlayPortalSoundPayload              = sharedsaga.PlayPortalSoundPayload
 	ShowInfoPayload                     = sharedsaga.ShowInfoPayload
+	PlaySoundPayload                    = sharedsaga.PlaySoundPayload
 	ShowInfoTextPayload                 = sharedsaga.ShowInfoTextPayload
 	UpdateAreaInfoPayload               = sharedsaga.UpdateAreaInfoPayload
 	ShowHintPayload                     = sharedsaga.ShowHintPayload
@@ -1318,6 +1320,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ShowInfo:
 		var payload ShowInfoPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case PlaySound:
+		var payload PlaySoundPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

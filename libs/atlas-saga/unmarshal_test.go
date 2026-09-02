@@ -1693,3 +1693,33 @@ func TestUnmarshalClearSkillStep(t *testing.T) {
 		t.Errorf("payload = %+v, want %+v", p, want)
 	}
 }
+
+func TestUnmarshalPlaySoundStep(t *testing.T) {
+	raw := `{
+		"stepId": "sound-1",
+		"status": "pending",
+		"action": "play_sound",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"path": "cannonshooter/flying"
+		}
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != PlaySound {
+		t.Fatalf("expected action PlaySound, got %q", step.Action)
+	}
+	p, ok := step.Payload.(PlaySoundPayload)
+	if !ok {
+		t.Fatalf("expected PlaySoundPayload, got %T", step.Payload)
+	}
+	want := PlaySoundPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), Path: "cannonshooter/flying"}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}

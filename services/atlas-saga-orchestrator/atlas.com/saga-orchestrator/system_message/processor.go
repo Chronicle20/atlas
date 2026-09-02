@@ -36,6 +36,8 @@ type Processor interface {
 	UiLock(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) error
 	// UiDisable sends a command to disable or enable UI input for a character
 	UiDisable(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) error
+	// PlaySound sends a command to play a WZ sound for a character
+	PlaySound(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -107,4 +109,9 @@ func (p *ProcessorImpl) UiLock(transactionId uuid.UUID, ch channel.Model, charac
 // UiDisable sends a Kafka command to atlas-channel to disable or enable UI input
 func (p *ProcessorImpl) UiDisable(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(UiDisableCommandProvider(transactionId, ch, characterId, enable))
+}
+
+// PlaySound sends a Kafka command to atlas-channel to play a WZ sound
+func (p *ProcessorImpl) PlaySound(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(PlaySoundCommandProvider(transactionId, ch, characterId, path))
 }

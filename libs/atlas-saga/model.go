@@ -165,12 +165,16 @@ const (
 	PlayPortalSound Action = "play_portal_sound"
 	UpdateAreaInfo  Action = "update_area_info"
 	ShowInfo        Action = "show_info"
-	ShowInfoText    Action = "show_info_text"
-	ShowIntro       Action = "show_intro"
-	ShowHint        Action = "show_hint"
-	ShowGuideHint   Action = "show_guide_hint"
-	BlockPortal     Action = "block_portal"
-	UnblockPortal   Action = "unblock_portal"
+	// PlaySound plays a WZ sound path for one character. Cosmic's
+	// AbstractPlayerInteraction.playSound is FIELD_EFFECT mode 4; the mode
+	// byte is resolved per tenant by FieldEffectSoundBody, never carried here.
+	PlaySound     Action = "play_sound"
+	ShowInfoText  Action = "show_info_text"
+	ShowIntro     Action = "show_intro"
+	ShowHint      Action = "show_hint"
+	ShowGuideHint Action = "show_guide_hint"
+	BlockPortal   Action = "block_portal"
+	UnblockPortal Action = "unblock_portal"
 
 	// Spawn actions
 	SpawnMonster      Action = "spawn_monster"

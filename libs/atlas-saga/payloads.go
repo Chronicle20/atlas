@@ -468,6 +468,14 @@ type ShowInfoPayload struct {
 	Path        string     `json:"path"`        // Path to the info effect
 }
 
+// PlaySoundPayload represents the payload required to play a sound for a character.
+type PlaySoundPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to play the sound for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the sound (e.g., "cannonshooter/flying")
+}
+
 // ShowInfoTextPayload represents the payload for showing a text message to a player.
 type ShowInfoTextPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId to show text to

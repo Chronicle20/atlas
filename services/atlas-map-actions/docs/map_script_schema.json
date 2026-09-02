@@ -154,6 +154,7 @@
             "open_npc",
             "update_area_info",
             "show_info",
+            "play_sound",
             "clear_skill"
           ]
         },
@@ -489,6 +490,31 @@
                   "path": {
                     "type": "string",
                     "description": "OnUserEff path (e.g. Effect/OnUserEff.img/guideEffect/...)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "play_sound"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "WZ sound path (e.g. cannonshooter/flying)"
                   }
                 }
               }

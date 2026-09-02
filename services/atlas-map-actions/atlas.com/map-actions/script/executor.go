@@ -58,6 +58,8 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeUpdateAreaInfo(f, characterId, op)
 	case "show_info":
 		return e.executeShowInfo(f, characterId, op)
+	case "play_sound":
+		return e.executePlaySound(f, characterId, op)
 	case "clear_skill":
 		return e.executeClearSkill(f, characterId, op)
 	default:
@@ -531,6 +533,34 @@ func (e *OperationExecutor) executeShowInfo(f field.Model, characterId uint32, o
 			saga.Pending,
 			saga.ShowInfo,
 			saga.ShowInfoPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				Path:        path,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executePlaySound(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	path, ok := params["path"]
+	if !ok {
+		return fmt.Errorf("play_sound operation missing path parameter")
+	}
+
+	e.l.Debugf("Playing sound [%s] for character [%d].", path, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-play-sound").
+		AddStep(
+			fmt.Sprintf("play-sound-%d", characterId),
+			saga.Pending,
+			saga.PlaySound,
+			saga.PlaySoundPayload{
 				CharacterId: characterId,
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),

@@ -92,6 +92,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handlePlaySound(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleUiLock(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -333,6 +338,29 @@ func handleFieldEffect(sc server.Model, wp writer.Producer) message.Handler[syst
 			session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectScreenBody(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show field effect for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+func handlePlaySound(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.PlaySoundBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.PlaySoundBody]) {
+		if cmd.Type != system_message2.CommandPlaySound {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
+			session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectSoundBody(cmd.Body.Path)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to play sound for character [%d].", cmd.CharacterId)
 		}
 	}
 }

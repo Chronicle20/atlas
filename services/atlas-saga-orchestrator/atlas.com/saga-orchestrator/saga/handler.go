@@ -165,6 +165,7 @@ type Handler interface {
 	handleMtsBidEscrow(s Saga, st Step[any]) error
 	handlePlayPortalSound(s Saga, st Step[any]) error
 	handleShowInfo(s Saga, st Step[any]) error
+	handlePlaySound(s Saga, st Step[any]) error
 	handleShowInfoText(s Saga, st Step[any]) error
 	handleUpdateAreaInfo(s Saga, st Step[any]) error
 	handleShowHint(s Saga, st Step[any]) error
@@ -991,6 +992,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handlePlayPortalSound, true
 	case ShowInfo:
 		return h.handleShowInfo, true
+	case PlaySound:
+		return h.handlePlaySound, true
 	case ShowInfoText:
 		return h.handleShowInfoText, true
 	case UpdateAreaInfo:
@@ -2878,6 +2881,29 @@ func (h *HandlerImpl) handleShowInfo(s Saga, st Step[any]) error {
 	}
 
 	// ShowInfo is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handlePlaySound handles the PlaySound action. Fire-and-forget: a sound
+// cannot be un-played, so this action registers no compensator.
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handlePlaySound(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(PlaySoundPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.PlaySound(s.TransactionId(), ch, payload.CharacterId, payload.Path)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to play sound.")
+		return err
+	}
+
+	// PlaySound is a synchronous command with no async response event
 	// Mark the step as completed immediately after successfully sending the command
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 

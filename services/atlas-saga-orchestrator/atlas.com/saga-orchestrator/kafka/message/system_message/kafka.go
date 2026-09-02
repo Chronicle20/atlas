@@ -24,6 +24,7 @@ const (
 	CommandFieldEffect     = "FIELD_EFFECT"
 	CommandUiLock          = "UI_LOCK"
 	CommandUiDisable       = "UI_DISABLE"
+	CommandPlaySound       = "PLAY_SOUND"
 )
 
 // Command represents a Kafka command for system message operations
@@ -93,4 +94,9 @@ type UiLockBody struct {
 // UiDisableBody is the body for disabling or enabling UI input for a character
 type UiDisableBody struct {
 	Enable bool `json:"enable"` // true = disable UI input, false = enable UI input
+}
+
+// PlaySoundBody is the body for playing a WZ sound for a character
+type PlaySoundBody struct {
+	Path string `json:"path"` // Path to the sound (e.g., "cannonshooter/flying")
 }

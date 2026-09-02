@@ -341,6 +341,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.PlayPortalSound:            {},
 	sharedsaga.UpdateAreaInfo:             {},
 	sharedsaga.ShowInfo:                   {},
+	sharedsaga.PlaySound:                  {},
 	sharedsaga.ShowInfoText:               {},
 	sharedsaga.ShowIntro:                  {},
 	sharedsaga.ShowHint:                   {},

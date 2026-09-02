@@ -189,3 +189,19 @@ func UiDisableCommandProvider(transactionId uuid.UUID, ch channel.Model, charact
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// PlaySoundCommandProvider creates a Kafka message for playing a WZ sound
+func PlaySoundCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.PlaySoundBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandPlaySound,
+		Body: system_message.PlaySoundBody{
+			Path: path,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

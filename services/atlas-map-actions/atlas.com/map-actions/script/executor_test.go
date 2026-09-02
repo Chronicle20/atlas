@@ -46,13 +46,13 @@ func TestExecuteOperationUnknownType(t *testing.T) {
 		{
 			name: "ExecuteOperation errors and creates nothing",
 			execute: func(e *OperationExecutor, f field.Model) error {
-				op, err := operation.NewBuilder().SetType("play_sound").Build()
+				op, err := operation.NewBuilder().SetType("unknown_op").Build()
 				if err != nil {
 					t.Fatalf("operation.NewBuilder().Build(): %v", err)
 				}
 				return e.ExecuteOperation(f, 1, op)
 			},
-			wantErr:     "unknown operation type [play_sound]",
+			wantErr:     "unknown operation type [unknown_op]",
 			wantCreated: 0,
 		},
 		{
@@ -65,7 +65,7 @@ func TestExecuteOperationUnknownType(t *testing.T) {
 				if err != nil {
 					t.Fatalf("operation.NewBuilder().Build(): %v", err)
 				}
-				playSound, err := operation.NewBuilder().SetType("play_sound").Build()
+				unknownOp, err := operation.NewBuilder().SetType("unknown_op").Build()
 				if err != nil {
 					t.Fatalf("operation.NewBuilder().Build(): %v", err)
 				}
@@ -73,9 +73,9 @@ func TestExecuteOperationUnknownType(t *testing.T) {
 				if err != nil {
 					t.Fatalf("operation.NewBuilder().Build(): %v", err)
 				}
-				return e.ExecuteOperations(f, 1, []operation.Model{fieldEffect, playSound, unlockUi})
+				return e.ExecuteOperations(f, 1, []operation.Model{fieldEffect, unknownOp, unlockUi})
 			},
-			wantErr:     "unknown operation type [play_sound]",
+			wantErr:     "unknown operation type [unknown_op]",
 			wantCreated: 1,
 		},
 	}
@@ -764,5 +764,68 @@ func TestExecuteClearSkillParamValidation(t *testing.T) {
 				t.Errorf("len(rec.created) = %d, want 0", len(rec.created))
 			}
 		})
+	}
+}
+
+func TestExecutePlaySound(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("play_sound").
+		SetParams(map[string]string{"path": "cannonshooter/flying"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 1 {
+		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+	}
+	if rec.created[0].Steps[0].Action != saga.PlaySound {
+		t.Errorf("Steps[0].Action = %v, want saga.PlaySound", rec.created[0].Steps[0].Action)
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.PlaySoundPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.PlaySoundPayload")
+	}
+	want := saga.PlaySoundPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		Path:        "cannonshooter/flying",
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}
+
+func TestExecutePlaySoundRequiresPath(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("play_sound").
+		SetParams(map[string]string{}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	err = e.ExecuteOperation(f, 1, op)
+	if err == nil || !strings.Contains(err.Error(), "play_sound operation missing path parameter") {
+		t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, "play_sound operation missing path parameter")
+	}
+	if len(rec.created) != 0 {
+		t.Errorf("len(rec.created) = %d, want 0", len(rec.created))
 	}
 }

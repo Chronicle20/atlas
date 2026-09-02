@@ -118,6 +118,8 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case ChangeCharacterWorldPayload:
 		return p.CharacterId
+	case PlaySoundPayload:
+		return p.CharacterId
 	default:
 		return 0
 	}

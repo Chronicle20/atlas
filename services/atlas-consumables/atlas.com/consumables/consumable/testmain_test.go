@@ -30,40 +30,45 @@ import (
 // reinstalling the manager.
 var emitted *producertest.Capture
 
-// idleReader is a KafkaReader that never yields a message and never dials a
-// broker. It exists so the package can register a real consumer for the
-// compartment status topic: RequestItemConsume calls
-// consumer.Manager.RegisterHandler, which hard-errors with "no consumer found
-// for topic" unless one is registered, and an offline unit test has no broker
-// to register against.
-type idleReader struct{}
+// stoppedReader is the KafkaReader handed to the consumer manager in tests. It
+// never fetches: the consumers registered below exist purely so
+// Manager.RegisterHandler finds a consumer for the topic, which the
+// once-handler registration inside RequestItemConsume and friends requires.
+type stoppedReader struct{}
 
-func (idleReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
+func (stoppedReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
 	<-ctx.Done()
 	return kafka.Message{}, ctx.Err()
 }
 
-func (idleReader) CommitMessages(_ context.Context, _ ...kafka.Message) error { return nil }
+func (stoppedReader) CommitMessages(_ context.Context, _ ...kafka.Message) error { return nil }
 
-func (idleReader) Close() error { return nil }
+func (stoppedReader) Close() error { return nil }
 
-// registerCompartmentStatusConsumer wires the manager to idleReader and adds
-// the one consumer RequestItemConsume needs. The context is cancelled before
-// the consumer starts so its fetch loop exits immediately; only the map entry
-// RegisterHandler looks up matters here. Returns the cancel func's waitgroup
-// so TestMain can drain it before exiting.
-func registerCompartmentStatusConsumer(t string) *sync.WaitGroup {
-	l := logrus.New()
-	l.SetOutput(os.Stderr)
+// registerConsumers puts a consumer in the manager's map for each topic whose
+// once-handlers this package's tests register. The context handed in is
+// already cancelled, so every consumer goroutine returns on its first loop
+// iteration and nothing dials a broker.
+func registerConsumers(tokens ...topic.Token) {
+	consumer.ResetInstance()
 	m := consumer.GetManager(
+		consumer.ConfigReaderProducer(func(_ kafka.ReaderConfig) consumer.KafkaReader { return stoppedReader{} }),
 		consumer.ConfigEngine(consumer.EngineReader),
-		consumer.ConfigReaderProducer(func(_ kafka.ReaderConfig) consumer.KafkaReader { return idleReader{} }),
 	)
+
+	l := logrus.New()
+	l.SetLevel(logrus.PanicLevel)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	wg := &sync.WaitGroup{}
-	m.AddConsumer(l, ctx, wg)(consumer.NewConfig([]string{"localhost:9092"}, "compartment_status_event", t, "atlas-consumables-test"))
-	return wg
+	for _, tk := range tokens {
+		t, err := topic.EnvProvider(l)(tk)()
+		if err != nil {
+			log.Fatalf("failed to resolve %s: %v", tk, err)
+		}
+		m.AddConsumer(l, ctx, wg)(consumer.NewConfig(nil, "test", t, "test-group"))
+	}
+	wg.Wait()
 }
 
 func TestMain(m *testing.M) {
@@ -82,8 +87,6 @@ func TestMain(m *testing.M) {
 	setEnv(monsterbook.EnvCommandTopic)
 	setEnv(sagamsg.EnvStatusEventTopic)
 	emitted = producertest.InstallCapturing()
-	wg := registerCompartmentStatusConsumer(string(compartmentmsg.EnvEventTopicStatus))
-	code := m.Run()
-	wg.Wait()
-	os.Exit(code)
+	registerConsumers(compartmentmsg.EnvEventTopicStatus, assetMsg.EnvEventTopicStatus)
+	os.Exit(m.Run())
 }

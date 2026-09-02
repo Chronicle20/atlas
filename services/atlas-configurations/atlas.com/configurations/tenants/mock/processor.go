@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
 	"atlas-configurations/tenants/characters/preset"
 
@@ -11,9 +12,12 @@ import (
 
 type ProcessorMock struct {
 	WithValidatorFunc              func(v *preset.Validator) tenants.Processor
+	WithTemplatesFunc              func(tp templates.Processor) tenants.Processor
 	ByIdProviderFunc               func(id uuid.UUID) model.Provider[tenants.RestModel]
 	ByRegionAndVersionProviderFunc func(region string, majorVersion uint16, minorVersion uint16) model.Provider[tenants.RestModel]
 	AllProviderFunc                func(page model.Page) model.Provider[model.Paged[tenants.RestModel]]
+	ViewByIdProviderFunc           func(id uuid.UUID) model.Provider[tenants.ViewRestModel]
+	AllViewProviderFunc            func(page model.Page) model.Provider[model.Paged[tenants.ViewRestModel]]
 	GetByIdFunc                    func(id uuid.UUID) (tenants.RestModel, error)
 	GetByRegionAndVersionFunc      func(region string, majorVersion uint16, minorVersion uint16) (tenants.RestModel, error)
 	UpdateByIdFunc                 func(tenantId uuid.UUID, input tenants.RestModel) error
@@ -28,6 +32,27 @@ func (m *ProcessorMock) WithValidator(v *preset.Validator) tenants.Processor {
 		return m.WithValidatorFunc(v)
 	}
 	return m
+}
+
+func (m *ProcessorMock) WithTemplates(tp templates.Processor) tenants.Processor {
+	if m.WithTemplatesFunc != nil {
+		return m.WithTemplatesFunc(tp)
+	}
+	return m
+}
+
+func (m *ProcessorMock) ViewByIdProvider(id uuid.UUID) model.Provider[tenants.ViewRestModel] {
+	if m.ViewByIdProviderFunc != nil {
+		return m.ViewByIdProviderFunc(id)
+	}
+	return model.FixedProvider(tenants.ViewRestModel{})
+}
+
+func (m *ProcessorMock) AllViewProvider(page model.Page) model.Provider[model.Paged[tenants.ViewRestModel]] {
+	if m.AllViewProviderFunc != nil {
+		return m.AllViewProviderFunc(page)
+	}
+	return model.FixedProvider(model.Paged[tenants.ViewRestModel]{})
 }
 
 func (m *ProcessorMock) ByIdProvider(id uuid.UUID) model.Provider[tenants.RestModel] {

@@ -44,3 +44,34 @@ func (r *RestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+// ViewRestModel is the READ-ONLY projection of a tenant configuration:
+// RestModel plus the five computed drift attributes. It is a separate
+// type for the same reason templates.ViewRestModel is (see its comment):
+// Create persists json.Marshal(input) verbatim, so any field with a JSON
+// tag on RestModel would be written INTO the stored document, read back
+// by Make, and folded into the next revision -- self-reference and
+// permanent phantom drift. Keeping the write model untouched means that
+// failure class does not exist rather than being defended against.
+//
+// encoding/json flattens anonymous embedded structs, so the wire shape is
+// exactly RestModel's attributes plus five keys, and sparse fieldsets
+// (?fields[tenants]=...) keep working. GetName / GetID / SetID promote
+// from the embedded RestModel.
+//
+// SectionDrift is a map, not a struct: a struct would have to be edited
+// every time a section is added, which is the FR-2.7 trap one level up.
+// The map is ALWAYS fully populated -- all six keys present, all false
+// when no baseline resolved -- so a client never distinguishes "absent"
+// from "false".
+//
+// The PATCH path still binds RestModel, so these five are ignored on
+// write by omission rather than by code (FR-3.3).
+type ViewRestModel struct {
+	RestModel
+	BaselineTemplateId string          `json:"baselineTemplateId"`
+	BaselineRevision   string          `json:"baselineRevision"`
+	StoredRevision     string          `json:"storedRevision"`
+	TemplateDrift      bool            `json:"templateDrift"`
+	SectionDrift       map[string]bool `json:"sectionDrift"`
+}

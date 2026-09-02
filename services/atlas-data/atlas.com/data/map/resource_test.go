@@ -135,7 +135,7 @@ func TestGetMapObjectsEmpty(t *testing.T) {
 	req := mapsRequest(ts.URL+"/data/maps/100000000/objects", tn.Id())
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -195,7 +195,7 @@ func TestGetMapObjectsReturnsRows(t *testing.T) {
 	req := mapsRequest(ts.URL+"/data/maps/100000000/objects", tn.Id())
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -246,7 +246,7 @@ func TestGetMapObjectsUnknownMap(t *testing.T) {
 	req := mapsRequest(ts.URL+"/data/maps/999999999/objects", tn.Id())
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

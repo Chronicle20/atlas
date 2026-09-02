@@ -44,6 +44,23 @@ export interface MapReactorData {
   };
 }
 
+export interface MapObjectData {
+  id: string;
+  type: string;
+  attributes: {
+    kind: string;
+    name: string;
+    objectSource: string;
+    l0: string;
+    l1: string;
+    l2: string;
+    x: number;
+    y: number;
+    z: number;
+    layer: number;
+  };
+}
+
 export interface MapMonsterData {
   id: string;
   type: string;
@@ -83,6 +100,10 @@ class MapEntitiesService {
 
   async getMonsters(mapId: string): Promise<MapMonsterData[]> {
     return api.getList<MapMonsterData>(`/api/data/maps/${mapId}/monsters`);
+  }
+
+  async getObjects(mapId: string): Promise<MapObjectData[]> {
+    return api.getList<MapObjectData>(`/api/data/maps/${mapId}/objects`);
   }
 }
 

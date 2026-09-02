@@ -6,6 +6,7 @@ import {
   type MapNpcData,
   type MapReactorData,
   type MapMonsterData,
+  type MapObjectData,
 } from "@/services/api/map-entities.service";
 
 export const mapEntityKeys = {
@@ -13,6 +14,7 @@ export const mapEntityKeys = {
   npcs: (mapId: string) => ["maps", mapId, "npcs"] as const,
   reactors: (mapId: string) => ["maps", mapId, "reactors"] as const,
   monsters: (mapId: string) => ["maps", mapId, "monsters"] as const,
+  objects: (mapId: string) => ["maps", mapId, "objects"] as const,
 };
 
 export function useMapPortals(
@@ -59,6 +61,19 @@ export function useMapMonsters(
   return useQuery({
     queryKey: mapEntityKeys.monsters(mapId),
     queryFn: () => mapEntitiesService.getMonsters(mapId),
+    enabled: !!mapId && !!activeTenant,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+export function useMapObjects(
+  mapId: string,
+): UseQueryResult<MapObjectData[], Error> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: mapEntityKeys.objects(mapId),
+    queryFn: () => mapEntitiesService.getObjects(mapId),
     enabled: !!mapId && !!activeTenant,
     staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

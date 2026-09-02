@@ -3,6 +3,7 @@ import { useMap } from "@/lib/hooks/api/useMaps";
 import {
   useMapMonsters,
   useMapNpcs,
+  useMapObjects,
   useMapPortals,
   useMapReactors,
 } from "@/lib/hooks/api/useMapEntities";
@@ -24,6 +25,7 @@ export function MapDetailPage() {
   const { data: npcs, error: npcsError } = useMapNpcs(id);
   const { data: monsters, error: monstersError } = useMapMonsters(id);
   const { data: reactors, error: reactorsError } = useMapReactors(id);
+  const { data: objects, error: objectsError } = useMapObjects(id);
 
   if (isLoading) {
     return <PageLoader />;
@@ -82,6 +84,8 @@ export function MapDetailPage() {
           monstersError={monstersError}
           reactors={reactors}
           reactorsError={reactorsError}
+          objects={objects}
+          objectsError={objectsError}
         />
       </HoverHighlightProvider>
     </div>

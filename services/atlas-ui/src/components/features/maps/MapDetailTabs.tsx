@@ -14,11 +14,13 @@ import {
 import { NpcImage } from "@/components/features/npc/NpcImage";
 import { MonsterTableRow } from "@/components/features/monsters/MonsterTableRow";
 import { MapCell } from "@/components/map-cell";
+import { MapObjectsTable } from "./MapObjectsTable";
 import { useTenant } from "@/context/tenant-context";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { cn } from "@/lib/utils";
 import type {
   MapMonsterData,
+  MapObjectData,
   MapPortalData,
   MapReactorData,
 } from "@/services/api/map-entities.service";
@@ -34,6 +36,8 @@ interface MapDetailTabsProps {
   monstersError?: unknown;
   reactors: MapReactorData[] | undefined;
   reactorsError?: unknown;
+  objects?: MapObjectData[];
+  objectsError?: Error;
 }
 
 export function MapDetailTabs({
@@ -44,6 +48,8 @@ export function MapDetailTabs({
   monstersError,
   reactors,
   reactorsError,
+  objects,
+  objectsError,
 }: MapDetailTabsProps) {
   const sortedPortals = useMemo(() => {
     if (!portals) return portals;
@@ -92,6 +98,9 @@ export function MapDetailTabs({
         </TabsTrigger>
         <TabsTrigger value="reactors">
           Reactors {reactors && `(${reactors.length})`}
+        </TabsTrigger>
+        <TabsTrigger value="objects">
+          Map Objects {objects && `(${objects.length})`}
         </TabsTrigger>
       </TabsList>
 
@@ -202,6 +211,14 @@ export function MapDetailTabs({
                 No reactors on this map.
               </p>
             )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="objects">
+        <Card>
+          <CardContent className="pt-6">
+            <MapObjectsTable objects={objects} error={objectsError} />
           </CardContent>
         </Card>
       </TabsContent>

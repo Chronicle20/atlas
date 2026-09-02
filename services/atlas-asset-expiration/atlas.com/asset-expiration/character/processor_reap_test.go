@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -30,7 +31,7 @@ type recorder struct {
 }
 
 func (r *recorder) provider() producer.Provider {
-	return func(token string) producer.MessageProducer {
+	return func(token topic.Token) producer.MessageProducer {
 		return func(p model.Provider[[]kafka.Message]) error {
 			msgs, err := p()
 			if err != nil {
@@ -39,7 +40,7 @@ func (r *recorder) provider() producer.Provider {
 			r.mu.Lock()
 			defer r.mu.Unlock()
 			for range msgs {
-				r.topics = append(r.topics, token)
+				r.topics = append(r.topics, string(token))
 			}
 			return nil
 		}

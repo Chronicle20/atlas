@@ -37,7 +37,7 @@ func outboxEvents(t *testing.T, db *gorm.DB) []character2.StatusEvent[json.RawMe
 func pickUpCommands(t *testing.T, capture *producertest.Capture) []dropmsg.Command[dropmsg.RequestPickUpCommandBody] {
 	t.Helper()
 	var out []dropmsg.Command[dropmsg.RequestPickUpCommandBody]
-	for _, m := range capture.Messages(dropmsg.EnvCommandTopic) {
+	for _, m := range capture.Messages(string(dropmsg.EnvCommandTopic)) {
 		var c dropmsg.Command[dropmsg.RequestPickUpCommandBody]
 		require.NoError(t, json.Unmarshal(m.Value, &c))
 		if c.Type == dropmsg.CommandTypeRequestPickUp {

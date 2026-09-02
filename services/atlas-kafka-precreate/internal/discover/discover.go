@@ -10,24 +10,6 @@ import (
 	"strings"
 )
 
-const (
-	commandPrefix = "COMMAND_TOPIC_"
-	eventPrefix   = "EVENT_TOPIC_"
-)
-
-// compactVars names the three config-projection variables whose topics must
-// carry cleanup.policy=compact. Their consumers replay from first-offset at
-// every boot to rebuild tenant/service config state and the outbox never
-// re-emits a (topic, key) it already delivered, so under the default DELETE
-// cleanup retention empties the topic ~7 days after the last config change
-// and every later projection boot has nothing to replay. Events are keyed,
-// so compaction retains the latest snapshot per key forever.
-var compactVars = map[string]struct{}{
-	"EVENT_TOPIC_CONFIGURATION_TENANT_STATUS":      {},
-	"EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS":     {},
-	"EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS": {},
-}
-
 // Topics is the outcome of scraping the process environment for topic-shaped
 // variables, split by the cleanup policy their topic must be created with.
 type Topics struct {
@@ -45,45 +27,6 @@ func (t Topics) Union() []string {
 		set[name] = struct{}{}
 	}
 	return sortedKeys(set)
-}
-
-// FromEnviron scrapes environ (entries shaped "KEY=VALUE", as returned by
-// os.Environ) for COMMAND_TOPIC_* and EVENT_TOPIC_* variables and classifies
-// each resulting topic name as plain or compacted.
-func FromEnviron(environ []string) Topics {
-	plain := make(map[string]struct{})
-	compact := make(map[string]struct{})
-
-	for _, entry := range environ {
-		name, value, ok := strings.Cut(entry, "=")
-		if !ok {
-			continue
-		}
-		if value == "" {
-			continue
-		}
-
-		hasCommandPrefix := strings.HasPrefix(name, commandPrefix)
-		hasEventPrefix := strings.HasPrefix(name, eventPrefix)
-		if !hasCommandPrefix && !hasEventPrefix {
-			continue
-		}
-
-		if _, ok := compactVars[name]; ok {
-			compact[value] = struct{}{}
-			continue
-		}
-		plain[value] = struct{}{}
-	}
-
-	for name := range compact {
-		delete(plain, name)
-	}
-
-	return Topics{
-		Plain:   sortedKeys(plain),
-		Compact: sortedKeys(compact),
-	}
 }
 
 func sortedKeys(set map[string]struct{}) []string {

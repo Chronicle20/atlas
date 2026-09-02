@@ -4,6 +4,8 @@
 // libs/atlas-saga contract, so there is nothing to mirror here.
 package saga
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_SAGA"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SAGA"
 )

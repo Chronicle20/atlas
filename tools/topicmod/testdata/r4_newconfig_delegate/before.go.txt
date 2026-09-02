@@ -1,0 +1,14 @@
+package marriage
+
+import (
+	localConsumer "atlas-marriages/kafka/consumer"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+)
+
+// NewConfig creates a new consumer configuration for marriage commands
+func NewConfig(l logrus.FieldLogger) func(name string) func(token string) func(groupId string) consumer.Config {
+	return localConsumer.NewConfig(l)
+}

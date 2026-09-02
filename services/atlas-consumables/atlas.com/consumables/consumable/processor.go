@@ -61,6 +61,10 @@ import (
 var (
 	ErrPetCannotConsume = errors.New("pet cannot consume")
 	ErrPetCannotLearn   = errors.New("pet cannot learn")
+	// ErrPotionLocked is returned by RequestItemConsume when a
+	// standard-consumer item is refused because the character carries an
+	// unexpired STOP_PORTION buff. See task-280.
+	ErrPotionLocked = errors.New("potion use locked")
 )
 
 type ItemConsumer func(l logrus.FieldLogger) func(ctx context.Context) error
@@ -90,6 +94,7 @@ type ProcessorImpl struct {
 	ip  inventory.Processor
 	cpp compartment.Processor
 	cdp consumable3.Processor
+	bp  buff.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -100,6 +105,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ip:  inventory.NewProcessor(l, ctx),
 		cpp: compartment.NewProcessor(l, ctx),
 		cdp: consumable3.NewProcessor(l, ctx),
+		bp:  buff.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -180,6 +186,25 @@ func resolveZombified(l logrus.FieldLogger, bp buff.Processor, characterId uint3
 		return false
 	}
 	return buff.IsZombified(bs)
+}
+
+// resolvePotionLocked reports whether the character currently carries an
+// unexpired STOP_PORTION buff. Takes bp as a parameter rather than reading
+// p.bp so the fail-open branch is testable with the buff mock alone -- the
+// same reason resolveZombified is shaped this way.
+//
+// A read failure is fail-open (task-280 FR-4): during an atlas-buffs outage
+// the lock goes unenforced rather than denying every potion. GetByCharacterId
+// already normalizes 404 to the empty slice, so "character has no buffs yet"
+// never reaches the Warn branch.
+func resolvePotionLocked(l logrus.FieldLogger, bp buff.Processor, characterId uint32) bool {
+	bs, err := bp.GetByCharacterId(characterId)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to read buffs for character [%d]; treating potion use as unlocked.", characterId)
+		degrade.Observe(l, "consumable.potion-lock.buffs", characterId, err)
+		return false
+	}
+	return buff.IsPotionLocked(bs)
 }
 
 // computeEffectPlan interprets a consumable's specs against a character with
@@ -300,12 +325,25 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16, petId uint64) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
 
 	it, ok := inventory2.TypeFromItemId(itemId)
 	if !ok {
 		return errors.New("invalid item id")
+	}
+
+	// task-280: refuse a standard-consumer item while STOP_PORTION is active.
+	// Placed above RequestReserve/RegisterHandler deliberately -- there is no
+	// reservation to cancel on this path, so the rejection never has to issue
+	// a spurious CancelItemReservation against a transaction atlas-compartment
+	// never saw (FR-5). Short-circuit order is the FR-2 guarantee that
+	// out-of-scope items issue no buffs read at all.
+	if usesStandardConsumer(itemId) && resolvePotionLocked(p.l, p.bp, characterId) {
+		return p.rejectPotionLocked(characterId, itemId)
 	}
 
 	var itemConsumer ItemConsumer
@@ -355,13 +393,32 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 
 	handler := compartment.Consume(itemConsumer)
 
-	_, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
+	if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
+		return err
+	}
 
 	err = p.cpp.RequestReserve(transactionId, characterId, it, 30*time.Second, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// rejectPotionLocked emits the ERROR event that releases the client's item-use
+// exclusive request and returns the sentinel. Debug, not Error: a locked
+// consume is an expected in-game condition (task-280 FR-5.4). It deliberately
+// does not route through ConsumeError, whose first act is
+// cpp.CancelItemReservation -- no reservation exists on this path.
+//
+// The wire value is derived via consumeErrorType so sentinel and wire value
+// have exactly one binding and cannot drift (FR-6).
+func (p *ProcessorImpl) rejectPotionLocked(characterId uint32, itemId item2.Id) error {
+	p.l.Debugf("Character [%d] attempted to consume item [%d] while potion use is locked. Rejecting.", characterId, itemId)
+	err := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), consumeErrorType(ErrPotionLocked)))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to issue potion-locked error on event topic. Character [%d] likely going to be stuck.", characterId)
+	}
+	return ErrPotionLocked
 }
 
 // RequestFeed handles a taming-mob food (revitalizer, classification 226)
@@ -377,7 +434,10 @@ func (p *ProcessorImpl) RequestFeed(worldId world.Id, characterId uint32, slot i
 
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await taming-mob feed transaction [%s] completion or cancellation.", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
 
 	it, ok := inventory2.TypeFromItemId(itemId)
@@ -445,6 +505,9 @@ func consumeErrorType(err error) string {
 	}
 	if errors.Is(err, ErrPetCannotLearn) {
 		return consumable.ErrorTypePetCannotLearn
+	}
+	if errors.Is(err, ErrPotionLocked) {
+		return consumable.ErrorTypePotionLocked
 	}
 	return consumable.ErrorTypeConsumeFailed
 }
@@ -806,7 +869,10 @@ func (p *ProcessorImpl) RequestScroll(characterId uint32, scrollSlot int16, equi
 	})
 
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, scrollItem.TemplateId())
 	handler := compartment.Consume(ConsumeScroll(transactionId, characterId, scrollItem, equipSlot, whiteScrollItem, legendarySpirit))
 	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
@@ -1169,7 +1235,10 @@ func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, s
 	}
 
 	p.l.Debugf("Creating OneTime consumer for reward transaction [%s].", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
 	handler := compartment.Consume(ConsumeReward(transactionId, characterId, source, itemId, ci.Rewards()))
 	if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
@@ -1239,8 +1308,14 @@ func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxI
 
 			// Register both once-handlers BEFORE emitting CREATE_ASSET so neither
 			// terminal event can race ahead of its handler.
-			assetTopic, _ := topic.EnvProvider(l)(assetMsg.EnvEventTopicStatus)()
-			compTopic, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
+			assetTopic, err := topic.EnvProvider(l)(assetMsg.EnvEventTopicStatus)()
+			if err != nil {
+				return err
+			}
+			compTopic, err := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
+			if err != nil {
+				return err
+			}
 			handles := &rewardHandles{assetTopic: assetTopic, compTopic: compTopic}
 
 			assetId, err := consumer.GetManager().RegisterHandler(assetTopic, message.AdaptHandler(message.OneTimeConfig(assetOnce.GrantConfirmedValidator(transactionId, won.ItemId()), grantRewardOnConfirmed(transactionId, characterId, slot, boxItemId, won, handles))))
@@ -1451,7 +1526,10 @@ func (p *ProcessorImpl) RequestViciousHammer(characterId uint32, hammerSlot int1
 	}
 
 	p.l.Debugf("Creating OneTime topic consumer to await hammer transaction [%s] completion.", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, hammer.TemplateId())
 	handler := compartment.Consume(ConsumeViciousHammer(transactionId, characterId, hammer, equipSlot))
 	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
@@ -1587,7 +1665,10 @@ func (p *ProcessorImpl) RequestSkillBookUse(f field.Model, characterId uint32, s
 
 	bookMasterLevel := ci.MasterLevel()
 	p.l.Debugf("Creating OneTime saga-status consumer to await skill book transaction [%s].", transactionId.String())
-	t, _ := topic.EnvProvider(p.l)(sagamsg.EnvStatusEventTopic)()
+	t, err := topic.EnvProvider(p.l)(sagamsg.EnvStatusEventTopic)()
+	if err != nil {
+		return err
+	}
 	validator := sagaonce.TransactionValidator(transactionId)
 	handler := func(l logrus.FieldLogger, hctx context.Context, e sagamsg.StatusEvent[json.RawMessage]) {
 		completed := e.Type == sagamsg.StatusEventTypeCompleted

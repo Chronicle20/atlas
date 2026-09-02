@@ -4,10 +4,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_INVITE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_INVITE"
 )
 
 type commandEvent[E any] struct {

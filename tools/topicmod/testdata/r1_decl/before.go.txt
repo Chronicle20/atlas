@@ -1,0 +1,7 @@
+package character
+
+const (
+	EnvEventTopicStatus    = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeCreated = "CREATED"
+	StatusEventTypeDeleted = "DELETED"
+)

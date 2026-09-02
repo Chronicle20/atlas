@@ -7,11 +7,15 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic         = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
-	EnvEventTopicStatus     = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_STORAGE_COMPARTMENT"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS"
+)
+
+const (
 	CommandAccept           = "ACCEPT"
 	CommandRelease          = "RELEASE"
 	StatusEventTypeAccepted = "ACCEPTED"

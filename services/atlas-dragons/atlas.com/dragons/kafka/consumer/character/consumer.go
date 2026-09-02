@@ -28,7 +28,10 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+		t, err := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLogin))); err != nil {
 			return err
 		}

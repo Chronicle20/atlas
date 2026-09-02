@@ -6,10 +6,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic    = "COMMAND_TOPIC_KITE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_KITE"
+)
+
+const (
 	CommandKiteCreate  = "CREATE"
 	CommandKiteDestroy = "DESTROY"
 )
@@ -47,7 +51,10 @@ type DestroyCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus                = "EVENT_TOPIC_KITE_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_KITE_STATUS"
+)
+
+const (
 	EventTopicStatusTypeCreated        = "CREATED"
 	EventTopicStatusTypeDestroyed      = "DESTROYED"
 	EventTopicStatusTypeCreationFailed = "CREATION_FAILED"

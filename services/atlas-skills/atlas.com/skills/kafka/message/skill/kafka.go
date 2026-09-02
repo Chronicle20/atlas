@@ -7,10 +7,14 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_SKILL"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SKILL"
+)
+
+const (
 	CommandTypeRequestCreate  = "REQUEST_CREATE"
 	CommandTypeRequestUpdate  = "REQUEST_UPDATE"
 	CommandTypeRequestDelete  = "REQUEST_DELETE"
@@ -75,7 +79,10 @@ type TransferSpBody struct {
 }
 
 const (
-	EnvStatusEventTopic            = "EVENT_TOPIC_SKILL_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_SKILL_STATUS"
+)
+
+const (
 	StatusEventTypeCreated         = "CREATED"
 	StatusEventTypeUpdated         = "UPDATED"
 	StatusEventTypeDeleted         = "DELETED"

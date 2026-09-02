@@ -15,6 +15,7 @@ import (
 	logrustest "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
@@ -44,14 +45,14 @@ func testProcessor(ctx context.Context, rec *recorder, cfg configuration.Model) 
 // recorder is a producer.Provider that captures emitted messages per topic.
 type recorder struct {
 	mu   sync.Mutex
-	msgs map[string][]kafka.Message
+	msgs map[topic.Token][]kafka.Message
 	fail bool
 }
 
-func newRecorder() *recorder { return &recorder{msgs: make(map[string][]kafka.Message)} }
+func newRecorder() *recorder { return &recorder{msgs: make(map[topic.Token][]kafka.Message)} }
 
 func (r *recorder) provider() producer.Provider {
-	return func(t string) producer.MessageProducer {
+	return func(t topic.Token) producer.MessageProducer {
 		return func(p model.Provider[[]kafka.Message]) error {
 			if r.fail {
 				return errors.New("emit failed")
@@ -68,10 +69,10 @@ func (r *recorder) provider() producer.Provider {
 	}
 }
 
-func (r *recorder) count(topic string) int {
+func (r *recorder) count(t topic.Token) int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return len(r.msgs[topic])
+	return len(r.msgs[t])
 }
 
 func body() kiteMsg.CreateCommandBody {

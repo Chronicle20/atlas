@@ -1,11 +1,12 @@
 package megaphone
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (
-	EnvEventTopicMegaphone = "EVENT_TOPIC_MEGAPHONE"
+	EnvEventTopicMegaphone topic.Token = "EVENT_TOPIC_MEGAPHONE"
 )
 
 // BroadcastEvent is the event fired for the stateless megaphone tiers

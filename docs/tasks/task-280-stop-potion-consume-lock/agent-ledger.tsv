@@ -1,0 +1,19 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-28T13:09:53Z	agent	Task 1	task-implementer	haiku	-	-	-	-	DONE	1161f19	-	-	-	-
+2026-08-28T13:11:17Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	1161f19	APPROVED	no	-	-
+2026-08-28T13:12:33Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	8baa153	-	-	-	-
+2026-08-28T13:13:17Z	agent	Task 1	task-verifier	-	-	-	-	-	PASS	1161f19	-	-	-	-
+2026-08-28T13:13:30Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	8baa153	APPROVED	no	-	-
+2026-08-28T13:14:17Z	agent	Task 2	task-verifier	-	-	-	-	-	PASS	8baa153	-	-	-	-
+2026-08-28T13:16:58Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	61d74c9	-	-	-	-
+2026-08-28T13:19:03Z	agent	Task 3	task-verifier	-	-	-	-	-	PASS	61d74c9	-	-	-	-
+2026-08-28T13:19:55Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	ee37c5e	-	-	-	-
+2026-08-28T13:22:05Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	ee37c5e	APPROVED	no	-	-
+2026-08-28T15:50:20Z	agent	Task 3	task-reviewer	haiku	-	-	-	-	DONE	6e44e93	APPROVED	no	-	-
+2026-08-28T15:50:21Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	-
+2026-08-28T15:54:38Z	agent	Task 5	task-verifier	-	-	-	-	-	PASS	6e44e93	-	-	-	-
+2026-08-28T16:25:00Z	agent	Branch final	plan-adherence-reviewer	opus	-	-	-	-	DONE	6e44e93	APPROVED	no	docs/tasks/task-280-stop-potion-consume-lock/audit.md	-
+2026-08-28T16:25:00Z	agent	Branch final	backend-guidelines-reviewer	opus	-	-	-	-	DONE	6e44e93	CHANGES_REQUIRED	yes	docs/tasks/task-280-stop-potion-consume-lock/backend-audit.md	-
+2026-08-28T16:30:04Z	agent	DOM-28 fix	task-implementer	sonnet	-	-	-	-	DONE	7f308a9	-	-	-	-
+2026-08-28T16:30:04Z	agent	DOM-28 fix	task-reviewer	sonnet	-	-	-	-	DONE	7f308a9	APPROVED	no	docs/tasks/task-280-stop-potion-consume-lock/review-dom28-fix.md	-
+2026-08-28T16:34:06Z	agent	Branch final	task-verifier	haiku	-	-	-	-	PASS	7f308a9	-	-	-	-

@@ -8,11 +8,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	// EnvCommandTopic defines the environment variable for the quest command topic
-	EnvCommandTopic = "COMMAND_TOPIC_QUEST"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_QUEST"
+)
+
+const (
 
 	// Command types
 	CommandTypeStart          = "START"
@@ -71,7 +75,10 @@ type RestoreItemCommandBody struct {
 
 const (
 	// EnvStatusEventTopic defines the environment variable for the quest status event topic
-	EnvStatusEventTopic = "EVENT_TOPIC_QUEST_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_QUEST_STATUS"
+)
+
+const (
 
 	// Status event types
 	StatusEventTypeStarted         = "STARTED"

@@ -1,9 +1,16 @@
 package pet
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_PET"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PET"
+)
+
+const (
 	CommandPetSpawn          = "SPAWN"
 	CommandPetDespawn        = "DESPAWN"
 	CommandPetAttemptCommand = "ATTEMPT_COMMAND"
@@ -42,7 +49,10 @@ type RenameCommandBody struct {
 }
 
 const (
-	EnvStatusEventTopic             = "EVENT_TOPIC_PET_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_PET_STATUS"
+)
+
+const (
 	StatusEventTypeCreated          = "CREATED"
 	StatusEventTypeDeleted          = "DELETED"
 	StatusEventTypeSpawned          = "SPAWNED"

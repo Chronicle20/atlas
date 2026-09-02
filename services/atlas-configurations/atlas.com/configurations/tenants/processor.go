@@ -16,6 +16,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	env "github.com/Chronicle20/atlas/libs/atlas-env"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -23,14 +24,14 @@ import (
 // EnvTenantStatusTopic names the env var carrying the Kafka topic that
 // tenant config CRUD events are enqueued onto. Unset = enqueue skipped
 // (matches the EnvServiceStatusTopic convention in services/processor).
-const EnvTenantStatusTopic = "EVENT_TOPIC_CONFIGURATION_TENANT_STATUS"
+const EnvTenantStatusTopic topic.Token = "EVENT_TOPIC_CONFIGURATION_TENANT_STATUS"
 
 func tenantOutboxKey(id uuid.UUID) []byte {
 	return []byte("tenant:" + id.String())
 }
 
 func enqueueTenantStatus(tx *gorm.DB, id uuid.UUID, config any) error {
-	topic := os.Getenv(EnvTenantStatusTopic)
+	topic := os.Getenv(string(EnvTenantStatusTopic))
 	if topic == "" {
 		return nil
 	}

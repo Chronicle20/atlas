@@ -14,8 +14,14 @@ import (
 // startGroupEngine owns the consumer-group lifecycle: join → consume
 // generations → on failure, back off and rejoin. Only a cancelled parent
 // context means shutdown.
+//
+// wg registration is split across the goroutine boundary: the CALLER owns
+// wg.Add(1) and must perform it before launching this function, so that the
+// Add strictly happens-before any Wait. This function owns only the matching
+// wg.Done(). Adding here instead would let a caller's cancel()+wg.Wait()
+// observe a zero counter and return while this goroutine is still running
+// (issue #1586).
 func (c *Consumer) startGroupEngine(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
 
 	l.Infof("Creating topic consumer (engine consumergroup).")
@@ -29,7 +35,9 @@ func (c *Consumer) startGroupEngine(l logrus.FieldLogger, ctx context.Context, w
 
 		// Never join a group for a topic that does not exist (task-267). This
 		// runs inside the per-consumer goroutine launched by AddConsumer, and
-		// AFTER the wg.Add(1) above — hence awaitTopic's mandatory ctx select.
+		// AFTER the caller's wg.Add(1) — so a shutdown that awaits the wg is
+		// blocked here until this returns; hence awaitTopic's mandatory ctx
+		// select.
 		if !c.awaitTopic(l, ctx) {
 			return
 		}

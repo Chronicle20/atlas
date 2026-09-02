@@ -1,10 +1,17 @@
 package wallet
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvEventTopicStatus    = "EVENT_TOPIC_WALLET_STATUS"
-	EnvCommandTopicWallet  = "COMMAND_TOPIC_WALLET"
+	EnvEventTopicStatus   topic.Token = "EVENT_TOPIC_WALLET_STATUS"
+	EnvCommandTopicWallet topic.Token = "COMMAND_TOPIC_WALLET"
+)
+
+const (
 	StatusEventTypeCreated = "CREATED"
 	StatusEventTypeUpdated = "UPDATED"
 	StatusEventTypeDeleted = "DELETED"

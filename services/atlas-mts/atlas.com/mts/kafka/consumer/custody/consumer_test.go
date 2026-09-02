@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm"
 
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -41,7 +42,7 @@ type recordingProducer struct {
 // producer.ProviderImpl(l). Every emitted message is decoded and recorded.
 func (r *recordingProducer) provider() func(ctx context.Context) kprod.Provider {
 	return func(ctx context.Context) kprod.Provider {
-		return func(token string) kprod.MessageProducer {
+		return func(token topic.Token) kprod.MessageProducer {
 			return func(p model.Provider[[]kafka.Message]) error {
 				ms, err := p()
 				if err != nil {

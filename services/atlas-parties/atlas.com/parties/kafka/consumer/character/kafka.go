@@ -8,10 +8,14 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
 	CommandChangeMap           = "CHANGE_MAP"
 	CommandChangeJob           = "CHANGE_JOB"
 	CommandAwardExperience     = "AWARD_EXPERIENCE"
@@ -119,7 +123,10 @@ type ChangeMPBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus     = "EVENT_TOPIC_CHARACTER_STATUS"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
 	StatusEventTypeCreated           = "CREATED"
 	StatusEventTypeLogin             = "LOGIN"
 	StatusEventTypeLogout            = "LOGOUT"
@@ -240,7 +247,7 @@ type StatusEventStatChangedBody struct {
 }
 
 const (
-	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
+	EnvCommandTopicMovement topic.Token = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 )
 
 type MovementCommand struct {

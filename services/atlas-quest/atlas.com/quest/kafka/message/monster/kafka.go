@@ -6,11 +6,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicMonsterStatus = "EVENT_TOPIC_MONSTER_STATUS"
-	EventMonsterStatusKilled   = "KILLED"
+	EnvEventTopicMonsterStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
+)
+
+const (
+	EventMonsterStatusKilled = "KILLED"
 )
 
 type StatusEvent[E any] struct {

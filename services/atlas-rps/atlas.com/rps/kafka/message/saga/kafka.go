@@ -4,9 +4,11 @@
 // event topic, so no status-event envelope is defined.
 package saga
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
 	// EnvCommandTopic names the environment variable holding
 	// atlas-saga-orchestrator's command topic. Mirrors
 	// atlas-npc-conversations/kafka/message/saga.EnvCommandTopic.
-	EnvCommandTopic = "COMMAND_TOPIC_SAGA"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SAGA"
 )

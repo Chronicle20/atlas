@@ -3,6 +3,16 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CNpcPool::OnNpcLeaveField": {
+      "address": "0x6792c0",
+      "direction": "",
+      "calls": null
+    },
+    "CNpcPool::OnNpcImitateData": {
+      "address": "0x679500",
+      "direction": "",
+      "calls": null
+    },
     "CAffectedAreaPool::OnAffectedAreaCreated": {
       "address": "0x437ec0",
       "direction": "clientbound",

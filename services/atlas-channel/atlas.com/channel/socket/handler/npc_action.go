@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"atlas-channel/data/npc"
 	_map "atlas-channel/map"
 	"atlas-channel/movement"
+	"atlas-channel/npc"
 	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -28,7 +28,7 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			return
 		}
 
-		n, err := npc.NewProcessor(l, ctx).GetInMapByObjectId(s.MapId(), p.ObjectId())
+		templateId, err := npc.ResolveTemplate(l, ctx, s.Field(), p.ObjectId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
@@ -39,7 +39,7 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		}
 		op := session.Announce(l)(ctx)(wp)(npcpacket.NpcActionWriter)(npcpacket.NewNpcActionAnimation(p.ObjectId(), p.Unk(), p.Unk2()).Encode)
 		if err = op(s); err != nil {
-			l.WithError(err).Errorf("Unable to animate npc [%d] for character [%d].", n.Template(), s.CharacterId())
+			l.WithError(err).Errorf("Unable to animate npc [%d] for character [%d].", templateId, s.CharacterId())
 			return
 		}
 		if rerr := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), op); rerr != nil {

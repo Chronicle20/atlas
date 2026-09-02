@@ -164,6 +164,36 @@ Base URL: `BASE_SERVICE_URL` + CHARACTERS root
 - Response Model: `[]RestModel` - Characters matching name
 - Error Conditions: None
 
+#### GET /characters/{characterId}/teleport-rock-maps
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `RestModel` - Unpadded regular and VIP teleport-rock saved map lists (regular, vip)
+- Error Conditions: None
+
+#### GET /characters/{characterId}/pending-changes
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `[]RestModel` - Pending name-change / world-transfer records (characterId, type, status, requestedName, destinationWorldId, sourceWorldId, reason, createdAt, expiresAt, resolvedAt)
+- Error Conditions: None
+
+#### POST /characters/{characterId}/pending-changes
+- Parameters: characterId (uint32)
+- Request Model: `CreateInputRestModel` - type (NAME_CHANGE/WORLD_TRANSFER), requestedName, destinationWorldId
+- Response Model: `RestModel` - Created pending-change record
+- Error Conditions: 409 if a conflicting pending change exists; 422 if the request is invalid; 404 if the character is unknown
+
+#### POST /characters/{characterId}/pending-changes/cancel
+- Parameters: characterId (uint32)
+- Request Model: `CancelInputRestModel` - type (NAME_CHANGE/WORLD_TRANSFER)
+- Response Model: `RestModel` - Cancelled pending-change record
+- Error Conditions: 404 if nothing pending; 409/422 on other rejections
+
+#### GET /characters/{characterId}/transfer-eligibility-independent
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `EligibilityRestModel` - eligible (bool), reason (string)
+- Error Conditions: None
+
 ---
 
 ### CONFIGURATIONS
@@ -284,6 +314,28 @@ Resource Type: `doors`
 
 ---
 
+### DRAGONS
+Base URL: `BASE_SERVICE_URL` + DRAGONS root
+
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/dragons
+- Parameters: worldId, channelId, mapId (uint32), instanceId (uuid), page[number]/page[size] (paginated)
+- Request Model: None
+- Response Model: `[]RestModel` - Evan dragons in the field instance (ownerCharacterId, x, y, stance, jobId, worldId, channelId, mapId, instance)
+- Error Conditions: None
+
+---
+
+### GACHAPONS
+Base URL: `BASE_SERVICE_URL` + GACHAPONS root
+
+#### POST /gachapons/{gachaponId}/rewards/select
+- Parameters: gachaponId (uint32, the Pigmy Egg id)
+- Request Model: None
+- Response Model: `RewardRestModel` - Rolled incubator reward (itemId, quantity, tier, gachaponId)
+- Error Conditions: None
+
+---
+
 ### DROPS
 Base URL: `BASE_SERVICE_URL` + DROPS root
 
@@ -394,6 +446,12 @@ Base URL: `BASE_SERVICE_URL` + MAPS root
 - Request Model: None
 - Response Model: `RestModel` - Character's durable current field (worldId, channelId, mapId, instance). Resource type: "character-locations".
 - Error Conditions: 404 if the character has no stored location row yet (typically first login of a freshly created character)
+
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/jukebox
+- Parameters: worldId, channelId, mapId, instanceId (uuid)
+- Request Model: None
+- Response Model: `RestModel` - The active jukebox entry for the field (itemId, playerName)
+- Error Conditions: None
 
 ---
 
@@ -554,6 +612,23 @@ Base URL: `BASE_SERVICE_URL` + MTS root
 
 ---
 
+### MINI_GAMES
+Base URL: `BASE_SERVICE_URL` + MINI_GAMES root
+
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/games
+- Parameters: worldId, channelId, mapId (uint32), instanceId (uuid)
+- Request Model: None
+- Response Model: `[]RestModel` - Mini-game rooms in the field (ownerId, roomType, title, private, hasPassword, pieceType, occupancy, inProgress)
+- Error Conditions: None
+
+#### GET /characters/{characterId}/games
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `[]RestModel` - The (0-or-1) mini-game room characterId is seated in (owner or visitor)
+- Error Conditions: None
+
+---
+
 ### NOTES
 Base URL: `BASE_SERVICE_URL` + NOTES root
 
@@ -579,6 +654,35 @@ Base URL: `BASE_SERVICE_URL` + NPC_SHOP root
 - Request Model: None
 - Response Model: `RestModel` - NPC shop with commodities (each with id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimit, unitPrice, slotMax)
 - Error Conditions: 404 if shop not found
+
+---
+
+### PARCEL
+Base URL: `BASE_SERVICE_URL` + PARCEL root
+
+#### GET /parcels?filter[recipientId]={recipientId}&filter[worldId]={worldId}&filter[status]=pending
+- Parameters: recipientId (uint32), worldId (byte, required alongside recipientId)
+- Request Model: None
+- Response Model: `[]RestModel` - Recipient's pending mailbox in the world (senderId, senderAccountId, senderName, recipientId, recipientAccountId, message, mesoAmount, feePaid, itemId, itemType, quantity, status, quick, returned, createdAt, receivableAt, expiresAt, lastNotified)
+- Error Conditions: None
+
+#### GET /parcels/{id}
+- Parameters: id (uuid)
+- Request Model: None
+- Response Model: `RestModel` - Single parcel by id
+- Error Conditions: 404 if not found
+
+#### PATCH /parcels/{id}
+- Parameters: id (uuid)
+- Request Model: recipientId (uint32)
+- Response Model: `RestModel` - Parcel marked discarded
+- Error Conditions: Rejected if the caller is not the parcel's recipient
+
+#### PATCH /parcels/{id}/notify
+- Parameters: id (uuid)
+- Request Model: None
+- Response Model: `RestModel` - Parcel with LastNotified stamped
+- Error Conditions: None
 
 ---
 
@@ -755,6 +859,17 @@ Base URL: `BASE_SERVICE_URL` + TENANTS root
 - Request Model: None
 - Response Model: `RestModel` - Per-tenant MTS economic configuration (listingFee, commissionRate, commissionBase, maxActiveListings, minLevel, auctionMinHours, auctionMaxHours, fixedSaleHours, priceFloor, pageSize, minBidIncrement). Resource type: "mts-configs".
 - Error Conditions: A fetch miss or error is treated as "unconfigured"; the caller falls back to the default configuration.
+
+---
+
+### TRADES
+Base URL: `BASE_SERVICE_URL` + TRADES root
+
+#### GET /trades/rooms?filter[characterId]={characterId}
+- Parameters: characterId (uint32); matches either side of a room (owner or invitee)
+- Request Model: None
+- Response Model: `[]RestModel` - The (0-or-1) trade room characterId occupies (id)
+- Error Conditions: None
 
 ---
 

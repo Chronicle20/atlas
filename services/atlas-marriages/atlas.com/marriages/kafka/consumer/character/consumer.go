@@ -7,6 +7,7 @@ import (
 	localConsumer "atlas-marriages/kafka/consumer"
 
 	characterMsg "atlas-marriages/kafka/message/character"
+	marriageMsg "atlas-marriages/kafka/message/marriage"
 	marriageService "atlas-marriages/marriage"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -23,7 +24,7 @@ import (
 )
 
 // NewConfig creates a new consumer configuration for character events
-func NewConfig(l logrus.FieldLogger) func(name string) func(token string) func(groupId string) consumer.Config {
+func NewConfig(l logrus.FieldLogger) func(name string) func(token topic.Token) func(groupId string) consumer.Config {
 	return localConsumer.NewConfig(l)
 }
 
@@ -32,8 +33,14 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
-			t, _ = topic.EnvProvider(l)(characterMsg.EnvEventTopicStatus)()
-			// Character deleted event handler
+			var err error
+			t, err = topic.EnvProvider(l)(characterMsg.EnvEventTopicStatus)()
+			if err !=
+				// Character deleted event handler
+				nil {
+				return err
+			}
+
 			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCharacterDeleted(db)))); err != nil {
 				return err
 			}
@@ -75,7 +82,7 @@ func handleCharacterDeleted(db *gorm.DB) kafka.Handler[characterMsg.StatusEvent[
 				"character_deletion",
 			)
 			if emitErr := message.Emit(producer.ProviderImpl(l)(ctx))(func(buf *message.Buffer) error {
-				return buf.Put("EVENT_TOPIC_MARRIAGE_STATUS", errorProvider)
+				return buf.Put(marriageMsg.EnvEventTopicStatus, errorProvider)
 			}); emitErr != nil {
 				l.WithError(emitErr).Error("Failed to emit error event for character deletion failure")
 			}

@@ -9,12 +9,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicMonsterStatus = "EVENT_TOPIC_MONSTER_STATUS"
-	EnvEventTopicMonsterCatch  = "EVENT_TOPIC_MONSTER_CATCH"
+	EnvEventTopicMonsterStatus topic.Token = "EVENT_TOPIC_MONSTER_STATUS"
+	EnvEventTopicMonsterCatch  topic.Token = "EVENT_TOPIC_MONSTER_CATCH"
+)
 
+const (
 	EventMonsterStatusCreated          = "CREATED"
 	EventMonsterStatusDestroyed        = "DESTROYED"
 	EventMonsterStatusStartControl     = "START_CONTROL"

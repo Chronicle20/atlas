@@ -21,6 +21,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -29,20 +30,20 @@ import (
 // character-status topic Dispose publishes to) without a real broker.
 type messageRecorder struct {
 	mu     sync.Mutex
-	counts map[string]int
+	counts map[topic.Token]int
 }
 
 func newMessageRecorder() *messageRecorder {
-	return &messageRecorder{counts: make(map[string]int)}
+	return &messageRecorder{counts: make(map[topic.Token]int)}
 }
 
-func (r *messageRecorder) record(topic string, n int) {
+func (r *messageRecorder) record(tok string, n int) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.counts[topic] += n
+	r.counts[topic.Token(tok)] += n
 }
 
-func (r *messageRecorder) count(topic string) int {
+func (r *messageRecorder) count(topic topic.Token) int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.counts[topic]

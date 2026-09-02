@@ -10,28 +10,121 @@ Handles monster death processing including drop creation and experience distribu
 
 #### DamageEntryModel
 
-Represents damage dealt by a character to a monster.
+Represents damage dealt by a character to a monster, as received from the KILLED event.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | characterId | uint32 | Character who dealt damage |
 | damage | uint32 | Amount of damage dealt |
 
-#### DamageDistributionModel
+#### DamageInput
 
-Represents the distribution of damage across characters for experience calculation.
+One aggregated damage entry, exactly one per damaging character (in-field or not), produced by folding the KILLED event's damage entries.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| solo | map[uint32]uint32 | Solo character damage (characterId -> damage) |
-| party | map[uint32]map[uint32]uint32 | Party damage distribution (partyId -> characterId -> damage) |
-| personalRatio | map[uint32]float64 | Personal damage ratio per character |
-| experiencePerDamage | float64 | Experience awarded per point of damage |
-| standardDeviationRatio | float64 | Threshold for white experience gain |
+| CharacterId | uint32 | Character who dealt damage |
+| Damage | uint32 | Total damage dealt by the character |
+
+#### SoloInput
+
+An in-field damager with no party.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| CharacterId | uint32 | Character identifier |
+| Level | byte | Character level |
+
+#### MemberInput
+
+One co-located party member (present in the field where the kill happened), whether or not they dealt damage.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| CharacterId | uint32 | Character identifier |
+| Level | byte | Character level |
+
+#### PartyInput
+
+One participating party and its co-located members.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| PartyId | uint32 | Party identifier |
+| Members | []MemberInput | Co-located members |
+
+#### ExperienceInput
+
+Aggregate input to the experience planner.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| MonsterExperience | uint32 | Monster's base experience value |
+| MonsterLevel | uint32 | Monster's level |
+| Damages | []DamageInput | Every damager, including those who left the field |
+| Solos | []SoloInput | In-field damagers with no party |
+| Parties | []PartyInput | Participating parties |
+
+#### Recipient
+
+One character who will receive an experience award.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| CharacterId | uint32 | Character identifier |
+| Level | byte | Character level |
+| PartyId | uint32 | Party identifier (0 for solo) |
+| PooledExp | float64 | Participation experience pooled for the character (solo) or the party (shared) |
+| TotalPartyLevel | uint32 | Sum of levels of party members sharing the pool (own level for solo) |
+| PartyBonusMod | float64 | Party bonus modifier applied to the personal award |
+| IsMvp | bool | Whether the character is the highest damage-dealing member (always true for solo) |
+| White | bool | Whether the award is white experience |
+
+#### Exclusion
+
+A co-located party member the level gate kept out of the award.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| CharacterId | uint32 | Character identifier |
+
+#### ExperiencePlan
+
+Result of planning an experience distribution.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Recipients | []Recipient | Characters to award |
+| Exclusions | []Exclusion | Characters excluded by the level gate |
+| TotalDamage | uint32 | Sum of damage across all damagers |
+| TotalEntries | int | Count of solos, parties, and out-of-field damagers |
+| ExperiencePerDamage | float64 | MonsterExperience / TotalDamage |
+| StandardDeviationRatio | float64 | Threshold for white experience gain |
+
+#### ExperienceConfig
+
+Tunable settings for experience distribution.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| EnforceMobLevelRange | bool | Whether the level gate is applied |
+| LevelInterval | uint32 | Band width around the monster's level admitted by the gate |
+| LeachInterval | uint32 | Band width around each contributor's level admitted by the gate |
+| SplitCommonMod | float64 | Common share modifier applied to a party member's split |
+| MvpMod | float64 | Additional share modifier applied to the party MVP |
+| PartyBonusPerMember | float64 | Party bonus modifier applied per sharing member |
+
+Defaults: EnforceMobLevelRange=true, LevelInterval=5, LeachInterval=5, SplitCommonMod=0.8, MvpMod=0.2, PartyBonusPerMember=0.05. EnforceMobLevelRange, LevelInterval, and LeachInterval are overridable via environment variables; the split modifiers are not.
 
 ### Invariants
 
-- DamageDistributionModel requires non-nil solo, party, and personalRatio maps
+- aggregateDamageEntries sums damage per character across all entries for a given KILLED event
+- planDistribution returns an empty plan (nil Recipients and Exclusions) when total damage is zero
+- The level gate (when EnforceMobLevelRange is set) is a union of level bands: one band around the monster's level, plus one band around each contributor's level; it is not a single min/max band
+- partyDamage, participationExp, the contributor list, and the interval set are computed from the ungated contributor list before the level gate is applied; a gated-out member still widens the interval and still contributes to a pool they do not share in
+- A recipient with TotalPartyLevel of 0 receives a personal and bonus award of 0
+- computeAward guards non-finite values to 0 and clamps values at or above MaxUint32 to MaxUint32 before conversion to the award's uint32 wire type
+- intervalSet clamps a band's lower bound at 0
 
 ### Processors
 
@@ -50,13 +143,26 @@ Evaluates monster drop tables and creates drops for a killed monster.
 
 Distributes experience to characters who damaged the monster.
 
-- Builds damage distribution from damage entries
-- Filters characters to those still present in the map
-- Calculates experience per damage as monsterExperience / monsterHP
-- Retrieves character rate multipliers and applies exp rate
-- Calculates personal ratio and standard deviation threshold
-- Awards experience to each character based on their damage contribution
-- White experience gain is awarded when a character's personal ratio meets or exceeds the standard deviation threshold
+- Aggregates the KILLED event's damage entries into one entry per character; returns without distributing if total damage is zero
+- Concurrently retrieves monster information and the character IDs currently present in the field
+- Resolves parties for in-field damagers; an out-of-field damager is never party-resolved. A party-service error, or a party of id 0, is treated as solo
+- Plans the distribution via planDistribution
+- Awards each planned recipient: retrieves the character's rate multipliers, computes the personal and party-bonus amounts via computeAward, and produces an experience award command. One recipient's failure does not abort the others
+- After all awards are attempted, sends a level-gate hint to each excluded character, subject to the hint throttle; hints are sent last so a hint failure cannot affect an award
+
+#### planDistribution
+
+Pure planner that computes an ExperiencePlan from an ExperienceInput and an ExperienceConfig.
+
+- Computes experience per damage as MonsterExperience / TotalDamage
+- Computes each solo's and each party's personal damage ratio, and a standard-deviation threshold across all entries' ratios (calculateExperienceStandardDeviationThreshold)
+- Every solo damager with a non-zero level is a recipient, treated as the MVP of their own single-member "party" and awarded the full experience-per-damage pool for their damage
+- For each party: contributors are members who dealt damage; participation experience is contributor damage total multiplied by experience per damage; if EnforceMobLevelRange is set, members outside the level-gate interval union are excluded and recorded as Exclusions; the remaining members share the pool by level, with the highest-damage member marked MVP and, when more than one member shares the pool, a per-member party bonus modifier applied
+- White experience gain (isWhiteExperienceGain) is set on a recipient when their personal damage ratio meets or exceeds the standard deviation threshold
+
+#### computeAward
+
+Converts a Recipient's pooled experience into a personal and a party-bonus award amount, applying the character's experience rate before the split and reporting whether either value had to be guarded to a representable uint32.
 
 #### filterByQuestState
 
@@ -90,7 +196,7 @@ Represents character information retrieved from external service and produces ex
 
 #### AwardExperience
 
-Produces a Kafka command to award experience to a character. The command carries experience distributions indicating the type (WHITE or YELLOW based on white experience gain determination) and a PARTY distribution.
+Produces a Kafka command to award experience to a character, given the personal amount and a party bonus amount. The command carries experience distributions indicating the type (WHITE or YELLOW based on white experience gain determination) and a PARTY distribution.
 
 ---
 
@@ -197,6 +303,8 @@ Represents monster static data retrieved from external service.
 |-------|------|-------------|
 | hp | uint32 | Monster hit points |
 | experience | uint32 | Base experience value |
+| level | uint32 | Monster level |
+| name | string | Monster name |
 
 ---
 
@@ -241,7 +349,7 @@ Retrieves base equipment statistics by item ID from the data service.
 
 ### Responsibility
 
-Represents party membership retrieved from external service for drop ownership assignment.
+Represents party membership retrieved from external service for drop ownership assignment and for party experience distribution.
 
 ### Core Models
 
@@ -250,6 +358,19 @@ Represents party membership retrieved from external service for drop ownership a
 | Field | Type | Description |
 |-------|------|-------------|
 | id | uint32 | Party identifier |
+| leaderId | uint32 | Party leader's character identifier |
+| members | []MemberModel | Party members |
+
+#### MemberModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Character identifier |
+| name | string | Character name |
+| level | byte | Character level |
+| jobId | job.Id | Character job identifier |
+| field | field.Model | Field the character is currently in |
+| online | bool | Whether the character is online |
 
 ### Processors
 
@@ -315,3 +436,37 @@ Represents character rate multipliers retrieved from external service.
 #### GetForCharacter
 
 Retrieves computed rates for a character. Returns default rates (all 1.0) if the rate service is unavailable.
+
+---
+
+## System Message
+
+### Responsibility
+
+Produces a command to show a hint box to a character, and bounds how often a given character may be sent a hint.
+
+### Core Models
+
+#### ShowHintBody
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Hint | string | Hint text to display |
+| Width | uint16 | Width of the hint box (0 for auto-calculation) |
+| Height | uint16 | Height of the hint box (0 for auto-calculation) |
+
+#### Throttle
+
+Bounds how often a given (tenant, character) pair may be sent a hint, within an in-process window and capacity. State is per-process: with multiple replicas the effective bound is one hint per replica per window.
+
+### Invariants
+
+- A hint for a given (tenant, character) pair is allowed only if the window since the prior hint for that pair has elapsed
+- When the tracked-key count reaches capacity, entries older than the window are evicted before recording a new one
+- The process-wide hint throttle (GetHintThrottle) uses a one-minute window and a 4096-key capacity
+
+### Processors
+
+#### ShowHint
+
+Produces a Kafka command to show a hint box for a character.

@@ -58,6 +58,15 @@
 
 set -euo pipefail
 
+# workspace_module_dirs() — go.work `use`-entry membership, shared with
+# lint.sh and verify.sh. Sourced relative to THIS file's own location, not
+# the caller's ROOT: analyzer-guard_test.sh (and any other harness) points
+# ROOT at a scratch directory that has no tools/lib/ of its own, and
+# workspace_module_dirs() itself still resolves go.work against whatever
+# ROOT the caller set at call time.
+# shellcheck source=tools/lib/go-work.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/go-work.sh"
+
 # analyzer_guard_jobs — parallelism for the module walk.
 analyzer_guard_jobs() {
     local jobs="${GUARD_JOBS:-}"
@@ -123,27 +132,52 @@ analyzer_guard_build() {
 # scanned, not the raw absolute path — a `.worktrees` segment in the root
 # itself is invisible once stripped, while one appearing below the root still
 # excludes.
+#
+# The walk is also intersected with go.work's `use` set (workspace_module_dirs,
+# tools/lib/go-work.sh): `go vet` in workspace mode cannot type-check a
+# module directory under a scanned root that is NOT a go.work member, which
+# is what made every analyzer guard fail against it. check_workspace_drift()
+# closes the hole that intersection would otherwise leave — a module found
+# on disk but missing from go.work must fail this guard loudly by name, not
+# drop silently out of the analysis sweep (see plan.md:18 for task-276,
+# Fix G5). Same loud-failure contract as above: a non-empty find result
+# that filters down to zero is an error, not a green "nothing to analyze".
 analyzer_guard_discover() {
-    local root
-    for root in "$@"; do
-        [ -d "$root" ] || continue
-        local rootnorm="${root%/}"
-        find "$root" -name go.mod -not -path '*/node_modules/*' -print0 \
-            | while IFS= read -r -d '' f; do
-                local dir rel
-                dir="$(dirname "$f")"
-                if [ "$dir" = "$rootnorm" ]; then
-                    rel=""
-                else
-                    rel="${dir#"$rootnorm"/}"
-                fi
-                case "$rel" in
-                    .worktrees | .worktrees/* | */.worktrees | */.worktrees/*)
-                        continue ;;
-                esac
-                printf '%s\n' "$dir"
-            done
-    done | LC_ALL=C sort -u
+    local root found workspace result
+    found="$(
+        for root in "$@"; do
+            [ -d "$root" ] || continue
+            local rootnorm="${root%/}"
+            find "$root" -name go.mod -not -path '*/node_modules/*' -print0 \
+                | while IFS= read -r -d '' f; do
+                    local dir rel
+                    dir="$(dirname "$f")"
+                    if [ "$dir" = "$rootnorm" ]; then
+                        rel=""
+                    else
+                        rel="${dir#"$rootnorm"/}"
+                    fi
+                    case "$rel" in
+                        .worktrees | .worktrees/* | */.worktrees | */.worktrees/*)
+                            continue ;;
+                    esac
+                    printf '%s\n' "$dir"
+                done
+        done | LC_ALL=C sort -u
+    )"
+
+    workspace="$(workspace_module_dirs "analyzer-guard")" || return 1
+    check_workspace_drift "analyzer-guard" "$found" "$workspace" || return 1
+    # workspace_module_dirs() sorts in the caller's locale, not C; re-sort it
+    # LC_ALL=C to match $found (sorted LC_ALL=C above) — comm requires both
+    # inputs collated the same way or it refuses with "not in sorted order".
+    result="$(LC_ALL=C comm -12 <(printf '%s\n' "$found") <(printf '%s\n' "$workspace" | LC_ALL=C sort -u))"
+    if [ -n "$found" ] && [ -z "$result" ]; then
+        echo "analyzer-guard: ERROR — workspace filter produced zero modules from a non-empty candidate set;" >&2
+        echo "analyzer-guard: ERROR — check go.work / workspace_module_dirs() for a parse mismatch" >&2
+        return 1
+    fi
+    printf '%s\n' "$result"
 }
 
 # analyzer_guard_scope <root>... — the module set to analyze under <root>s.

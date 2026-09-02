@@ -2,10 +2,14 @@ package mount
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvStatusEventTopic = "EVENT_TOPIC_MOUNT_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_MOUNT_STATUS"
+)
+
+const (
 	StatusEventTypeSet  = "SET"
 	StatusEventTypeTick = "TICK"
 	StatusEventTypeFeed = "FEED"

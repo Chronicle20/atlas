@@ -1,0 +1,12 @@
+package character
+
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
+func InitHandlers(l logrus.FieldLogger) error {
+	t, err := topic.EnvProvider(l)(characterMsg.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
+	doSomething(t)
+	return nil
+}

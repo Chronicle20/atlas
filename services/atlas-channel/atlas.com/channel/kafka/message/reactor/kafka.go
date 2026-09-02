@@ -8,10 +8,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_REACTOR"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REACTOR"
+)
+
+const (
 	CommandTypeHit   = "HIT"
 	CommandTypeTouch = "TOUCH"
 )
@@ -39,7 +43,10 @@ type TouchCommandBody struct {
 }
 
 const (
-	EnvEventStatusTopic      = "EVENT_TOPIC_REACTOR_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_REACTOR_STATUS"
+)
+
+const (
 	EventStatusTypeCreated   = "CREATED"
 	EventStatusTypeDestroyed = "DESTROYED"
 	EventStatusTypeHit       = "HIT"

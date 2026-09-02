@@ -3,13 +3,17 @@ package party
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // These structs mirror the party status event shapes emitted by atlas-parties.
 // The field names and json tags must stay byte-compatible with the producer.
 // Source of truth: services/atlas-parties/atlas.com/parties/party/kafka.go
 const (
-	EnvEventStatusTopic              = "EVENT_TOPIC_PARTY_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_STATUS"
+)
+
+const (
 	EventPartyStatusTypeCreated      = "CREATED"
 	EventPartyStatusTypeJoined       = "JOINED"
 	EventPartyStatusTypeLeft         = "LEFT"

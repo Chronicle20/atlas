@@ -14,6 +14,7 @@ import (
 
 type Processor interface {
 	TryClaim(f field.Model, npcObjectId uint32, characterId uint32) (bool, error)
+	Release(f field.Model, npcObjectIds ...uint32) error
 	ReleaseFor(f field.Model, characterId uint32) ([]uint32, error)
 	ElectFor(f field.Model, npcObjectIds []uint32, exclude ...uint32) (map[uint32]uint32, error)
 	UncontrolledIn(f field.Model, npcObjectIds []uint32) ([]uint32, error)
@@ -127,6 +128,18 @@ func (p *ProcessorImpl) TryClaim(f field.Model, npcObjectId uint32, characterId 
 		return false, nil
 	}
 	return r.Claim(p.ctx, p.t, f, npcObjectId, characterId)
+}
+
+// Release drops the controller entry for each of npcObjectIds in f,
+// regardless of who held it. Used when the object itself goes away or is
+// re-materialized client-side (a Player NPC removal or reposition), where
+// the stale entry would otherwise block a fresh claim.
+func (p *ProcessorImpl) Release(f field.Model, npcObjectIds ...uint32) error {
+	r := GetRegistry()
+	if r == nil || len(npcObjectIds) == 0 {
+		return nil
+	}
+	return r.Release(p.ctx, p.t, f, npcObjectIds...)
 }
 
 // ReleaseFor drops every controller entry held by characterId in f and

@@ -19,13 +19,22 @@ Manages version-specific configuration templates that define schemas for game re
 - `NPCs` - NPC implementation mappings
 - `Worlds` - World configuration list
 - `CashShop` - Cash shop configuration
+- `MapleLife` - Maple Life character-sale dialog configuration
+- `Environment` - Execution environment the row belongs to; server-owned and read-only (always reflects the persisted row, never a client-supplied value)
+
+**ViewRestModel** (read-only projection returned by GET/POST/reseed responses)
+- Embeds `RestModel`
+- `ShippedRevision` - content hash of the seed file this image ships for the template's region/version; empty when no such file ships
+- `StoredRevision` - content hash of the template's stored content
+- `SeedDrift` - `true` when `ShippedRevision` and `StoredRevision` disagree; always `false` when no file ships
 
 **Socket**
-- `Handlers` - List of socket handlers with opcode, validator, handler name, and options
-- `Writers` - List of socket writers with opcode, writer name, and options
+- `Handlers` - List of socket handlers with opcode, validator, handler name, informational client function name (`fname`), options, and service scopes
+- `Writers` - List of socket writers with opcode, writer name, informational client function name (`fname`), options, and service scopes
+- `Unsupported` - Names of handlers/writers audited and confirmed absent for this region/version
 
 **Characters**
-- `Templates` - List of character creation templates defining job index, map, gender, appearance options, and starting items/skills
+- `Templates` - List of character creation templates defining job index, sub-job index, map, gender, appearance options, and starting items/skills
 - `Presets` - List of character presets (id, and attributes: name, description, tags, jobId, gender, face, hair, hairColor, skinColor, mapId, level, meso, gm, stats, defaultName, equipment, inventory, skills)
 
 **NPCs**
@@ -45,9 +54,17 @@ Manages version-specific configuration templates that define schemas for game re
 
 **CashShop**
 - `Commodities` - Commodity configuration
+- `Surprise` - Cash Shop Surprise box configuration
 
 **Commodities**
 - `HourlyExpirations` - List of hourly expiration entries with template ID and hours
+
+**Surprise**
+- `BoxTemplateIds` - Cash item template IDs that open as a Surprise box
+
+**MapleLife**
+- `Looks` - Per-gender selectable appearance option lists (faces, hairs, hair colors, skin colors)
+- `Classes` - List of class entries, one per (class ordinal, gender): job id, level, map id, stats, unspent AP/SP, optional pre-level skill id, starting meso, equipment, and inventory
 
 ### Invariants
 
@@ -64,6 +81,17 @@ Manages version-specific configuration templates that define schemas for game re
   - each inventory entry's `quantity` must be ≥1
   - each skill entry's `skillId` must exist (skipped when no tenant context is available)
   - each skill entry's `level` must be in [1,maxLevel] for that skill (skipped when no tenant context is available)
+- On create and update, the socket document is validated; violations are collected and prevent the write:
+  - each handler/writer entry's name is required
+  - each entry's opcode must match `0x`/`0X` followed by 1-4 hex digits
+  - a name bound twice to the same numeric opcode within its collection is rejected (the same name at distinct opcodes is allowed)
+  - each handler entry requires a non-empty validator (writers do not)
+  - each entry's service scopes must be one of the known socket services
+  - an unsupported entry's name is required, must not also appear in the defined handlers/writers, and must not be listed twice
+- `Id` and `Environment` are excluded from the content hash used to detect drift between a stored template and the file this image ships for its region/version
+- A template row belongs to exactly one execution environment. Reads fall back to the row's registered baseline environment when the caller's environment has no row for that region/version key; a UUID lookup is visible to the caller's own environment and its baseline only
+- A write (update or delete) is rejected unless the caller's environment matches the target row's environment; a caller with no environment is always authorized (legacy behavior)
+- Re-seeding a template replaces its stored content with the file this image ships for its region/version; it fails when the template id does not exist or when no shipped file exists for the row's region/version
 
 ### Processors
 
@@ -74,6 +102,12 @@ Manages version-specific configuration templates that define schemas for game re
 - `Create` - Creates a new template
 - `UpdateById` - Updates an existing template
 - `DeleteById` - Deletes a template
+- `ReseedById` - Replaces a template's stored content with the file this image ships for its region/version
+- `AllViewProvider` / `ViewByIdProvider` / `ViewByRegionAndVersionProvider` - Read paths that additionally compute `ShippedRevision`, `StoredRevision`, and `SeedDrift` against the shipped-template catalog
+
+**templates.Catalog**
+- The set of templates baked into the running image, keyed by (region, majorVersion, minorVersion), loaded once at startup from the seed data directory
+- Used both to compute drift on read and to source the content a re-seed writes back
 
 **preset.Validator**
 - `Validate` - Validates a list of character presets against the invariant rules above, returning the (possibly mutated) list and any validation errors
@@ -99,11 +133,16 @@ Manages tenant-specific configurations derived from templates. Maintains history
 - `NPCs` - NPC implementation mappings
 - `Worlds` - World configuration list
 - `CashShop` - Cash shop configuration
+- `MapleLife` - Maple Life character-sale dialog configuration
+- `Environment` - Execution environment the row belongs to; server-owned and read-only (always reflects the persisted row, never a client-supplied value)
 
 ### Invariants
 
 - Updates and deletions create history records before modifying data
 - On update, `Characters.Presets` is validated against the same preset rules described under the Templates domain's Invariants; violations prevent the update
+- On create and update, the socket document is validated against the same rules described under the Templates domain's Invariants; violations prevent the write
+- A tenant row belongs to exactly one execution environment. Reads (list, by id, by region/version) are scoped to the caller's environment; a caller with no environment sees every row (legacy behavior)
+- A write (update or delete) is rejected unless the caller's environment matches the target row's environment; a caller with no environment is always authorized (legacy behavior)
 
 ### Processors
 
@@ -135,17 +174,20 @@ Manages service-specific configurations with type-specific data models.
 - `Type` - Service type
 - `Tasks` - List of task configurations
 - `Tenants` - List of login tenant configurations with ID and port
+- `Environment` - Execution environment the row belongs to; server-owned and read-only
 
 **ChannelRestModel**
 - `Id` - UUID identifier
 - `Type` - Service type
 - `Tasks` - List of task configurations
 - `Tenants` - List of channel tenant configurations with ID, IP address, and world/channel mappings
+- `Environment` - Execution environment the row belongs to; server-owned and read-only
 
 **GenericRestModel**
 - `Id` - UUID identifier
 - `Type` - Service type
 - `Tasks` - List of task configurations
+- `Environment` - Execution environment the row belongs to; server-owned and read-only
 
 **Task**
 - `Type` - Task type identifier
@@ -156,6 +198,9 @@ Manages service-specific configurations with type-specific data models.
 
 - Updates and deletions create history records before modifying data
 - Service type must be one of the valid types (`login-service`, `channel-service`, `drops-service`)
+- A service row belongs to exactly one execution environment. Reads (list, by id) are scoped to the caller's environment; a caller with no environment sees every row (legacy behavior)
+- A write (update or delete) is rejected unless the caller's environment matches the target row's environment; a caller with no environment is always authorized (legacy behavior)
+- At most one service configuration row may exist per (type, environment) pair
 
 ### Processors
 
@@ -165,6 +210,42 @@ Manages service-specific configurations with type-specific data models.
 - `Create` - Creates a new service configuration (accepts optional ID)
 - `UpdateById` - Updates an existing service configuration (creates history record)
 - `DeleteById` - Deletes a service configuration (creates history record)
+
+---
+
+## Environments
+
+### Responsibility
+
+Manages the list of execution environments (e.g. the main deployment, a per-PR sparse environment) that templates, tenants, and services are scoped against.
+
+### Core Models
+
+**RestModel**
+- `Id` - UUID identifier
+- `Name` - Environment's wire identity (e.g. `main`, `pr-123`); the resource's addressable key
+- `Baseline` - Name of the environment this one falls back to / derives from
+- `Namespace` - Deployment namespace the environment runs in
+- `Tenant` - Tenant identifier associated with the environment
+- `Overrides` - Map of service name to namespace, naming which services this environment serves out of its own namespace rather than the baseline's
+- `Phase` - Lifecycle phase: `PROVISIONING`, `ACTIVE`, `DEACTIVATING`, or `DELETED`
+
+### Invariants
+
+- `Name` is required and must be a well-formed environment id
+- `Phase` must be one of `PROVISIONING`, `ACTIVE`, `DEACTIVATING`, `DELETED`
+- On update, a phase transition is legal only as a no-op or one step forward along `PROVISIONING` -> `ACTIVE` -> `DEACTIVATING` -> `DELETED`; skipping or reverting is rejected
+- On update, a field omitted from the request body retains its previously stored value rather than being zeroed
+- On update, the record's `Name` always follows the URL path identity, never the request body
+
+### Processors
+
+**environments.Processor**
+- `GetByName` - Retrieves an environment by name
+- `AllProvider` - Retrieves all environments, paginated
+- `Create` - Creates a new environment
+- `UpdateByName` - Updates an existing environment
+- `Republish` - Re-emits the persisted record for a name unchanged; used by the heartbeat so consumers can treat topic arrival as liveness
 
 ---
 
@@ -178,7 +259,8 @@ Imports template configurations from JSON files on startup.
 
 **seeder.Seeder**
 - `Run` - Executes the seeding process if enabled
-- Discovers JSON files in `{SEED_DATA_PATH}/templates/`
+- Reads shipped template files from a catalog loaded once at startup (`{SEED_DATA_PATH}/templates/`); a file that fails to parse is skipped
 - Checks if template exists by region and version
-- Skips existing templates
+- Skips existing templates; never overwrites an existing row's content (drift correction is the operator-triggered re-seed endpoint, not a startup side effect)
 - Imports new templates via templates.Processor
+- After template seeding, re-publishes every existing service and tenant row into the outbox so a cold-start or a cluster recovering from a wiped Kafka topic has a complete snapshot to publish

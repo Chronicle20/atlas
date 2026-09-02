@@ -17,6 +17,9 @@ import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/kafka/message/cashshop"
+	compartmentmsg "atlas-cashshop/kafka/message/character/compartment"
+	itemmsg "atlas-cashshop/kafka/message/item"
+	walletmsg "atlas-cashshop/kafka/message/wallet"
 	"atlas-cashshop/purchaserecord"
 	"atlas-cashshop/wallet"
 	"encoding/json"
@@ -49,6 +52,11 @@ const testPurchaseStatusTopic = "test-cash-shop-status-purchase"
 var emittedPurchaseEvents *producertest.Capture
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(cashshop.EnvEventTopicStatus), string(cashshop.EnvEventTopicStatus))
+	_ = os.Setenv(string(cashshop.EnvCommandTopic), string(cashshop.EnvCommandTopic))
+	_ = os.Setenv(string(walletmsg.EnvEventTopicStatus), string(walletmsg.EnvEventTopicStatus))
+	_ = os.Setenv(string(itemmsg.EnvStatusTopic), string(itemmsg.EnvStatusTopic))
+	_ = os.Setenv(string(compartmentmsg.EnvCommandTopic), string(compartmentmsg.EnvCommandTopic))
 	emittedPurchaseEvents = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }

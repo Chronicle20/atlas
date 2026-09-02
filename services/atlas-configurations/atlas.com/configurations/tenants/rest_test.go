@@ -8,6 +8,7 @@ import (
 	"atlas-configurations/tenants/socket/writer"
 	"atlas-configurations/tenants/worlds"
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -59,6 +60,60 @@ func TestTenantRestModelCarriesMapleLife(t *testing.T) {
 		}
 		if decoded.Region != "GMS" {
 			t.Errorf("expected Region 'GMS', got '%s'", decoded.Region)
+		}
+	})
+}
+
+func TestTenantRestModelCarriesDiagnostics(t *testing.T) {
+	t.Run("document with diagnostics tracePackets true", func(t *testing.T) {
+		doc := `{
+			"region": "GMS",
+			"majorVersion": 83,
+			"minorVersion": 1,
+			"diagnostics": {"tracePackets": true}
+		}`
+
+		var decoded RestModel
+		if err := json.Unmarshal([]byte(doc), &decoded); err != nil {
+			t.Fatalf("unmarshal failed: %v", err)
+		}
+
+		if decoded.Diagnostics.TracePackets != true {
+			t.Errorf("expected Diagnostics.TracePackets true, got %v", decoded.Diagnostics.TracePackets)
+		}
+
+		data, err := json.Marshal(decoded)
+		if err != nil {
+			t.Fatalf("marshal failed: %v", err)
+		}
+		if !strings.Contains(string(data), `"diagnostics":{"tracePackets":true}`) {
+			t.Errorf("expected marshaled output to contain diagnostics.tracePackets true, got %s", string(data))
+		}
+	})
+
+	t.Run("document with no diagnostics key", func(t *testing.T) {
+		doc := `{"region": "GMS", "majorVersion": 83, "minorVersion": 1}`
+
+		var decoded RestModel
+		if err := json.Unmarshal([]byte(doc), &decoded); err != nil {
+			t.Fatalf("unmarshal failed: %v", err)
+		}
+
+		if decoded.Diagnostics.TracePackets != false {
+			t.Errorf("expected Diagnostics.TracePackets false, got %v", decoded.Diagnostics.TracePackets)
+		}
+	})
+
+	t.Run("document with empty diagnostics object", func(t *testing.T) {
+		doc := `{"region": "GMS", "majorVersion": 83, "minorVersion": 1, "diagnostics": {}}`
+
+		var decoded RestModel
+		if err := json.Unmarshal([]byte(doc), &decoded); err != nil {
+			t.Fatalf("unmarshal failed: %v", err)
+		}
+
+		if decoded.Diagnostics.TracePackets != false {
+			t.Errorf("expected Diagnostics.TracePackets false, got %v", decoded.Diagnostics.TracePackets)
 		}
 	})
 }

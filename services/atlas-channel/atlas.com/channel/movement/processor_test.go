@@ -30,7 +30,7 @@ func drainMovementCommand(t *testing.T, characterId uint32) {
 	t.Helper()
 	deadline := time.Now().Add(time.Second)
 	for {
-		for _, msg := range sharedCapture.Messages(movement2.EnvCommandCharacterMovement) {
+		for _, msg := range sharedCapture.Messages(string(movement2.EnvCommandCharacterMovement)) {
 			var cmd movement2.Command[any]
 			if err := json.Unmarshal(msg.Value, &cmd); err != nil {
 				continue

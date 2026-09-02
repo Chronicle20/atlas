@@ -83,8 +83,8 @@ func TestConsumeCatchCancelsReservationWhenCommandProduceFails(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel)
 
 	emitted.Reset()
-	emitted.FailTopic(monsterMsg.EnvCommandTopic, true)
-	defer emitted.FailTopic(monsterMsg.EnvCommandTopic, false)
+	emitted.FailTopic(string(monsterMsg.EnvCommandTopic), true)
+	defer emitted.FailTopic(string(monsterMsg.EnvCommandTopic), false)
 
 	const characterId = uint32(77)
 	const monsterUniqueId = uint32(555)
@@ -99,19 +99,19 @@ func TestConsumeCatchCancelsReservationWhenCommandProduceFails(t *testing.T) {
 	}
 
 	// The CATCH command itself must never have landed (the produce failed).
-	if got := len(emitted.Messages(monsterMsg.EnvCommandTopic)); got != 0 {
+	if got := len(emitted.Messages(string(monsterMsg.EnvCommandTopic))); got != 0 {
 		t.Fatalf("expected 0 CATCH commands recorded, got %d", got)
 	}
 
 	// The reservation must be cancelled — otherwise the item stays reserved
 	// forever with no CATCH_RESOLVED ever coming to release it.
-	if got := len(emitted.Messages(compartmentmsg.EnvCommandTopic)); got != 1 {
+	if got := len(emitted.Messages(string(compartmentmsg.EnvCommandTopic))); got != 1 {
 		t.Fatalf("expected 1 compartment command (the cancellation), got %d", got)
 	}
 
 	// The client must be unlocked via the same generic ERROR event every
 	// other ItemConsumer's ConsumeError call uses.
-	msgs := emitted.Messages(consumablemsg.EnvEventTopic)
+	msgs := emitted.Messages(string(consumablemsg.EnvEventTopic))
 	if len(msgs) != 1 {
 		t.Fatalf("expected 1 consumable event (the unlock), got %d", len(msgs))
 	}

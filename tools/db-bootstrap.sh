@@ -88,6 +88,7 @@ DBS=(
   atlas-parcel
   atlas-party-quests
   atlas-pets
+  atlas-player-npcs
   atlas-portal-actions
   atlas-quest
   atlas-rankings

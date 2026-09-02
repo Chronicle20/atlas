@@ -1,6 +1,7 @@
 package game
 
 import (
+	"atlas-mini-games/kafka/message/minigame"
 	"os"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(minigame.EnvEventTopicStatus), string(minigame.EnvEventTopicStatus))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

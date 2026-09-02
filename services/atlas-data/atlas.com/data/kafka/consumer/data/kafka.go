@@ -1,7 +1,12 @@
 package data
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvCommandTopic    = "COMMAND_TOPIC_DATA"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_DATA"
+)
+
+const (
 	CommandStartWorker = "START_WORKER"
 )
 

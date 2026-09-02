@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -17,7 +18,7 @@ import (
 
 // taskEmitter publishes a kafka message provider on behalf of a tenant.
 // Injected for tests.
-type taskEmitter func(t tenant.Model, topic string, provider model.Provider[[]kafka.Message]) error
+type taskEmitter func(t tenant.Model, tok topic.Token, provider model.Provider[[]kafka.Message]) error
 
 // bossLookupFn fetches whether a template is a boss for a given tenant.
 // The tenant is required because atlas-data is tenant-scoped — the upstream
@@ -50,9 +51,9 @@ func NewMonsterAggroDecayTask(l logrus.FieldLogger, ctx context.Context, interva
 		}
 		return ma.Boss()
 	}
-	tk.emit = func(t tenant.Model, topic string, provider model.Provider[[]kafka.Message]) error {
+	tk.emit = func(t tenant.Model, tok topic.Token, provider model.Provider[[]kafka.Message]) error {
 		tctx := tenant.WithContext(tk.ctx, t)
-		return producer.ProviderImpl(tk.l)(tctx)(topic)(provider)
+		return producer.ProviderImpl(tk.l)(tctx)(tok)(provider)
 	}
 	return tk
 }

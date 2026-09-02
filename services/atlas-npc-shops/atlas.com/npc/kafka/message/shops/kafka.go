@@ -7,10 +7,17 @@
 // mechanically.
 package shops
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvCommandTopic     = "COMMAND_TOPIC_NPC_SHOP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_NPC_SHOP"
+)
+
+const (
 	CommandShopEnter    = "ENTER"
 	CommandShopExit     = "EXIT"
 	CommandShopBuy      = "BUY"
@@ -51,7 +58,10 @@ type CommandShopRechargeBody struct {
 }
 
 const (
-	EnvStatusEventTopic    = "EVENT_TOPIC_NPC_SHOP_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_NPC_SHOP_STATUS"
+)
+
+const (
 	StatusEventTypeEntered = "ENTERED"
 	StatusEventTypeExited  = "EXITED"
 	StatusEventTypeError   = "ERROR"

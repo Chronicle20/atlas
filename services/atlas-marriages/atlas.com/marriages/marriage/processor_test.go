@@ -16,6 +16,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -123,7 +124,7 @@ func (m *MockProducer) ClearMessages() {
 	m.messagesProduced = make([]kafka.Message, 0)
 }
 
-func (m *MockProducer) Provider(_ string) kafkaProducer.MessageProducer {
+func (m *MockProducer) Provider(_ topic.Token) kafkaProducer.MessageProducer {
 	return func(provider model.Provider[[]kafka.Message]) error {
 		if m.shouldError {
 			return errors.New(m.errorMessage)
@@ -929,7 +930,7 @@ func TestProcessor_ProposeAndEmit(t *testing.T) {
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil
@@ -1151,7 +1152,7 @@ func TestProcessor_ConcurrentAccess(t *testing.T) {
 	mockCharacterProcessor.AddCharacter(4, "Character4", 15)
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil
@@ -1549,7 +1550,7 @@ func TestProcessor_ProcessExpiredProposals(t *testing.T) {
 	}
 
 	// Create mock producer
-	mockProducer := func(token string) kafkaProducer.MessageProducer {
+	mockProducer := func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			// Mock producer that does nothing (for testing)
 			return nil

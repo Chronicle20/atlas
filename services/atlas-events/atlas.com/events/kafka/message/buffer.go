@@ -10,6 +10,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -19,18 +20,18 @@ import (
 
 // Buffer accumulates kafka messages for atomic emission.
 type Buffer struct {
-	buffer map[string][]kafka.Message
+	buffer map[topic.Token][]kafka.Message
 }
 
 // NewBuffer creates a new message buffer.
 func NewBuffer() *Buffer {
 	return &Buffer{
-		buffer: make(map[string][]kafka.Message),
+		buffer: make(map[topic.Token][]kafka.Message),
 	}
 }
 
 // Put adds messages to the buffer for the given topic.
-func (b *Buffer) Put(t string, p model.Provider[[]kafka.Message]) error {
+func (b *Buffer) Put(t topic.Token, p model.Provider[[]kafka.Message]) error {
 	ms, err := p()
 	if err != nil {
 		return err
@@ -40,7 +41,7 @@ func (b *Buffer) Put(t string, p model.Provider[[]kafka.Message]) error {
 }
 
 // GetAll returns all buffered messages.
-func (b *Buffer) GetAll() map[string][]kafka.Message {
+func (b *Buffer) GetAll() map[topic.Token][]kafka.Message {
 	return b.buffer
 }
 

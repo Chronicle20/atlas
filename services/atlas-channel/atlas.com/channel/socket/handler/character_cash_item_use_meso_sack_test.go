@@ -102,7 +102,7 @@ func TestMesoSackUseCreatesSagaAndAnnouncesNothing(t *testing.T) {
 	rec := &gaugeProducerRecorder{}
 	handleMesoSackUse(logrus.New(), ctx, rec.producer())(s, item.Id(itemId))
 
-	if got := len((*captured)[sagaMsg.EnvCommandTopic]); got != 1 {
+	if got := len((*captured)[string(sagaMsg.EnvCommandTopic)]); got != 1 {
 		t.Fatalf("emitted %d saga commands, want exactly 1", got)
 	}
 	if rec.calls != 0 {
@@ -137,7 +137,7 @@ func TestMesoSackUseRejectsAndUnlocks(t *testing.T) {
 			rec := &gaugeProducerRecorder{}
 			handleMesoSackUse(logrus.New(), ctx, rec.producer())(s, item.Id(5200009))
 
-			if got := len((*captured)[sagaMsg.EnvCommandTopic]); got != 0 {
+			if got := len((*captured)[string(sagaMsg.EnvCommandTopic)]); got != 0 {
 				t.Fatalf("emitted %d saga commands, want 0 (nothing may be consumed)", got)
 			}
 			if rec.calls != 1 {

@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -45,8 +46,8 @@ func newMoveProcessor(t *testing.T) (*ProcessorImpl, tenant.Model, context.Conte
 		l:   logrus.New(),
 		ctx: ctx,
 		t:   ten,
-		emit: func(topic string, _ model.Provider[[]kafka.Message]) error {
-			*emitted = append(*emitted, topic)
+		emit: func(topic topic.Token, _ model.Provider[[]kafka.Message]) error {
+			*emitted = append(*emitted, string(topic))
 			return nil
 		},
 	}
@@ -88,7 +89,7 @@ func TestMoveByOwnerUpdatesPosition(t *testing.T) {
 	if got.Stance() != 3 {
 		t.Fatalf("stance not updated: got %d want 3", got.Stance())
 	}
-	if len(*emitted) != 1 || (*emitted)[0] != EnvEventTopicSummonStatus {
+	if len(*emitted) != 1 || (*emitted)[0] != string(EnvEventTopicSummonStatus) {
 		t.Fatalf("expected one MOVED emit to %s, got %v", EnvEventTopicSummonStatus, *emitted)
 	}
 }

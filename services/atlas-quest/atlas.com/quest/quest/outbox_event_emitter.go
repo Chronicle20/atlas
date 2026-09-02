@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -30,12 +31,12 @@ func NewOutboxEventEmitter(l logrus.FieldLogger, ctx context.Context, tx *gorm.D
 	return &OutboxEventEmitter{l: l, ctx: ctx, tx: tx}
 }
 
-func (e *OutboxEventEmitter) enqueue(token string, p model.Provider[[]kafka.Message]) error {
+func (e *OutboxEventEmitter) enqueue(token topic.Token, p model.Provider[[]kafka.Message]) error {
 	msgs, err := p()
 	if err != nil {
 		return err
 	}
-	return outbox.EnqueueBuffer(e.l, e.ctx, e.tx, map[string][]kafka.Message{token: msgs})
+	return outbox.EnqueueBuffer(e.l, e.ctx, e.tx, map[topic.Token][]kafka.Message{token: msgs})
 }
 
 func (e *OutboxEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string, items []questmessage.ItemReward) error {

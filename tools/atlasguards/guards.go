@@ -17,6 +17,7 @@
 //	goroutineguard     services/ + libs/
 //	buffdurationguard  services/ + libs/
 //	scopeguard         services/ + libs/
+//	topicguard         services/ + libs/
 //
 // Widening rediskeyguard or outboxguard to libs/ as a side effect of merging
 // the jobs would be a behavior change smuggled in under a performance change,
@@ -31,6 +32,13 @@
 // here is what makes CI's go-analyzer-guards job actually run it — before
 // this it had no CI entry point at all, only tools/verify.sh's own
 // change-gated call to tools/scope-guard.sh.
+//
+// topicguard (task-276) is services/ + libs/ from the start: its raw-env-
+// topic-read diagnostic exists because libs/atlas-service's envregistry.go
+// itself holds live os.Getenv(string(...)) call sites, and its
+// token-not-in-manifest diagnostic must see every topic.Token constant the
+// fleet declares, not just the services/ subset — a services-only
+// registration would miss both.
 package atlasguards
 
 import (
@@ -41,6 +49,7 @@ import (
 	"github.com/Chronicle20/atlas/tools/outboxguard"
 	"github.com/Chronicle20/atlas/tools/rediskeyguard"
 	"github.com/Chronicle20/atlas/tools/scopeguard"
+	"github.com/Chronicle20/atlas/tools/topicguard"
 )
 
 // Services is the analyzer set that applies to modules under services/.
@@ -51,6 +60,7 @@ func Services() []*analysis.Analyzer {
 		goroutineguard.Analyzer,
 		buffdurationguard.Analyzer,
 		scopeguard.Analyzer,
+		topicguard.Analyzer,
 	}
 }
 
@@ -60,5 +70,6 @@ func Libraries() []*analysis.Analyzer {
 		goroutineguard.Analyzer,
 		buffdurationguard.Analyzer,
 		scopeguard.Analyzer,
+		topicguard.Analyzer,
 	}
 }

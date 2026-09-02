@@ -28,7 +28,7 @@ Represents one item/mesos handoff held in Duey's custody between the moment a se
 
 **Builder**
 - Constructs Model instances with builder pattern via `NewBuilder()`
-- `validate()` enforces required fields (id, tenantId, senderId, recipientId, status, worldId zero-valued is a legitimate world)
+- `validate()` enforces required fields (id, senderId, recipientId, status — tenantId is not validated here since Create's `ToEntity` deliberately leaves it zero for the atlas-database tenant:create callback to inject; worldId zero-valued is a legitimate world)
 - `Build()` returns error on validation failure
 
 ### Invariants

@@ -55,11 +55,12 @@ GUARD_SRCS=(
     "$ROOT/tools/goroutineguard"
     "$ROOT/tools/buffdurationguard"
     "$ROOT/tools/scopeguard"
+    "$ROOT/tools/topicguard"
 )
 
 # Guards that ship their own unit tests. rediskeyguard and outboxguard have
 # none to run — this mirrors the SELFTEST flags on the per-guard wrappers.
-SELFTEST_GUARDS=(goroutineguard buffdurationguard scopeguard)
+SELFTEST_GUARDS=(goroutineguard buffdurationguard scopeguard topicguard)
 
 if [ "${GUARD_SKIP_SELFTEST:-0}" -ne 1 ]; then
     for g in "${SELFTEST_GUARDS[@]}"; do
@@ -122,6 +123,13 @@ if grep -q '^\s*.*scopeguard:' "$LOG"; then
     echo "    add a written reason to tools/scopeguard/allowlist.txt or"
     echo "    tools/scopeguard/callsite-allowlist.txt, or fix the code — see"
     echo "    docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md"
+fi
+if grep -q '^\s*.*topicguard:' "$LOG"; then
+    echo "  topicguard — a bare topic literal, a raw os.Getenv/LookupEnv topic read,"
+    echo "    or a topic.Token constant missing from libs/atlas-kafka/gen/topics.yaml."
+    echo "    Declare the topic as a topic.Token constant, reference it via"
+    echo "    string(SomeConst) instead of a raw env read, or run"
+    echo "    tools/gen-topics.sh to refresh the manifest."
 fi
 
 echo ""

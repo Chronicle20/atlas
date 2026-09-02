@@ -13,6 +13,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -68,10 +69,10 @@ func seedCompletedOccurrence(t *testing.T, db *gorm.DB, theType string, reason s
 
 // emittedApply decodes every message captured on topic whose Type equals
 // wantType as a buff.Command[buff.ApplyCommandBody].
-func (f *emitCapture) emittedApply(topic, wantType string) []buff.Command[buff.ApplyCommandBody] {
+func (f *emitCapture) emittedApply(topic topic.Token, wantType string) []buff.Command[buff.ApplyCommandBody] {
 	f.t.Helper()
 	var out []buff.Command[buff.ApplyCommandBody]
-	for _, m := range emitted.Messages(topic) {
+	for _, m := range emitted.Messages(string(topic)) {
 		var c buff.Command[buff.ApplyCommandBody]
 		if err := json.Unmarshal(m.Value, &c); err != nil {
 			f.t.Fatalf("decode buff command: %v", err)

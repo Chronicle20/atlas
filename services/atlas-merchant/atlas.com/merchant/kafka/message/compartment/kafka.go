@@ -4,12 +4,16 @@ import (
 	asset2 "atlas-merchant/kafka/message/asset"
 
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic     = "COMMAND_TOPIC_COMPARTMENT"
-	EnvEventTopicStatus = "EVENT_TOPIC_COMPARTMENT_STATUS"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_COMPARTMENT_STATUS"
+)
 
+const (
 	CommandAccept  = "ACCEPT"
 	CommandRelease = "RELEASE"
 

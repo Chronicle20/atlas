@@ -5,8 +5,10 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	"atlas-saga-orchestrator/map_command"
 	notemock "atlas-saga-orchestrator/note/mock"
+	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
 	"atlas-saga-orchestrator/validation"
 	mock3 "atlas-saga-orchestrator/validation/mock"
 	"encoding/json"
@@ -28,6 +30,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -1897,4 +1900,130 @@ func TestHandleResetEnvironment_DelegatesToMapCommand(t *testing.T) {
 	assert.Equal(t, channel.Id(1), gotField.ChannelId())
 	assert.Equal(t, _map.Id(910010000), gotField.MapId())
 	assert.Equal(t, uuid.Nil, gotField.Instance())
+}
+
+// TestDeployPlayerNpcAction covers handleDeployPlayerNpc (FR-6.2).
+//
+// The step is no longer self-completing (Task 23b): the emitted command
+// carries the saga's transaction id, and event_acceptance.go's acceptance
+// table now waits for COMMAND_SUCCEEDED/COMMAND_FAILED
+// (kafka/consumer/playernpc) to complete or fail it. The FR-6.3
+// failure-code-surfacing row is covered by that consumer's own tests
+// (kafka/consumer/playernpc/errorcode_result_test.go), since the code
+// travels on the status event this handler never sees. What is asserted
+// here is the producer side: the command carries the transaction id, and
+// the handler returns an error only when resolving the character's location
+// or emitting the Kafka command itself fails.
+func TestDeployPlayerNpcAction(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	t.Run("explicit MapId wins over the resolved location", func(t *testing.T) {
+		_, ctx := setupContext()
+
+		explicitMapId := uint32(100000001)
+		locationCalls := 0
+		locP := &playernpcmock.ProcessorMock{
+			GetCurrentLocationFunc: func(characterId uint32) (world.Id, _map.Id, channel.Id, error) {
+				locationCalls++
+				return world.Id(1), _map.Id(999999999), channel.Id(2), nil
+			},
+		}
+
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(QuestReward).
+			SetInitiatedBy("test").
+			Build()
+		require.NoError(t, err)
+
+		step := NewStep[any]("deploy-player-npc", Pending, DeployPlayerNpc, DeployPlayerNpcPayload{
+			CharacterId: 12345,
+			MapId:       &explicitMapId,
+		})
+
+		err = NewHandler(logger, ctx).WithPlayerNpcLocationProcessor(locP).handleDeployPlayerNpc(s, step)
+		assert.NoError(t, err)
+		// WorldId has no source but the location lookup (per the controller's
+		// ruling), so it is always resolved even when MapId is explicit.
+		assert.Equal(t, 1, locationCalls)
+	})
+
+	t.Run("default map resolves both world and map from current location, command carries transaction id", func(t *testing.T) {
+		_, ctx := setupContext()
+
+		capture := producertest.InstallCapturing()
+		t.Cleanup(producertest.InstallNoop)
+
+		locP := &playernpcmock.ProcessorMock{
+			GetCurrentLocationFunc: func(characterId uint32) (world.Id, _map.Id, channel.Id, error) {
+				assert.Equal(t, uint32(54321), characterId)
+				return world.Id(3), _map.Id(200000000), channel.Id(4), nil
+			},
+		}
+
+		tx := uuid.New()
+		s, err := NewBuilder().
+			SetTransactionId(tx).
+			SetSagaType(QuestReward).
+			SetInitiatedBy("test").
+			Build()
+		require.NoError(t, err)
+
+		step := NewStep[any]("deploy-player-npc", Pending, DeployPlayerNpc, DeployPlayerNpcPayload{
+			CharacterId: 54321,
+		})
+
+		err = NewHandler(logger, ctx).WithPlayerNpcLocationProcessor(locP).handleDeployPlayerNpc(s, step)
+		assert.NoError(t, err)
+
+		msgs := capture.Messages(string(playernpcmsg.EnvCommandTopic))
+		require.Len(t, msgs, 1, "handler must emit exactly one DEPLOY command")
+		var cmd playernpcmsg.Command[playernpcmsg.CommandDeployBody]
+		require.NoError(t, json.Unmarshal(msgs[0].Value, &cmd))
+		assert.Equal(t, tx, cmd.TransactionId, "emitted command must carry the saga's transaction id")
+	})
+
+	t.Run("invalid payload is rejected", func(t *testing.T) {
+		_, ctx := setupContext()
+
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(QuestReward).
+			SetInitiatedBy("test").
+			Build()
+		require.NoError(t, err)
+
+		step := NewStep[any]("deploy-player-npc", Pending, DeployPlayerNpc, "invalid-payload-type")
+
+		err = NewHandler(logger, ctx).handleDeployPlayerNpc(s, step)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid payload")
+	})
+
+	t.Run("location lookup failure is returned, not swallowed", func(t *testing.T) {
+		_, ctx := setupContext()
+
+		locErr := errors.New("atlas-maps unreachable")
+		locP := &playernpcmock.ProcessorMock{
+			GetCurrentLocationFunc: func(characterId uint32) (world.Id, _map.Id, channel.Id, error) {
+				return 0, 0, 0, locErr
+			},
+		}
+
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(QuestReward).
+			SetInitiatedBy("test").
+			Build()
+		require.NoError(t, err)
+
+		step := NewStep[any]("deploy-player-npc", Pending, DeployPlayerNpc, DeployPlayerNpcPayload{
+			CharacterId: 999,
+		})
+
+		err = NewHandler(logger, ctx).WithPlayerNpcLocationProcessor(locP).handleDeployPlayerNpc(s, step)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "atlas-maps unreachable")
+	})
 }

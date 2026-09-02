@@ -529,6 +529,7 @@
   fname: sub_830B0B
   fname_alts:
   - CNpcPool::OnNpcImitateData
+  packet: npc/clientbound/ImitatedNpcData
   provenance: ida-discovered
   ida:
     address: 8588043
@@ -1353,6 +1354,7 @@
   direction: clientbound
   opcode: 195
   fname: CNpcPool::OnNpcLeaveField
+  packet: npc/clientbound/NpcRemove
   provenance: manual
   ida:
     address: 6225483

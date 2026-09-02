@@ -49,6 +49,7 @@ JSON:API resource of type `effective-stats`.
 | statType | string | Stat type affected (e.g., `strength`, `max_hp`) |
 | amount | int32 | Flat bonus value |
 | multiplier | float64 | Percentage bonus value |
+| basePercent | int32 | Percent of the raw base stat only, applied as a flat addition |
 
 #### Response Example
 
@@ -77,13 +78,15 @@ JSON:API resource of type `effective-stats`.
           "source": "equipment:1001",
           "statType": "strength",
           "amount": 15,
-          "multiplier": 0
+          "multiplier": 0,
+          "basePercent": 0
         },
         {
           "source": "buff:2311003",
           "statType": "max_hp",
           "amount": 0,
-          "multiplier": 0.6
+          "multiplier": 0.6,
+          "basePercent": 0
         }
       ]
     }

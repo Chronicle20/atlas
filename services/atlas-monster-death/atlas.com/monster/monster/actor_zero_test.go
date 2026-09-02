@@ -8,7 +8,9 @@ package monster
 // unmodified.
 
 import (
+	"atlas-monster-death/character"
 	"atlas-monster-death/monster/drop"
+	"atlas-monster-death/system_message"
 	"context"
 	"encoding/json"
 	"math"
@@ -31,6 +33,9 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(drop.EnvCommandTopic), string(drop.EnvCommandTopic))
+	_ = os.Setenv(string(character.EnvCommandTopic), string(character.EnvCommandTopic))
+	_ = os.Setenv(string(system_message.EnvCommandTopic), string(system_message.EnvCommandTopic))
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }
@@ -145,7 +150,7 @@ func TestCreateDropsWithNoKillerSpawnsUnownedDrop(t *testing.T) {
 		t.Fatalf("expected nil error for a no-killer detonation, got %v", err)
 	}
 
-	msgs := emitted.Messages(drop.EnvCommandTopic)
+	msgs := emitted.Messages(string(drop.EnvCommandTopic))
 	if len(msgs) != 1 {
 		t.Fatalf("expected exactly one spawn drop command, got %d", len(msgs))
 	}

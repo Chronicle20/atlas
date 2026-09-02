@@ -1,7 +1,12 @@
 package pet
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvCommandTopic      = "COMMAND_TOPIC_PET"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PET"
+)
+
+const (
 	CommandAwardFullness = "AWARD_FULLNESS"
 	CommandSetSkill      = "SET_SKILL"
 )

@@ -55,6 +55,7 @@ import (
 	"atlas-channel/kafka/consumer/party_quest"
 	"atlas-channel/kafka/consumer/pendingchange"
 	"atlas-channel/kafka/consumer/pet"
+	playernpcConsumer "atlas-channel/kafka/consumer/playernpc"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	reportstatus "atlas-channel/kafka/consumer/report"
@@ -259,6 +260,7 @@ func main() {
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
 	kiteconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	playernpcConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	teleportrockConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
@@ -433,10 +435,7 @@ func buildListener(
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}
 
-		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
-		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
-			rw = socket2.ByteReadWriter{}
-		}
+		rw := opcodes.OpReadWriterFor(t.Region(), t.MajorVersion())
 
 		sc := h.ServerModel
 
@@ -565,6 +564,9 @@ func buildListener(
 		if err := register(kiteconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return handles, err
 		}
+		if err := register(playernpcConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(messenger.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return handles, err
 		}
@@ -655,7 +657,8 @@ func buildListener(
 		// shutdown bookkeeping, unchanged); h.Wg additionally sees every
 		// accepted connection, which is what makes drain phase 3 a real
 		// bounded wait (task-244 design.md §4.3).
-		lis, err := socket.CreateSocketService(fl, tctx, tdm.WaitGroup(), h.Wg)(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
+		handlerNames := opcodes.BuildHandlerNames(fl, opcodes.ServiceChannel, tenantCfg.Socket.Handlers)
+		lis, err := socket.CreateSocketService(fl, tctx, tdm.WaitGroup(), h.Wg)(hp, rw, wp, sc, cfg.IPAddress, cfg.Port, handlerNames)
 		if err != nil {
 			// A non-nil error here is what fires Registry.Add's rollback:
 			// no entry is left for a channel that never bound. Return the
@@ -707,6 +710,8 @@ func produceWriters() []string {
 		npccb.NpcSpawnWriter,
 		npccb.NpcSpawnRequestControllerWriter,
 		npccb.NpcActionWriter,
+		npccb.NpcImitatedDataWriter,
+		npccb.NpcRemoveWriter,
 		stat2.StatChangedWriter,
 		channelCB.ChannelChangeWriter,
 		cashcb.CashShopOpenWriter,

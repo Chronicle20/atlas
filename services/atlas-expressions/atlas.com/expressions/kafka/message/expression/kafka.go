@@ -6,11 +6,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvExpressionEvent   = "EVENT_TOPIC_EXPRESSION"
-	EnvExpressionCommand = "COMMAND_TOPIC_EXPRESSION"
+	EnvExpressionEvent   topic.Token = "EVENT_TOPIC_EXPRESSION"
+	EnvExpressionCommand topic.Token = "COMMAND_TOPIC_EXPRESSION"
 )
 
 // StatusEvent represents an expression event

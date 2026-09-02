@@ -1,6 +1,6 @@
 # Atlas Tenants Service
 
-A RESTful microservice that provides tenant management for the Atlas game platform. This service manages tenant information and tenant-specific configurations including routes, vessels, and instance routes.
+A RESTful microservice that provides tenant management for the Atlas game platform. This service manages tenant information and tenant-specific configurations including routes, vessels, instance routes, RPS rewards, MTS configs, trade configs, rankings, kite configs, and imprint configs.
 
 ## External Dependencies
 
@@ -27,7 +27,11 @@ A RESTful microservice that provides tenant management for the Atlas game platfo
 - `ROUTES_SEED_PATH` - Filesystem path to route seed JSON files (default: `/configurations/routes`)
 - `INSTANCE_ROUTES_SEED_PATH` - Filesystem path to instance route seed JSON files (default: `/configurations/instance-routes`)
 - `VESSELS_SEED_PATH` - Filesystem path to vessel seed JSON files (default: `/configurations/vessels`)
+- `RPS_REWARDS_SEED_PATH` - Filesystem path to rps-rewards seed JSON files (default: `/configurations/rps-rewards`)
 - `MTS_CONFIGS_SEED_PATH` - Filesystem path to MTS config seed JSON files (default: `/configurations/mts-configs`)
+- `TRADE_CONFIGS_SEED_PATH` - Filesystem path to trade config seed JSON files (default: `/configurations/trade-configs`)
+- `IMPRINT_CONFIGS_SEED_PATH` - Filesystem path to imprint config seed JSON files (default: `/configurations/imprint-configs`)
+- `ATLAS_ENVIRONMENT` - Baseline environment value used to backfill tenant rows with no environment (default: `main`)
 
 ## Documentation
 

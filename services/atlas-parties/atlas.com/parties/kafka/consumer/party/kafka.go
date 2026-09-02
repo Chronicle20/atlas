@@ -1,9 +1,16 @@
 package party
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_PARTY"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY"
+)
+
+const (
 	CommandPartyCreate        = "CREATE"
 	CommandPartyJoin          = "JOIN"
 	CommandPartyLeave         = "LEAVE"

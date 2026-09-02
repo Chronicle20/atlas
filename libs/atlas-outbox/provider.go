@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -18,14 +19,14 @@ import (
 // EmitWithResult call sites accept it without conversion. Topic tokens are
 // env-resolved and span+tenant headers applied from ctx at enqueue time;
 // the drainer publishes after the transaction commits.
-func EmitProvider(l logrus.FieldLogger, ctx context.Context, tx *gorm.DB) func(token string) kafkaproducer.MessageProducer {
-	return func(token string) kafkaproducer.MessageProducer {
+func EmitProvider(l logrus.FieldLogger, ctx context.Context, tx *gorm.DB) func(token topic.Token) kafkaproducer.MessageProducer {
+	return func(token topic.Token) kafkaproducer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
 				return err
 			}
-			return EnqueueBuffer(l, ctx, tx, map[string][]kafka.Message{token: msgs})
+			return EnqueueBuffer(l, ctx, tx, map[topic.Token][]kafka.Message{token: msgs})
 		}
 	}
 }

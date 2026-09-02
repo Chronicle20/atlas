@@ -5,15 +5,24 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic   = "COMMAND_TOPIC_REPORT"
-	CommandTypeCreate = "CREATE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REPORT"
+)
 
-	EnvEventTopicStatus = "EVENT_TOPIC_REPORT_STATUS"
-	EventStatusCreated  = "CREATED"
-	EventStatusError    = "ERROR"
+const (
+	CommandTypeCreate = "CREATE"
+)
+
+const (
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_REPORT_STATUS"
+)
+
+const (
+	EventStatusCreated = "CREATED"
+	EventStatusError   = "ERROR"
 
 	ErrorCodeNotFound      = "NOT_FOUND"
 	ErrorCodeInternal      = "INTERNAL"

@@ -5,11 +5,15 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	// EnvCommandTopic defines the environment variable for the buddy list command topic
-	EnvCommandTopic = "COMMAND_TOPIC_BUDDY_LIST"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_BUDDY_LIST"
+)
+
+const (
 	// CommandTypeCreate is the command type for creating a new buddy list
 	CommandTypeCreate = "CREATE"
 	// CommandTypeRequestAdd is the command type for requesting to add a buddy
@@ -68,7 +72,10 @@ type IncreaseCapacityCommandBody struct {
 
 const (
 	// EnvStatusEventTopic defines the environment variable for the buddy list status event topic
-	EnvStatusEventTopic = "EVENT_TOPIC_BUDDY_LIST_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_BUDDY_LIST_STATUS"
+)
+
+const (
 	// StatusEventTypeBuddyAdded is emitted when a buddy is successfully added
 	StatusEventTypeBuddyAdded = "BUDDY_ADDED"
 	// StatusEventTypeBuddyRemoved is emitted when a buddy is successfully removed

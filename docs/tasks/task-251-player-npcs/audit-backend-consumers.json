@@ -1,0 +1,134 @@
+{
+  "service": "task-251-player-npcs (backend-consumer modules)",
+  "path": "services/atlas-saga-orchestrator, services/atlas-channel, services/atlas-query-aggregator, services/atlas-tenants, services/atlas-messages, services/atlas-data, services/atlas-configurations, libs/atlas-saga, libs/atlas-packet, libs/atlas-object-id, libs/atlas-constants",
+  "date": "2026-08-22",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-saga-orchestrator/playernpc + saga",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "playernpc/processor.go:16"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "saga/handler.go:101,742 HandlerImpl updated; playernpc/mock/processor.go:20 added in same diff"},
+        {"id": "DOM-24", "name": "producertest stub installed for reached emit path", "status": "pass", "evidence": "kafka/consumer/playernpc/testmain_test.go:11; saga/handler_test.go producertest.InstallCapturing()"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "saga/handler_test.go:1007 TestDeployPlayerNpcAction and kafka/consumer/playernpc/consumer_test.go use ad-hoc t.Run, not a struct table"},
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "playernpc/requests.go:39-41"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "n-a", "evidence": "no dedicated httptest coverage in this package; only interface-level mock in saga/handler_test.go — see notEvaluable"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "playernpc/processor.go:30-33 propagates err unmodified"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "playernpc/requests.go:31"},
+        {"id": "DOM-31", "name": "Tenant/trace only via context", "status": "pass", "evidence": "playernpc/requests.go uses ctx only, no tenant field on LocationRestModel"},
+        {"id": "FILE-02", "name": "RestModel/JSON:API methods in rest.go", "status": "warn", "evidence": "LocationRestModel and JSON:API methods live in requests.go, not rest.go (playernpc/requests.go:29-41)"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "warn", "evidence": "requests.go carries both FILE-02 and FILE-03 responsibilities"},
+        {"id": "DOM-25", "name": "Client wire values via writer-options table", "status": "n-a", "evidence": "package never encodes a client packet"}
+      ]
+    },
+    {
+      "name": "atlas-channel/playernpc + kafka/consumer/playernpc + kafka/consumer/map",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go has validating Build()", "status": "fail", "evidence": "playernpc/builder.go:1225-1252 Build() has no invariant check, no error return"},
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) in rest.go", "status": "n-a", "evidence": "pure REST-client package, only Extract() applies (rest.go:65); FILE-02 (file-responsibilities.md:212) explicitly accepts Extract; sibling kite/ follows the same shape"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "playernpc/processor.go:20"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "playernpc/rest.go:69-88"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "playernpc/rest.go:31-56"},
+        {"id": "DOM-25", "name": "Client wire values via writer-options table", "status": "pass", "evidence": "libs/atlas-packet/npc/clientbound/imitated_npc_data.go:14, remove.go:14 — semantic Operation() names, no literal opcode"},
+        {"id": "DOM-31", "name": "Tenant/trace only via context", "status": "pass", "evidence": "playernpc/requests.go:15-17 requests.RootUrlFor(ctx, \"PLAYER_NPCS\")"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "builder.go/model.go/processor.go/requests.go/rest.go each single-responsibility"},
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "playernpc/rest.go:79-85"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "playernpc/rest_test.go:1751-1823 TestForEachInMap_RequestsByMapAndWorld"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "no not-found translation in processor.go/requests.go"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "playernpc/requests.go:15-17"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "kafka/consumer/map/consumer.go:9-13"},
+        {"id": "SCAFFOLD-07", "name": "New writers seeded in every targeted tenant template", "status": "pass", "evidence": "seed_template_writers_test.go asserts exact opcode/absence per template and passes; gms_12/gms_48 gaps are deliberate evidenced exclusions"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "kafka/consumer/playernpc/consumer_test.go:810, kafka/consumer/map/player_npc_test.go:216 use ad-hoc t.Run"},
+        {"id": "DOM-24", "name": "producertest stub where an emit path is reached", "status": "n-a", "evidence": "these consumers only broadcast to sessions, never emit Kafka"}
+      ]
+    },
+    {
+      "name": "atlas-query-aggregator/playernpc + validation",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-05", "name": "Domain Model lives in model.go", "status": "fail", "evidence": "playernpc/processor.go:19-25 defines EligibilityModel in processor.go, package has no model.go"},
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "n-a", "evidence": "EligibilityRestModel is deliberately not JSON:API, decoded with encoding/json (rest.go:9-12)"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "playernpc/ package has no _test.go at all; requestEligibility's HTTP/decode path never exercised; only an interface-level fakePlayerNpcProcessor exists (validation/model_test.go:452-463)"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "playernpc/requests.go:149-151 wraps any non-200 generically"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "playernpc/requests.go:107-109"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "fakePlayerNpcProcessor (validation/model_test.go:452-463) implements playernpc.Processor in same diff"},
+        {"id": "DOM-28", "name": "Fallible enrichment degrades loudly", "status": "warn", "evidence": "validation/context.go:243-260 GetPlayerNpcEligibility degrades with only Warnf, not model.ErrDecorator/degrade.Observe; applicability uncertain, see notEvaluable"},
+        {"id": "DOM-31", "name": "Tenant/trace only via context", "status": "n-a", "evidence": "no public rest.go handler surface in this package; identifiers travel as explicit function params from already-resolved character.Model"}
+      ]
+    },
+    {
+      "name": "atlas-tenants/configuration",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "configuration/processor.go:250"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "pass", "evidence": "configuration/resource.go:822,833-834"},
+        {"id": "DOM-17", "name": "Domain errors map to correct HTTP status", "status": "pass", "evidence": "configuration/resource.go:689-691,768-771,721"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "configuration/rest.go:866-877"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "configuration/rest.go:855-864"},
+        {"id": "DOM-27", "name": "Transient DB errors → 503 via WriteErrorResponse", "status": "pass", "evidence": "configuration/resource.go:694,701,727,735,741,773,779,785,805"},
+        {"id": "DOM-30", "name": "DB write + emit via AndEmit/message.Buffer", "status": "pass", "evidence": "configuration/processor.go:538-555 message.EmitWithResult+outbox.EmitProvider, mb.Put at lines 510/528"},
+        {"id": "DOM-31", "name": "Tenant/trace only via context", "status": "fail", "evidence": "configuration/resource.go:683,716,757,801 all four new handlers resolve tenant via rest.ParseTenantId reading {tenantId} path segment (route registration at resource.go:832-835), not tenant.MustFromContext(ctx); matches patterns-multitenancy-context.md's explicit FAIL example verbatim"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "configuration/mock/processor.go:96-188 implements all 8 new Processor methods in same diff"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "player_npc_config_handler_test.go is a linear wire round-trip test, matching sibling rankings_handler_test.go's own shape"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "new code fits existing kafka.go/mock/processor.go/provider.go/resource.go/rest.go split"}
+      ]
+    },
+    {
+      "name": "atlas-messages/command/playernpc + kafka/consumer/playernpc + kafka/message/playernpc",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "File placement", "status": "pass", "evidence": "commands.go/consumer.go/kafka.go each single-responsibility, mirrors command/monster shape"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "n-a", "evidence": "no goroutine spawned in this diff's messages files"},
+        {"id": "DOM-24", "name": "producertest stub where an emit path is reached", "status": "n-a", "evidence": "tests inject fake commandPublisher/pinkTextSender closures, never reach real producer.ProviderImpl"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "commands_test.go:229 TestPlayerNpcCommands uses ad-hoc t.Run; commands_test.go:417 and consumer_test.go:727 correctly use struct tables"},
+        {"id": "DOM-25", "name": "Client wire values via writer-options table", "status": "n-a", "evidence": "no new wire-value logic, pink text reuses an existing writer"}
+      ]
+    },
+    {
+      "name": "atlas-data/map + atlas-data/npc",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-08", "name": "POST route via RegisterInputHandler[T]", "status": "pass", "evidence": "map/resource.go:9"},
+        {"id": "DOM-17", "name": "Domain errors map to correct HTTP status", "status": "pass", "evidence": "map/resource.go:23,31"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "map/rest.go:198-238"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "map/rest.go:188-196"},
+        {"id": "FILE-02", "name": "RestModel/JSON:API methods in rest.go", "status": "pass", "evidence": "map/rest.go:188-238"},
+        {"id": "DOM-27", "name": "Transient DB errors → 503", "status": "pass", "evidence": "map/resource.go:31"},
+        {"id": "DOM-31", "name": "Tenant/trace only via context", "status": "pass", "evidence": "no tenant field added to new RestModels"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "map/resource_ground_test.go:114 and npc/reader_test.go:286 use ad-hoc t.Run"}
+      ]
+    },
+    {
+      "name": "libs/atlas-saga, libs/atlas-packet, libs/atlas-object-id, libs/atlas-constants",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclaration of existing shared constant/type", "status": "pass", "evidence": "job.MaxLevelFor, objectid.PlayerNpcObjectIdBase/For, saga.DeployPlayerNpc/Payload are genuinely new; job/max_level.go:2-5 cites but does not duplicate atlas-character's MaxLevel"},
+        {"id": "DOM-25", "name": "Client wire values via writer-options table", "status": "pass", "evidence": "see atlas-channel section"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "job/max_level_test.go:6 uses struct table; reserved_test.go uses discrete t.Run (minor WARN)"},
+        {"id": "DOM-22", "name": "New libs module wired into Dockerfile/go.work", "status": "n-a", "evidence": "no new libs/ module added"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "EXT-02 (saga-orchestrator/playernpc): whether the interface-mocked test coverage in saga/handler_test.go is this service's accepted substitute for a per-package httptest fixture would require reading sibling client packages (foothold, saved_location) outside this diff",
+    "DOM-28 applicability to atlas-query-aggregator/validation/context.go's GetPlayerNpcEligibility: whether ValidationContext's GetX helpers are meant to be graded as model.Decorator enrichment paths requires reading patterns-resilience.md's full definition against every pre-existing sibling GetX method, outside this diff",
+    "Whether atlas-player-npcs' actual wire contract matches the three independent leaf copies added here is out of scope — services/atlas-player-npcs is excluded from this audit",
+    "Full line-by-line cross-check of every opcode in seed_template_writers_test.go against each docs/packets/registry/<version>.yaml file was not performed; spot-checked v12 (absent) and v48 (present) plus the test's own passing status"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-channel/atlas.com/channel/playernpc/builder.go:1225-1252 — Build() performs no invariant validation and returns no error",
+    "FILE-05: services/atlas-query-aggregator/atlas.com/query-aggregator/playernpc/processor.go:19-25 — domain type EligibilityModel defined in processor.go instead of model.go",
+    "EXT-02: services/atlas-query-aggregator/atlas.com/query-aggregator/playernpc/ — no test file in the package; real HTTP/decode path never exercised",
+    "DOM-31: services/atlas-tenants/atlas.com/tenants/configuration/resource.go:683,716,757,801 — tenant identity resolved from {tenantId} URL path via rest.ParseTenantId, not tenant.MustFromContext(ctx)"
+  ],
+  "nonBlocking": [
+    "FILE-02/FILE-06: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/playernpc/requests.go — LocationRestModel and JSON:API methods live in requests.go, not rest.go",
+    "DOM-20: multiple new test functions across atlas-saga-orchestrator, atlas-channel, atlas-messages, atlas-data use ad-hoc t.Run instead of a struct table",
+    "DOM-28: services/atlas-query-aggregator/atlas.com/query-aggregator/validation/context.go:243-260 — GetPlayerNpcEligibility degrades with only a Warnf log, not model.ErrDecorator/degrade.Observe"
+  ]
+}

@@ -2,15 +2,17 @@ package marriage
 
 import (
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Topic environment variable names
 const (
 	// Command topics
-	EnvCommandTopic = "COMMAND_TOPIC_MARRIAGE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MARRIAGE"
 
 	// Event topics
-	EnvEventTopicStatus = "EVENT_TOPIC_MARRIAGE_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_MARRIAGE_STATUS"
 )
 
 // Command Types

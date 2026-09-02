@@ -64,12 +64,34 @@ Unlike the **main** overlay (§3), whose patches are all hand-maintained, four
 PR-overlay pieces are script-generated. Editing them by hand works until the
 next generator run silently reverts you — always re-run the generator.
 
+## 4b. PR-sparse overlay (`deploy/k8s/overlays/pr-sparse/`)
+
+**Doing §4 does not do this.** `pr-sparse` is a second, independent overlay:
+it deploys only the services a PR actually changed and points everything else
+at a baseline environment. A new service is invisible to it until you add it
+here, and two guards enforce that — both run in `tools/verify.sh`.
+
+| # | File | What to add |
+|---|---|---|
+| 4b.1 | `kustomization.yaml` → `configMapGenerator` topic literals | **Generator-owned.** Same script as 4.3, different suffix token: `deploy/k8s/overlays/pr/scripts/gen-topic-config.sh PLACEHOLDER_BASELINE_ENVIRONMENT`. Splice its output over the existing literals block. |
+| 4b.2 | `patches/db-name-suffix.yaml` | **Generator-owned.** Same script as 4.4, with the overlay named: `deploy/k8s/overlays/pr/scripts/gen-db-name-suffix.sh pr-sparse PLACEHOLDER_BASELINE_ENVIRONMENT`. |
+| 4b.3 | the mirrored files | Nine files are byte-identical copies of their `overlays/pr` counterparts. Re-running a §4 generator that writes one of them (notably `patches/consumer-group-env.yaml`, from 4.5) leaves this side stale — re-copy from `overlays/pr/`. `tools/pr-sparse-mirror-guard.sh`'s `MIRRORS` array is the single source of truth for the list; read it there rather than re-enumerating it. |
+
+`kustomization.yaml` documents both generator invocations in its own comments,
+next to the blocks they produce. `tools/sparse-baseline-scoping-guard.sh`
+enforces 4b.1–4b.2: every topic var and `DB_NAME` in the rendered overlay must
+carry the `-PLACEHOLDER_BASELINE_ENVIRONMENT` suffix, because the unsuffixed
+name is not the baseline's name — it is a fourth, empty namespace nobody
+publishes to. That is trap 3 below, and it is what put `atlas-login` in
+`CrashLoopBackOff` in `atlas-pr-1411`.
+
 ## 5. Ingress (REST services only)
 
 | # | File | What to add |
 |---|---|---|
 | 5.1 | `deploy/shared/routes.conf` | nginx location block(s), alphabetically placed, bare container name (`http://atlas-<svc>:8080`). |
 | 5.2 | regenerate | Run `tools/gen-routes.sh` to rebuild `deploy/k8s/base/routes.conf.template.generated` from the shared source. Commit both. (`deploy/scripts/sync-k8s-ingress-routes.sh` is dead — it targets a `deploy/k8s/ingress.yaml` that no longer exists.) `deploy/shared/test/routes_nginxt.sh` drift-checks the pair, but it is docker-based and **operator-run — nothing in CI invokes it** (see `deploy/shared/test/README.md`), so a stale generated file will not fail the PR. Run it yourself. |
+| 5.3 | `deploy/k8s/base/atlas-ingress.yaml` → `NS_*` env block | Add the `- name: NS_ATLAS_<SERVICE>` / `value: $(POD_NAMESPACE)` pair (`atlas-party-quests` → `NS_ATLAS_PARTY_QUESTS`). The block is marked generated, but `gen-routes.sh` does **not** rewrite it — its `check_ingress()` compares the routed set against the defined set and **refuses to run** until you add the pair by hand. Skipping it is a hard outage, not drift: `NGINX_ENVSUBST_FILTER` only substitutes *defined* variables, so an undefined `${NS_ATLAS_FOO}` survives envsubst literally and nginx dies at startup with `unknown "ns_atlas_foo" variable`, taking the whole ingress down (this reached `main` once, via `atlas-families`). |
 
 ## 6. Databases
 
@@ -155,6 +177,21 @@ creating the main database (inherently a manual, out-of-repo step).
 
 A service intentionally shipped without a k8s deployment must be added to the
 `ALLOW_NO_DEPLOYMENT` list inside the guard, with a justification comment.
+
+`service-registration-guard.sh` covers none of §4b or §5.3 — three *other*
+guards do, and all three run inside `tools/verify.sh`. Run them directly while
+iterating, rather than discovering the gaps a full gate run later:
+
+```bash
+tools/sparse-baseline-scoping-guard.sh   # §4b.1-4b.2 suffixes
+tools/pr-sparse-mirror-guard.sh          # §4b.3 mirrored files
+tools/gen-routes.sh                      # §5.2 and §5.3 (refuses to run on an out-of-sync NS_* block)
+```
+
+These three are the checklist's blind spot: each is enforced by a guard but
+was, until this note, absent from the table above. If you hit a *fourth* such
+guard, add its row here — an onboarding step that only a gate knows about is
+a step every future onboarding pays for twice.
 
 Then the checks the guard cannot do for you:
 

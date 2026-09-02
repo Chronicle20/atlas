@@ -81,14 +81,18 @@ Represents character data retrieved from the character service.
 | pets | []pet.Model | Active pets |
 | equipment | equipment.Model | Equipped items (derived from inventory) |
 | inventory | inventory.Model | Inventory contents |
+| rank | uint32 | Overall character ranking, merged in from ranking data |
+| rankMove | int32 | Overall ranking movement delta, merged in from ranking data |
+| jobRank | uint32 | Job-specific ranking, merged in from ranking data |
+| jobRankMove | int32 | Job-specific ranking movement delta, merged in from ranking data |
 
-Note: `spawnPoint` is not populated by the character REST client's `Extract` function; `SpawnPoint()` unconditionally returns 0.
+`RankMove()` and `JobRankMove()` return the signed `rankMove`/`jobRankMove` values as `uint32` (two's complement).
 
 Character has a `SetInventory` method that processes the raw inventory response. It separates the equipable compartment into positively-slotted items (kept in the equip compartment) and negatively-slotted items (placed into equipment slots by position). Cash equipment (slot < -100) and normal equipment are distinguished and placed into the appropriate `Equipable`/`CashEquipable` fields of each equipment slot. During this process, assets placed into equipment slots have their compartment ID set to `uuid.Nil` via `asset.Clone(a).SetCompartmentId(uuid.Nil).Build()`.
 
 Character supports SP table logic for Evan job advancement (jobs 2001, 2200, 2210-2218), where the skill book index is derived from the job ID.
 
-Character uses a builder pattern (`NewBuilder`/`ToBuilder`/`Builder.Build`) for immutable construction and modification.
+Character uses a builder pattern (`NewBuilder`/`ToBuilder`/`Builder.Build`) for immutable construction and modification. `Builder.Build` returns an error if `id` is zero.
 
 ### World
 
@@ -276,6 +280,20 @@ Represents a guild member.
 |-------|------|-------------|
 | characterId | uint32 | Character identifier |
 
+### Ranking
+
+Represents a character's computed ranking, retrieved from the ranking service.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| rank | uint32 | Overall ranking |
+| rankMove | int32 | Overall ranking movement delta |
+| jobRank | uint32 | Job-specific ranking |
+| jobRankMove | int32 | Job-specific ranking movement delta |
+
+Zero-valued fields represent "not yet computed" or "not present in the bulk response."
+
 ### Channel Load
 
 Represents channel capacity data for display in the server list.
@@ -315,6 +333,7 @@ Represents a world recommendation entry.
 - A session timeout task monitors inactive sessions and destroys them.
 - Asset model is unified across all item types. The inventory type is derived from the template ID, not stored explicitly.
 - Equipment slots are populated by processing equip-compartment assets with negative slot values during `SetInventory`.
+- Ranking data is not persisted by this service; it is fetched on demand and merged into Character models without altering the ranking service's own state.
 
 ## Processors
 
@@ -373,7 +392,8 @@ Retrieves character data via REST.
 
 - IsValidName: Validates character name format (3-12 alphanumeric or CJK characters) and availability.
 - ByAccountAndWorldProvider: Provides characters by account and world.
-- GetForWorld: Retrieves characters for an account in a world.
+- GetForWorld: Retrieves characters for an account in a world. Merges ranking data into the result via decorateRankings; falls back to zero-valued rank fields if the ranking fetch fails.
+- MergeRankings: Rebuilds each character with ranking values (rank, rankMove, jobRank, jobRankMove) merged in; characters without a corresponding ranking entry keep zero-valued rank fields.
 - ByNameProvider: Provides characters by name.
 - GetByName: Retrieves characters by name.
 - ByIdProvider: Provides character by ID.
@@ -421,3 +441,24 @@ Retrieves guild data via REST.
 - GetByMemberId: Retrieves a guild by member character ID.
 - ByMemberIdProvider: Provides guilds filtered by member ID.
 - IsGuildMaster: Checks if a character is the guild master. Returns false if the character has no guild.
+
+### Ranking Processor
+
+Retrieves character ranking data via REST.
+
+- ByCharacterIdsProvider: Provides rankings for the given character IDs in a single bulk call.
+- GetByCharacterIds: Bulk-fetches rankings for the given characters. Characters with no computed ranking are absent from the result.
+
+## Packet Trace Logging
+
+Logs the full plaintext bytes of every inbound and outbound packet on a session, on demand, for short diagnostic windows. Implemented in `socket/trace.go` (inbound, installed as the `atlas-socket` listener's `PacketTracer`) and `session/trace.go` (outbound, called before `announceEncrypted`).
+
+The switch is `diagnostics.tracePackets` on the tenant configuration document, owned by `atlas-configurations` and edited from the atlas-ui tenant Diagnostics page. It reaches this service through the configuration projection: the apply loop republishes the package-level snapshot every tick (250ms default), and `configuration.TracePacketsEnabled` reads that snapshot without blocking. A flag change takes effect on the next packet — no pod or session restart required.
+
+**Both** conditions are required: the tenant flag AND the pod running at `LOG_LEVEL=Debug` or `Trace`. Flipping the flag on a pod running at `Info` produces nothing; the operator must also raise the pod's log level.
+
+Output is one log entry per packet: a header line (`[PKT IN ]` for inbound / `[PKT OUT]` for outbound, handler/writer name, opcode, length, session id) followed by a full hex+ASCII dump. The dump is never truncated, and header plus dump are emitted as a single log entry so concurrent sessions cannot interleave.
+
+**Security:** the dump is deliberately unredacted. Login packets carry account passwords, PICs/PINs, and HWIDs in plaintext. Any log captured while tracing is enabled is credential-bearing material and must be handled as such.
+
+**Volume:** an active session produces tens of packets per second. Intended for short reproduction windows only, not for continuous production logging.

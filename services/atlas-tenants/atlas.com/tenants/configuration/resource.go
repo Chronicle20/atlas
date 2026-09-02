@@ -1505,6 +1505,141 @@ func DeleteKiteConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	}
 }
 
+// GetPlayerNpcConfigHandler handles GET /tenants/{tenantId}/configurations/player-npcs
+func GetPlayerNpcConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+
+				cfg, err := processor.GetPlayerNpcConfig(tenantId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Error("Failed to get player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				rm, err := TransformPlayerNpcConfig(cfg)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[PlayerNpcConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// CreatePlayerNpcConfigHandler handles POST /tenants/{tenantId}/configurations/player-npcs
+func CreatePlayerNpcConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model PlayerNpcConfigRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model PlayerNpcConfigRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				cfg, err := ExtractPlayerNpcConfig(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract player-npcs data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if _, err = processor.CreatePlayerNpcConfigAndEmit(tenantId, cfg); err != nil {
+					d.Logger().WithError(err).Error("Failed to create player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				created, err := processor.GetPlayerNpcConfig(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get created player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := TransformPlayerNpcConfig(created)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusCreated)
+				server.MarshalResponse[PlayerNpcConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// UpdatePlayerNpcConfigHandler handles PATCH /tenants/{tenantId}/configurations/player-npcs
+func UpdatePlayerNpcConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model PlayerNpcConfigRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model PlayerNpcConfigRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				cfg, err := ExtractPlayerNpcConfig(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract player-npcs data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if _, err = processor.UpdatePlayerNpcConfigAndEmit(tenantId, cfg); err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Error("Failed to update player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				updated, err := processor.GetPlayerNpcConfig(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get updated player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := TransformPlayerNpcConfig(updated)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[PlayerNpcConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// DeletePlayerNpcConfigHandler handles DELETE /tenants/{tenantId}/configurations/player-npcs
+func DeletePlayerNpcConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if err := processor.DeletePlayerNpcConfigAndEmit(tenantId); err != nil {
+					d.Logger().WithError(err).Error("Failed to delete player-npcs configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
+	}
+}
+
 // SeedRpsRewardsHandler handles POST /tenants/{tenantId}/configurations/rps-rewards/seed
 func SeedRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
@@ -1539,6 +1674,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerTradeConfigInputHandler := rest.RegisterInputHandler[TradeConfigRestModel](l)(si)
 			registerRankingsInputHandler := rest.RegisterInputHandler[RankingsRestModel](l)(si)
 			registerKiteConfigInputHandler := rest.RegisterInputHandler[KiteConfigRestModel](l)(si)
+			registerPlayerNpcConfigInputHandler := rest.RegisterInputHandler[PlayerNpcConfigRestModel](l)(si)
 
 			// Route endpoints
 			//
@@ -1618,6 +1754,13 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerKiteConfigInputHandler("create_kite_config", CreateKiteConfigHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerKiteConfigInputHandler("update_kite_config", UpdateKiteConfigHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerHandler("delete_kite_config", DeleteKiteConfigHandler(db))).Methods(http.MethodDelete)
+
+			// Player NPC config endpoints — one config per tenant (rankings
+			// shape: no /seed endpoint, no id-addressed sub-resource).
+			r.HandleFunc("/tenants/{tenantId}/configurations/player-npcs", registerHandler("get_player_npc_config", GetPlayerNpcConfigHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/player-npcs", registerPlayerNpcConfigInputHandler("create_player_npc_config", CreatePlayerNpcConfigHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/player-npcs", registerPlayerNpcConfigInputHandler("update_player_npc_config", UpdatePlayerNpcConfigHandler(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/tenants/{tenantId}/configurations/player-npcs", registerHandler("delete_player_npc_config", DeletePlayerNpcConfigHandler(db))).Methods(http.MethodDelete)
 
 			// Imprint config endpoints (FR-2.6 pending-change expiry) — see
 			// imprint_handler.go.

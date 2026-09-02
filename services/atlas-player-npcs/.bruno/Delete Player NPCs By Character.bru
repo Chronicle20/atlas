@@ -1,0 +1,11 @@
+meta {
+  name: Delete Player NPCs By Character
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{scheme}}://{{host}}:{{port}}/api/player-npcs?filter[characterId]={{characterId}}&filter[mapId]={{mapId}}
+  body: none
+  auth: inherit
+}

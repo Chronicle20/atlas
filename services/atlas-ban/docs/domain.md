@@ -180,6 +180,7 @@ One server-captured chat line attached to a report's `serverTranscript`.
 
 - Kind must be `sue` or `claim`; Status must be `open`, `reviewed`, or `actioned`
 - The accused must resolve to a real character in the tenant (by id or by name) or creation is rejected with `NOT_FOUND`, never persisted
+- A reporter may create at most `MaxClaimsPerWindow` (100) `claim` reports whose `createdAt` falls at or after a rolling `ClaimQuotaWindow` (7 days) before now; exceeding the cap rejects creation with `QUOTA_EXCEEDED` before the accused is resolved. `sue` reports are not subject to this cap.
 - Description is truncated (never rejected) at 2000 runes; the cut always lands on a full rune so the stored value is valid UTF-8
 - ChatLog is truncated (never rejected) at 16384 bytes; the cut walks rune-by-rune so it never splits a multi-byte sequence
 - ServerTranscript is best-effort: an atlas-messages outage persists the report with a nil transcript rather than failing the report
@@ -193,7 +194,7 @@ Primary domain processor providing report operations.
 
 | Method | Description |
 |--------|-------------|
-| CreateFromCommand | Resolve reporter/accused, snapshot the chat transcript, persist the report, and buffer exactly one status event (CREATED or ERROR) |
+| CreateFromCommand | Check the reporter's claim quota (for `claim` kind), resolve reporter/accused, snapshot the chat transcript, persist the report, and buffer exactly one status event (CREATED or ERROR) |
 | CreateFromCommandAndEmit | CreateFromCommand and emit the buffered event |
 | UpdateStatus | Update a report's status by ID |
 | GetById | Retrieve a report by ID |

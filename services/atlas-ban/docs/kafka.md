@@ -160,7 +160,9 @@ Produced to EVENT_TOPIC_REPORT_STATUS.
 | WorldId | world.Id |
 | ReporterId | uint32 |
 | Status | string (`CREATED`\|`ERROR`) |
-| ErrorCode | string (`NOT_FOUND`\|`INTERNAL`, empty on CREATED) |
+| ErrorCode | string (`NOT_FOUND`\|`INTERNAL`\|`QUOTA_EXCEEDED`, empty on CREATED) |
+| HasRemaining | bool (set on `claim` CREATED only; zero-valued otherwise) |
+| Remaining | int32 (set on `claim` CREATED only; zero-valued otherwise) |
 
 ## Transaction Semantics
 

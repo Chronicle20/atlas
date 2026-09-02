@@ -4,11 +4,12 @@
 # "consumer fetch wedged: exceeded consecutive timeouts" stampede where
 # kafka-go's Readers wedge and rebalance until topics materialise.
 #
-# Mechanism: a one-shot Job at sync-wave 0 that reads its own envFrom-injected
-# atlas-env ConfigMap, picks out every COMMAND_TOPIC_* / EVENT_TOPIC_* value,
-# and issues a single CreateTopics request covering every topic. Argo CD
-# health-checks the Job — Deployments (pushed to sync-wave 10) won't start
-# until this completes.
+# Mechanism: a one-shot Job at sync-wave 0 that reads the code-derived topic
+# token list from the mounted atlas-kafka-topics ConfigMap, resolves each
+# token's per-environment name through the envFrom-injected atlas-env
+# ConfigMap, and issues a single CreateTopics request covering every topic.
+# Argo CD health-checks the Job — Deployments (pushed to sync-wave 10) won't
+# start until this completes.
 #
 # Idempotent: re-applying the manifest re-creates the Job; existing topics are
 # left alone (each topic that already exists surfaces a per-topic
@@ -59,3 +60,11 @@ spec:
           envFrom:
             - configMapRef:
                 name: atlas-env
+          volumeMounts:
+            - name: topic-manifest
+              mountPath: /etc/atlas/topics
+              readOnly: true
+      volumes:
+        - name: topic-manifest
+          configMap:
+            name: atlas-kafka-topics

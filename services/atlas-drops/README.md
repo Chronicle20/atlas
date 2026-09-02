@@ -8,6 +8,8 @@ A microservice that manages item and meso drops within game maps. Drops are stor
 - Kafka: Message broker for command consumption and event emission
 - OpenTelemetry Collector: Distributed tracing (via OTLP/gRPC)
 - atlas-configurations: External service for runtime configuration (REST)
+- atlas-data: External service for foothold landing-position lookups (REST)
+- atlas-parties: External service for party roster lookups used in meso splitting (REST)
 
 ## Runtime Configuration
 
@@ -21,7 +23,9 @@ A microservice that manages item and meso drops within game maps. Drops are stor
 | REST_PORT | HTTP server port |
 | SERVICE_ID | UUID identifying this service instance |
 | CONFIGURATIONS | Base URL for atlas-configurations service |
-| BASE_SERVICE_URL | Fallback base service URL used when CONFIGURATIONS is unset |
+| DATA | Base URL for atlas-data service (foothold landing-position lookups) |
+| PARTIES | Base URL for atlas-parties service (party roster lookups for meso splitting) |
+| BASE_SERVICE_URL | Fallback base service URL used when CONFIGURATIONS, DATA, or PARTIES is unset |
 | COMMAND_TOPIC_DROP | Kafka topic for drop commands |
 | EVENT_TOPIC_DROP_STATUS | Kafka topic for drop status events |
 

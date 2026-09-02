@@ -64,6 +64,13 @@ func (a *ApplyLoop) Run(ctx context.Context, l logrus.FieldLogger) {
 			return
 		case <-t.C:
 			nextSvc, nextTenants := a.State.Snapshot()
+			// Keep the package-level configuration snapshot in step with the
+			// projection on every tick. main.go publishes once after
+			// catch-up, which freezes the snapshot at startup -- a later
+			// config change is invisible to GetTenantConfig callers and to
+			// TracePacketsEnabled. registry.go's doc comment already
+			// promises this call site; it was never written.
+			configuration.PublishSnapshot(nextSvc, nextTenants)
 			ops := ComputeOps(prevSvc, prevTenants, nextSvc, nextTenants)
 			for _, op := range ops {
 				a.execute(ctx, l, op)

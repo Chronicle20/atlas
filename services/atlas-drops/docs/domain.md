@@ -69,6 +69,9 @@ A fluent builder for constructing drop Models. Requires a valid tenant and field
   - The ownership duration has elapsed
   - The requesting character is the owner
   - The requesting character's party matches the owner party
+- When a meso drop is reserved, the meso amount is split evenly (integer division, remainder discarded) among the picker and every online party member whose recorded field (world, channel, map, instance) matches the drop's field; the picker is always included even if their own party-member record is stale or offline. A `nil` member list (no party, or a failed party lookup) collapses to a single full-amount award to the picker.
+- A zero-amount meso share is suppressed for every recipient except the picker, whose award is always emitted regardless of amount.
+- When a character-originated drop is spawned, its resting position is snapped to the foothold directly below its origin coordinates so it does not hang mid-air; if no foothold lies below (map edge or bottomless pit), the original position is kept. The dropper coordinates are unaffected.
 
 ### State Transitions
 
@@ -88,10 +91,10 @@ RESERVED -> [Removed] (via Gather or Consume)
 |-----------|-------------|
 | Spawn | Creates a new drop with inline equipment stats from the command |
 | SpawnAndEmit | Creates a new drop and emits a CREATED event via Kafka |
-| SpawnForCharacter | Creates a new drop originating from a character |
+| SpawnForCharacter | Creates a new drop originating from a character; snaps the resting y-coordinate to the foothold directly below the origin position |
 | SpawnForCharacterAndEmit | Creates a new character drop and emits a CREATED event via Kafka |
-| Reserve | Reserves a drop for a character with optional pet slot; emits RESERVED on success or RESERVATION_FAILURE on failure |
-| ReserveAndEmit | Reserves a drop and emits the event via Kafka |
+| Reserve | Reserves a drop for a character with optional pet slot; emits RESERVED on success or RESERVATION_FAILURE on failure. For a meso drop, also splits the meso amount among the picker and co-located online party members and emits a MESO_AWARDED event per recipient |
+| ReserveAndEmit | Reserves a drop and emits the event(s) via Kafka |
 | CancelReservation | Cancels a drop reservation; emits RESERVATION_FAILURE |
 | CancelReservationAndEmit | Cancels a reservation and emits the event via Kafka |
 | Gather | Removes a drop when picked up; emits PICKED_UP |

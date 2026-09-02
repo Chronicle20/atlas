@@ -205,6 +205,27 @@ Manages active client socket connections. Tracks session state including account
 
 ---
 
+## Packet Trace Logging
+
+### Responsibility
+Logs the full plaintext bytes of every inbound and outbound packet on a session, on demand, for short diagnostic windows. Implemented in `socket/trace.go` (inbound, installed as the `atlas-socket` listener's `PacketTracer`) and `session/trace.go` (outbound, called before `announceEncrypted`).
+
+### Trigger
+- The switch is `diagnostics.tracePackets` on the tenant configuration document, owned by `atlas-configurations` and edited from the atlas-ui tenant Diagnostics page.
+- It reaches this service through the configuration projection: the apply loop republishes the package-level snapshot every tick (250ms default), and `configuration.TracePacketsEnabled` reads that snapshot without blocking. A flag change takes effect on the next packet — no pod or session restart required.
+- **Both** conditions are required: the tenant flag AND the pod running at `LOG_LEVEL=Debug` or `Trace`. Flipping the flag on a pod running at `Info` produces nothing; the operator must also raise the pod's log level.
+
+### Output
+One log entry per packet: a header line (`[PKT IN ]` for inbound / `[PKT OUT]` for outbound, handler/writer name, opcode, length, session id) followed by a full hex+ASCII dump. The dump is never truncated, and header plus dump are emitted as a single log entry so concurrent sessions cannot interleave.
+
+### Security
+The dump is deliberately unredacted. Login-family packets carry account passwords, PICs/PINs, and HWIDs in plaintext. Any log captured while tracing is enabled is credential-bearing material and must be handled as such.
+
+### Volume
+An active session produces tens of packets per second, and a single `CHARACTER_DATA` packet can exceed 250 dump lines. Intended for short reproduction windows only, not for continuous production logging.
+
+---
+
 ## Account
 
 ### Responsibility
@@ -790,6 +811,19 @@ Provides active weather state for a field.
 
 ---
 
+## Jukebox
+
+### Responsibility
+Client-side read of the currently active jukebox track for a map (cash item category, jukebox feature): fetches the active entry from atlas-maps for display.
+
+### Core Models
+- `RestModel` - itemId (uint32), playerName (string)
+
+### Processors
+- `Processor` - GetActive(f) fetches the active jukebox entry for a field via REST against the MAPS service
+
+---
+
 ## Kite
 
 ### Responsibility
@@ -1111,3 +1145,293 @@ Implements the in-game Mapleshop/ITC marketplace (MTS): fixed-price and auction 
 - `transaction.Processor` - GetByCharacterProvider/GetByCharacter retrieve a character's transaction history via REST (drains all pages).
 - `wish.Processor` - GetByCharacterProvider/GetByCharacter, GetByCharacterAndType (cart or wanted), GetByCharacterItem, GetByCharacterSerial, GetWantedByWorld (every want-ad in a world) via REST (drains all pages).
 - `configuration.Registry` (singleton via `sync.Once`) - GetTenantConfig(l, ctx, tenantId) returns the cached per-tenant configuration, fetching and caching on first access, falling back to `DefaultConfig()` on error.
+
+---
+
+## Battleship
+
+### Responsibility
+Owns the Corsair Battleship (skill 5221006) ride state and ship-HP pool consumed by the damage and attack hot paths: a per-channel-process mirror records who is currently riding, and a Redis-backed counter tracks the ship's remaining HP.
+
+### Core Models
+- `RideState` - SkillLevel (byte, the caster's trained skill level), StateTTL (time.Duration, effect-derived TTL for the Redis entry; 0 means use the fallback)
+- `RideMirror` - per-channel-process, tenant-scoped, in-memory map of characterId to RideState; singleton via `GetRideMirror()`
+- `DrainResult` - Status (`DrainNotRiding`/`DrainSkipped`/`DrainDrained`/`DrainBroke`) and RemainingHP (int32)
+
+### Invariants
+- `ShipHP` is version-gated: GMS majorVersion < 87 uses `400*SLV + max(charLevel-120,0)*200`; GMS majorVersion >= 87 and JMS use `300*charLevel + 500*(SLV-72)`, floored at 0
+- A ship's HP pool is always seeded fresh and full on ride start, never carried over
+- Exactly one caller per depletion observes `DrainBroke`, enforced by the Redis counter's atomic decrement/init-and-decrement operations
+- A Redis outage degrades drain to `DrainSkipped` rather than failing damage processing
+- Lost Redis state (restart/TTL expiry) triggers lazy re-initialization from a fresh character-level fetch rather than treating the miss as an error
+
+### Processors
+- `Processor` - InitShipHP (seeds a fresh pool), StartRide/IsRiding (mirror write/read, no I/O), Drain (applies damage to the pool, detects the zero-crossing break), Clear (removes mirror + Redis state)
+
+---
+
+## Dragon
+
+### Responsibility
+Client-side view of Evan's dragon entity (atlas-dragons): drains the in-map list for map-entry replay and issues create/destroy/move commands.
+
+### Core Models
+- `Model` - ownerCharacterId (uint32), x (int32), y (int32), stance (byte), jobId (uint16)
+
+### Processors
+- `Processor` - InMapModelProvider(f)/ForEachInMap(f, o) drain the paginated in-map dragon list; Create/Destroy/Move emit COMMAND_TOPIC_DRAGON commands keyed on the owner character id
+
+---
+
+## Event Visual
+
+### Responsibility
+Renders atlas-events' generalized environment visual events (Crimson Balrog conti-move ship and similar map-wide visuals) to sessions on the affected map. atlas-events never builds a packet; this domain maps a named visual onto the writer atlas-channel already has registered.
+
+### Core Models
+- `VisualEvent[E]` - OccurrenceId, WorldId, ChannelId, MapId, Type (SHOW/HIDE), Body
+- `ShowVisualBody` - Visual (string), Bgm (string, optional)
+- `HideVisualBody` - Visual (string)
+
+### Invariants
+- The `CONTI_MOVE` visual selects the enemy-ship writer, whose wire state/subState bytes are resolved from the tenant's ContiMove writer options table, not carried on the event itself
+
+---
+
+## Incubator
+
+### Responsibility
+Selects the reward for a Pigmy Egg incubation roll (atlas-reward-pools) and gates incubation on the client-side result NPC being present in the tenant's game data.
+
+### Core Models
+- `Reward` - itemId (uint32), quantity (uint32); defaults quantity to 1 when the upstream response omits it
+- `SuccessNpcId` - the hard-coded NPC (9050008) the client renders in the incubator result dialog
+
+### Invariants
+- Incubation is blocked (never attempted) when `SuccessNpcAvailable` reports the result NPC is absent from the tenant's game data, since the client would crash attempting to load its resource
+- A 404 resolving the NPC is treated as "not available" (false, nil), not an error
+
+### Processors
+- `Processor` - SelectReward(eggId) rolls one reward via REST; SuccessNpcAvailable() checks NPC presence via REST
+
+---
+
+## Maple Life
+
+### Responsibility
+Tracks the in-flight Maple Life character-creation dialog for an account that has not yet created a character, keyed by AccountId. Presentation state only: losing it costs one dialog, never an item.
+
+### Core Models
+- `Entry` - CharacterId, WorldId, ItemId, Slot, UpdateTime, Phase, TransactionId, CandidateName, At (time.Time)
+- `Phase` - `PhaseSubmitted` is the only phase an entry is ever created in; there is no open-time packet
+
+### Invariants
+- A second Open for the same account replaces (refreshes) rather than duplicates the existing entry
+- `SubmittedTTL` (30s) must outlive the orchestrator's 10s character-creation backstop, so a delayed FAILED outcome always has a live entry to correlate against
+- `Take`/`TakeByTransactionId` consume the entry exactly once, so a racing CREATED and FAILED for the same account cannot both act on it
+- `Sweep` is scoped to a single tenant; an unscoped sweep would let one tenant's sweeper consume another tenant's entries on a pod serving multiple tenants
+
+### Processors
+None. `Registry` (singleton via `sync.Once`) exposes Put/Get/Take/TakeByTransactionId/ClearAccount/Sweep directly.
+
+---
+
+## Minigame
+
+### Responsibility
+Client-side view of mini-game rooms (Omok/Memory match, atlas-mini-games): map-entry balloon replay, member-room lookup, and command issuance for the full room lifecycle (create through game-specific moves).
+
+### Core Models
+- `Model` - id (uint32, the room id), ownerId, roomType (byte), title, private (bool), hasPassword (bool), pieceType (byte), occupancy (byte), inProgress (bool)
+
+### Invariants
+- `HasPassword` is computed server-side (private AND non-empty password) and mirrored here so the map-entry balloon render matches the live BALLOON_UPDATED event path
+- `InGame` (a character occupies 0 or 1 rooms) gates cash-shop/MTS entry while seated at a mini-game table
+
+### Processors
+- `Processor` - InFieldModelProvider/ForEachInField (map-entry replay), MemberModelProvider/InGame (room occupancy), and one command method per lifecycle op (Create, Visit, Leave, Chat, Ready, Unready, Start, GiveUp, RequestTie, RequestRetreat, Expel, Skip, MoveStone, FlipCard, AnswerTie, AnswerRetreat, ExitAfterGame), each emitting a COMMAND_TOPIC_MINI_GAME command
+
+---
+
+## Mist
+
+### Responsibility
+Client-side mirror of atlas-maps' mist (affected-area / skill-zone) contract: issues create/cancel commands for player-cast mists (Smokescreen, Flame Gear, Poison Mist, Recovery auras) and renders created/destroyed events as AffectedAreaCreated/AffectedAreaRemoved packets.
+
+### Core Models
+- `CreateCommandBody` - field location, owner, origin/bounding-box coordinates, disease/effect parameters, duration, tick interval, source skill, TargetKind (CHARACTER/MONSTER), EffectKind (DISEASE/DAMAGE_OVER_TIME/PROTECTION/RECOVERY), RecoveryMp, PartyMemberIds
+- `CreatedBody`/`DestroyedBody` - client-facing render parameters for a created or destroyed mist
+
+### Invariants
+- EffectKind PROTECTION shields the owner's party from damage and is evaluated entirely in atlas-channel on the damage path; it has no atlas-maps tick
+- A RECOVERY mist scopes its per-tick MP restoration to `PartyMemberIds`, a party snapshot taken at cast time (atlas-maps has no party client)
+- An empty TargetKind means CHARACTER; an empty EffectKind means DISEASE (back-compatible defaults for producers written before the AREA_POISON path)
+
+### Processors
+None documented beyond the producer/registry pair that issues CREATE/CANCEL commands and the consumer that renders MIST_CREATED/MIST_DESTROYED events.
+
+---
+
+## Parcel
+
+### Responsibility
+Read-only client view of Duey parcel custody (atlas-parcel): mailbox listing, single-parcel lookup, discard, and notified-stamp updates, plus the local send-request fee/limit validation that needs no round trip.
+
+### Core Models
+- `Model` - id, worldId, senderId/senderAccountId/senderName, recipientId/recipientAccountId, message, mesoAmount, feePaid, itemId (*uint32), itemType, quantity, status, quick (bool), returned (bool), createdAt/receivableAt/expiresAt/lastNotified
+- `WireId(id)` projects the atlas-parcel UUID identity onto the client's wire uint32 parcelId (first 4 bytes, big-endian)
+
+### Invariants
+- `Fee` and `TotalCost` reproduce the client's IEEE-754 double-precision tiered fee formula exactly, so the quoted and charged amounts never diverge
+- `ValidateSend` runs the parcel-cap/overflow check before the affordability check, so an absurd meso amount reports `RejectIncorrectRequest` rather than `RejectNotEnoughMesos`
+- The message-length check applies only to the quick-delivery arm; the NPC send arm carries no message at all
+- `MailboxCapacity` is 10; `MaxParcelMeso` is 100,000,000; `MesoLimitAmount` is 1,000,000 for characters at or below level 15
+
+### Processors
+- `Processor` - GetForRecipient/CountPending (mailbox list and capacity check), GetById, Discard (direct PATCH, not a saga), MarkNotified (direct PATCH, not a saga)
+
+---
+
+## Pending Change
+
+### Responsibility
+Client-side operations against atlas-character's pending-change resource (cash-shop-driven name change and world transfer): request creation, cancellation, listing, and destination-independent eligibility checks.
+
+### Core Models
+- `RestModel` - characterId, type (NAME_CHANGE/WORLD_TRANSFER), status, requestedName, destinationWorldId, sourceWorldId, reason, createdAt, expiresAt, resolvedAt
+- `RejectedError` - Status (int, HTTP status atlas-character responded with) and Reason (string)
+
+### Invariants
+- A purchase-path pending-change request never carries an assetId: the entitlement is correlated by TransactionId, not by an asset, since the purchase handlers hold no coupon in inventory
+- `StatusPending` is the only status the purchase-outcome consumer treats as meaningful when confirming a TransactionId match is still live
+
+### Processors
+- `Processor` - RequestNameChange, RequestWorldTransfer, CancelPendingChange, GetByCharacterId, CheckTransferEligibilityIndependent
+
+---
+
+## Position
+
+### Responsibility
+Tracks the process-local, last-known (x, y) the channel last folded out of a character's movement path, or wrote on an inner-portal teleport.
+
+### Core Models
+- `Position` - X (int16), Y (int16)
+
+### Invariants
+- Kept in its own package (separate from movement and session) to avoid an import cycle: movement already imports session, so a registry living in movement could not be imported back by session
+- No TTL and no sweeper: entries are bounded by characters connected to the pod and removed on session destroy
+
+### Processors
+None. `Registry` (singleton via `sync.Once`) exposes Put/Lookup/Clear directly.
+
+---
+
+## Remote Merchant
+
+### Responsibility
+Tracks which characters opened an NPC shop via a classification-545 cash item (Miu Miu the Traveling Merchant) rather than by talking to the NPC, so their client's exclusive-request lock can be unlocked once the shop actually opens.
+
+### Core Models
+- `Entry` - ItemId, Slot, At (time.Time)
+
+### Invariants
+- `TTL` (30s) bounds how long a pending unlock waits for its status event; a dropped event unlocks the character via sweep rather than leaving them locked until reconnect
+- `Take` consumes the entry exactly once, so a racing ENTERED and ENTER_ERROR for the same character unlock exactly once
+- `Sweep` is scoped to a single tenant, mirroring the Maple Life and Remote Merchant registries' multi-tenant-pod safety rule
+
+### Processors
+None. `Registry` (singleton via `sync.Once`) exposes Put/Take/ClearCharacter/Sweep directly.
+
+---
+
+## Report
+
+### Responsibility
+Submits player /-command ("sue") and CUIClaim window reports to atlas-ban.
+
+### Core Models
+- None beyond the command parameters themselves; report identity and outcome (quota, error codes) are owned by atlas-ban.
+
+### Invariants
+- `ClaimCostMesos` (300) is charged to the reporter only after atlas-ban confirms the report was created; a claim rejected for an unknown target or exhausted quota is free
+- Legacy client versions supply an accused character id for "sue"; v95 supplies a sub-command string forwarded as the accused name; atlas-ban resolves whichever half is missing
+
+### Processors
+- `Processor` - Sue(reporterId, worldId, channelId, accusedId, subCommand, flag, reason), Claim(reporterId, worldId, channelId, targetName, reasonType, description, chatClaim, chatLog), each emitting a COMMAND_TOPIC_REPORT command
+
+---
+
+## Ring
+
+### Responsibility
+Client-side read-only view of couple/friendship ring pairs (atlas-cashshop): caches a character's ring pair halves at load time and derives the currently-equipped ring set and the full ring record history for wire encoding.
+
+### Core Models
+- `Model` - id, pairId, characterId, partnerCharacterId, itemTemplateId, ringType (COUPLE/FRIENDSHIP), state (ACTIVE/BROKEN/EXPIRED), cashId, partnerCashId, partnerName
+
+### Invariants
+- Population happens once at character load, never on encode; a cache miss returns an empty ring set/records rather than blocking on a REST fetch
+- `GetRingSet`'s selection rule, per ring type: among ACTIVE halves whose cash id is currently equipped in one of the four ring sub-slots (ring1-ring4), the half in the highest (least negative) slot position wins; ties break on the lower cash id
+- `GetRingRecords` lists every ACTIVE half the character owns, whether or not currently equipped, unlike `GetRingSet`'s currently-equipped-only view
+- A cashshop outage during Populate degrades to an empty cached set (fail-soft) rather than blocking character spawn
+- Only COUPLE and FRIENDSHIP ring types exist server-side; the Marriage arm of the wire record is always empty/nil
+
+### Processors
+- `Processor` - Populate (fetch and cache, idempotent while cached), Invalidate (drop cache), GetRingSet, GetRingRecords
+
+---
+
+## RPS
+
+### Responsibility
+Client-side command issuance for an NPC rock-paper-scissors ladder game session (atlas-rps): begin, throw selection, continue, retry, and collect.
+
+### Core Models
+- None held locally; session state (rung, prize ladder, outcome) is owned entirely by atlas-rps.
+
+### Invariants
+- `SelectCommandBody.Throw` is passed through raw and unremapped (0=Rock/1=Paper/2=Scissors)
+- `Collect` is also the command emitted for the client's EXIT sub-op; there is no dedicated collect sub-op on the wire
+
+### Processors
+- `Processor` - Begin, Select, Continue, Retry, Collect, each emitting a COMMAND_TOPIC_RPS command keyed on the acting character
+
+---
+
+## Teleport Rock
+
+### Responsibility
+Validates and executes a teleport-rock warp (regular and VIP rock, cash and non-cash items) for both entry ops (USE_TELEPORT_ROCK and the cash-item-use branch).
+
+### Invariants
+- A VIP-list rock (itemId/1000 == 5041) bypasses the continent-restriction check; all other rocks are continent-restricted unless targeting by name resolves a session on the same channel
+- Source and target map are both checked against the same field-limit bar mask (`FieldLimitNoTeleportItem` | `FieldLimitNoMysticDoor`)
+- A same-map target, an unlisted target map (non-VIP list membership), or a barred source/target map rejects with the faithful MAP_TRANSFER_RESULT mode and consumes nothing
+- On success the warp is issued before the rock is consumed (warp-before-destroy saga: `WarpToRandomPortal` then `DestroyAsset`), so a failed warp never consumes an item
+- Every teleport rock (2320000 non-cash; 5040000/5040001/5041000 cash) is consumed exactly one per use
+- A rejection re-enables client actions (empty exclusive StatChanged) since the client is left input-locked with no map change to unfreeze it
+
+### Processors
+None as a package-level type. `UseRock(l, ctx, wp)` is the single entry point, invoked by the socket handlers for both op paths.
+
+---
+
+## Trade
+
+### Responsibility
+Client-side command issuance and room-occupancy lookup for the player trade mini-room (atlas-trades): room creation, invite, item/meso staging, confirm, transaction, cancel, and chat. All trade state (room membership, staged items, mesos) lives in atlas-trades; atlas-channel never mutates inventory or meso for a trade directly.
+
+### Core Models
+- `Model` - id (uuid.UUID); the room's identity is the only field atlas-channel's occupancy check needs
+
+### Invariants
+- `InGame` reports whether a character currently occupies a trade room (0 or 1), used by the cross-family occupancy check before opening a mini-room; atlas-trades still enforces its own single-room invariant authoritatively
+- `AddMeso`'s Amount is the absolute total from the client's input box, not a delta, and stays signed so a hostile client's negative value is representable
+- `PutItem`'s inventory type is narrowed and range-checked at the decode boundary before being passed through
+- `CreateLatch` orders a room's INVITE command behind its CREATE_ROOM command on COMMAND_TOPIC_TRADE: the reference client can send create then invite close enough together that the invite's REST-bound create arm has not yet produced its command, so the invite arm waits on the latch (armed before any work, released once CREATE_ROOM is produced or refused) rather than relying on client-side send spacing
+- The latch does not track room state; a released latch means only that the create command is ahead of the invite on the topic — room state stays authoritative in atlas-trades
+
+### Processors
+- `Processor` - MemberModelProvider/InGame (room occupancy via REST), CreateRoom, Invite, DeclineInvite, EnterRoom, PutItem, AddMeso, Confirm, Transaction, Cancel, Chat, each emitting a COMMAND_TOPIC_TRADE command
+- `CreateLatch` - Begin (arm and return a release func), Armed, AwaitSettled (polls for the latch to arm, then waits for release)

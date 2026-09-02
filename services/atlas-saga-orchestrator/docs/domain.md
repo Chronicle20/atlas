@@ -37,12 +37,32 @@ Represents a single action within a saga.
 |------|-------------|
 | inventory_transaction | Inventory-related transactions |
 | quest_reward | Quest reward distribution |
-| trade_transaction | Player-to-player trading |
+| trade_transaction | Player-to-player trade settlement |
+| trade_staging | Single item moving into trade escrow |
 | character_creation | Character creation workflows |
 | storage_operation | Account storage operations |
 | character_respawn | Character respawn handling |
 | gachapon_transaction | Gachapon machine reward transactions |
+| pet_evolution | Pet evolution transactions |
+| pet_revive | Water of Life pet revival transactions |
+| item_tag_use | Item tag cash item use transactions |
+| sealing_lock_use | Sealing lock cash item use transactions |
+| incubator_use | Incubator cash item use transactions |
+| expiration_extender_use | Expiration extender cash item use transactions |
+| karma_scissors_use | Karma scissors cash item use transactions |
+| point_reset | AP/SP point reset transactions |
+| meso_sack_use | Meso sack cash item use transactions |
 | mts_operation | MTS listing, withdrawal, and purchase settlement transactions |
+| note_send | Note (memo) send transactions |
+| skill_book_use | Skill book cash item use transactions |
+| pet_name_tag_use | Pet name tag cash item use transactions |
+| remote_merchant | Remote NPC shop cash item use transactions |
+| world_transfer | Character world transfer transactions |
+| scripted_item_use | Scripted item dialogue-then-consume transactions |
+| remote_npc_use | Remote NPC shop or conversation open-then-consume transactions |
+| parcel_send | Duey parcel send transactions |
+| parcel_receive | Duey parcel receive transactions |
+| maple_life_use | Maple Life in-game character creation transactions |
 
 ### Step Status
 
@@ -65,6 +85,7 @@ Represents a single action within a saga.
 | warp_to_random_portal | Warps to a random portal in a field |
 | warp_to_portal | Warps to a specific portal |
 | destroy_asset | Destroys an inventory asset by template ID |
+| destroy_all_assets | Destroys all assets in a compartment |
 | destroy_asset_from_slot | Destroys an inventory asset from a specific slot |
 | equip_asset | Equips an item |
 | unequip_asset | Unequips an item |
@@ -74,7 +95,10 @@ Represents a single action within a saga.
 | change_skin | Changes character skin color |
 | create_skill | Creates a character skill |
 | update_skill | Updates a character skill |
-| validate_character_state | Validates character conditions |
+| rebalance_ap | Rebalances a character's ability points across stats (synchronous) |
+| revive_pet | Resets a pet's lifespan |
+| rename_pet | Renames a pet |
+| validate_character_state | Validates character conditions (synchronous) |
 | request_guild_name | Requests guild name change |
 | request_guild_emblem | Requests guild emblem change |
 | request_guild_disband | Requests guild disband |
@@ -90,17 +114,25 @@ Represents a single action within a saga.
 | start_quest | Starts a quest |
 | set_quest_progress | Sets quest progress info |
 | apply_consumable_effect | Applies consumable item effects |
-| cancel_consumable_effect | Cancels consumable item effects |
+| cancel_consumable_effect | Cancels consumable item effects (synchronous) |
 | send_message | Sends a system message (synchronous) |
 | deposit_to_storage | Deposits to account storage |
 | update_storage_mesos | Updates storage mesos |
-| show_storage | Shows storage UI |
+| show_storage | Shows storage UI (synchronous) |
 | transfer_to_storage | Transfers item to storage (expanded to accept_to_storage + release_from_character) |
 | withdraw_from_storage | Withdraws item from storage (expanded to accept_to_character + release_from_storage) |
 | accept_to_storage | Accepts item to storage (internal, created by expansion) |
 | release_from_character | Releases item from character (internal, created by expansion) |
 | accept_to_character | Accepts item to character (internal, created by expansion) |
 | release_from_storage | Releases item from storage (internal, created by expansion) |
+| open_npc_shop | Opens an NPC's shop |
+| start_item_conversation | Starts a scripted item's own dialogue |
+| start_npc_conversation | Starts a named NPC's conversation |
+| trade_settlement | Settles a trade (composite, expanded into release_from_trade + accept_to_character + award_mesos steps) |
+| trade_unwind | Returns an abandoned trade's escrow to its owners (composite) |
+| transfer_to_trade | Transfers item into trade escrow (expanded to release_from_character + accept_to_trade) |
+| accept_to_trade | Accepts item into trade escrow (internal, created by expansion) |
+| release_from_trade | Releases item from trade escrow (internal, created by expansion) |
 | transfer_to_cash_shop | Transfers item to cash shop (expanded to accept_to_cash_shop + release_from_character) |
 | withdraw_from_cash_shop | Withdraws item from cash shop (expanded to accept_to_character + release_from_cash_shop) |
 | accept_to_cash_shop | Accepts item to cash shop (internal, created by expansion) |
@@ -134,10 +166,30 @@ Represents a single action within a saga.
 | stage_clear_attempt_pq | Attempts to clear the current PQ stage (synchronous) |
 | enter_party_quest_bonus | Enters the bonus stage of a party quest (synchronous, terminal failure) |
 | field_effect_weather | Shows weather effect to all characters in a field (synchronous) |
+| play_jukebox | Plays a jukebox song in a field (synchronous) |
+| create_note | Creates a note (memo) for a receiving character |
+| set_asset_owner | Sets the owner tag on an asset in a specific inventory slot |
+| apply_asset_lock | Applies a sealing lock (expiration) to an asset in a specific inventory slot |
+| apply_asset_karma | Applies or clears the karma mark on an asset in a specific inventory slot |
+| extend_asset_expiration | Extends a time-limited asset's expiration |
+| incubator_result | Applies an incubator result to an asset (synchronous) |
+| emit_megaphone | Emits a megaphone broadcast (synchronous) |
+| enqueue_world_broadcast | Enqueues a world broadcast (synchronous) |
+| validate_world_transfer | Validates a character world transfer (synchronous) |
+| leave_guild_for_transfer | Leaves the character's guild for a world transfer |
+| leave_party_for_transfer | Leaves the character's party for a world transfer |
+| sever_buddies_for_transfer | Severs the character's buddy relationships for a world transfer |
+| change_character_world | Changes the character's world |
 | transfer_ap | Transfers one already-spent ability point from one stat to another |
 | transfer_sp | Transfers one skill point from one skill to another |
 | evolve_pet | Evolves a pet |
 | forfeit_quest | Forfeits a quest |
+| start_rps_game | Starts a rock-paper-scissors NPC minigame (synchronous) |
+| transfer_to_parcel | Transfers item into parcel custody (expanded to release_from_character + accept_to_parcel) |
+| accept_to_parcel | Accepts item into parcel custody (internal, created by expansion) |
+| release_from_parcel | Releases item from parcel custody (internal, created by expansion) |
+| withdraw_from_parcel | Withdraws item from parcel custody (expanded to release_from_parcel + accept_to_character) |
+| show_parcel | Opens the parcel (Duey) dialog for a character (synchronous) |
 | await_character_created | Synthetic step that awaits a character-creation status event (no dispatch; accepts CharacterCreated/CharacterCreationFailed events) |
 | await_inventory_created | Synthetic step that awaits an inventory-creation status event (no-op handler; accepts InventoryCreated/InventoryCreationFailed events) |
 | transfer_to_mts | Transfers item to an MTS listing (expanded to release_from_character + accept_to_mts_listing) |
@@ -988,6 +1040,7 @@ Produces Kafka commands to the atlas-maps service for field-level operations wit
 | Method | Description |
 |--------|-------------|
 | FieldEffectWeather | Produces WEATHER_START command to COMMAND_TOPIC_MAP |
+| PlayJukebox | Produces PLAY_JUKEBOX command to COMMAND_TOPIC_MAP |
 
 ---
 
@@ -1243,3 +1296,66 @@ Foothold lookup has no domain model; `GetFootholdBelow` returns a raw foothold I
 | Method | Description |
 |--------|-------------|
 | ByIdProvider | Retrieves an NPC by ID via REST |
+
+---
+
+# Note (Client)
+
+## Responsibility
+
+Produces Kafka commands to atlas-notes to create a note (memo) for a receiving character.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| CreateNote | Produces CREATE command to COMMAND_TOPIC_NOTE |
+
+---
+
+# Parcel (Client)
+
+## Responsibility
+
+Dispatches Duey parcel dialog display commands and the atomic parcel custody commands (accept/release/restore/remove) to atlas-channel and atlas-parcel.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| ShowParcelAndEmit / ShowParcel | Produces SHOW_PARCEL command to COMMAND_TOPIC_PARCEL |
+| AcceptToParcelAndEmit / AcceptToParcel | Produces ACCEPT_TO_PARCEL command to COMMAND_TOPIC_PARCEL_CUSTODY |
+| ReleaseFromParcelAndEmit / ReleaseFromParcel | Produces RELEASE_FROM_PARCEL command to COMMAND_TOPIC_PARCEL_CUSTODY |
+| RestoreParcelAndEmit / RestoreParcel | Produces RESTORE_PARCEL command to COMMAND_TOPIC_PARCEL_CUSTODY (compensating inverse of accept) |
+| RemoveParcelAndEmit / RemoveParcel | Produces REMOVE_PARCEL command to COMMAND_TOPIC_PARCEL_CUSTODY (compensating inverse of release) |
+
+---
+
+# Trade (Client)
+
+## Responsibility
+
+Dispatches the atomic trade-escrow custody commands to atlas-trades.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| AcceptToTradeAndEmit / AcceptToTrade | Produces ACCEPT_TO_TRADE command to COMMAND_TOPIC_TRADE_CUSTODY |
+| ReleaseFromTradeAndEmit / ReleaseFromTrade | Produces RELEASE_FROM_TRADE command to COMMAND_TOPIC_TRADE_CUSTODY |
+| RestoreTradeEscrowAndEmit / RestoreTradeEscrow | Produces RESTORE_TRADE_ESCROW command to COMMAND_TOPIC_TRADE_CUSTODY (compensating inverse of accept) |
+| RemoveTradeEscrowAndEmit / RemoveTradeEscrow | Produces REMOVE_TRADE_ESCROW command to COMMAND_TOPIC_TRADE_CUSTODY (compensating inverse of release) |
+
+---
+
+# Party (Client)
+
+## Responsibility
+
+Produces Kafka commands to atlas-parties to remove a character from a party during a world transfer.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| RequestLeave | Produces LEAVE command to COMMAND_TOPIC_PARTY |

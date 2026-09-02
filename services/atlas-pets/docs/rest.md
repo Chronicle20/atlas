@@ -292,3 +292,78 @@ Creates a new pet for a character. Behaves identically to `POST /api/pets`; the 
 |--------|-----------|
 | 400 | Invalid input model (JSON parse failure) |
 | 500 | Internal error (creation failed or transform failed) |
+
+
+---
+
+### PATCH /api/pets/{petId}
+
+Renames a pet. `name` is the only writable attribute; every other field on the request body is ignored. This is an operator surface for correcting a pet name without a direct database write; it is not the gameplay rename path (that runs through the `RENAME` Kafka command).
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|-----|------|----------|-------------|
+| petId | path | uint32 | yes | Pet identifier |
+
+#### Request Headers
+
+| Name | Required | Description |
+|------|----------|-------------|
+| TENANT_ID | yes | Tenant identifier |
+| REGION | yes | Region code |
+| MAJOR_VERSION | yes | Major version |
+| MINOR_VERSION | yes | Minor version |
+| Content-Type | yes | application/json |
+
+#### Request Model
+
+```json
+{
+  "data": {
+    "type": "pets",
+    "attributes": {
+      "name": "NewName"
+    }
+  }
+}
+```
+
+#### Response Model
+
+```json
+{
+  "data": {
+    "type": "pets",
+    "id": "1",
+    "attributes": {
+      "cashId": 7000000,
+      "templateId": 5000017,
+      "name": "NewName",
+      "level": 10,
+      "closeness": 100,
+      "fullness": 100,
+      "expiration": "2023-12-31T23:59:59Z",
+      "ownerId": 1,
+      "slot": 0,
+      "x": 100,
+      "y": 200,
+      "stance": 0,
+      "fh": 5,
+      "excludes": [],
+      "flag": 0,
+      "purchaseBy": 1
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid input model (JSON parse failure) |
+| 400 | Invalid name (fails name validation) |
+| 404 | Pet not found |
+| 403 | Pet is not owned by the character on record for the pet |
+| 500 | Internal error |

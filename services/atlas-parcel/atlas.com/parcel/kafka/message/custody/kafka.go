@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // This is atlas-parcel's own copy of the custody wire contract. The saga
@@ -16,8 +17,10 @@ import (
 // (services/atlas-mts/atlas.com/mts/kafka/message/custody/kafka.go).
 const (
 	// EnvCommandTopic is the env var naming the parcel custody command topic.
-	EnvCommandTopic = "COMMAND_TOPIC_PARCEL_CUSTODY"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARCEL_CUSTODY"
+)
 
+const (
 	CommandAcceptToParcel    = "ACCEPT_TO_PARCEL"
 	CommandReleaseFromParcel = "RELEASE_FROM_PARCEL"
 	// CommandRestoreParcel un-resolves a parcel released by a
@@ -120,8 +123,10 @@ type RemoveParcelCommandBody struct {
 
 const (
 	// EnvStatusTopic names the parcel custody status (ack) topic.
-	EnvStatusTopic = "EVENT_TOPIC_PARCEL_CUSTODY_STATUS"
+	EnvStatusTopic topic.Token = "EVENT_TOPIC_PARCEL_CUSTODY_STATUS"
+)
 
+const (
 	StatusEventAccepted = "ACCEPTED"
 	StatusEventReleased = "RELEASED"
 	StatusEventError    = "ERROR"

@@ -31,7 +31,10 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			l.Infof("DATA_EVENTS_CONSUMER_ENABLED=false; not registering DATA_UPDATED handler.")
 			return nil
 		}
-		t, _ := topic.EnvProvider(l)(EnvEventTopic)()
+		t, err := topic.EnvProvider(l)(EnvEventTopic)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDataUpdated))); err != nil {
 			return err
 		}

@@ -80,11 +80,14 @@ A nil message value is a log-compaction tombstone (key `tenant:<uuid>`) and remo
 
 #### StatusEvent[CreatedStatusEventBody] (Seed Status)
 
-| Field     | Type   |
-|-----------|--------|
-| AccountId | uint32 |
-| Type      | string |
-| Body      | E      |
+| Field         | Type   |
+|---------------|--------|
+| AccountId     | uint32 |
+| TransactionId | string |
+| Type          | string |
+| Body          | E      |
+
+TransactionId is optional; it correlates the event with the originating character-creation request. An older producer may omit it, and consumers fall back to AccountId.
 
 CreatedStatusEventBody:
 
@@ -94,17 +97,22 @@ CreatedStatusEventBody:
 
 #### StatusEvent[FailedStatusEventBody] (Seed Status)
 
-| Field     | Type   |
-|-----------|--------|
-| AccountId | uint32 |
-| Type      | string |
-| Body      | E      |
+| Field         | Type   |
+|---------------|--------|
+| AccountId     | uint32 |
+| TransactionId | string |
+| Type          | string |
+| Body          | E      |
+
+TransactionId is optional; see above.
 
 FailedStatusEventBody:
 
 | Field  | Type   |
 |--------|--------|
 | Reason | string |
+
+Reason is optional.
 
 ## Transaction Semantics
 

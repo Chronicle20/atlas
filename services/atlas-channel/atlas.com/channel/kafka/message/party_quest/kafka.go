@@ -5,11 +5,14 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventStatusTopic = "EVENT_TOPIC_PARTY_QUEST_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_QUEST_STATUS"
+)
 
+const (
 	EventTypeStageCleared  = "STAGE_CLEARED"
 	EventTypeCharacterLeft = "CHARACTER_LEFT"
 )

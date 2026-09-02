@@ -1,60 +1,45 @@
 # atlas-rankings
 
-Computes per-world character rankings (overall and per job category) for
-each tenant on a configurable cadence and serves them over REST. Consumed
-by atlas-login to populate the character-select info board (rank, job rank,
-movement arrows).
+Computes per-world, per-tenant character rankings (overall and per job category) on a configurable cadence and serves them over REST.
 
-## Endpoints
+## Overview
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/rankings/characters?ids={id},{id},…` | Bulk fetch. One `rankings` resource per requested character id that has an entry; unknown ids are omitted (callers default to zeros). Empty/unparseable ids → 400. |
-| GET | `/api/rankings/characters/{characterId}` | Single fetch; 404 when no entry exists. |
+A leader-elected periodic task re-enumerates tenants from atlas-tenants on a 60-second base tick, and for each tenant whose configured recompute interval has elapsed, reads the full character scan from atlas-character, ranks non-GM characters per world (overall and by job category), and persists the results to a Postgres-backed store. The REST API serves single-character, bulk-character, and per-world leaderboard lookups.
 
-Resource attributes: `worldId`, `rank`, `rankMove`, `jobRank`, `jobRankMove`
-(moves are signed: positive = moved up), `computedAt`. Tenant headers
-required. No write endpoints — rankings are computed, never client-mutated.
+## External Dependencies
 
-## Recompute
+- Postgres: Ranking rows (`character_rankings`) and recompute cycle bookkeeping (`ranking_cycles`)
+- Redis: Leader-election lock for the recompute task
+- atlas-character: REST API for the tenant's full character scan (paginated, drained)
+- atlas-tenants: REST API for tenant enumeration and per-tenant rankings configuration (`recomputeIntervalMinutes`)
+- OpenTelemetry: Distributed tracing via OTLP/gRPC
 
-A 60s base ticker (leader-gated via libs/atlas-lock lease
-`rankings-recompute`, so the standard 2 replicas never double-compute)
-re-enumerates tenants from atlas-tenants each tick and runs a recompute for
-every tenant whose configured interval has elapsed. Each cycle:
+This service does not consume or produce Kafka messages.
 
-1. `GET /characters` from atlas-character (full tenant scan).
-2. Exclude `gm > 0` characters entirely (not ranked, not counted).
-3. Per world: order by `level DESC, experience DESC, characterId ASC`
-   (1-based, unique); job rank is the same order restricted to
-   `jobId / 100` categories.
-4. Moves are `previousRank − newRank` against the prior cycle; first-seen
-   characters move 0.
-5. Batch upsert on `(tenant_id, character_id)`, then prune rows not
-   restamped by this cycle (deleted/became-GM characters drop out) — unless
-   the character scan came back empty against a non-empty rankings table,
-   in which case the prune is skipped for that cycle to avoid wiping live
-   rankings on a possibly-transient empty scan.
+## Runtime Configuration
 
-The cycle is idempotent and convergent; a crash mid-cycle is repaired by the
-next run (moves may read 0 for one cycle). One tenant's failure is logged
-and skipped, never fatal.
+| Variable | Description |
+|----------|-------------|
+| LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
+| REST_PORT | HTTP server port |
+| DB_HOST | Postgres host |
+| DB_PORT | Postgres port |
+| DB_NAME | Postgres database name |
+| DB_USER | Postgres user |
+| DB_PASSWORD | Postgres password |
+| REDIS_URL | Redis address (leader-election lock) |
+| REDIS_PASSWORD | Redis password |
+| CHARACTERS_SERVICE_URL | atlas-character REST API base URL (falls back to BASE_SERVICE_URL) |
+| TENANTS_SERVICE_URL | atlas-tenants REST API base URL (falls back to BASE_SERVICE_URL) |
+| BASE_SERVICE_URL | Default REST API base URL used when a per-domain `*_SERVICE_URL` override is not set |
+| RANKINGS_LEADER_ELECTION_ENABLED | Enables leader election for the recompute task (default true) |
+| RANKINGS_LEADER_TTL | Leader lock TTL (default 30s; range 5s-5m) |
+| RANKINGS_LEADER_REFRESH | Leader lock refresh interval (default TTL/3, minimum 1s; range 1s-TTL/2) |
+| RANKINGS_LEADER_BACKOFF | Leader acquisition backoff (default 5s; range 1s-1m) |
 
-## Configuration
+## Documentation
 
-Per-tenant cadence lives in atlas-tenants:
-`GET/POST/PATCH/DELETE /api/tenants/{tenantId}/configurations/rankings` with
-attribute `recomputeIntervalMinutes`. Absent/zero → default 60 minutes. The
-config is re-read every tick — changes apply without a redeploy.
-
-Environment: standard DB_* and REST_PORT; `REDIS_URL` (leader lease);
-`CHARACTERS_SERVICE_URL` / `TENANTS_SERVICE_URL` with `BASE_SERVICE_URL`
-fallback; `RANKINGS_LEADER_ELECTION_ENABLED|TTL|REFRESH|BACKOFF` (defaults
-true/30s/TTL÷3/5s).
-
-## Scaling note
-
-Recompute cost scales with total tenant character count: one full
-`GET /characters` read per tenant per cycle and an O(n log n) in-memory
-sort. Acceptable at tens of thousands of characters; adopt list-endpoint
-pagination (task-117) as a drop-in improvement if populations outgrow it.
+- [Domain](docs/domain.md)
+- [Kafka](docs/kafka.md)
+- [REST](docs/rest.md)
+- [Storage](docs/storage.md)

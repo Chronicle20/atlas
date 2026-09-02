@@ -85,8 +85,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var err error
 				var handles []listener.HandlerHandle
-				t, _ = topic.EnvProvider(l)(_map3.EnvEventTopicMapStatus)()
+				t, err = topic.EnvProvider(l)(_map3.EnvEventTopicMapStatus)()
+				if err != nil {
+					return nil, err
+				}
 				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -251,6 +255,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		routine.Go(l, ctx, func(_ context.Context) {
 			if err := npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), spawnNPCForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to spawn npcs for character [%d].", s.CharacterId())
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			if err := spawnPlayerNpcsForSession(l, ctx, wp, s, f); err != nil {
+				l.WithError(err).Errorf("SpawnForSelf: unable to spawn player npcs for character [%d].", s.CharacterId())
 			}
 		})
 

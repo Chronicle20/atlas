@@ -1,6 +1,7 @@
 package collection
 
 import (
+	"atlas-monster-book/kafka/message/monsterbook"
 	"os"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(monsterbook.EnvEventTopicStatus), string(monsterbook.EnvEventTopicStatus))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

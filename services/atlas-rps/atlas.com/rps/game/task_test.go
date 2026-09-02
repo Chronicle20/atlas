@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // sweepCapturingWriter records every WriteMessages call so sweep tests can
@@ -45,11 +46,11 @@ func (w *sweepCapturingWriter) Messages() []kafka.Message {
 
 type sweepWriterRegistry struct {
 	mu      sync.Mutex
-	writers map[string]*sweepCapturingWriter
+	writers map[topic.Token]*sweepCapturingWriter
 }
 
 func newSweepWriterRegistry() *sweepWriterRegistry {
-	return &sweepWriterRegistry{writers: map[string]*sweepCapturingWriter{}}
+	return &sweepWriterRegistry{writers: map[topic.Token]*sweepCapturingWriter{}}
 }
 
 func (r *sweepWriterRegistry) factory() kafkaProducer.WriterFactory {
@@ -57,12 +58,12 @@ func (r *sweepWriterRegistry) factory() kafkaProducer.WriterFactory {
 		r.mu.Lock()
 		defer r.mu.Unlock()
 		w := &sweepCapturingWriter{topic: topicName}
-		r.writers[topicName] = w
+		r.writers[topic.Token(topicName)] = w
 		return w
 	}
 }
 
-func (r *sweepWriterRegistry) get(topicName string) *sweepCapturingWriter {
+func (r *sweepWriterRegistry) get(topicName topic.Token) *sweepCapturingWriter {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.writers[topicName]

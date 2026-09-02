@@ -4,10 +4,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_COMPARTMENT"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_COMPARTMENT"
+)
+
+const (
 	CommandChangeTemplate     = "CHANGE_TEMPLATE"
 	CommandResetPetExpiration = "RESET_PET_EXPIRATION"
 )

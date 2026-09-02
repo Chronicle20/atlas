@@ -966,6 +966,113 @@ func CreateSingleKiteConfigJsonData(cfg map[string]interface{}) (json.RawMessage
 	return json.Marshal(map[string]interface{}{"data": cfg})
 }
 
+// PlayerNpcConfigRestModel is the JSON:API resource for the per-tenant
+// player-npcs configuration. One row per tenant, like rankings/kite-configs
+// — there is no id-addressed sub-resource and no /seed endpoint. The
+// attribute names/types must match exactly what the already-shipped
+// consumer decodes in
+// services/atlas-player-npcs/atlas.com/player-npcs/configuration/rest.go
+// (RestModel).
+type PlayerNpcConfigRestModel struct {
+	Id                string `json:"-"`
+	InitialX          int16  `json:"initialX"`
+	InitialY          int16  `json:"initialY"`
+	AreaX             int16  `json:"areaX"`
+	AreaY             int16  `json:"areaY"`
+	AreaSteps         int    `json:"areaSteps"`
+	OrganizeArea      bool   `json:"organizeArea"`
+	AutoDeployEnabled bool   `json:"autoDeployEnabled"`
+}
+
+func (r PlayerNpcConfigRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *PlayerNpcConfigRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+func (r PlayerNpcConfigRestModel) GetName() string {
+	return "player-npcs"
+}
+
+// TransformPlayerNpcConfig converts a map[string]interface{} to a
+// PlayerNpcConfigRestModel, mirroring TransformRankings.
+func TransformPlayerNpcConfig(data map[string]interface{}) (PlayerNpcConfigRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	readInt16 := func(key string) int16 {
+		if v, ok := attributes[key].(float64); ok {
+			return int16(v)
+		}
+		if v, ok := attributes[key].(int16); ok {
+			return v
+		}
+		return 0
+	}
+
+	readInt := func(key string) int {
+		if v, ok := attributes[key].(float64); ok {
+			return int(v)
+		}
+		if v, ok := attributes[key].(int); ok {
+			return v
+		}
+		return 0
+	}
+
+	readBool := func(key string) bool {
+		v, _ := attributes[key].(bool)
+		return v
+	}
+
+	return PlayerNpcConfigRestModel{
+		Id:                id,
+		InitialX:          readInt16("initialX"),
+		InitialY:          readInt16("initialY"),
+		AreaX:             readInt16("areaX"),
+		AreaY:             readInt16("areaY"),
+		AreaSteps:         readInt("areaSteps"),
+		OrganizeArea:      readBool("organizeArea"),
+		AutoDeployEnabled: readBool("autoDeployEnabled"),
+	}, nil
+}
+
+// ExtractPlayerNpcConfig converts a PlayerNpcConfigRestModel to a
+// map[string]interface{}, mirroring ExtractRankings.
+func ExtractPlayerNpcConfig(r PlayerNpcConfigRestModel) (map[string]interface{}, error) {
+	id := r.Id
+	if id == "" {
+		id = uuid.New().String()
+	}
+	return map[string]interface{}{
+		"type": "player-npcs",
+		"id":   id,
+		"attributes": map[string]interface{}{
+			"initialX":          r.InitialX,
+			"initialY":          r.InitialY,
+			"areaX":             r.AreaX,
+			"areaY":             r.AreaY,
+			"areaSteps":         r.AreaSteps,
+			"organizeArea":      r.OrganizeArea,
+			"autoDeployEnabled": r.AutoDeployEnabled,
+		},
+	}, nil
+}
+
+// CreateSinglePlayerNpcConfigJsonData creates a JSON:API compliant data
+// structure for the single-object player-npcs configuration, mirroring
+// CreateSingleRankingsJsonData.
+func CreateSinglePlayerNpcConfigJsonData(cfg map[string]interface{}) (json.RawMessage, error) {
+	return json.Marshal(map[string]interface{}{"data": cfg})
+}
+
 // RpsRewardRungRestModel is the nested JSON attribute shape of a single rung
 // embedded in the rps-rewards `ladder` array.
 type RpsRewardRungRestModel struct {

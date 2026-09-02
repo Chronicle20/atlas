@@ -512,6 +512,7 @@
   direction: clientbound
   opcode: 83
   fname: CNpcPool::OnNpcImitateData
+  packet: npc/clientbound/ImitatedNpcData
   provenance: ida-discovered
   ida:
     address: 7276891
@@ -1783,6 +1784,7 @@
   direction: clientbound
   opcode: 265
   fname: CNpcPool::OnNpcLeaveField
+  packet: npc/clientbound/NpcRemove
   provenance: ida-discovered
   ida:
     address: 7276855

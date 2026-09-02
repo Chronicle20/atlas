@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -47,11 +48,11 @@ func (w *capturingWriter) Messages() []kafka.Message {
 
 type writerRegistry struct {
 	mu      sync.Mutex
-	writers map[string]*capturingWriter
+	writers map[topic.Token]*capturingWriter
 }
 
 func newWriterRegistry() *writerRegistry {
-	return &writerRegistry{writers: map[string]*capturingWriter{}}
+	return &writerRegistry{writers: map[topic.Token]*capturingWriter{}}
 }
 
 func (r *writerRegistry) factory() kafkaProducer.WriterFactory {
@@ -59,12 +60,12 @@ func (r *writerRegistry) factory() kafkaProducer.WriterFactory {
 		r.mu.Lock()
 		defer r.mu.Unlock()
 		w := &capturingWriter{topic: topicName}
-		r.writers[topicName] = w
+		r.writers[topic.Token(topicName)] = w
 		return w
 	}
 }
 
-func (r *writerRegistry) get(topicName string) *capturingWriter {
+func (r *writerRegistry) get(topicName topic.Token) *capturingWriter {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.writers[topicName]

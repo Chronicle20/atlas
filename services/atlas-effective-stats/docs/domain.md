@@ -39,6 +39,7 @@ Represents a single contribution to a stat from a source.
 | statType | Type | Which stat this bonus affects |
 | amount | int32 | Flat bonus value |
 | multiplier | float64 | Percentage bonus (additive multipliers, e.g., 0.10 = +10%) |
+| basePercent | int32 | Percent of the raw base stat only, applied as `floor(base * basePercent / 100)` added flat; the basis is never equipment or other flat bonuses |
 
 #### Base
 
@@ -82,7 +83,7 @@ Holds all computed effective stats for a character.
 
 ### Stat Mapping
 
-The `BonusesForBuffChange` function converts one buff stat change into the stat bonuses it grants (one-to-many). Most buff types yield a single flat bonus. `HYPER_BODY_HP` and `HYPER_BODY_MP` yield multiplier bonuses on `(base + flat)`. `MAPLE_WARRIOR` yields four base-percent bonuses (strength, dexterity, intelligence, luck), each applied as `floor(base × percent / 100)` added flat — the basis is the raw base stat only, never equipment. Unknown buff types yield no bonuses.
+The `BonusesForBuffChange` function converts one buff stat change into the stat bonuses it grants (one-to-many). Most buff types yield a single flat bonus. `HYPER_BODY_HP` and `HYPER_BODY_MP` yield multiplier bonuses on `(base + flat)`. `MAPLE_WARRIOR` yields four base-percent bonuses (strength, dexterity, intelligence, luck), each applied as `floor(base × percent / 100)` added flat — the basis is the raw base stat only, never equipment. Unknown buff types (including `ENERGY_CHARGE`) yield no bonuses; `ENERGY_CHARGE` is handled separately (see Initialization).
 
 The `MapStatupType` function maps passive skill statup type strings to stat types. It accepts both short-form (e.g., `PAD`, `STR`) and long-form (e.g., `WEAPON_ATTACK`, `STRENGTH`) identifiers.
 
@@ -211,7 +212,7 @@ Lazy initialization occurs via `InitializeCharacter` when a character's stats ar
 1. Creates or retrieves the character model from the registry and marks it as initialized (prevents recursive initialization).
 2. Fetches base stats and the wearer profile (level, jobId) from atlas-character via REST. On failure, defaults to zero base stats and an empty wearer profile.
 3. Fetches the equip compartment from atlas-inventory via REST and builds an equipped-asset snapshot (asset id, template id, flat stat bonuses) for every asset in an equipped slot (negative slot position). Equipment stats are read from the asset's flat fields (strength, dexterity, etc.).
-4. Fetches active buffs from atlas-buffs via REST and converts stat changes to bonuses.
+4. Fetches active buffs from atlas-buffs via REST and converts stat changes to bonuses. A stat change of type `ENERGY_CHARGE` is not converted via `BonusesForBuffChange`; instead, when its amount equals the charged-state sentinel value, a weapon-attack bonus equal to the buff's skill effect `pad` at the buff's level is granted (looked up from atlas-data). Any other `ENERGY_CHARGE` amount grants nothing. The live buff-applied Kafka handler does not special-case `ENERGY_CHARGE`; it is routed only through `BonusesForBuffChange`, which yields no bonus for this type.
 5. Fetches character skills from atlas-skills and skill data from atlas-data via REST. Extracts bonuses from passive skills (non-action skills) at the character's skill level, including both direct effect fields and statups arrays.
 6. Runs equipment qualification (`RecomputeWith`) against the assembled model, which determines the qualifying equipment subset and computes effective stats.
 

@@ -14,6 +14,7 @@
 | common_weight | uint32 | NOT NULL |
 | uncommon_weight | uint32 | NOT NULL |
 | rare_weight | uint32 | NOT NULL |
+| kind | string | NOT NULL, DEFAULT 'gachapon' |
 
 ### gachapon_items
 
@@ -25,6 +26,8 @@
 | item_id | uint32 | NOT NULL |
 | quantity | uint32 | NOT NULL, DEFAULT 1 |
 | tier | string | NOT NULL |
+| weight | uint32 | NOT NULL, DEFAULT 0 |
+| commodity_id | uint32 | NOT NULL, DEFAULT 0 |
 
 ### global_gachapon_items
 

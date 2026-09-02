@@ -147,21 +147,42 @@ resolve_base() {
     return 1
 }
 
+# workspace_module_dirs() — go.work `use`-entry membership. discover_modules
+# below intersects its module walk under services/ and libs/ against it:
+# golangci-lint in workspace mode cannot type-check a directory outside
+# go.work's `use` list ("directory prefix . does not contain modules listed
+# in go.work"). check_workspace_drift() closes the hole that intersection
+# would otherwise leave — a module found on disk but missing from go.work
+# must fail this script loudly by name, not drop silently out of the lint
+# sweep. Shared with verify.sh and analyzer-guard.sh in tools/lib/go-work.sh.
+# shellcheck source=tools/lib/go-work.sh
+source "$ROOT/tools/lib/go-work.sh"
+
 discover_modules() {
+    local found workspace result
     if [ "${#PATHS[@]}" -eq 0 ]; then
-        find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
-            | xargs -0 -n1 dirname | sort -u
+        found="$(find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
+            | xargs -0 -n1 dirname | sort -u)"
     else
         local p target
-        for p in "${PATHS[@]}"; do
+        found="$(for p in "${PATHS[@]}"; do
             case "$p" in
                 /*) target="$p" ;;
                 *)  target="$ROOT/${p#./}" ;;
             esac
             find "$target" -name go.mod -not -path '*/node_modules/*' -print0 2>/dev/null \
                 | xargs -0 -r -n1 dirname
-        done | sort -u
+        done | sort -u)"
     fi
+    workspace="$(workspace_module_dirs "lint.sh")" || exit 1
+    check_workspace_drift "lint.sh" "$found" "$workspace" || exit 1
+    result="$(comm -12 <(printf '%s\n' "$found") <(printf '%s\n' "$workspace"))"
+    if [ -n "$found" ] && [ -z "$result" ]; then
+        echo "lint.sh: ERROR — workspace filter produced zero modules from a non-empty candidate set;" >&2
+        echo "lint.sh: ERROR — check go.work / workspace_module_dirs() for a parse mismatch" >&2
+        exit 1
+    fi
+    printf '%s\n' "$result"
 }
 
 run_go() {
@@ -175,7 +196,14 @@ run_go() {
         fi
     fi
 
-    local moddir rel fmt_out
+    # Captured into a variable (not fed straight into a `< <(...)` process
+    # substitution) so a discover_modules() failure — an unreadable go.work,
+    # or a filter bug — propagates via `||`. Process substitutions discard
+    # their command's exit status, which is exactly the class of bug fixed
+    # here for workspace_module_dirs() itself.
+    local modules moddir rel fmt_out
+    modules="$(discover_modules)" || exit 1
+    [ -z "$modules" ] && return 0
     while IFS= read -r moddir; do
         rel="${moddir#"$ROOT"/}"
 
@@ -215,7 +243,7 @@ run_go() {
                 FAILED+=("lint:$rel")
             fi
         fi
-    done < <(discover_modules)
+    done <<< "$modules"
 }
 
 run_ui() {

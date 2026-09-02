@@ -11,6 +11,7 @@ import (
 	"atlas-query-aggregator/party"
 	"atlas-query-aggregator/party_quest"
 	"atlas-query-aggregator/pet"
+	"atlas-query-aggregator/playernpc"
 	"atlas-query-aggregator/quest"
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
@@ -53,6 +54,7 @@ type ValidationContext struct {
 	partyP      party.Processor
 	partyQuestP party_quest.Processor
 	mbP         monsterbook.Processor
+	playerNpcP  playernpc.Processor
 	l           logrus.FieldLogger
 	ctx         context.Context
 }
@@ -75,6 +77,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		partyP:      nil,
 		partyQuestP: nil,
 		mbP:         nil,
+		playerNpcP:  nil,
 		l:           nil,
 		ctx:         nil,
 	}
@@ -98,6 +101,7 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 		partyP:      party.NewProcessor(l, ctx),
 		partyQuestP: party_quest.NewProcessor(l, ctx),
 		mbP:         monsterbook.NewProcessor(l, ctx),
+		playerNpcP:  playernpc.NewProcessor(l, ctx),
 		l:           l,
 		ctx:         ctx,
 	}
@@ -307,6 +311,13 @@ func (ctx ValidationContext) WithMonsterBookProcessor(p monsterbook.Processor) V
 	return ctx
 }
 
+// WithPlayerNpcProcessor returns a copy of the context with the supplied
+// player-npc processor. Test seams use this to inject a fake processor.
+func (ctx ValidationContext) WithPlayerNpcProcessor(p playernpc.Processor) ValidationContext {
+	ctx.playerNpcP = p
+	return ctx
+}
+
 // GetPlayerCountInMap returns the player count for a given map
 // Returns 0 if map processor is not available or on error (graceful degradation)
 func (ctx ValidationContext) GetPlayerCountInMap(field field.Model) int {
@@ -353,6 +364,37 @@ func (ctx ValidationContext) GetTransportState(mapId _map.Id) string {
 	return route.State()
 }
 
+// GetPlayerNpcEligibility returns the canSpawnPlayerNpc predicate (design
+// §9.1) for the context's character on the given map, calling
+// atlas-player-npcs' eligibility endpoint through the injected playernpc
+// processor. worldId is sourced from the context's character rather than
+// left to the endpoint's own default -- the endpoint defaults worldId to 0,
+// which would silently mis-scope the duplicate check for any character in a
+// non-zero world.
+//
+// Returns a fail-closed (not eligible) EligibilityModel if the processor is
+// not available or the call errors (graceful degradation): the evaluator
+// contract has no error channel, so an unreachable dependency must not be
+// mistaken for "eligible".
+func (ctx ValidationContext) GetPlayerNpcEligibility(mapId _map.Id) playernpc.EligibilityModel {
+	if ctx.playerNpcP == nil {
+		if ctx.l != nil {
+			ctx.l.Warnf("Player NPC processor not available, treating character %d as ineligible for map [%d]", ctx.character.Id(), mapId)
+		}
+		return playernpc.NewUnavailableEligibility("player npc eligibility unavailable")
+	}
+
+	elig, err := ctx.playerNpcP.GetEligibility(ctx.character.Id(), mapId, ctx.character.WorldId())
+	if err != nil {
+		if ctx.l != nil {
+			ctx.l.WithError(err).Warnf("Failed to get player npc eligibility for character %d map [%d], treating as ineligible", ctx.character.Id(), mapId)
+		}
+		return playernpc.NewUnavailableEligibility("player npc eligibility unavailable")
+	}
+
+	return elig
+}
+
 // WithQuest adds a quest to the context
 func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext {
 	newQuests := make(map[uint32]quest.Model)
@@ -378,6 +420,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
+		playerNpcP:  ctx.playerNpcP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -408,6 +451,7 @@ func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
+		playerNpcP:  ctx.playerNpcP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -432,6 +476,7 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
+		playerNpcP:  ctx.playerNpcP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -456,6 +501,7 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
+		playerNpcP:  ctx.playerNpcP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -480,6 +526,7 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
+		playerNpcP:  ctx.playerNpcP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}

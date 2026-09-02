@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -536,4 +537,4 @@ func (p *ProcessorImpl) GracefulShutdownAndEmit() error {
 }
 
 // character2EnvCommandTopic is the topic environment variable for character commands.
-const character2EnvCommandTopic = "COMMAND_TOPIC_CHARACTER"
+const character2EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"

@@ -403,6 +403,60 @@ describe("ApplyPresetDialog", () => {
     expect(mageTile).toHaveAttribute("aria-checked", "true");
     expect(warriorTile).toHaveAttribute("aria-checked", "false");
   });
+
+  // With enough presets the tile grid used to grow the dialog past the
+  // viewport, pushing the world Select, the name Input and the footer off
+  // screen with no way to reach them. The dialog must stay viewport-bounded
+  // and confine the growth to the scrollable preset grid.
+  it("bounds the dialog height and scrolls the preset grid instead of growing", () => {
+    render(<ApplyPresetDialog {...defaultProps()} />);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toMatch(/max-h-\[/);
+
+    const grid = screen.getByRole("radiogroup", { name: "Preset" });
+    expect(grid.className).toContain("overflow-y-auto");
+  });
+
+  it("keeps the world, name and footer controls reachable with many presets", () => {
+    const manyPresets = Array.from({ length: 24 }, (_, i) => ({
+      id: `preset-${i}`,
+      attributes: {
+        ...twoPresets[0]!.attributes,
+        name: `Preset ${i}`,
+      },
+    }));
+    useTenantConfigurationMock.mockReturnValue({
+      data: {
+        attributes: {
+          characters: { presets: manyPresets },
+          worlds: [
+            { name: "Scania", flag: "" },
+            { name: "Bera", flag: "" },
+          ],
+        },
+      },
+      isLoading: false,
+    });
+
+    render(<ApplyPresetDialog {...defaultProps()} />);
+
+    expect(screen.getAllByRole("radio")).toHaveLength(24);
+    expect(screen.getByLabelText("World")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("3-12 characters")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
+
+    // The preset grid is the only region allowed to overflow; the world/name
+    // fields and the footer must sit outside it so they stay on screen.
+    const grid = screen.getByRole("radiogroup", { name: "Preset" });
+    expect(grid).not.toContainElement(screen.getByLabelText("World"));
+    expect(grid).not.toContainElement(
+      screen.getByPlaceholderText("3-12 characters"),
+    );
+    expect(grid).not.toContainElement(
+      screen.getByRole("button", { name: "Apply" }),
+    );
+  });
 });
 
 describe("ApplyPresetDialog — world filtering", () => {

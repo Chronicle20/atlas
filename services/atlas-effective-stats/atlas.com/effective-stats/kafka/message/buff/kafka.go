@@ -5,10 +5,14 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
+)
+
+const (
 	EventStatusTypeBuffApplied = "APPLIED"
 	EventStatusTypeBuffExpired = "EXPIRED"
 )

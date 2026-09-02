@@ -6,11 +6,14 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopic = "EVENT_TOPIC_CHARACTER_PENDING_CHANGE"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_CHARACTER_PENDING_CHANGE"
+)
 
+const (
 	EventTypeCreated  = "PENDING_CHANGE_CREATED"
 	EventTypeResolved = "PENDING_CHANGE_RESOLVED"
 )

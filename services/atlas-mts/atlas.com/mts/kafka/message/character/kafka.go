@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
@@ -18,7 +19,10 @@ const (
 	// publishes to. Mirrors that producer's EnvEventTopicCharacterStatus
 	// ("EVENT_TOPIC_CHARACTER_STATUS") — this service's own message packages name
 	// the const EnvStatusEventTopic (see kafka/message/mts, kafka/message/custody).
-	EnvStatusEventTopic = "EVENT_TOPIC_CHARACTER_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
 
 	// StatusEventTypeNameChanged is the only status type atlas-mts currently
 	// consumes from this topic: it keeps listing.seller_name current for display.

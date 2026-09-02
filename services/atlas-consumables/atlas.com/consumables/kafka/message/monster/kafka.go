@@ -6,10 +6,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_MONSTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
+)
+
+const (
 	CommandTypeCatch = "CATCH"
 )
 
@@ -34,7 +38,10 @@ type CatchCommandBody struct {
 }
 
 const (
-	EnvEventTopicCatch        = "EVENT_TOPIC_MONSTER_CATCH"
+	EnvEventTopicCatch topic.Token = "EVENT_TOPIC_MONSTER_CATCH"
+)
+
+const (
 	EventMonsterCatchResolved = "CATCH_RESOLVED"
 )
 

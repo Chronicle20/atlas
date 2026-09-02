@@ -94,12 +94,60 @@ facts_key() { local k="$1"; shift; "$VERIFY" --facts "$@" 2>/dev/null | sed -n "
 # than execution. (Do not start a comment line with the word that shellcheck
 # reads as a directive; it parses one and fails with SC1072/SC1073.)
 #
-# Fixed names, not $$: a crashed run leaves exactly one stale file, which the
-# next run removes, instead of one per attempt.
-probe_suite="$HERE/zz-verify-probe_test.sh"
-probe_deploy="$HERE/../deploy/.zz-verify-probe.tmp"
-cleanup() { rm -f "$probe_suite" "$probe_deploy"; }
-trap cleanup EXIT
+# Per-process, not fixed: two concurrent runs of this suite — or one run
+# racing a live `verify.sh` gate — must not collide on the same paths. Each
+# leaf name carries the PID of this run; the directory each probe sits in is
+# unchanged, because several assertions depend on the probes' RELATIVE
+# locations (inside services/, deploy/, tools/) and cannot simply move to a
+# shared temp dir.
+probe_tag="$$"
+probe_suite="$HERE/zz-verify-probe-${probe_tag}_test.sh"
+probe_deploy="$HERE/../deploy/.zz-verify-probe-${probe_tag}.tmp"
+probe_ban_dir="$HERE/../services/atlas-ban/zz-verify-probe-${probe_tag}"
+probe_account_dir="$HERE/../services/atlas-account/zz-verify-probe-${probe_tag}"
+probe_bake_ban="$probe_ban_dir/go.mod"
+probe_bake_account="$probe_account_dir/go.mod"
+probe_broken_dir="$HERE/../services/zz-verify-probe-broken-${probe_tag}"
+probe_jobs0_err="$HERE/zz-verify-jobs0-${probe_tag}.err"
+# Task 9 (Layer 5): a real libs/ file, per-process like every other probe
+# above — two concurrent runs of this file must not collide on the same
+# libs/ path.
+probe_libs="$HERE/../libs/atlas-tenant/zz-verify-probe-${probe_tag}.go"
+# Two assertions below don't read this run's OWN probe by name — they read a
+# category `--facts` derives from shared, not-per-process, state: "does any
+# deploy/ path exist in the changed set" and "which SERVICES have a changed
+# go.mod," which bake_targets() dedupes by service name. A per-process leaf
+# name can't isolate those; a concurrent run's own probe under the same
+# category is indistinguishable from this run's, so the add/assert/remove/
+# assert-gone sequence around them takes an exclusive lock instead — the same
+# tool (flock) tools/tidy-all-go.sh already uses for the one other genuinely
+# shared, not-per-process, mutable resource in this suite.
+shared_state_lock="${TMPDIR:-/tmp}/atlas-verify-test-shared-state.lock"
+exec 8>"$shared_state_lock"
+# The broken-module run below is a real `verify.sh --quick` invocation, so the
+# Go toolchain resolves the workspace and appends hash lines to go.work.sum.
+# That file must come back byte-identical whether the assertions pass, fail,
+# or the run is interrupted by SIGINT/SIGTERM, or every later gate
+# misclassifies it as a shared-lib change and rebuilds all modules (see the
+# comment at the broken-module block). Snapshot/restore is folded into the
+# same cleanup trap as the rest of the probe cleanup, and the trap fires on
+# EXIT, INT, and TERM so a signal-delivered interruption (e.g. from a
+# `timeout`-bounded foreground child) still restores it.
+gowork_sum="$HERE/../go.work.sum"
+gowork_sum_backup="$HERE/zz-verify-probe-broken-${probe_tag}.go.work.sum.bak"
+gowork_sum_backup_absent="$HERE/zz-verify-probe-broken-${probe_tag}.go.work.sum.absent"
+cleanup() {
+  rm -f "$probe_suite" "$probe_deploy" "$probe_bake_ban" "$probe_bake_account" \
+    "$probe_jobs0_err" "$probe_libs"
+  rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
+  rm -rf "$probe_broken_dir"
+  if [ -f "$gowork_sum_backup" ]; then
+    mv -f "$gowork_sum_backup" "$gowork_sum"
+  elif [ -f "$gowork_sum_backup_absent" ]; then
+    rm -f "$gowork_sum" "$gowork_sum_backup_absent"
+  fi
+}
+trap cleanup EXIT INT TERM
 cleanup
 printf '#!/usr/bin/env bash\nexit 0\n' > "$probe_suite"
 chmod +x "$probe_suite"
@@ -145,12 +193,14 @@ assert_true "--facts lists it under guard_suites" \
 
 # A deploy/ path selects the deploy gates. Only --facts is exercised here: a
 # real gen-lb-ports.sh --check walks the whole tree, and selection is the claim.
+flock 8
 : > "$probe_deploy"
 assert_true "a deploy/ change selects the LB port gate" \
   "$(facts_selected --quick --base HEAD | grep 'LB port drift' >/dev/null && echo true)"
 rm -f "$probe_deploy"
 assert_true "removing it deselects the LB port gate" \
   "$(facts_selected --quick --base HEAD | grep 'LB port drift' >/dev/null && echo false || echo true)"
+flock -u 8
 
 # --- module selection agrees ----------------------------------------------
 
@@ -159,6 +209,288 @@ want_mods="$("$VERIFY" --quick --base HEAD 2>/dev/null \
 want_mods="${want_mods:-0}"
 got_mods="$(facts_key modules_selected --quick --base HEAD)"
 assert_eq "module count agrees" "$want_mods" "$got_mods"
+
+# --- libs/ fan-out narrows to the reverse-dependency closure (Task 9) ------
+#
+# The real repo graph, not a synthetic one: libs/atlas-tenant has dozens of
+# consumers, which is exactly what makes the old "any libs/ change reaches
+# every module" behaviour so expensive.
+
+total_modules="$(find "$HERE/../services" "$HERE/../libs" -name go.mod -not -path '*/node_modules/*' \
+  | wc -l | tr -d ' ')"
+
+printf 'package atlastenant\n' > "$probe_libs"
+
+closure_selected="$(facts_key modules_selected --quick --base HEAD)"
+assert_true "a real libs/ change no longer selects every module" \
+  "$([ "$closure_selected" -lt "$total_modules" ] && echo true)"
+
+closure_reason="$(facts_key fanout_reason --quick --base HEAD)"
+assert_true "the fan-out reason names the closure" \
+  "$(printf '%s\n' "$closure_reason" | grep -qE '^shared-lib-closure:libs/atlas-tenant' \
+     && printf '%s\n' "$closure_reason" | grep -qE '\([0-9]+ consumers\)$' \
+     && echo true)"
+
+all_selected="$(ATLAS_LIBS_FANOUT=all facts_key modules_selected --quick --base HEAD)"
+assert_eq "the escape hatch restores the old behaviour (module count)" \
+  "$total_modules" "$all_selected"
+all_reason="$(ATLAS_LIBS_FANOUT=all facts_key fanout_reason --quick --base HEAD)"
+assert_true "the escape hatch's fan-out reason carries the shared-lib: prefix" \
+  "$(printf '%s\n' "$all_reason" | grep -qE '^shared-lib:' && echo true)"
+
+rm -f "$probe_libs"
+assert_eq "no libs change, no fan-out" "none" "$(facts_key fanout_reason --quick --base HEAD)"
+
+# go.work.sum is a checksum artifact of resolving the workspace — an ordinary
+# local `go build`/`go mod tidy` dirties it with no require-graph edge
+# actually changing. The old `^(go\.work|libs/)` match was unanchored at its
+# end, so it also matched go.work.sum and sent every such run through
+# all_modules — a second, independent path to the full fan-out, and the
+# common one in daily use. go.work.sum is shared, not per-process, state (it
+# is THE workspace sum file, not a probe), so this takes the same lock this
+# suite already uses for go.work.sum below.
+flock 8
+gowork_dirty_backup="$HERE/zz-verify-probe-gowork-dirty-${probe_tag}.bak"
+if [ -f "$gowork_sum" ]; then
+  cp -p "$gowork_sum" "$gowork_dirty_backup"
+else
+  : > "$gowork_dirty_backup.absent"
+fi
+printf '// zz-verify-probe-%s dirty line\n' "$probe_tag" >> "$gowork_sum"
+
+dirty_reason="$(facts_key fanout_reason --quick --base HEAD)"
+dirty_selected="$(facts_key modules_selected --quick --base HEAD)"
+
+if [ -f "$gowork_dirty_backup" ]; then
+  mv -f "$gowork_dirty_backup" "$gowork_sum"
+else
+  rm -f "$gowork_sum" "$gowork_dirty_backup.absent"
+fi
+flock -u 8
+
+assert_eq "a dirty go.work.sum alone does not fan out" "none" "$dirty_reason"
+assert_eq "a dirty go.work.sum alone selects zero modules" "0" "$dirty_selected"
+
+# --- structural: go.work still fans out to everything (Task 9) -------------
+
+changed_modules_body="$(awk '/^changed_modules\(\) \{/,/^\}$/' "$VERIFY")"
+assert_true "the go.work branch of changed_modules still calls all_modules" \
+  "$(printf '%s\n' "$changed_modules_body" \
+     | awk '/gowork_changed/,0' | grep -F 'all_modules' >/dev/null && echo true)"
+
+# --- preflight: capacity gate (Task 7) --------------------------------------
+#
+# The starved-run case is the important one: it must prove the gate FAILS
+# rather than proceeding, which is the whole point of the preflight.
+
+assert_true "preflight is selected on a full run" \
+  "$(facts_selected --base HEAD --no-ui | grep -x 'preflight (capacity)' >/dev/null && echo true)"
+assert_true "preflight is NOT selected under --quick" \
+  "$(facts_selected --quick --base HEAD | grep -x 'preflight (capacity)' >/dev/null && echo false || echo true)"
+
+starved_out="$(ATLAS_MIN_FREE_MB=99999999 "$VERIFY" --base HEAD --no-ui --no-docker 2>&1)"
+starved_rc=$?
+sane_out="$(TMPDIR=/tmp ATLAS_MIN_FREE_MB=1 ATLAS_MIN_TMP_MB=1 "$VERIFY" --base HEAD --no-ui --no-docker 2>&1)"
+sane_rc=$?
+
+assert_true "a starved run fails rather than proceeding (non-zero exit)" \
+  "$([ "$starved_rc" -ne 0 ] && echo true)"
+assert_true "the same command without the override exits 0 (preflight is not permanently on)" \
+  "$([ "$sane_rc" -eq 0 ] && echo true)"
+assert_true "the starved run's summary reports a preflight failure" \
+  "$(printf '%s\n' "$starved_out" | grep '✗' | grep -i preflight >/dev/null && echo true)"
+assert_true "the preflight message names the free-RAM shortfall" \
+  "$(printf '%s\n' "$starved_out" | grep 'free RAM' | grep -E '[0-9]+ MiB' >/dev/null && echo true)"
+
+tuning_out="$(TMPDIR=/tmp ATLAS_MIN_FREE_MB=1 ATLAS_MIN_TMP_MB=1 "$VERIFY" --base HEAD --no-docker --no-ui 2>&1)"
+assert_true "an un-tuned host is reported, not assumed (names Host tuning)" \
+  "$(printf '%s\n' "$tuning_out" | grep 'Host tuning' >/dev/null && echo true)"
+assert_true "the un-tuned-host report points at docs/verification.md" \
+  "$(printf '%s\n' "$tuning_out" | grep 'docs/verification.md' >/dev/null && echo true)"
+
+# --- per-slot budgets: applied in go_layer, and only there ------------------
+
+go_layer_body="$(awk '/^go_layer\(\) \{/,/^\}$/' "$VERIFY")"
+assert_true "go_layer exports GOMAXPROCS" \
+  "$(printf '%s\n' "$go_layer_body" | grep -F 'export GOMAXPROCS' >/dev/null && echo true)"
+assert_true "go build and go test take distinct -p budgets" \
+  "$(printf '%s\n' "$go_layer_body" | grep -F 'go build -p "${ATLAS_GO_P' >/dev/null \
+     && printf '%s\n' "$go_layer_body" | grep -F 'go test -p "${ATLAS_GO_TEST_P' >/dev/null \
+     && echo true)"
+assert_true "go vet takes no -p (not a valid go vet flag)" \
+  "$(printf '%s\n' "$go_layer_body" | grep -F 'go vet -p' >/dev/null && echo false || echo true)"
+
+# --- heavy phases are slotted; cheap phases are not --------------------------
+#
+# Sectioned by the file's own "# ---" banner comments: the docker layer
+# (bake) and the go-modules layer (the pool) must each hold exactly one slot
+# reference; nothing from guards through the facts printer may hold one.
+
+docker_section="$(sed -n '/^# ----*.*docker$/,/^# ----*.*guards$/p' "$VERIFY")"
+go_modules_section="$(sed -n '/^# ----*.*go modules$/,/^# ----*.*docker$/p' "$VERIFY")"
+guards_through_facts="$(sed -n '/^# ----*.*guards$/,/^# ----*.*summary$/p' "$VERIFY")"
+
+assert_eq "the bake (docker layer) holds exactly one slot reference" "1" \
+  "$(printf '%s\n' "$docker_section" | grep -cE 'acquire_build_slot|with-build-slot\.sh')"
+assert_eq "the Go pool (go-modules layer) holds exactly one slot reference" "1" \
+  "$(printf '%s\n' "$go_modules_section" | grep -c 'acquire_build_slot')"
+assert_eq "acquire_build_slot/with-build-slot.sh appears exactly twice total (bake + Go pool)" "2" \
+  "$(grep -cE 'acquire_build_slot|with-build-slot\.sh' "$VERIFY")"
+assert_eq "no slot acquisition on the guard, lint, --facts, or summary paths" "0" \
+  "$(printf '%s\n' "$guards_through_facts" | grep -cE 'acquire_build_slot|with-build-slot\.sh')"
+
+# --- bake selection: one solve, not one per target --------------------------
+#
+# bake_targets() matches a changed path against each service's `path` from
+# .github/config/services.json, requiring the path to end in go.mod. CHANGED
+# includes untracked files, so two untracked go.mods select exactly two
+# targets — and must produce exactly one bake gate, not two.
+#
+# bake_targets() dedupes by SERVICE (atlas-ban/atlas-account), so a
+# concurrent verify_test.sh run's own probe under either service is
+# indistinguishable, from this block's perspective, from this run's — the
+# lock above (held for the whole add/assert/remove/assert-gone sequence)
+# is what makes "no probes, no bake gate" hold; bake_gate_lines_baseline is
+# belt-and-suspenders for any pre-existing litter the lock can't see.
+flock 8
+bake_gate_lines_baseline="$(facts_selected --base HEAD | grep -c '^docker buildx bake' || true)"
+mkdir -p "$probe_ban_dir" "$probe_account_dir"
+: > "$probe_bake_ban"
+: > "$probe_bake_account"
+
+assert_eq "two changed go.mods select two bake targets" "atlas-account,atlas-ban" \
+  "$(facts_key bake_targets --base HEAD)"
+
+bake_gate_lines="$(facts_selected --base HEAD | grep -c '^docker buildx bake' || true)"
+assert_eq "two bake targets produce exactly one bake gate" "1" "$bake_gate_lines"
+
+bake_gate_name="$(facts_selected --base HEAD | grep '^docker buildx bake')"
+assert_eq "the gate names the target count" "docker buildx bake (2 target(s))" "$bake_gate_name"
+
+rm -f "$probe_bake_ban" "$probe_bake_account"
+rmdir "$probe_ban_dir" "$probe_account_dir" 2>/dev/null || true
+
+no_bake_lines="$(facts_selected --base HEAD | grep -c '^docker buildx bake' || true)"
+assert_eq "no probes, no bake gate" "$bake_gate_lines_baseline" "$no_bake_lines"
+flock -u 8
+
+assert_eq "no per-target bake loop remains" "0" \
+  "$(grep -c 'for t in .\{0,4\}TARGETS' "$VERIFY")"
+
+# --- workspace drift: --facts reports it, does not abort on it -------------
+#
+# H4 regression: check_workspace_drift() (tools/lib/go-work.sh) is reached
+# from changed_modules() -> all_modules() unconditionally, before the FACTS
+# branch is ever tested — --facts still needs the module list to answer
+# modules_selected. A services/ or libs/ go.mod missing from go.work's
+# 'use' list must still fail a REAL run loudly (unchanged — see
+# tools/lib/go-work.sh's own contract, untouched here); --facts's entire
+# job is to answer "what would this select" without running anything, so it
+# must not inherit that abort. Reuses the bake block's probe path — the
+# same "services/ go.mod outside go.work" condition, this time read for its
+# drift, not its bake selection.
+flock 8
+mkdir -p "$probe_ban_dir"
+: > "$probe_bake_ban"
+
+drift_out="$("$VERIFY" --facts --quick --base HEAD 2>/dev/null)"
+drift_rc=$?
+assert_eq "--facts exits 0 with a go.work drift present" "0" "$drift_rc"
+assert_true "--facts still prints modules_selected with drift present" \
+  "$(printf '%s\n' "$drift_out" | grep '^modules_selected=' >/dev/null && echo true)"
+assert_true "--facts reports the drift as a fact instead of aborting on it" \
+  "$(printf '%s\n' "$drift_out" | grep "^workspace_drift=.*services/atlas-ban/zz-verify-probe-${probe_tag}" >/dev/null && echo true)"
+
+rm -f "$probe_bake_ban"
+rmdir "$probe_ban_dir" 2>/dev/null || true
+
+no_drift_out="$("$VERIFY" --facts --quick --base HEAD 2>/dev/null)"
+assert_true "no probe, no drift fact" \
+  "$(printf '%s\n' "$no_drift_out" | grep '^workspace_drift=$' >/dev/null && echo true)"
+flock -u 8
+
+# --- pool: GO_JOBS changes wall time, not what is reported -----------------
+#
+# The claim under test: a bounded worker pool must be observably identical to
+# the serial loop it replaces — same gate labels, same module count, same
+# ordering guarantees — for every job count. Only wall time may differ.
+
+labels_j1="$(ATLAS_VERIFY_GO_JOBS=1 real_selected --quick --base HEAD)"
+labels_j4="$(ATLAS_VERIFY_GO_JOBS=4 real_selected --quick --base HEAD)"
+assert_eq "gate labels are job-count invariant (1 vs 4)" "$labels_j1" "$labels_j4"
+
+mods_j1="$(ATLAS_VERIFY_GO_JOBS=1 facts_key modules_selected --quick --base HEAD)"
+mods_j4="$(ATLAS_VERIFY_GO_JOBS=4 facts_key modules_selected --quick --base HEAD)"
+assert_eq "module count is job-count invariant (1 vs 4)" "$mods_j1" "$mods_j4"
+
+ATLAS_VERIFY_GO_JOBS=0 "$VERIFY" --quick --base HEAD >/dev/null 2>"$probe_jobs0_err"
+job0_rc=$?
+assert_eq "GO_JOBS=0 is rejected (exit 2)" "2" "$job0_rc"
+assert_true "GO_JOBS=0 rejection names ATLAS_VERIFY_GO_JOBS" \
+  "$(grep 'ATLAS_VERIFY_GO_JOBS' "$probe_jobs0_err" >/dev/null && echo true)"
+rm -f "$probe_jobs0_err"
+
+ATLAS_VERIFY_GO_JOBS=x "$VERIFY" --quick --base HEAD >/dev/null 2>/dev/null
+jobx_rc=$?
+assert_eq "a non-numeric GO_JOBS is rejected (exit 2)" "2" "$jobx_rc"
+
+assert_true "the Go layer's log dir is created under TMPDIR and cleaned up on exit" \
+  "$(grep -F 'mktemp -d "${TMPDIR:-/tmp}/verify-go.XXXXXX"' "$VERIFY" >/dev/null \
+     && grep -F "trap 'rm -rf \"\$GO_LOG_DIR\"' EXIT" "$VERIFY" >/dev/null \
+     && echo true)"
+
+# A genuinely failing module driven through launch_go_layers/replay_go_layer.
+# real_selected() strips the ✓/✗ glyph before comparing labels, so a
+# regression in the pool's per-worker .rc propagation that silently turned a
+# FAILED module into a reported PASS would not show up in the label-agreement
+# assertions above. Of the two assertions below, only the second — the broken
+# module still showing up as FAILED on the unstripped output — actually guards
+# that regression class; a sabotaged `.rc` read can still leave the overall
+# exit status non-zero for unrelated reasons, so the first assertion alone
+# would not catch it.
+# go.work.sum itself (unlike the backup file names above) is one real,
+# shared, not-per-process path: it is THE workspace sum file, not a probe.
+# A concurrent verify_test.sh run mutating it (via its own real `--quick`
+# invocation below) while this run is mid snapshot/restore would corrupt
+# either run's restore, so this whole snapshot/run/restore sequence is
+# lock-protected too — held across a possible signal-driven interruption,
+# since the EXIT/INT/TERM trap's own restore runs before this fd closes.
+flock 8
+rm -f "$gowork_sum_backup" "$gowork_sum_backup_absent"
+if [ -f "$gowork_sum" ]; then
+  cp -p "$gowork_sum" "$gowork_sum_backup"
+else
+  : > "$gowork_sum_backup_absent"
+fi
+
+mkdir -p "$probe_broken_dir"
+cat > "$probe_broken_dir/go.mod" <<'EOF'
+module zz.verify.probe.broken
+
+go 1.21
+EOF
+cat > "$probe_broken_dir/main.go" <<'EOF'
+package main
+
+func main() {}
+
+this is not valid Go syntax
+EOF
+
+broken_out="$("$VERIFY" --quick --base HEAD 2>&1)"
+broken_rc=$?
+rm -rf "$probe_broken_dir"
+if [ -f "$gowork_sum_backup" ]; then
+  mv -f "$gowork_sum_backup" "$gowork_sum"
+elif [ -f "$gowork_sum_backup_absent" ]; then
+  rm -f "$gowork_sum" "$gowork_sum_backup_absent"
+fi
+flock -u 8
+
+assert_eq "a genuinely broken module makes the run exit non-zero" "1" "$broken_rc"
+assert_true "the broken module's directory name appears in the output" \
+  "$(printf '%s\n' "$broken_out" \
+     | grep -F "zz-verify-probe-broken-${probe_tag}" >/dev/null && echo true)"
 
 # --- --facts runs nothing --------------------------------------------------
 #
@@ -182,7 +514,7 @@ assert_true "--facts --all reports the fan-out reason" \
 
 out="$("$VERIFY" --facts --quick --base HEAD 2>/dev/null)"
 for k in base changed_paths changed_services changed_libs go_changed ui_changed \
-         fanout_reason modules_selected guard_suites gates_selected gates_skipped; do
+         fanout_reason modules_selected workspace_drift guard_suites gates_selected gates_skipped; do
   assert_true "fact block carries '$k'" \
     "$(printf '%s\n' "$out" | grep "^${k}=" >/dev/null && echo true)"
 done

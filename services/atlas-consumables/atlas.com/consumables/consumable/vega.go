@@ -140,7 +140,10 @@ func (p *ProcessorImpl) RequestVegaScroll(characterId uint32, vegaSlot int16, ve
 	p.l.Debugf("Character [%d] using vega [%d]: scroll [%d] (slot [%d], rate [%d] boosted to [%d]) onto equip slot [%d] (transaction [%s]).",
 		characterId, vegaItemId, scrollItem.TemplateId(), scrollSlot, required, boosted, equipSlot, transactionId.String())
 
-	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	t, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	scrollValidator := once.ReservationValidator(transactionId, scrollItem.TemplateId())
 	scrollHandler := compartment.Consume(ConsumeVegaScroll(transactionId, characterId, vegaItem, scrollItem, equipSlot, boosted))
 	if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(scrollValidator, scrollHandler))); err != nil {

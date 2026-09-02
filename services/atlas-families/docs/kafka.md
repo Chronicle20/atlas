@@ -194,4 +194,4 @@ Empty body struct. Triggers family member removal.
 - Messages partitioned by characterId for ordering
 - Consumer group ID: "Family Service"
 - Consumer names: family_command, character_status
-- Headers parsed: SpanHeaderParser, TenantHeaderParser
+- Headers parsed: SpanHeaderParser, TenantHeaderParser, EnvHeaderParser

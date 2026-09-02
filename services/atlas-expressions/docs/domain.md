@@ -30,6 +30,7 @@ Fluent builder for constructing Model instances. Requires tenant, characterId, a
 - One active expression per character per tenant
 - Setting a new expression replaces any existing expression for that character
 - Clearing an expression removes it from the registry without emitting a revert
+- A reverted expression always uses expression 0 with duration 0 and byItemOption false; the registry Model does not persist the original duration or byItemOption, so a revert cannot replay them
 
 ## Processors
 
@@ -37,11 +38,11 @@ Fluent builder for constructing Model instances. Requires tenant, characterId, a
 
 | Operation | Description |
 |-----------|-------------|
-| Change | Adds or replaces an expression in the registry and buffers an event |
+| Change | Adds or replaces an expression in the registry and buffers an event; accepts duration and byItemOption, which are forwarded to the buffered event but not stored on the registry Model |
 | ChangeAndEmit | Changes an expression and immediately emits the event |
 | Clear | Removes an expression from the registry |
 | ClearAndEmit | Clears an expression and immediately emits an event |
 
 ### RevertTask
 
-Background task that runs every 50ms, checks for expired expressions across all tracked tenants, and emits events to revert them to expression 0.
+Background task that runs every 50ms, checks for expired expressions across all tracked tenants, and emits events to revert them to expression 0. For each expired expression, it attaches this pod's own environment identity (`env.Self()`) to the expiration's tenant context before emitting the revert event, so the revert is attributed to this pod's environment rather than the (empty) environment on the original context.

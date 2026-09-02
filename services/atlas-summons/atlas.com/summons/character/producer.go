@@ -17,12 +17,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const (
 	// EnvCommandTopic names the env var holding the atlas-character command topic.
-	EnvCommandTopic = "COMMAND_TOPIC_CHARACTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
 
 	// CommandChangeHP applies a signed HP delta to a character. Mirrors
 	// atlas-character CommandChangeHP.

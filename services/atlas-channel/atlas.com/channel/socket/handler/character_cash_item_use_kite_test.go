@@ -88,7 +88,7 @@ func TestKiteUseEmitsCreateWithServerSidePosition(t *testing.T) {
 	handlerFunc := CharacterCashItemUseHandleFunc(l, ctx, nil)
 	handlerFunc(s, r, map[string]interface{}{})
 
-	msgs := (*captured)[kiteMsg.EnvCommandTopic]
+	msgs := (*captured)[string(kiteMsg.EnvCommandTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("emitted %d kite commands, want exactly 1", len(msgs))
 	}
@@ -143,7 +143,7 @@ func TestKiteUseDoesNotConsumeTheItem(t *testing.T) {
 	handlerFunc(s, r, map[string]interface{}{})
 
 	for topic := range *captured {
-		if topic != kiteMsg.EnvCommandTopic {
+		if topic != string(kiteMsg.EnvCommandTopic) {
 			t.Errorf("kite use emitted on unexpected topic %q — no saga or inventory command may be issued", topic)
 		}
 	}

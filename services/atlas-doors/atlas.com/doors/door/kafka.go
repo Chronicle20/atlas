@@ -9,9 +9,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
-const EnvEventTopicDoorStatus = "EVENT_TOPIC_DOOR_STATUS"
+const EnvEventTopicDoorStatus topic.Token = "EVENT_TOPIC_DOOR_STATUS"
 
 const (
 	EventDoorStatusCreated     = "CREATED"

@@ -24,6 +24,7 @@ import (
 // tests) BOOTSTRAP_SERVERS broker and retry for ~42s per call before failing.
 // See libs/atlas-kafka/producer/producertest for the documented convention.
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(teleportrock2.EnvEventTopicStatus), string(teleportrock2.EnvEventTopicStatus))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

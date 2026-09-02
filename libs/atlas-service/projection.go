@@ -64,8 +64,8 @@ func WithConfigProjection(baseGroupId string, build ProjectionBuilder) Option {
 
 func (r *Runtime) startProjection(pc *projectionConfig) {
 	topics := ProjectionTopics{
-		ServiceStatus: os.Getenv("EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS"),
-		TenantStatus:  os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS"),
+		ServiceStatus: os.Getenv(string(EnvEventTopicConfigurationServiceStatus)),
+		TenantStatus:  os.Getenv(string(EnvEventTopicConfigurationTenantStatus)),
 	}
 	if topics.TenantStatus == "" {
 		r.logger.Warn("projection: EVENT_TOPIC_CONFIGURATION_TENANT_STATUS is not set; tenant config updates will not propagate live")

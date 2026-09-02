@@ -292,8 +292,8 @@ func TestErrorCodes(t *testing.T) {
 }
 
 func TestTopicEnvironmentVariables(t *testing.T) {
-	assert.Equal(t, "COMMAND_TOPIC_MARRIAGE", EnvCommandTopic)
-	assert.Equal(t, "EVENT_TOPIC_MARRIAGE_STATUS", EnvEventTopicStatus)
+	assert.Equal(t, "COMMAND_TOPIC_MARRIAGE", string(EnvCommandTopic))
+	assert.Equal(t, "EVENT_TOPIC_MARRIAGE_STATUS", string(EnvEventTopicStatus))
 }
 
 func TestSpecificCommandDeserialization(t *testing.T) {

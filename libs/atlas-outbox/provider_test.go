@@ -10,15 +10,17 @@ import (
 	"gorm.io/gorm"
 
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // localProvider mirrors every service's kafka/producer.Provider named type;
 // assignment here is the compile-time proof EmitProvider satisfies it.
-type localProvider func(token string) kafkaproducer.MessageProducer
+type localProvider func(token topic.Token) kafkaproducer.MessageProducer
 
 func TestEmitProvider_EnqueuesThroughEmitShapedLoop(t *testing.T) {
+	t.Setenv("EVENT_TOPIC_X", "EVENT_TOPIC_X")
 	db := bridgeDb(t)
 	ctx := tenantCtx(t)
 

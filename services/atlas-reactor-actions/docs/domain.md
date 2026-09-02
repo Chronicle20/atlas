@@ -15,7 +15,8 @@ Represents a reactor script loaded from storage.
 | reactorId | string | Reactor classification identifier |
 | description | string | Human-readable description |
 | hitRules | []Rule | Rules evaluated when reactor is hit |
-| actRules | []Rule | Rules evaluated when reactor triggers |
+| actRules | []Rule | Rules evaluated when reactor triggers (reaches final state) |
+| touchRules | []Rule | Rules evaluated when reactor is touched |
 
 ### Rule
 
@@ -57,6 +58,7 @@ Context information for reactor operation execution.
 - All conditions within a rule must be true (AND logic)
 - If no script exists for a reactor, no action is taken
 - Operations are executed sequentially
+- If a reactor script declares no touchRules, touch processing falls back to evaluating hitRules
 
 ## Processors
 
@@ -78,6 +80,7 @@ Interface for reactor script processing.
 **Execution:**
 - `ProcessHit(reactorId string, reactorState int8, characterId uint32) ProcessResult`
 - `ProcessTrigger(reactorId string, reactorState int8, characterId uint32) ProcessResult`
+- `ProcessTouch(reactorId string, reactorState int8, characterId uint32) ProcessResult`: evaluates touchRules; if the script declares no touchRules, evaluates hitRules instead
 
 ### ConditionEvaluator
 

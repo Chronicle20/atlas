@@ -1,0 +1,29 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "minMeso": "2",
+                "maxMeso": "8",
+                "mesoRange": "15",
+                "item": "1"
+              },
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Maple Island Box",
+      "hitRules": [],
+      "reactorId": "2001"
+    },
+    "id": "2001",
+    "type": "reactor-action"
+  }
+}

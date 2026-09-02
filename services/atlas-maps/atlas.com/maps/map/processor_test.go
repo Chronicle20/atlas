@@ -80,6 +80,10 @@ func (m *mockCharacterProcessor) GetMapsWithCharacters() []character.MapKey {
 	return nil
 }
 
+func (m *mockCharacterProcessor) GetFieldsWithCharacters(_ tenant.Model) []character.FieldOccupancy {
+	return nil
+}
+
 func (m *mockCharacterProcessor) Enter(transactionId uuid.UUID, f field.Model, characterId uint32) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

@@ -658,6 +658,10 @@ func (m *mockCharacterProcessor) GetCharactersInMapAllInstances(_ uuid.UUID, _ w
 	return nil, nil
 }
 
+func (m *mockCharacterProcessor) GetFieldsWithCharacters(_ tenant.Model) []character.FieldOccupancy {
+	return nil
+}
+
 func (m *mockCharacterProcessor) Enter(_ uuid.UUID, _ field.Model, _ uint32) {
 }
 

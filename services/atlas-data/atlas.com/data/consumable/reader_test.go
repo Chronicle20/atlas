@@ -1257,3 +1257,85 @@ func TestConsumableReader_NoNpcAnywhere(t *testing.T) {
 		t.Errorf("Npc: got %d, want 0", m.Npc)
 	}
 }
+
+// TestReadMaxLevelAndExperienceSpec pins the two fields Task 10's stored-EXP
+// eligibility gate depends on: info/maxLevel (an upper bound on the
+// consuming character's level) and spec/exp (the stored EXP amount granted,
+// as with the Writ of Solomon family). The "absent" cases are load-bearing:
+// a tenant whose Item.wz was ingested before this change serves exactly that
+// shape, and Task 10 treats MaxLevel == 0 as "no upper bound" and
+// Spec[SpecTypeExperience] <= 0 as "reject, never destroy the item."
+func TestReadMaxLevelAndExperienceSpec(t *testing.T) {
+	tests := []struct {
+		name         string
+		itemXML      string
+		wantMaxLevel uint32
+		wantExp      int32
+	}{
+		{
+			name: "both present",
+			itemXML: `
+				<imgdir name="02000000">
+				  <imgdir name="info">
+				    <int name="maxLevel" value="200"/>
+				  </imgdir>
+				  <imgdir name="spec">
+				    <int name="exp" value="3000"/>
+				  </imgdir>
+				</imgdir>`,
+			wantMaxLevel: 200,
+			wantExp:      3000,
+		},
+		{
+			name: "maxLevel absent",
+			itemXML: `
+				<imgdir name="02000000">
+				  <imgdir name="info">
+				    <int name="slotMax" value="100"/>
+				  </imgdir>
+				  <imgdir name="spec">
+				    <int name="exp" value="3000"/>
+				  </imgdir>
+				</imgdir>`,
+			wantMaxLevel: 0,
+			wantExp:      3000,
+		},
+		{
+			name: "exp absent",
+			itemXML: `
+				<imgdir name="02000000">
+				  <imgdir name="info">
+				    <int name="maxLevel" value="200"/>
+				  </imgdir>
+				  <imgdir name="spec">
+				    <int name="hp" value="50"/>
+				  </imgdir>
+				</imgdir>`,
+			wantMaxLevel: 200,
+			wantExp:      0,
+		},
+		{
+			name: "both absent",
+			itemXML: `
+				<imgdir name="02000000">
+				  <imgdir name="info">
+				    <int name="slotMax" value="100"/>
+				  </imgdir>
+				</imgdir>`,
+			wantMaxLevel: 0,
+			wantExp:      0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := readOne(t, tt.itemXML)
+			if m.MaxLevel != tt.wantMaxLevel {
+				t.Errorf("MaxLevel: got %d, want %d", m.MaxLevel, tt.wantMaxLevel)
+			}
+			if got := m.Spec[SpecTypeExperience]; got != tt.wantExp {
+				t.Errorf("Spec[SpecTypeExperience]: got %d, want %d", got, tt.wantExp)
+			}
+		})
+	}
+}

@@ -3688,6 +3688,7 @@
   direction: serverbound
   opcode: 161
   fname: CWvsContext::SendExpUpItemUseRequest
+  packet: inventory/serverbound/InventorySolomonItemUse
   provenance: ida-discovered
   ida:
     address: 10865346
@@ -3696,6 +3697,7 @@
   direction: serverbound
   opcode: 162
   fname: CWvsContext::SendTempExpUseRequest
+  packet: character/serverbound/StoredExperienceUse
   provenance: ida-discovered
   ida:
     address: 10865868

@@ -2809,6 +2809,24 @@
   ida:
     address: 6445634
   note: 'v72 COutPacket(155) verified via global COutPacket-ctor harvest @0x625a42; Δ+1 vs v79 op 154 (mid/field/social Δ+1).'
+- op: USE_SOLOMON_ITEM
+  direction: serverbound
+  opcode: 156
+  fname: CWvsContext::SendExpUpItemUseRequest
+  packet: inventory/serverbound/InventorySolomonItemUse
+  provenance: ida-discovered
+  ida:
+    address: 9489184
+  note: 'task-277: v72 opcode READ off the COutPacket ctor at CWvsContext::SendExpUpItemUseRequest @0x90cb20 (=9489184) — COutPacket(156)/0x9C, then Encode4(get_update_time)/Encode2(nPOS)/Encode4(nItemID). Body invariant vs v83..v95. Closes the disputed ⬜ from FR-3: v72 does send this op; the blank was a registry gap, not an absence.'
+- op: USE_GACHA_EXP
+  direction: serverbound
+  opcode: 157
+  fname: CWvsContext::SendTempExpUseRequest
+  packet: character/serverbound/StoredExperienceUse
+  provenance: ida-discovered
+  ida:
+    address: 9489704
+  note: 'task-277: v72 opcode READ off the COutPacket ctor at CWvsContext::SendTempExpUseRequest @0x90cd28 (=9489704) — COutPacket(157)/0x9D then a single Encode4(get_update_time). Body invariant vs v83..v95. Closes the disputed ⬜ from FR-3.'
 - op: MOVE_PET
   direction: serverbound
   opcode: 161

@@ -30,6 +30,10 @@ type MockProcessor struct {
 	// name-validity answer the cash-shop rename probe (task-227) depends on.
 	// Defaults to "valid" when unset.
 	CheckNameValidityFunc func(name string, worldId world.Id, scope character.NameScope) (character.NameValidityResult, error)
+	// RedeemStoredExperienceFunc lets a test record/control the USE_GACHA_EXP
+	// redeem command emit (task-277 task-11). Defaults to a no-op nil error
+	// when unset.
+	RedeemStoredExperienceFunc func(f field.Model, characterId uint32) error
 }
 
 // NewMockProcessor creates a new MockProcessor instance
@@ -177,5 +181,12 @@ func (m *MockProcessor) RequestDistributeSp(_ field.Model, _ uint32, _ uint32, _
 }
 
 func (m *MockProcessor) AwardExperience(_ field.Model, _ uint32, _ []character2.ExperienceDistributions, _ bool) error {
+	return nil
+}
+
+func (m *MockProcessor) RedeemStoredExperience(f field.Model, characterId uint32) error {
+	if m.RedeemStoredExperienceFunc != nil {
+		return m.RedeemStoredExperienceFunc(f, characterId)
+	}
 	return nil
 }

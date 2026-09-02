@@ -132,6 +132,37 @@ func TestExtractRewardFields(t *testing.T) {
 	}
 }
 
+func TestExtractMaxLevelAndExperienceSpec(t *testing.T) {
+	t.Run("populated", func(t *testing.T) {
+		rm := RestModel{MaxLevel: 200, Spec: map[SpecType]int32{SpecTypeExperience: 3000}}
+		m, err := Extract(rm)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if m.MaxLevel() != 200 {
+			t.Errorf("MaxLevel() = %d, want 200", m.MaxLevel())
+		}
+		val, ok := m.GetSpec(SpecTypeExperience)
+		if !ok || val != 3000 {
+			t.Errorf("GetSpec(SpecTypeExperience) = (%d, %t), want (3000, true)", val, ok)
+		}
+	})
+
+	t.Run("zero value", func(t *testing.T) {
+		rm := RestModel{}
+		m, err := Extract(rm)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if m.MaxLevel() != 0 {
+			t.Errorf("MaxLevel() = %d, want 0", m.MaxLevel())
+		}
+		if _, ok := m.GetSpec(SpecTypeExperience); ok {
+			t.Errorf("GetSpec(SpecTypeExperience) ok = true, want false")
+		}
+	})
+}
+
 func TestExtractPropagatesRewardsToModel(t *testing.T) {
 	rm := RestModel{Id: 2022309, Rewards: []RewardRestModel{{ItemId: 1, Count: 1, Prob: 10, Period: -1}}}
 	m, err := Extract(rm)

@@ -249,3 +249,51 @@ entries:
       (see the SKILL_MACRO x gms_v48 entry above for the full enumeration).
       Both directions absent together; v48 (the oldest binary in the corpus)
       predates the skill-macro feature entirely.
+  - op: USE_SOLOMON_ITEM
+    version: gms_v48
+    evidence: >
+      gms_v48 does not carry the stored-EXP subsystem at all. Both IDBs
+      resolve full MSVC-mangled symbols
+      (`?SendPacket@CClientSocket@@QAEXABVCOutPacket@@@Z` and
+      `?GetItemInfo@CItemInfo@@...` both resolve), and in both,
+      `?SendExpUpItemUseRequest@CWvsContext@@QAEXJJ@Z`,
+      `?SendTempExpUseRequest@CWvsContext@@QAEXXZ` **and**
+      `?GetMaxLEV@CItemInfo@@QAEJJ@Z` are all absent — sender, redeemer, and
+      the WZ accessor the sender gates on. Positive absence, not a search
+      miss. (task-277)
+  - op: USE_GACHA_EXP
+    version: gms_v48
+    evidence: >
+      gms_v48 does not carry the stored-EXP subsystem at all. Both IDBs
+      resolve full MSVC-mangled symbols
+      (`?SendPacket@CClientSocket@@QAEXABVCOutPacket@@@Z` and
+      `?GetItemInfo@CItemInfo@@...` both resolve), and in both,
+      `?SendExpUpItemUseRequest@CWvsContext@@QAEXJJ@Z`,
+      `?SendTempExpUseRequest@CWvsContext@@QAEXXZ` **and**
+      `?GetMaxLEV@CItemInfo@@QAEJJ@Z` are all absent — sender, redeemer, and
+      the WZ accessor the sender gates on. Positive absence, not a search
+      miss. (task-277)
+  - op: USE_SOLOMON_ITEM
+    version: gms_v61
+    evidence: >
+      gms_v61 does not carry the stored-EXP subsystem at all. Both IDBs
+      resolve full MSVC-mangled symbols
+      (`?SendPacket@CClientSocket@@QAEXABVCOutPacket@@@Z` and
+      `?GetItemInfo@CItemInfo@@...` both resolve), and in both,
+      `?SendExpUpItemUseRequest@CWvsContext@@QAEXJJ@Z`,
+      `?SendTempExpUseRequest@CWvsContext@@QAEXXZ` **and**
+      `?GetMaxLEV@CItemInfo@@QAEJJ@Z` are all absent — sender, redeemer, and
+      the WZ accessor the sender gates on. Positive absence, not a search
+      miss. (task-277)
+  - op: USE_GACHA_EXP
+    version: gms_v61
+    evidence: >
+      gms_v61 does not carry the stored-EXP subsystem at all. Both IDBs
+      resolve full MSVC-mangled symbols
+      (`?SendPacket@CClientSocket@@QAEXABVCOutPacket@@@Z` and
+      `?GetItemInfo@CItemInfo@@...` both resolve), and in both,
+      `?SendExpUpItemUseRequest@CWvsContext@@QAEXJJ@Z`,
+      `?SendTempExpUseRequest@CWvsContext@@QAEXXZ` **and**
+      `?GetMaxLEV@CItemInfo@@QAEJJ@Z` are all absent — sender, redeemer, and
+      the WZ accessor the sender gates on. Positive absence, not a search
+      miss. (task-277)

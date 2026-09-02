@@ -1,0 +1,158 @@
+{
+  "service": "task-277-stored-exp-items (multi-service diff)",
+  "path": "services/atlas-channel, services/atlas-character, services/atlas-consumables, services/atlas-configurations, services/atlas-data, libs/atlas-constants, libs/atlas-packet",
+  "date": "2026-08-28",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "libs/atlas-constants/item",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclaration of shared domain types", "status": "pass", "evidence": "libs/atlas-constants/item/constants.go:52 new ClassificationConsumableExpUpItem = Classification(237)"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/character/serverbound",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted wire values not hardcoded", "status": "pass", "evidence": "stored_experience_use.go:26-51 body is a single updateTime tick, no dispatcher/sub-op byte"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "n-a", "evidence": "stored_experience_use_test.go:18-61 uses pt.Variants loop + byte-fixture pins, the family's documented codec-test convention, not a literal struct table"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/inventory/serverbound",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted wire values not hardcoded", "status": "pass", "evidence": "solomon_item_use.go embeds existing ItemUse codec, no new literal wire code"}
+      ]
+    },
+    {
+      "name": "atlas-channel/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "character/processor.go:64"},
+        {"id": "DOM-30", "name": "AndEmit + message.Buffer for DB writes", "status": "n-a", "evidence": "no DB write in this package; RedeemStoredExperience (processor.go:335-337) is a Kafka command emit via producer.ProviderImpl, matching sibling AwardExperienceCommandProvider"},
+        {"id": "DOM-33", "name": "Mock updated for interface change", "status": "pass", "evidence": "character/mock/processor.go:36,187-192 adds RedeemStoredExperienceFunc/method"},
+        {"id": "FILE-01", "name": "Processor content in processor.go", "status": "pass", "evidence": "processor.go:335-337"},
+        {"id": "FILE-05", "name": "Provider placement", "status": "pass", "evidence": "producer.go:134-147 RedeemStoredExperienceCommandProvider"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/message/character",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclaration", "status": "pass", "evidence": "kafka.go:21 new CommandRedeemStoredExperience"},
+        {"id": "DOM-23", "name": "New topic env vars follow convention", "status": "n-a", "evidence": "no new topic env var; rides existing COMMAND_TOPIC_CHARACTER"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-12..15", "name": "Handler discipline", "status": "n-a", "evidence": "package has no resource.go; these rules trigger on REST resource handlers"},
+        {"id": "DOM-25", "name": "Client-interpreted wire values not hardcoded", "status": "pass", "evidence": "character_stored_experience_use.go:28-34; character_item_use.go CharacterItemUseSolomonHandleFunc addition"},
+        {"id": "SCAFFOLD-07", "name": "New Writer/Handler constants seeded in every targeted tenant template", "status": "pass", "evidence": "services/atlas-configurations/seed-data/templates/template_{gms_72,gms_79,gms_83,gms_84,gms_87,gms_92,gms_95,jms_185}_1.json each carry both new handle constants; corpus_test.go:63-64 pins 3387->3403 (+16)"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "character_stored_experience_use.go carries one handler + test seam var only"}
+      ]
+    },
+    {
+      "name": "atlas-character/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:176"},
+        {"id": "DOM-16", "name": "administrator.go holds write functions", "status": "pass", "evidence": "administrator.go:287-292 SetGachaponExperience"},
+        {"id": "DOM-30", "name": "AndEmit + message.Buffer for DB writes", "status": "pass", "evidence": "processor.go:1469-1474 CreditStoredExperienceAndEmit and processor.go:1531-1568 RedeemStoredExperienceAndEmit both wrap database.ExecuteTransaction + message.Emit(outbox.EmitProvider(...)) + message.Buffer"},
+        {"id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "processor.go:1470,1532 p.db.WithContext(p.ctx)"},
+        {"id": "DOM-33", "name": "Mock updated for interface change", "status": "n-a", "evidence": "no mock of character.Processor exists inside atlas-character itself"},
+        {"id": "FILE-01", "name": "Processor content in processor.go", "status": "pass", "evidence": "processor.go:1469-1571"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "pass", "evidence": "processor_test.go:43"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "processor_stored_experience_test.go:59-95, 178-268"},
+        {"id": "DOM-24", "name": "Emit-reaching tests install producertest stub", "status": "pass", "evidence": "character/testmain_test.go:10-12 producertest.InstallNoop() in package-wide TestMain"}
+      ]
+    },
+    {
+      "name": "atlas-character/kafka/consumer/character",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Handler funcs colocated", "status": "pass", "evidence": "consumer.go:281-299 handleCreditStoredExperience/handleRedeemStoredExperience"},
+        {"id": "DOM-20/24", "name": "Consumer-level test for new handlers", "status": "warn", "evidence": "no consumer_test.go case for the two new handlers, but consistent with every other sibling handler in the file (handleChangeHP, handleChangeMP, handleSetHP, handleAwardExperience are equally untested at this level); underlying AndEmit logic fully covered elsewhere"}
+      ]
+    },
+    {
+      "name": "atlas-character/kafka/message/character",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclaration", "status": "pass", "evidence": "kafka.go:34-35 CommandCreditStoredExperience/CommandRedeemStoredExperience"}
+      ]
+    },
+    {
+      "name": "atlas-configurations/socket",
+      "type": "support",
+      "checks": [
+        {"id": "N/A", "name": "Corpus count assertion updated", "status": "pass", "evidence": "corpus_test.go:63 3387->3403 with task-277 narrative"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "character/processor.go:32"},
+        {"id": "DOM-30", "name": "AndEmit for DB writes", "status": "n-a", "evidence": "no DB write in this package; CreditStoredExperience (processor.go:70-72) is a Kafka command emit, matching sibling ChangeHP/ChangeMP/ChangeMap"},
+        {"id": "DOM-33", "name": "Mock updated for interface change", "status": "pass", "evidence": "character/mock/processor.go:16,58-63"},
+        {"id": "FILE-05", "name": "Provider placement", "status": "pass", "evidence": "producer.go:41-55 creditStoredExperienceCommandProvider"},
+        {"id": "DOM-20", "name": "Table-driven test", "status": "n-a", "evidence": "producer_test.go:16-40 single-case, matches sibling TestSetHPCommandProvider shape"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/consumable",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "solomon.go carries exactly the Writ-of-Solomon consumer, mirrors morph_coupon.go split"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "solomon_test.go:113-233 TestConsumeSolomon, TestRoutesToSolomon"},
+        {"id": "N/A", "name": "Ordering/eligibility contract (fallible reads before commit)", "status": "pass", "evidence": "solomon.go:50-83"},
+        {"id": "N/A", "name": "No test-only constructor", "status": "pass", "evidence": "solomon_test.go:29-46 builds fixtures via package's own Extract"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/data/consumable",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) in rest.go", "status": "pass", "evidence": "rest.go:93,118"},
+        {"id": "DOM-18", "name": "JSON:API interface implemented", "status": "pass", "evidence": "rest.go:76,80,84"},
+        {"id": "DOM-19", "name": "Flat request models", "status": "n-a", "evidence": "no new request struct added"},
+        {"id": "DOM-21", "name": "No redeclaration", "status": "pass", "evidence": "model.go:33 new SpecTypeExperience"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "rest_test.go:135-164"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/kafka/message/character",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclaration", "status": "pass", "evidence": "kafka.go:17 new CommandCreditStoredExperience"}
+      ]
+    },
+    {
+      "name": "atlas-data/consumable",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic in processor, not handler", "status": "pass", "evidence": "reader.go:59,150 pure WZ-XML extraction; resource.go untouched"},
+        {"id": "SUB-02", "name": "No db.Create/db.Save in resource.go", "status": "pass", "evidence": "resource.go GET-only, reads document.Storage cache"},
+        {"id": "SUB-03", "name": "POST via RegisterInputHandler[T]", "status": "n-a", "evidence": "resource.go registers only GET routes"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "no json.Unmarshal/NewDecoder/io.ReadAll present"},
+        {"id": "DOM-21", "name": "No redeclaration", "status": "pass", "evidence": "rest.go:34 new SpecTypeExperience, this package's own independent SpecType enum"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "reader_test.go:1268-1341 TestReadMaxLevelAndExperienceSpec"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-20 (libs/atlas-packet/character/serverbound): strict table-driven form vs. the packet family's round-trip-loop/byte-fixture convention — would need docs/packets/PROCESS.md's full test-authoring guidance to settle definitively",
+    "DOM-20/24 (atlas-character/kafka/consumer/character): confirmed absent consumer-level test for the two new handlers is consistent with every sibling handler in the same file, but not exhaustively cross-checked against every _test.go in the package"
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-20/24: atlas-character/kafka/consumer/character has no direct test for handleCreditStoredExperience/handleRedeemStoredExperience, consistent with sibling handlers but worth adding given the FR-13 exactly-once contract"
+  ]
+}

@@ -369,6 +369,13 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 		// Deliberately NOT in usesStandardConsumer — ConsumeStandard hard-codes
 		// inventory2.TypeValueUse and fetches from the same consumable resource.
 		itemConsumer = ConsumeMorphCoupon(transactionId, characterId, slot, itemId)
+	} else if routesToSolomon(itemId) {
+		// Writ of Solomon (classification 237). Must precede the reward-table
+		// fallback: the Writ carries no reward table, so it would otherwise
+		// fall through to ConsumeBare and be destroyed with nothing banked.
+		// Deliberately NOT in usesStandardConsumer — the Writ's spec/exp is not
+		// a stat-up and its eligibility rules are its own.
+		itemConsumer = ConsumeSolomon(transactionId, characterId, slot, itemId)
 	} else if ci, derr := p.cdp.GetById(uint32(itemId)); derr == nil && validateRewardTable(ci.Rewards()) == nil {
 		// Reward-box (random reward) item arriving through the generic
 		// item-use request. This is the path taken on client versions that
@@ -508,6 +515,15 @@ func consumeErrorType(err error) string {
 	}
 	if errors.Is(err, ErrPotionLocked) {
 		return consumable.ErrorTypePotionLocked
+	}
+	if errors.Is(err, ErrSolomonNoExperience) {
+		return consumable.ErrorTypeSolomonNoExperience
+	}
+	if errors.Is(err, ErrSolomonLevelExceeded) {
+		return consumable.ErrorTypeSolomonLevelExceeded
+	}
+	if errors.Is(err, ErrSolomonBalanceNotEmpty) {
+		return consumable.ErrorTypeSolomonBalanceNotEmpty
 	}
 	return consumable.ErrorTypeConsumeFailed
 }

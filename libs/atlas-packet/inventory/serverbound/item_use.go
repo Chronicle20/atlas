@@ -14,6 +14,7 @@ const (
 	CharacterItemUseHandle           = "CharacterItemUseHandle"
 	CharacterItemUseTownScrollHandle = "CharacterItemUseTownScrollHandle"
 	CharacterItemUseSummonBagHandle  = "CharacterItemUseSummonBagHandle"
+	CharacterItemUseSolomonHandle    = "CharacterItemUseSolomonHandle"
 )
 
 // ItemUse - CUser::SendItemUseRequest

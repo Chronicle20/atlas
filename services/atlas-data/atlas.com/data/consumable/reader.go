@@ -58,6 +58,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.Cursed = uint32(i.GetIntegerWithDefault("cursed", 0))
 			m.Create = uint32(i.GetIntegerWithDefault("create", 0))
 			m.MasterLevel = uint32(i.GetIntegerWithDefault("masterLevel", 0))
+			m.MaxLevel = uint32(i.GetIntegerWithDefault("maxLevel", 0))
 			m.ReqSkillLevel = uint32(i.GetIntegerWithDefault("reqSkillLevel", 0))
 			m.TradeAvailable = i.GetIntegerWithDefault("tradeAvailable", 0)
 			m.NoCancelMouse = i.GetBool("noCancelMouse", false)
@@ -148,6 +149,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				m.Spec[SpecTypeExperienceBuff] = s.GetIntegerWithDefault(string(SpecTypeExperienceBuff), 0)
 				m.Spec[SpecTypeInc] = s.GetIntegerWithDefault(string(SpecTypeInc), 0)
 				m.Spec[SpecTypeOnlyPickup] = s.GetIntegerWithDefault(string(SpecTypeOnlyPickup), 0)
+				m.Spec[SpecTypeExperience] = s.GetIntegerWithDefault(string(SpecTypeExperience), 0)
 
 				// consumeOnPickup is authored under spec (monster-book cards,
 				// Monster Carnival items, etc.); surface it on the dedicated

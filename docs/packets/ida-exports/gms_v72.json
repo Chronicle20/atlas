@@ -20753,6 +20753,36 @@
         }
       ]
     },
+    "CWvsContext::SendExpUpItemUseRequest": {
+      "address": "0x90cb20",
+      "direction": "serverbound",
+      "notes": "task-277 (stored-EXP items), gms_v72 anchor (session 99e435d8, GMS_v72.1_U_DEVM.exe.i64). Atlas struct: inventory/serverbound/solomon_item_use.go SolomonItemUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time(); tick)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source/slot (nPOS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        }
+      ]
+    },
+    "CWvsContext::SendTempExpUseRequest": {
+      "address": "0x90cd28",
+      "direction": "serverbound",
+      "notes": "task-277 (stored-EXP items), gms_v72 anchor (session 99e435d8, GMS_v72.1_U_DEVM.exe.i64). Atlas struct: character/serverbound/stored_experience_use.go StoredExperienceUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time(); tick)"
+        }
+      ]
+    },
     "CNpcPool::OnNpcImitateData": {
       "address": "0x645d28",
       "direction": "",

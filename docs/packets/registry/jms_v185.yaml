@@ -2640,11 +2640,13 @@
   direction: serverbound
   opcode: 113
   fname: CWvsContext::SendExpUpItemUseRequest
+  packet: inventory/serverbound/InventorySolomonItemUse
   provenance: csv-import
 - op: USE_GACHA_EXP
   direction: serverbound
   opcode: 114
   fname: CWvsContext::SendTempExpUseRequest
+  packet: character/serverbound/StoredExperienceUse
   provenance: csv-import
 - op: USE_BACKGROUND_MUSIC_ITEM
   direction: serverbound

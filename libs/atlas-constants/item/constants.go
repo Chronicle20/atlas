@@ -43,7 +43,16 @@ const (
 	ClassificationConsumableMasteryBook    = Classification(229)
 	ClassificationConsumableStoreSearch    = Classification(231)
 	ClassificationBullet                   = Classification(233)
-	ClassificationConsumableMonsterCard    = Classification(238)
+	// ClassificationConsumableExpUpItem is the Writ of Solomon family
+	// (2370000-2379999). Derived from is_exp_up_item, the sole gate on
+	// CDraggableItem::OnDoubleClicked's path to
+	// CWvsContext::SendExpUpItemUseRequest (gms_v95 @0x5078be):
+	//     BOOL __cdecl is_exp_up_item(int nItemID) { return nItemID / 10000 == 237; }
+	// A Writ CREDITS the stored-EXP counter (GW_CharacterStat::nTempEXP,
+	// persisted by Atlas as the misnamed `gachapon_experience` column); it does
+	// not award character EXP directly.
+	ClassificationConsumableExpUpItem   = Classification(237)
+	ClassificationConsumableMonsterCard = Classification(238)
 	// 239xxxx — remote-NPC summons. The item names an NPC in its info/npc node
 	// and opens that NPC's own shop or conversation from anywhere
 	// (CWvsContext::SendSelectNpcItemUseRequest). Distinct from 243: the item

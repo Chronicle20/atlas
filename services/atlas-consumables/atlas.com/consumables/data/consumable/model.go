@@ -30,6 +30,7 @@ const (
 	SpecTypeExperienceBuff       = SpecType("expBuff")
 	SpecTypeInc                  = SpecType("inc")
 	SpecTypeOnlyPickup           = SpecType("onlyPickup")
+	SpecTypeExperience           = SpecType("exp")
 )
 
 type SummonModel struct {
@@ -54,6 +55,7 @@ type Model struct {
 	timeLimited     bool
 	notSale         bool
 	reqLevel        uint32
+	maxLevel        uint32
 	quest           bool
 	only            bool
 	consumeOnPickup bool
@@ -113,6 +115,16 @@ func (m Model) Id() uint32 {
 func (m Model) GetSpec(specType SpecType) (int32, bool) {
 	val, ok := m.spec[specType]
 	return val, ok
+}
+
+// MaxLevel is the item's INCLUSIVE upper level bound (WZ info/maxLevel) — the
+// only level gate the client applies to a Writ of Solomon
+// (CItemInfo::GetMaxLEV, read by CWvsContext::SendExpUpItemUseRequest). There
+// is no lower bound. Zero means the field is absent, which callers MUST treat
+// as "no upper bound", never as "reject": a tenant whose Item.wz predates the
+// maxLevel parse serves zero here.
+func (m Model) MaxLevel() uint32 {
+	return m.maxLevel
 }
 
 func (m Model) SuccessRate() uint32 {

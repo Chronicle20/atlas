@@ -38,8 +38,12 @@ func lint(root, schemaPath string) error {
 	}
 
 	var errs []string
+	var filesChecked int
 
-	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, _ error) error {
+	walkErr := filepath.WalkDir(root, func(path string, d fs.DirEntry, entryErr error) error {
+		if entryErr != nil {
+			return fmt.Errorf("walk %s: %w", path, entryErr)
+		}
 		base := d.Name()
 		if d.IsDir() {
 			if path != root && (strings.HasPrefix(base, "_") || strings.HasPrefix(base, ".")) {
@@ -66,6 +70,8 @@ func lint(root, schemaPath string) error {
 		if subdomainPath != "reactor-actions/reactors" {
 			return nil
 		}
+
+		filesChecked++
 
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -107,6 +113,14 @@ func lint(root, schemaPath string) error {
 
 		return nil
 	})
+
+	if walkErr != nil {
+		return walkErr
+	}
+
+	if filesChecked == 0 {
+		return fmt.Errorf("no reactor-*.json files found under %s/<region>/<version>/reactor-actions/reactors; the lint validated nothing", root)
+	}
 
 	if len(errs) > 0 {
 		return fmt.Errorf("linter found %d issue(s):\n%s", len(errs), strings.Join(errs, "\n"))

@@ -9,6 +9,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0-00010101000000-000000000000 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000 // indirect
@@ -54,3 +55,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../../libs/atlas-tenan
 replace github.com/Chronicle20/atlas/libs/atlas-model => ../../libs/atlas-model
 
 replace github.com/Chronicle20/atlas/libs/atlas-retry => ../../libs/atlas-retry
+
+replace github.com/Chronicle20/atlas/libs/atlas-env => ../../libs/atlas-env

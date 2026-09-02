@@ -1,0 +1,142 @@
+{
+  "service": "atlas-consumables, atlas-channel",
+  "path": "services/atlas-consumables/atlas.com/consumables, services/atlas-channel/atlas.com/channel",
+  "date": "2026-08-28",
+  "scope": "git diff bda6566f3..6e44e93b9 (5 changed non-test Go files across 5 packages)",
+  "build": "pass",
+  "testsPassed": 102,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-channel/kafka/consumer/consumable",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface, constructor, and ProcessorImpl methods live in processor.go or a processor_<group>.go split", "status": "n-a", "evidence": "consumer.go: zero matches for 'type Processor interface', 'type ProcessorImpl', 'func NewProcessor('"},
+        {"id": "FILE-02", "name": "RestModel, Transform/Extract, and the JSON:API methods live in rest.go", "status": "n-a", "evidence": "consumer.go: zero matches for 'type RestModel', 'func Transform(', 'func Extract('"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "consumer.go: zero matches for requests.RootUrl(/GetRequest[/PostRequest[/getBaseRequest("},
+        {"id": "FILE-04", "name": "Entity struct, Migration, and TableName live in entity.go", "status": "n-a", "evidence": "consumer.go: zero matches for 'type entity struct', 'func Migration(', 'TableName()'"},
+        {"id": "FILE-05", "name": "Builder in builder.go, domain Model in model.go, writes in administrator.go, readers in provider.go, enums in state.go", "status": "pass", "evidence": "consumer.go: no Builder/Model/write/database.Query reader; the added errorAction enum consumer.go:99-109 is a private consumer-routing enum, not the domain-specific enums state.go owns (file-responsibilities.md:117-119)"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 of the responsibilities above", "status": "pass", "evidence": "package non-test files: consumer.go only; carries Kafka consumer/handler registration, none of the file-table responsibilities"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "warn", "evidence": "consumer_test.go:41 TestPotionLockedWireValue is a bare single assertion; consumer_test.go:15 is table-driven"},
+        {"id": "DOM-24", "name": "Test packages that reach an emit path install the shared producertest stub", "status": "n-a", "evidence": "consumer_test.go: no AndEmit(/message.Emit(/producer.Produce(; calls only the pure consumableErrorAction at consumer_test.go:32"},
+        {"id": "DOM-25", "name": "Bytes the client interprets are resolved from a tenant writer-options table", "status": "pass", "evidence": "consumer.go:112-127 switches on the semantic string POTION_LOCKED; consumer.go:143 emits StatChanged with an empty update slice - no wire literal added"},
+        {"id": "DOM-26", "name": "Every goroutine is spawned via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; no 'go ' statement in consumer.go"},
+        {"id": "DOM-33", "name": "An interface change updates every mock implementation in the same diff", "status": "n-a", "evidence": "no Processor/Provider/Administrator method added, removed, or re-signed in this package"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/message/consumable",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface, constructor, and ProcessorImpl methods live in processor.go", "status": "n-a", "evidence": "kafka.go: zero matches for processor symbols"},
+        {"id": "FILE-02", "name": "RestModel, Transform/Extract, and the JSON:API methods live in rest.go", "status": "n-a", "evidence": "kafka.go: zero matches for RestModel/Transform/Extract"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "kafka.go: zero matches for requests.* helpers"},
+        {"id": "FILE-04", "name": "Entity struct, Migration, and TableName live in entity.go", "status": "n-a", "evidence": "kafka.go: zero matches for entity/Migration/TableName"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placed per the file table", "status": "pass", "evidence": "kafka.go holds only Kafka contract structs and constants"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 of the responsibilities above", "status": "pass", "evidence": "package non-test files: kafka.go only; not <pkgname>.go (package consumable)"},
+        {"id": "DOM-21", "name": "No redeclaration of a type, helper, or numeric constant that already exists in libs/atlas-constants/", "status": "pass", "evidence": "grep -rn POTION_LOCKED libs/ -> zero matches; kafka.go:97 follows the per-service Kafka contract shape in cross-service-implementation.md:55-70"},
+        {"id": "DOM-26", "name": "Every goroutine is spawned via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/character/buff",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()", "status": "fail", "evidence": "character/buff/model.go:10 declares Model but the package has no builder.go (ls: model.go, processor.go, producer.go, requests.go, rest.go); construction is the flat NewBuff at model.go:51"},
+        {"id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "n-a", "evidence": "no entity.go in the package"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) defined in entity.go", "status": "n-a", "evidence": "no entity.go in the package"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "fail", "evidence": "character/buff/rest.go exists (RestModel rest.go:10) but zero matches for 'func Transform(' in the package; only Extract at rest.go:34"},
+        {"id": "DOM-05", "name": "TransformSlice defined in rest.go and used by list handlers", "status": "fail", "evidence": "zero matches for 'func TransformSlice(' in character/buff/"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query / database.SliceQuery", "status": "n-a", "evidence": "no provider.go in the package"},
+        {"id": "DOM-16", "name": "administrator.go holds the write functions", "status": "n-a", "evidence": "package performs no create/update/delete; processor.go:40-52 emits commands, processor.go:62 reads"},
+        {"id": "FILE-01", "name": "Processor interface, constructor, and ProcessorImpl methods live in processor.go", "status": "pass", "evidence": "processor.go:18, :25, :30, methods :40,:46,:50,:62"},
+        {"id": "FILE-02", "name": "RestModel, Transform/Extract, and the JSON:API methods live in rest.go", "status": "pass", "evidence": "rest.go:10,:21,:25,:29,:34"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "pass", "evidence": "requests.go:14-15; processor.go:67 uses requests.DrainProvider, not a FILE-03 symbol"},
+        {"id": "FILE-04", "name": "Entity struct, Migration, and TableName live in entity.go", "status": "n-a", "evidence": "zero matches for entity/Migration/TableName in the package"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placed per the file table", "status": "pass", "evidence": "domain Model in model.go:10; no writes; no database.Query reader (Builder absence graded by DOM-01)"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 of the responsibilities above", "status": "pass", "evidence": "no buff.go; model.go/processor.go/producer.go/requests.go/rest.go each hold one responsibility"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:30"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-08", "name": "POST/PATCH routes register via RegisterInputHandler[T]", "status": "n-a", "evidence": "package registers no HTTP route"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-13", "name": "Handlers contain no cross-domain orchestration", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never provider functions directly", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-15", "name": "No db.Create / db.Save / db.Delete in handlers", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-18", "name": "REST models implement the JSON:API interface", "status": "pass", "evidence": "rest.go:21, :25, :29"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "rest.go:10-19 flat scalar/slice fields, no nested Data/Type/Attributes, no jsonapi: tags"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "model_test.go TestIsPotionLocked uses tests := []struct{} + t.Run across seven cases"},
+        {"id": "DOM-24", "name": "Test packages that reach an emit path install the shared producertest stub", "status": "n-a", "evidence": "changed test file model_test.go exercises the pure IsPotionLocked predicate; no emit symbols"},
+        {"id": "DOM-26", "name": "Every goroutine is spawned via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; no 'go ' statement in model.go"},
+        {"id": "DOM-31", "name": "Tenant and trace identifiers travel in context only", "status": "pass", "evidence": "rest.go:10-19 has no tenant field; requests.go:22-27 uses characterId only; tenancy via p.ctx at processor.go:63"},
+        {"id": "DOM-33", "name": "An interface change updates every mock implementation in the same diff", "status": "n-a", "evidence": "buff.Processor (processor.go:18-23) unchanged; mock/processor.go untouched"},
+        {"id": "EXT-01", "name": "The target REST model implements SetToOneReferenceID and SetToManyReferenceIDs", "status": "fail", "evidence": "grep for both symbols in character/buff/ -> zero matches; rest.go:10-32 defines only GetName/GetID/SetID"},
+        {"id": "EXT-02", "name": "An httptest-backed integration test serves a representative JSON:API fixture and asserts a populated domain struct", "status": "pass", "evidence": "processor_test.go:35-45 serves the buffsDoc fixture (processor_test.go:21); processor_test.go:55-70 asserts two populated Models. Fixture carries no relationships block"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to a domain not-found", "status": "pass", "evidence": "processor.go:68 errors.Is(err, requests.ErrNotFound); other errors returned at processor.go:71; pinned by processor_notfound_test.go:22-48"},
+        {"id": "EXT-04", "name": "Service URL composed via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "requests.go:15 requests.RootUrlFor(ctx, \"BUFFS\"); no DNS literal"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/consumable",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface, constructor, and ProcessorImpl methods live in processor.go or a processor_<group>.go split", "status": "fail", "evidence": "vega.go:55 and vega.go:98 define ProcessorImpl methods in a bare topic-named file (file-responsibilities.md:210); processor.go:72/:90/:100 are correct, processor_catch.go is the permitted split"},
+        {"id": "FILE-02", "name": "RestModel, Transform/Extract, and the JSON:API methods live in rest.go", "status": "n-a", "evidence": "zero matches for RestModel/Transform/Extract across the package's non-test files"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "zero matches for requests.RootUrl(/GetRequest[/PostRequest[/getBaseRequest( in the package"},
+        {"id": "FILE-04", "name": "Entity struct, Migration, and TableName live in entity.go", "status": "n-a", "evidence": "zero matches for entity/Migration/TableName in the package"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placed per the file table", "status": "pass", "evidence": "no Builder, domain Model struct, or database.Query/SliceQuery reader in the package"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 of the responsibilities above", "status": "pass", "evidence": "no consumable.go; all 14 kafka.Message providers are in producer.go:18-165, none in processor.go"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:100; new bp dependency wired from the same l at processor.go:108"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-08", "name": "POST/PATCH routes register via RegisterInputHandler[T]", "status": "n-a", "evidence": "package registers no HTTP route"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-13", "name": "Handlers contain no cross-domain orchestration", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never provider functions directly", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-15", "name": "No db.Create / db.Save / db.Delete in handlers", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "n-a", "evidence": "no resource.go in the package"},
+        {"id": "DOM-18", "name": "REST models implement the JSON:API interface", "status": "n-a", "evidence": "no rest.go in the package"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "n-a", "evidence": "no rest.go in the package"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "warn", "evidence": "single-case tests at processor_potion_lock_test.go:127, :158 and processor_test.go:828, :836; table-driven at processor_potion_lock_test.go:39, :98, :194"},
+        {"id": "DOM-21", "name": "No redeclaration of a type, helper, or numeric constant that already exists in libs/atlas-constants/", "status": "pass", "evidence": "model.go:93 consumes charconst.TemporaryStatTypeStopPortion from libs/atlas-constants/character/temporary_stat.go:81; ErrPotionLocked (processor.go:67) has no libs equivalent"},
+        {"id": "DOM-24", "name": "Test packages that reach an emit path install the shared producertest stub", "status": "pass", "evidence": "testmain_test.go:16-18 installs producertest.InstallCapturing() from the shared package; no t.Cleanup(producer.ResetInstance) in the package"},
+        {"id": "DOM-25", "name": "Bytes the client interprets are resolved from a tenant writer-options table; domain services emit semantic keys", "status": "pass", "evidence": "processor.go:501 emits the semantic key from kafka.go:127, not a client byte; no integer literal added to any event body"},
+        {"id": "DOM-26", "name": "Every goroutine is spawned via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; no 'go ' statement added in processor.go"},
+        {"id": "DOM-27", "name": "Handler error branches use server.WriteErrorResponse", "status": "n-a", "evidence": "grep -rn database.Connect services/atlas-consumables --include='*.go' -> zero matches; service is not DB-backed and the package has no handler"},
+        {"id": "DOM-28", "name": "Fallible enrichment/decorator paths degrade loudly (model.ErrDecorator + degrade.Observe)", "status": "fail", "evidence": "processor.go:200-207 resolvePotionLocked returns the degraded 'unlocked' answer on a failed remote buff read with only a Warn at processor.go:203; no degrade.Observe, so atlas_enrichment_degraded_total never increments (patterns-resilience.md:127). Correct shape already present at processor.go:1382"},
+        {"id": "DOM-29", "name": "Caches are application-scoped singletons reached through GetCache()", "status": "n-a", "evidence": "no cache.go; ProcessorImpl fields processor.go:91-98 are l, ctx and five processor dependencies"},
+        {"id": "DOM-30", "name": "An operation that writes to the database emits through AndEmit + message.Buffer", "status": "pass", "evidence": "processor.go:411 direct producer.ProviderImpl is covered by patterns-kafka.md exception 2 (non-DB state): no database.Connect anywhere in atlas-consumables, and the rejection at processor.go:341 precedes any reservation"},
+        {"id": "DOM-31", "name": "Tenant and trace identifiers travel in context only", "status": "pass", "evidence": "processor.go:411 passes tenancy only via p.ctx; ErrorEventProvider (producer.go:18) takes characterId and the error string"},
+        {"id": "DOM-33", "name": "An interface change updates every mock implementation in the same diff", "status": "n-a", "evidence": "Processor interface processor.go:72-89 unchanged; rejectPotionLocked (processor.go:409) is unexported and off-interface"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/kafka/message/consumable",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface, constructor, and ProcessorImpl methods live in processor.go", "status": "n-a", "evidence": "kafka.go: zero matches for processor symbols"},
+        {"id": "FILE-02", "name": "RestModel, Transform/Extract, and the JSON:API methods live in rest.go", "status": "n-a", "evidence": "kafka.go: zero matches"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "kafka.go: zero matches"},
+        {"id": "FILE-04", "name": "Entity struct, Migration, and TableName live in entity.go", "status": "n-a", "evidence": "kafka.go: zero matches"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placed per the file table", "status": "pass", "evidence": "kafka.go holds only the message contract"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 of the responsibilities above", "status": "pass", "evidence": "package non-test files: kafka.go only"},
+        {"id": "DOM-21", "name": "No redeclaration of a type, helper, or numeric constant that already exists in libs/atlas-constants/", "status": "pass", "evidence": "grep -rn POTION_LOCKED libs/ -> zero matches; kafka.go:127 sits with ErrorTypeConsumeFailed (kafka.go:122)"},
+        {"id": "DOM-26", "name": "Every goroutine is spawned via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-28: services/atlas-consumables/atlas.com/consumables/consumable/processor.go:200-207: resolvePotionLocked silently degrades a failed remote buff read to 'unlocked' with a Warn only; degrade.Observe / atlas_enrichment_degraded_total missing (introduced by this diff)",
+    "FILE-01: services/atlas-consumables/atlas.com/consumables/consumable/vega.go:55,98: ProcessorImpl methods in a bare topic-named file instead of processor.go / processor_<group>.go (pre-existing)",
+    "DOM-01: services/atlas-consumables/atlas.com/consumables/character/buff/: no builder.go for a package with model.go:10 (pre-existing)",
+    "DOM-04: services/atlas-consumables/atlas.com/consumables/character/buff/rest.go: no func Transform( (pre-existing)",
+    "DOM-05: services/atlas-consumables/atlas.com/consumables/character/buff/rest.go: no func TransformSlice( (pre-existing)",
+    "EXT-01: services/atlas-consumables/atlas.com/consumables/character/buff/rest.go:10-32: RestModel implements neither SetToOneReferenceID nor SetToManyReferenceIDs (pre-existing)"
+  ],
+  "nonBlocking": [
+    "DOM-20: single-case rather than table-driven tests at services/atlas-channel/atlas.com/channel/kafka/consumer/consumable/consumer_test.go:41, services/atlas-consumables/atlas.com/consumables/consumable/processor_potion_lock_test.go:127 and :158, services/atlas-consumables/atlas.com/consumables/consumable/processor_test.go:828 and :836"
+  ]
+}

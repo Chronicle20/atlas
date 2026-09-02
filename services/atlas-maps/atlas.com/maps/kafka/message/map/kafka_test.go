@@ -89,7 +89,7 @@ func TestEventTypeConstants(t *testing.T) {
 		value    string
 		expected string
 	}{
-		{"EnvEventTopicMapStatus", EnvEventTopicMapStatus, "EVENT_TOPIC_MAP_STATUS"},
+		{"EnvEventTopicMapStatus", string(EnvEventTopicMapStatus), "EVENT_TOPIC_MAP_STATUS"},
 		{"EventTopicMapStatusTypeCharacterEnter", EventTopicMapStatusTypeCharacterEnter, "CHARACTER_ENTER"},
 		{"EventTopicMapStatusTypeCharacterExit", EventTopicMapStatusTypeCharacterExit, "CHARACTER_EXIT"},
 	}

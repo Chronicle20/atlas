@@ -17,13 +17,14 @@ import (
 	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // EnvServiceStatusTopic mirrors services.EnvServiceStatusTopic; it is
 // duplicated as a literal here (rather than imported) to avoid an import
 // cycle between this package and services.
-const EnvServiceStatusTopic = "EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS"
+const EnvServiceStatusTopic topic.Token = "EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS"
 
 // atlasServiceNS is the UUIDv5 namespace a sparse environment's SERVICE_ID
 // is derived from. It appears here and in exactly one other place,
@@ -88,7 +89,7 @@ func Migration(db *gorm.DB) error {
 			continue
 		}
 
-		topic := os.Getenv(EnvServiceStatusTopic)
+		topic := os.Getenv(string(EnvServiceStatusTopic))
 		err = database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 			for _, loser := range losers {
 				if err := tx.Exec("DELETE FROM services WHERE id = ?", loser).Error; err != nil {

@@ -23,6 +23,7 @@ import (
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -30,7 +31,7 @@ import (
 
 // emittedEvent captures a single Kafka message emitted during a test.
 type emittedEvent struct {
-	Topic string
+	Topic topic.Token
 	Type  string
 }
 
@@ -43,7 +44,7 @@ func newRecordingProcessor(t *testing.T, ten tenant.Model) (*ProcessorImpl, *[]e
 		l:   logrus.New(),
 		ctx: context.Background(),
 		t:   ten,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(tok topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
 				t.Fatalf("provider error: %v", err)
@@ -55,7 +56,7 @@ func newRecordingProcessor(t *testing.T, ten tenant.Model) (*ProcessorImpl, *[]e
 				if err := json.Unmarshal(m.Value, &env); err != nil {
 					t.Fatalf("decode emitted message: %v", err)
 				}
-				events = append(events, emittedEvent{Topic: topic, Type: env.Type})
+				events = append(events, emittedEvent{Topic: tok, Type: env.Type})
 			}
 			return nil
 		},
@@ -228,7 +229,7 @@ func TestDamageAlreadyDeadMonster(t *testing.T) {
 
 // helpers used by the new tests
 type emittedBody struct {
-	Topic string
+	Topic topic.Token
 	Type  string
 	Body  json.RawMessage
 }
@@ -240,7 +241,7 @@ func newRecordingProcessorWithBodies(t *testing.T, ten tenant.Model) (*Processor
 		l:   logrus.New(),
 		ctx: context.Background(),
 		t:   ten,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(tok topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
 				t.Fatalf("provider error: %v", err)
@@ -253,7 +254,7 @@ func newRecordingProcessorWithBodies(t *testing.T, ten tenant.Model) (*Processor
 				if err := json.Unmarshal(m.Value, &env); err != nil {
 					t.Fatalf("decode emitted: %v", err)
 				}
-				events = append(events, emittedBody{Topic: topic, Type: env.Type, Body: env.Body})
+				events = append(events, emittedBody{Topic: tok, Type: env.Type, Body: env.Body})
 			}
 			return nil
 		},
@@ -661,7 +662,7 @@ func TestApplyAnimationDelayedEffect_DeadMonsterSkipsExecute(t *testing.T) {
 		l:    logrus.New(),
 		ctx:  ctx,
 		t:    tm,
-		emit: func(string, model.Provider[[]kafka.Message]) error { return nil },
+		emit: func(topic.Token, model.Provider[[]kafka.Message]) error { return nil },
 	}
 	p.applyAnimationDelayedEffect(m.UniqueId(), func() { executed = true }, func() { posted = true })
 
@@ -687,7 +688,7 @@ func TestApplyAnimationDelayedEffect_AliveMonsterRunsBoth(t *testing.T) {
 		l:    logrus.New(),
 		ctx:  ctx,
 		t:    tm,
-		emit: func(string, model.Provider[[]kafka.Message]) error { return nil },
+		emit: func(topic.Token, model.Provider[[]kafka.Message]) error { return nil },
 	}
 	p.applyAnimationDelayedEffect(m.UniqueId(), func() { executed = true }, func() { posted = true })
 
@@ -714,7 +715,7 @@ func TestDamage_TriggersRepick(t *testing.T) {
 		l:   logrus.New(),
 		ctx: context.Background(),
 		t:   ten,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(topic topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
 				t.Fatalf("provider error: %v", err)
@@ -759,8 +760,8 @@ func TestCreate_DoesNotInvokeSpawnPickerWhenNoAggro(t *testing.T) {
 		l:   newPickerLogger(),
 		ctx: tctx,
 		t:   tm,
-		emit: func(topic string, _ model.Provider[[]kafka.Message]) error {
-			emitted = append(emitted, topic)
+		emit: func(topic topic.Token, _ model.Provider[[]kafka.Message]) error {
+			emitted = append(emitted, string(topic))
 			return nil
 		},
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
@@ -773,13 +774,14 @@ func TestCreate_DoesNotInvokeSpawnPickerWhenNoAggro(t *testing.T) {
 		t.Logf("Create returned error (expected in unit test without atlas-data): %v", err)
 	}
 
-	for _, topic := range emitted {
-		if topic == EnvEventTopicMonsterStatus {
-			// Picker emits NEXT_SKILL_DECIDED on this topic. We can't tell from
-			// topic alone, but if we guard correctly, no picker call happens.
-			// This assertion is intentionally weak; tighten once an injection
-			// seam exists. The stronger assertion is the existence of the guard
-			// in code review.
+	// Picker emits NEXT_SKILL_DECIDED on the monster-status topic. We can't
+	// tell from the topic alone whether the picker ran, but if we guard
+	// correctly, no picker call happens. This assertion is intentionally weak;
+	// tighten once an injection seam exists. The stronger assertion is the
+	// existence of the guard in code review.
+	for _, emittedTopic := range emitted {
+		if emittedTopic == string(EnvEventTopicMonsterStatus) {
+			t.Logf("observed emit on monster-status topic [%s]", emittedTopic)
 		}
 	}
 }
@@ -900,7 +902,7 @@ func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
 		l:   logrus.New(),
 		ctx: ctx,
 		t:   tm,
-		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+		emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error {
 			return nil
 		},
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
@@ -987,7 +989,7 @@ func TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune(t *testing.T) {
 		l:   logrus.New(),
 		ctx: ctx,
 		t:   tm,
-		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+		emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error {
 			return nil
 		},
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
@@ -1046,7 +1048,7 @@ func TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune(t *testing.T) {
 		l:   logrus.New(),
 		ctx: ctx,
 		t:   tm,
-		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+		emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error {
 			return nil
 		},
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
@@ -1102,7 +1104,7 @@ func TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel(t *testing.T
 		l:   logrus.New(),
 		ctx: ctx,
 		t:   tm,
-		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+		emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error {
 			return nil
 		},
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
@@ -1396,7 +1398,7 @@ func TestStatusCancel_PhysicalSkill_RejectedWhilePhysicalReflectActive(t *testin
 
 	p := &ProcessorImpl{
 		l: logrus.New(), ctx: ctx, t: tm,
-		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		emit:      func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
 	}
 
@@ -1432,7 +1434,7 @@ func TestStatusCancel_MagicSkill_RejectedWhileMagicalReflectActive(t *testing.T)
 
 	p := &ProcessorImpl{
 		l: logrus.New(), ctx: ctx, t: tm,
-		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		emit:      func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
 	}
 
@@ -1469,7 +1471,7 @@ func TestStatusCancel_PhysicalSkill_AllowedWhileMagicalReflectActive(t *testing.
 
 	p := &ProcessorImpl{
 		l: logrus.New(), ctx: ctx, t: tm,
-		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		emit:      func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
 	}
 
@@ -1507,7 +1509,7 @@ func TestStatusCancel_NoSkillClass_FallsThroughToNormalCancel(t *testing.T) {
 
 	p := &ProcessorImpl{
 		l: logrus.New(), ctx: ctx, t: tm,
-		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		emit:      func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
 	}
 
@@ -1542,7 +1544,7 @@ func TestStatusCancel_TargetingReflectItself_AllowedRegardlessOfClass(t *testing
 
 	p := &ProcessorImpl{
 		l: logrus.New(), ctx: ctx, t: tm,
-		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		emit:      func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
 	}
 
@@ -1604,7 +1606,7 @@ func TestUseBasicAttack_HappyPath_DeductsMpAndRegistersCooldown(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 3000, 100, "", "")
 	uniqueId := m.UniqueId()
 
-	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: func(string, model.Provider[[]kafka.Message]) error { return nil }}
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: func(topic.Token, model.Provider[[]kafka.Message]) error { return nil }}
 
 	// pos=2 corresponds to AttackInfo.Pos=1 internally? No — we normalize
 	// the wire/zero-indexed attackPos to the 1-indexed information.Pos by
@@ -2066,7 +2068,7 @@ func TestGetInFieldRect_NormalizesCornerOrder(t *testing.T) {
 // mpChangedRecorder returns an emitter that collects MP_CHANGED envelopes.
 func mpChangedRecorder(t *testing.T, out *[]statusEvent[statusEventMpChangedBody]) emitter {
 	t.Helper()
-	return func(topic string, provider model.Provider[[]kafka.Message]) error {
+	return func(topic topic.Token, provider model.Provider[[]kafka.Message]) error {
 		msgs, err := provider()
 		if err != nil {
 			return err
@@ -2621,7 +2623,7 @@ func newTestProcessor(t *testing.T) *ProcessorImpl {
 		l:   logrus.New(),
 		ctx: tenant.WithContext(ctxFor(t), ten),
 		t:   ten,
-		emit: func(_ string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(_ topic.Token, provider model.Provider[[]kafka.Message]) error {
 			_, err := provider()
 			return err
 		},

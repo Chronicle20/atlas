@@ -71,7 +71,12 @@ func TestCreateCharacterVersionBoundary(t *testing.T) {
 // v87. The semantic identity of those 4 bytes as StartVx/StartVy is
 // independently verified with non-zero values by model/movement_test.go's
 // TestMovementHeaderVersionBoundary and TestMovementHeaderRoundTrip.
-// packet-audit:verify packet=character/serverbound/Move version=gms_v83 ida=0x9cb992
+//
+// This test compares Encode output between versions with a zero-value
+// keyPadStates/moveRect on every version, so it cannot discriminate a wrong
+// moveKeyPadTail layout — the gms_v83 packet-audit:verify marker for this op
+// lives on TestCharacterMoveByteV83 (move_test.go), which pins the full
+// absolute byte sequence including a non-empty tail.
 func TestMoveVersionBoundary(t *testing.T) {
 	m := Move{dr0: 100, dr1: 200, fieldKey: 42, dr2: 300, dr3: 400, crc: 500, dwKey: 600, crc32: 700}
 	encode := func(major uint16) []byte {

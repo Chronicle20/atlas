@@ -4,17 +4,26 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_PARTY"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY"
+)
+
+const (
 	CommandPartyCreate        = "CREATE"
 	CommandPartyJoin          = "JOIN"
 	CommandPartyLeave         = "LEAVE"
 	CommandPartyChangeLeader  = "CHANGE_LEADER"
 	CommandPartyRequestInvite = "REQUEST_INVITE"
+)
 
-	EnvEventStatusTopic              = "EVENT_TOPIC_PARTY_STATUS"
+const (
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_PARTY_STATUS"
+)
+
+const (
 	EventPartyStatusTypeCreated      = "CREATED"
 	EventPartyStatusTypeJoined       = "JOINED"
 	EventPartyStatusTypeLeft         = "LEFT"

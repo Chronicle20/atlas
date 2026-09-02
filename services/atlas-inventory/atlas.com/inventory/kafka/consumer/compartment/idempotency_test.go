@@ -31,6 +31,12 @@ import (
 const mesoMagnetTemplateId = uint32(1812000)
 
 func TestMain(m *testing.M) {
+	if err := os.Setenv(string(assetmsg.EnvEventTopicStatus), string(assetmsg.EnvEventTopicStatus)); err != nil {
+		panic(err)
+	}
+	if err := os.Setenv(string(compartment2.EnvEventTopicStatus), string(compartment2.EnvEventTopicStatus)); err != nil {
+		panic(err)
+	}
 	producertest.InstallNoop()
 
 	mr, err := miniredis.Run()

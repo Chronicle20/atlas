@@ -13,10 +13,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicStatus = "EVENT_TOPIC_TRANSPORT_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRANSPORT_STATUS"
+)
+
+const (
 
 	// EventStatusVoyageDeparted names a concrete trip in a concrete channel
 	// and carries its whole scope (FR-V3, FR-V4).

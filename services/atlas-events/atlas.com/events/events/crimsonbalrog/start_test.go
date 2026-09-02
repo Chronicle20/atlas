@@ -5,6 +5,7 @@ import (
 	event "atlas-events/kafka/message/event"
 	monster "atlas-events/kafka/message/monster"
 	"encoding/json"
+	"log"
 	"os"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // emitted records every message Start's tests produce. Installed once per
@@ -23,6 +25,13 @@ import (
 var emitted *producertest.Capture
 
 func TestMain(m *testing.M) {
+	setEnv := func(k topic.Token) {
+		if err := os.Setenv(string(k), string(k)); err != nil {
+			log.Fatalf("failed to set %s: %v", k, err)
+		}
+	}
+	setEnv(monster.EnvCommandTopic)
+	setEnv(event.EnvEventTopicEventVisual)
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }
@@ -40,10 +49,10 @@ func newStartFakes(t *testing.T) *fakes {
 // emitted decodes every message captured on topic whose Type equals
 // wantType as a monster.FieldCommand[monster.SpawnFieldCommandBody] — the
 // only body shape Start ever produces on the monster command topic.
-func (f *fakes) emitted(topic, wantType string) []monster.FieldCommand[monster.SpawnFieldCommandBody] {
+func (f *fakes) emitted(topic topic.Token, wantType string) []monster.FieldCommand[monster.SpawnFieldCommandBody] {
 	f.t.Helper()
 	var out []monster.FieldCommand[monster.SpawnFieldCommandBody]
-	for _, m := range emitted.Messages(topic) {
+	for _, m := range emitted.Messages(string(topic)) {
 		var c monster.FieldCommand[monster.SpawnFieldCommandBody]
 		if err := json.Unmarshal(m.Value, &c); err != nil {
 			f.t.Fatalf("decode monster command: %v", err)
@@ -61,7 +70,7 @@ func (f *fakes) emitted(topic, wantType string) []monster.FieldCommand[monster.S
 func (f *fakes) emittedVisuals(wantType string) []event.VisualEvent[event.ShowVisualBody] {
 	f.t.Helper()
 	var out []event.VisualEvent[event.ShowVisualBody]
-	for _, m := range emitted.Messages(event.EnvEventTopicEventVisual) {
+	for _, m := range emitted.Messages(string(event.EnvEventTopicEventVisual)) {
 		var e event.VisualEvent[event.ShowVisualBody]
 		if err := json.Unmarshal(m.Value, &e); err != nil {
 			f.t.Fatalf("decode visual event: %v", err)

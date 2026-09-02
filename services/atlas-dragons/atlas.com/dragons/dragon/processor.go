@@ -10,6 +10,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -27,7 +28,7 @@ type Processor interface {
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses this
 // indirection so tests can observe event emissions without a live Kafka, exactly
 // as atlas-summons' summon.ProcessorImpl does.
-type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
+type emitter func(t topic.Token, provider model.Provider[[]kafka.Message]) error
 
 // characterSource resolves the owner's job and position. The default is the
 // character REST processor; tests substitute a stub.
@@ -46,8 +47,8 @@ type ProcessorImpl struct {
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l: l, ctx: ctx, t: tenant.MustFromContext(ctx),
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
-			return producer.ProviderImpl(l)(ctx)(topic)(provider)
+		emit: func(t topic.Token, provider model.Provider[[]kafka.Message]) error {
+			return producer.ProviderImpl(l)(ctx)(t)(provider)
 		},
 		characters: character.NewProcessor(l, ctx),
 	}

@@ -158,6 +158,6 @@ func TestEventGameEndedRoundTrip_WithoutPrize(t *testing.T) {
 }
 
 func TestEnvTopicConstants(t *testing.T) {
-	assert.Equal(t, "COMMAND_TOPIC_RPS", EnvCommandTopic)
-	assert.Equal(t, "EVENT_TOPIC_RPS", EnvEventTopic)
+	assert.Equal(t, "COMMAND_TOPIC_RPS", string(EnvCommandTopic))
+	assert.Equal(t, "EVENT_TOPIC_RPS", string(EnvEventTopic))
 }

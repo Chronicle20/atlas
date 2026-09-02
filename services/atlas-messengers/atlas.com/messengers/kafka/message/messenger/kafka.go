@@ -4,16 +4,25 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic               = "COMMAND_TOPIC_MESSENGER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MESSENGER"
+)
+
+const (
 	CommandMessengerCreate        = "CREATE"
 	CommandMessengerJoin          = "JOIN"
 	CommandMessengerLeave         = "LEAVE"
 	CommandMessengerRequestInvite = "REQUEST_INVITE"
+)
 
-	EnvEventStatusTopic             = "EVENT_TOPIC_MESSENGER_STATUS"
+const (
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_MESSENGER_STATUS"
+)
+
+const (
 	EventMessengerStatusTypeCreated = "CREATED"
 	EventMessengerStatusTypeJoined  = "JOINED"
 	EventMessengerStatusTypeLeft    = "LEFT"

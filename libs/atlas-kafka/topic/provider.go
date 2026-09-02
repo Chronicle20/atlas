@@ -1,6 +1,7 @@
 package topic
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -11,13 +12,12 @@ import (
 type Provider model.Provider[string]
 
 //goland:noinspection GoUnusedExportedFunction
-func EnvProvider(l logrus.FieldLogger) func(token string) Provider {
-	return func(token string) Provider {
+func EnvProvider(l logrus.FieldLogger) func(token Token) Provider {
+	return func(token Token) Provider {
 		return func() (string, error) {
-			t, ok := os.LookupEnv(token)
-			if !ok {
-				l.Warnf("[%s] environment variable not set. Defaulting to provided token.", token)
-				return token, nil
+			t, ok := os.LookupEnv(string(token))
+			if !ok || t == "" {
+				return "", fmt.Errorf("topic token [%s] has no value in the environment", token)
 			}
 			return t, nil
 		}

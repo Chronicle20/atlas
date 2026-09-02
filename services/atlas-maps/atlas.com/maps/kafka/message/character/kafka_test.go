@@ -170,7 +170,7 @@ func TestEventTypeConstants(t *testing.T) {
 		value    string
 		expected string
 	}{
-		{"EnvEventTopicCharacterStatus", EnvEventTopicCharacterStatus, "EVENT_TOPIC_CHARACTER_STATUS"},
+		{"EnvEventTopicCharacterStatus", string(EnvEventTopicCharacterStatus), "EVENT_TOPIC_CHARACTER_STATUS"},
 		{"EventCharacterStatusTypeLogin", EventCharacterStatusTypeLogin, "LOGIN"},
 		{"EventCharacterStatusTypeLogout", EventCharacterStatusTypeLogout, "LOGOUT"},
 		{"EventCharacterStatusTypeChannelChanged", EventCharacterStatusTypeChannelChanged, "CHANNEL_CHANGED"},

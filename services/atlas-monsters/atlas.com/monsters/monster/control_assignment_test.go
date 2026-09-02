@@ -7,6 +7,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -19,8 +20,8 @@ func recordingProcessor(ctx context.Context, tm tenant.Model, emitted *int) *Pro
 		l:   logrus.New(),
 		ctx: ctx,
 		t:   tm,
-		emit: func(topic string, _ model.Provider[[]kafka.Message]) error {
-			if topic == EnvEventTopicMonsterStatus {
+		emit: func(t topic.Token, _ model.Provider[[]kafka.Message]) error {
+			if t == EnvEventTopicMonsterStatus {
 				*emitted++
 			}
 			return nil

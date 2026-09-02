@@ -41,8 +41,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var err error
 				var handles []listener.HandlerHandle
-				t, _ = topic.EnvProvider(l)(mount2.EnvStatusEventTopic)()
+				t, err = topic.EnvProvider(l)(mount2.EnvStatusEventTopic)()
+				if err != nil {
+					return nil, err
+				}
 				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEvent(sc, wp))))
 				if err != nil {
 					return nil, err

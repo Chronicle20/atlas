@@ -15013,6 +15013,11 @@
       "direction": "",
       "calls": null
     },
+    "CNpcPool::OnNpcImitateData": {
+      "address": "0x668877",
+      "direction": "",
+      "calls": null
+    },
     "CWvsContext::OnImitatedNPCResult": {
       "address": "0x9540f3",
       "direction": "",

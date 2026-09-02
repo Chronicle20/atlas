@@ -22,6 +22,7 @@ import (
 	"gorm.io/gorm"
 
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -43,7 +44,7 @@ type recordingProducer struct {
 
 func (r *recordingProducer) provider() func(ctx context.Context) kprod.Provider {
 	return func(ctx context.Context) kprod.Provider {
-		return func(token string) kprod.MessageProducer {
+		return func(token topic.Token) kprod.MessageProducer {
 			return func(p model.Provider[[]kafka.Message]) error {
 				ms, err := p()
 				if err != nil {
@@ -449,7 +450,7 @@ func seedActiveAuction(t *testing.T, db *gorm.DB, ctx context.Context, listingId
 // outboxRowsOnTopic counts outbox rows enqueued for a given (env-token) topic.
 // The env vars are unset in tests, so outbox.EmitProvider stores the raw token
 // (e.g. "COMMAND_TOPIC_SAGA") as the row's topic.
-func outboxRowsOnTopic(t *testing.T, db *gorm.DB, topic string) int {
+func outboxRowsOnTopic(t *testing.T, db *gorm.DB, topic topic.Token) int {
 	t.Helper()
 	var n int64
 	if err := db.Model(&outbox.Entity{}).Where("topic = ?", topic).Count(&n).Error; err != nil {

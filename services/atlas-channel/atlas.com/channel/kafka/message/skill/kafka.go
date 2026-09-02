@@ -6,10 +6,14 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_SKILL"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_SKILL"
+)
+
+const (
 	CommandTypeSetCooldown    = "SET_COOLDOWN"
 	CommandTypeResetCooldowns = "RESET_COOLDOWNS"
 )
@@ -40,7 +44,10 @@ type ResetCooldownsBody struct {
 }
 
 const (
-	EnvStatusEventTopic            = "EVENT_TOPIC_SKILL_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_SKILL_STATUS"
+)
+
+const (
 	StatusEventTypeCreated         = "CREATED"
 	StatusEventTypeUpdated         = "UPDATED"
 	StatusEventTypeDeleted         = "DELETED"

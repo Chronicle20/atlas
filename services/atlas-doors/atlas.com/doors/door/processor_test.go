@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -76,7 +77,7 @@ type fakeEmit struct {
 	values [][]byte
 }
 
-func (e *fakeEmit) emit(topic string, p model.Provider[[]kafka.Message]) error {
+func (e *fakeEmit) emit(t topic.Token, p model.Provider[[]kafka.Message]) error {
 	msgs, err := p()
 	if err != nil {
 		return err
@@ -86,7 +87,7 @@ func (e *fakeEmit) emit(topic string, p model.Provider[[]kafka.Message]) error {
 			Type string `json:"type"`
 		}
 		_ = json.Unmarshal(msg.Value, &env)
-		e.topics = append(e.topics, topic)
+		e.topics = append(e.topics, string(t))
 		e.types = append(e.types, env.Type)
 		e.values = append(e.values, msg.Value)
 	}
@@ -149,7 +150,7 @@ func TestSpawnCreatesPairAndEmitsCreated(t *testing.T) {
 	if len(em.types) != 1 || em.types[0] != EventDoorStatusCreated {
 		t.Fatalf("expected [CREATED], got %v", em.types)
 	}
-	if em.topics[0] != EnvEventTopicDoorStatus {
+	if em.topics[0] != string(EnvEventTopicDoorStatus) {
 		t.Fatalf("expected topic %s, got %s", EnvEventTopicDoorStatus, em.topics[0])
 	}
 }
@@ -354,7 +355,7 @@ type reasonCapture struct {
 	messages [][]byte
 }
 
-func (rc *reasonCapture) emit(topic string, p model.Provider[[]kafka.Message]) error {
+func (rc *reasonCapture) emit(_ topic.Token, p model.Provider[[]kafka.Message]) error {
 	msgs, err := p()
 	if err != nil {
 		return err

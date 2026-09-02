@@ -14,6 +14,32 @@ import (
 
 const MonsterMovementHandle = "MonsterMovementHandle"
 
+// monsterMoveKeyPadTail reports whether the serverbound MOVE_LIFE movement
+// blob ends with the keypad history + path bounding rectangle that
+// CMovePath::Encode appends after the element loop (see moveKeyPadTail in
+// character/serverbound/move.go for the full field derivation:
+// count-of-entries byte, ceil(count/2) packed nibble bytes, then left/top/
+// right/bottom int16).
+//
+// Decompile-confirmed for jms v185, NOT live-confirmed: CMob::GenerateMovePath
+// @0x6e8892's header — dwMobID, nMobCtrlSN, flag, nAction, ti,
+// multiTargetForBall, randTimeForAreaAttack, moveFlags, hackedCode,
+// flyCtxTargetX/Y, hackedCodeCRC — matches Atlas field for field up to
+// Flush @0x6e9423, confirming the existing header gates independently; only
+// the tail (unconditionally written by CMovePath::Encode, see
+// character/serverbound/move.go's moveKeyPadTail) was missing. The tail sits
+// between the movement blob and the trailing bChasing/hasTarget/bChasing2/
+// bChasingHack/tChaseDuration block, which CMob::GenerateMovePath writes
+// AFTER calling Flush. See
+// docs/tasks/fix-jms185-attack-decode/sibling-movement-ops-findings.md §2.
+//
+// Gated to JMS because that is the only client this sender was read on. Do
+// not extend to GMS without reading each GMS version's CMob::GenerateMovePath
+// directly.
+func monsterMoveKeyPadTail(t tenant.Model) bool {
+	return t.IsRegion("JMS")
+}
+
 // packet-audit:fname CMob::GenerateMovePath
 type MovementRequest struct {
 	uniqueId              uint32
@@ -29,11 +55,20 @@ type MovementRequest struct {
 	flyCtxTargetY         uint32
 	hackedCodeCRC         uint32
 	movement              model.Movement
-	bChasing              byte
-	hasTarget             byte
-	bChasing2             byte
-	bChasingHack          byte
-	tChaseDuration        uint32
+	// keyPadStates is the client's per-move keypad history (see
+	// monsterMoveKeyPadTail). Nil on versions without the tail.
+	keyPadStates []byte
+	// moveRect is the bounding rectangle of the whole path, appended after
+	// the keypad block.
+	moveRectLeft   int16
+	moveRectTop    int16
+	moveRectRight  int16
+	moveRectBottom int16
+	bChasing       byte
+	hasTarget      byte
+	bChasing2      byte
+	bChasingHack   byte
+	tChaseDuration uint32
 }
 
 func (m MovementRequest) UniqueId() uint32   { return m.uniqueId }
@@ -51,6 +86,13 @@ func (m MovementRequest) RandTimeForAreaAttack() model.RandTimeForAreaAttack {
 	return m.randTimeForAreaAttack
 }
 func (m MovementRequest) MovementData() model.Movement { return m.movement }
+func (m MovementRequest) KeyPadStates() []byte         { return m.keyPadStates }
+
+// MoveRect reports the path bounding rectangle the client appends after the
+// keypad block: left, top, right, bottom.
+func (m MovementRequest) MoveRect() (int16, int16, int16, int16) {
+	return m.moveRectLeft, m.moveRectTop, m.moveRectRight, m.moveRectBottom
+}
 
 func (m MovementRequest) Operation() string {
 	return MonsterMovementHandle
@@ -90,6 +132,26 @@ func (m MovementRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(
 
 		w.WriteByteArray(m.movement.Encode(l, ctx)(options))
 
+		// Keypad history + path bounding rect — see monsterMoveKeyPadTail.
+		// Sits between the movement blob and the bChasing/hasTarget/
+		// bChasing2/bChasingHack/tChaseDuration block: CMob::GenerateMovePath
+		// calls CMovePath::Flush @0x6e9423 (which writes this tail) BEFORE
+		// writing those five fields.
+		if monsterMoveKeyPadTail(t) {
+			w.WriteByte(byte(len(m.keyPadStates)))
+			for i := 0; i < len(m.keyPadStates); i += 2 {
+				b := m.keyPadStates[i] & 0x0F
+				if i != len(m.keyPadStates)-1 {
+					b |= m.keyPadStates[i+1] << 4
+				}
+				w.WriteByte(b)
+			}
+			w.WriteShort(uint16(m.moveRectLeft))
+			w.WriteShort(uint16(m.moveRectTop))
+			w.WriteShort(uint16(m.moveRectRight))
+			w.WriteShort(uint16(m.moveRectBottom))
+		}
+
 		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			w.WriteByte(m.bChasing)
 			w.WriteByte(m.hasTarget)
@@ -128,6 +190,28 @@ func (m *MovementRequest) Decode(l logrus.FieldLogger, ctx context.Context) func
 		}
 
 		m.movement.Decode(l, ctx)(r, options)
+
+		// Keypad history + path bounding rect, serverbound only — see
+		// monsterMoveKeyPadTail. Sits between the movement blob and the
+		// bChasing block; mirror of Encode.
+		if monsterMoveKeyPadTail(t) {
+			count := int(r.ReadByte())
+			states := make([]byte, 0, count)
+			var packed byte
+			for i := 0; i < count; i++ {
+				if i%2 == 0 {
+					packed = r.ReadByte()
+				} else {
+					packed >>= 4
+				}
+				states = append(states, packed&0x0F)
+			}
+			m.keyPadStates = states
+			m.moveRectLeft = r.ReadInt16()
+			m.moveRectTop = r.ReadInt16()
+			m.moveRectRight = r.ReadInt16()
+			m.moveRectBottom = r.ReadInt16()
+		}
 
 		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			m.bChasing = r.ReadByte()

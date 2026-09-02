@@ -4,11 +4,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
 	// EnvCommandTopic defines the environment variable for the pet command topic
-	EnvCommandTopic = "COMMAND_TOPIC_PET"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PET"
+)
+
+const (
 	// CommandTypeAwardCloseness is the command type for awarding closeness to a pet
 	CommandTypeAwardCloseness = "AWARD_CLOSENESS"
 	// CommandPetEvolve is the command type for evolving a pet
@@ -17,9 +22,15 @@ const (
 	CommandPetRevive = "REVIVE"
 	// CommandPetRename is the command type for renaming a pet
 	CommandPetRename = "RENAME"
+)
+
+const (
 
 	// Pet status event constants
-	EnvEventTopicPetStatus          = "EVENT_TOPIC_PET_STATUS"
+	EnvEventTopicPetStatus topic.Token = "EVENT_TOPIC_PET_STATUS"
+)
+
+const (
 	StatusEventTypeClosenessChanged = "CLOSENESS_CHANGED"
 	StatusEventTypeEvolved          = "EVOLVED"
 	StatusEventTypeRevived          = "REVIVED"

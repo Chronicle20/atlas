@@ -20,6 +20,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -51,7 +52,7 @@ func (s stubWeaponSource) GetEquippedWeaponType(_ uint32) (item.WeaponType, erro
 
 // capturedMessage is a topic + a decoded payload map captured by the fake emitter.
 type capturedMessage struct {
-	topic   string
+	topic   topic.Token
 	payload map[string]any
 }
 
@@ -92,7 +93,7 @@ func newAttackProcessor(t *testing.T, eff effect.Model, watk uint32, statsErr er
 		equip:   stubWeaponSource{weaponType: item.WeaponTypeOneHandedSword},
 		// force a proc so the test can assert APPLY_STATUS deterministically.
 		proc: func(_ float64) bool { return true },
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(topic topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, perr := provider()
 			if perr != nil {
 				return perr

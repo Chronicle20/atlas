@@ -6,10 +6,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic              = "COMMAND_TOPIC_MONSTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MONSTER"
+)
+
+const (
 	CommandTypeDamage            = "DAMAGE"
 	CommandTypeDamageFriendly    = "DAMAGE_FRIENDLY"
 	CommandTypeApplyStatus       = "APPLY_STATUS"
@@ -32,8 +36,10 @@ const (
 	CommandTypeSelfDestruct      = "SELF_DESTRUCT"
 	CommandTypeSetAggro          = "SET_AGGRO"
 	CommandTypeBanish            = "BANISH"
+)
 
-	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
+const (
+	EnvCommandTopicMovement topic.Token = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
 
 type command[E any] struct {

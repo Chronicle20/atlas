@@ -175,7 +175,7 @@ func requiresContextPath(t ConditionType) bool {
 		TransportAvailableCondition, SkillLevelCondition,
 		BuffCondition,
 		PartyIdCondition, PartyLeaderCondition, PartySizeCondition,
-		PqCustomDataCondition:
+		PqCustomDataCondition, CanSpawnPlayerNpcCondition:
 		return true
 	}
 	return false

@@ -8,11 +8,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // Event topic and type constants
 const (
-	EnvEventTopicDropStatus           = "EVENT_TOPIC_DROP_STATUS"
+	EnvEventTopicDropStatus topic.Token = "EVENT_TOPIC_DROP_STATUS"
+)
+
+const (
 	StatusEventTypeCreated            = "CREATED"
 	StatusEventTypeExpired            = "EXPIRED"
 	StatusEventTypePickedUp           = "PICKED_UP"
@@ -24,7 +28,10 @@ const (
 
 // Command topic and type constants
 const (
-	EnvCommandTopic               = "COMMAND_TOPIC_DROP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_DROP"
+)
+
+const (
 	CommandTypeSpawn              = "SPAWN"
 	CommandTypeSpawnFromCharacter = "SPAWN_FROM_CHARACTER"
 	CommandTypeRequestReservation = "REQUEST_RESERVATION"

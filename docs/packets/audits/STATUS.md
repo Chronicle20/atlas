@@ -7,15 +7,15 @@
 Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 
 - export gms_v48: `b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6`
-- export gms_v61: `e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48`
-- export gms_v72: `bf371cc0c6896d61bf01f767c3eb8c26351c70a9dd62561104aa1967a2a0b0e5`
-- export gms_v79: `c5adec87c72b6995833a95ce4175c4ea1ab5804afba44f4f2a7993aa44669347`
-- export gms_v83: `8557037f0813858ff95c4b380c6bf17f82f917f1bb4d3f8ee35bf8ce83723e6e`
-- export gms_v84: `2d7a918f650c58e43109edfd324de895526f50f9325bf0a56fca1d8fd79c93f3`
-- export gms_v87: `0f647c9b868a3b2fa9e5c240e89e19f8bffc5ed089b2eac80cfb39e929ed2c44`
-- export gms_v92: `b213d7733adf546170ad8612012757ebbc8a0330246ac5193130c409ff7f2cb1`
-- export gms_v95: `2321024784fa2724ae02b126e6973ff82c11ef0cc96a7ce6f946242ad8c55a31`
-- export jms_v185: `106f986d99d4e46de449bffa6504cb245bce107cd2b0ccf3e762c8da594a2ea0`
+- export gms_v61: `af9ddeaff46dc92af0cf2199a33d7ef60fdf01db6423d5f396a55c0389a3c745`
+- export gms_v72: `e03dad84031f0486ed99c61cba511056a7ccfef1a9df95357e6f5c81353522c1`
+- export gms_v79: `045af888d05b8ff7060d8bc04146020d04518e4f079b9149d7cdd023fe42d95f`
+- export gms_v83: `6fcb33295092df32d17d5795b444d9c08419491de956e63b0a3ad03f83b9da31`
+- export gms_v84: `a05b8b562d80afa80073dc427f660364559a955847509a01ad6df734d34df5d5`
+- export gms_v87: `d9f57fef03c001656de14eed72c7696f977d7825892031f70fe0c90fa2e69cce`
+- export gms_v92: `9e8816c84d97a482303d67cb64c1be21acc48ac477702e538450f499d7749034`
+- export gms_v95: `f1c0a6be17e594821d12a38543f4b5a2d863342bd4fc6217d107a74427ba4ca9`
+- export jms_v185: `3de6d6e589eb7ee3d8b5aaf0f58a679494a67efb3bd40c7a5bc466e33ec35b6e`
 
 ## Clientbound
 
@@ -131,7 +131,7 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | IMITATED_NPC_RESULT | CWvsContext::OnImitatedNPCResult; sub_830AFF; sub_902E77 |  |  | ⬜ | 0x04D | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x052 | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x053 | ❌ |  | ⬜ |
 | BLOCKED_SERVER | CField::OnTransferChannelReqIgnored | field/clientbound/FieldBlockedServer (T1) | 0x04E | ✅ | 0x062 | 🟡ᶠ | 0x078 | 🟡ᶠ | 0x07C | 🟡ᶠ | 0x084 | ✅ | 0x087 | ✅ | 0x08C | ✅ | 0x093 | 🟡ᶠ | 0x094 | ✅ | 0x082 | ✅ |
 | IDA_0X04E | sub_B0FDF2 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ |
-| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ❌ | 0x04E | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
+| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x051 | ✅ | 0x053 | ✅ | 0x053 | ✅ | 0x056 | ✅ | 0x054 | ✅ | 0x055 | ✅ |
 | FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x04F | ✅ | 0x063 | 🟡ᶠ | 0x079 | 🟡ᶠ | 0x07D | 🟡ᶠ | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x094 | 🟡ᶠ | 0x095 | ✅ | 0x083 | ✅ |
 | IDA_0X04F | sub_AEC942 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ |
 | LIMITED_NPC_DISABLE_INFO | CNpcPool::OnUpdateLimitedDisableInfo; CWvsContext::OnLimitedNPCDisableInfo; sub_AECCBF |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x054 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x056 | ❌ |
@@ -301,7 +301,7 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect | character/clientbound/ShowUpgradeTombEffect (T1) |  | ⬜ |  | ⬜ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0C3 | ✅ | 0x0C7 | ✅ | 0x0D0 | ✅ | 0x0DF | ✅ | 0x0DD | ✅ | 0x0C9 | ✅ |
 | SPAWN_NPC | CNpcPool::OnNpcEnterField | npc/clientbound/NpcSpawn (T1) | 0x0B1 | ✅ | 0x0C2 | 🟡ᶠ | 0x0E3 | 🟡ᶠ | 0x0EB | 🟡ᶠ | 0x101 | ✅ | 0x108 | ✅ | 0x112 | ✅ | 0x12F | ❌ | 0x137 | ✅ | 0x116 | ✅ |
 | MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) |  | ⬜ | 0x0B2 | ✅ | 0x0D3 | ✅ | 0x0D9 | ✅ | 0x0EF | ✅ | 0x0F5 | ✅ | 0x0FF | ✅ | 0x117 | ❌ | 0x11F | ✅ | 0x100 | ✅ |
-| REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x0B2 | ❌ | 0x0C3 | ❌ | 0x0E4 | ❌ | 0x0EC | ❌ | 0x102 | ❌ | 0x109 | ❌ | 0x113 | ❌ | 0x130 | ❌ | 0x138 | ❌ | 0x117 | ❌ |
+| REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x0B2 | ✅ | 0x0C3 | ✅ | 0x0E4 | ✅ | 0x0EC | ✅ | 0x102 | ✅ | 0x109 | ✅ | 0x113 | ✅ | 0x130 | ✅ | 0x138 | ✅ | 0x117 | ✅ |
 | MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) |  | ⬜ | 0x0B3 | ✅ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0F0 | ✅ | 0x0F6 | ✅ | 0x100 | ✅ | 0x118 | ❌ | 0x120 | ✅ | 0x101 | ✅ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0B9 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0E5 | 🟡ᶠ | 0x0ED | 🟡ᶠ | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x131 | ❌ | 0x139 | ✅ | 0x118 | ✅ |
@@ -1063,16 +1063,16 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 214 | 0 | 19 | 199 | 595 | 0 | 49.5% |
-| v61 | 280 | 0 | 56 | 233 | 458 | 0 | 49.2% |
-| v72 | 307 | 0 | 69 | 242 | 409 | 0 | 49.7% |
-| v79 | 353 | 0 | 68 | 238 | 368 | 0 | 53.6% |
-| v83 | 482 | 0 | 0 | 317 | 228 | 0 | 60.3% |
-| v84 | 456 | 0 | 0 | 324 | 247 | 0 | 58.5% |
-| v87 | 490 | 0 | 0 | 346 | 191 | 0 | 58.6% |
-| v92 | 69 | 0 | 147 | 670 | 141 | 0 | 7.8% |
-| v95 | 526 | 0 | 0 | 393 | 108 | 0 | 57.2% |
-| JMS185 | 453 | 0 | 0 | 376 | 198 | 0 | 54.6% |
+| v48 | 215 | 0 | 19 | 198 | 595 | 0 | 49.8% |
+| v61 | 282 | 0 | 56 | 231 | 458 | 0 | 49.6% |
+| v72 | 309 | 0 | 69 | 240 | 409 | 0 | 50.0% |
+| v79 | 355 | 0 | 68 | 236 | 368 | 0 | 53.9% |
+| v83 | 484 | 0 | 0 | 315 | 228 | 0 | 60.6% |
+| v84 | 458 | 0 | 0 | 322 | 247 | 0 | 58.7% |
+| v87 | 492 | 0 | 0 | 344 | 191 | 0 | 58.9% |
+| v92 | 71 | 0 | 147 | 668 | 141 | 0 | 8.0% |
+| v95 | 528 | 0 | 0 | 391 | 108 | 0 | 57.5% |
+| JMS185 | 455 | 0 | 0 | 374 | 198 | 0 | 54.9% |
 
 ## Conflicts
 

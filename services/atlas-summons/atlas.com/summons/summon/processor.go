@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -45,7 +46,7 @@ type AttackTarget struct {
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses this
 // indirection so later phases can intercept event emissions in tests without
 // spinning up kafka. Production wiring uses producer.ProviderImpl.
-type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
+type emitter func(tok topic.Token, provider model.Provider[[]kafka.Message]) error
 
 // effectSource provides per-skill effect data. The default implementation is
 // the data/skill REST processor; tests substitute a stub so spawn logic is
@@ -85,8 +86,8 @@ type ProcessorImpl struct {
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l: l, ctx: ctx, t: tenant.MustFromContext(ctx),
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
-			return producer.ProviderImpl(l)(ctx)(topic)(provider)
+		emit: func(tok topic.Token, provider model.Provider[[]kafka.Message]) error {
+			return producer.ProviderImpl(l)(ctx)(tok)(provider)
 		},
 		effects: skilldata.NewProcessor(l, ctx),
 		stats:   effectivestats.NewProcessor(l, ctx),

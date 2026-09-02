@@ -1,8 +1,10 @@
 package script
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 // Kafka topic environment variable names
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_REACTOR_ACTIONS"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_REACTOR_ACTIONS"
 )
 
 // Command types

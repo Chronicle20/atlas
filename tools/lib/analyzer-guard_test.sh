@@ -16,6 +16,17 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(mktemp -d)"
 trap 'rm -rf "$ROOT"' EXIT
 
+# analyzer_guard_discover now intersects with go.work's `use` set (the
+# task-276 go.work-member filter). Give this scratch ROOT a go.work naming
+# every module directory the cases below create, so this test still exercises
+# only the .worktrees exclusion behavior it was written for.
+cat > "$ROOT/go.work" <<EOF
+use (
+    ./.worktrees/task-232-fake/services/atlas-fake/atlas.com/fake
+    ./main/services/atlas-real/atlas.com/real
+)
+EOF
+
 # shellcheck source=./analyzer-guard.sh
 . "$HERE/analyzer-guard.sh"
 

@@ -1,10 +1,17 @@
 package saga
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_SAGA"
-	EnvStatusEventTopic      = "EVENT_TOPIC_SAGA_STATUS"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_SAGA"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_SAGA_STATUS"
+)
+
+const (
 	StatusEventTypeCompleted = "COMPLETED"
 	StatusEventTypeFailed    = "FAILED"
 )

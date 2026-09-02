@@ -2,12 +2,17 @@ package compartment
 
 import (
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CASH_COMPARTMENT"
-	CommandAccept   = "ACCEPT"
-	CommandRelease  = "RELEASE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CASH_COMPARTMENT"
+)
+
+const (
+	CommandAccept  = "ACCEPT"
+	CommandRelease = "RELEASE"
 )
 
 type Command[E any] struct {
@@ -38,7 +43,10 @@ type ReleaseCommandBody struct {
 }
 
 const (
-	EnvEventTopicStatus     = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CASH_COMPARTMENT_STATUS"
+)
+
+const (
 	StatusEventTypeCreated  = "CREATED"
 	StatusEventTypeUpdated  = "UPDATED"
 	StatusEventTypeDeleted  = "DELETED"

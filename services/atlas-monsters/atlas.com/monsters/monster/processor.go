@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -79,7 +80,7 @@ type Processor interface {
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
 // this indirection so tests can intercept event emissions without spinning up
 // kafka. Production wiring uses producer.ProviderImpl.
-type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
+type emitter func(t topic.Token, provider model.Provider[[]kafka.Message]) error
 
 // testInformationLookup is a test-only override for information.GetById. When
 // nil (production), UseBasicAttack and ApplyStatusEffect call information.GetById
@@ -144,8 +145,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
-			return producer.ProviderImpl(l)(ctx)(topic)(provider)
+		emit: func(t topic.Token, provider model.Provider[[]kafka.Message]) error {
+			return producer.ProviderImpl(l)(ctx)(t)(provider)
 		},
 	}
 	p.inFieldFn = func(f field.Model) ([]uint32, error) {

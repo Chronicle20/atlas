@@ -16,6 +16,7 @@ func TestAdvancement(t *testing.T) {
 		{"Noblesse", job.NoblesseId, 0},
 		{"Legend (Aran beginner)", job.LegendId, 0},
 		{"Evan beginner (2001)", job.EvanId, 0},
+		{"Citizen beginner (3000)", job.CitizenId, 0},
 		{"Warrior", job.Id(100), 1},
 		{"Fighter", job.Id(110), 2},
 		{"Crusader", job.Id(111), 3},
@@ -51,5 +52,34 @@ func TestAdvancement(t *testing.T) {
 				t.Errorf("Advancement(%d) = %d, want %d", tc.jobId, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestIsBeginner_CoversEveryBeginnerId(t *testing.T) {
+	cases := []struct {
+		name  string
+		jobId job.Id
+		want  bool
+	}{
+		{"Beginner", job.BeginnerId, true},
+		{"Noblesse", job.NoblesseId, true},
+		{"Legend", job.LegendId, true},
+		{"Evan", job.EvanId, true},
+		{"Citizen", job.CitizenId, true},
+		{"Warrior (not a beginner)", job.Id(100), false},
+		{"Fighter (not a beginner)", job.Id(110), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := job.IsBeginner(tc.jobId); got != tc.want {
+				t.Errorf("IsBeginner(%d) = %v, want %v", tc.jobId, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCitizenId_RegisteredInJobs(t *testing.T) {
+	if _, present := job.Jobs[job.CitizenId]; !present {
+		t.Errorf("job.Jobs[job.CitizenId] missing; CitizenId must be registered")
 	}
 }

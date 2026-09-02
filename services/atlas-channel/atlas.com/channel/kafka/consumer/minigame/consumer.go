@@ -52,7 +52,10 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var handles []listener.HandlerHandle
-				t, _ := topic.EnvProvider(l)(minigame2.EnvEventTopicStatus)()
+				t, err := topic.EnvProvider(l)(minigame2.EnvEventTopicStatus)()
+				if err != nil {
+					return nil, err
+				}
 				for _, h := range []handler.Handler{
 					message.AdaptHandler(message.PersistentConfig(handleCreatedEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleErrorEvent(sc, wp))),

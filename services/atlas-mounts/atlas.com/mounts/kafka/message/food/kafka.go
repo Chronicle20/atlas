@@ -2,12 +2,13 @@ package food
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvEventTopic is the topic carrying taming-mob food (feed) events produced by
 // atlas-consumables (Task 33). The producer MUST populate worldId, itemId, and
 // tirednessHeal so atlas-mounts can apply the feed math and emit the FEED event.
-const EnvEventTopic = "EVENT_TOPIC_TAMING_MOB_FOOD"
+const EnvEventTopic topic.Token = "EVENT_TOPIC_TAMING_MOB_FOOD"
 
 // Event is the taming-mob food event consumed by atlas-mounts. worldId is
 // required: ApplyFeedAndEmit needs it to emit the resulting mount status event,

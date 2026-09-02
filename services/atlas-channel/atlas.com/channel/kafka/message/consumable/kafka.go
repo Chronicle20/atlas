@@ -9,11 +9,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
+)
 
+const (
 	CommandRequestItemConsume   = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll        = "REQUEST_SCROLL"
 	CommandRequestItemReward    = "REQUEST_ITEM_REWARD"
@@ -76,7 +79,10 @@ type RequestCatchMonsterBody struct {
 }
 
 const (
-	EnvEventTopic            = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EnvEventTopic topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
+)
+
+const (
 	EventTypeError           = "ERROR"
 	EventTypeScroll          = "SCROLL"
 	EventTypeSkillBookResult = "SKILL_BOOK_RESULT"
@@ -90,6 +96,11 @@ const (
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
+	// ErrorTypePotionLocked is atlas-consumables' pre-reservation refusal of a
+	// consume while STOP_PORTION is active. Hand-mirrored from
+	// services/atlas-consumables/.../kafka/message/consumable/kafka.go; the
+	// two spellings must agree. See task-280.
+	ErrorTypePotionLocked = "POTION_LOCKED"
 
 	// CatchCauseUseDelay / CatchCauseInventoryFull / CatchCauseInvalidItem are
 	// the pre-reservation bridle-capture failure causes atlas-consumables

@@ -20782,6 +20782,11 @@
           "comment": "updateTime (get_update_time(); tick)"
         }
       ]
+    },
+    "CNpcPool::OnNpcImitateData": {
+      "address": "0x645d28",
+      "direction": "",
+      "calls": null
     }
   }
 }

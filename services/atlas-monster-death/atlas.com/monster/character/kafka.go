@@ -3,10 +3,14 @@ package character
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic        = "COMMAND_TOPIC_CHARACTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
 	CommandAwardExperience = "AWARD_EXPERIENCE"
 
 	ExperienceDistributionTypeWhite        = "WHITE"

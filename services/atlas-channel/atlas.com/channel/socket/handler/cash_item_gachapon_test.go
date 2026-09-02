@@ -122,7 +122,7 @@ func TestCashItemGachaponHandleProducesCommand(t *testing.T) {
 	handlerFunc := CashItemGachaponHandleFunc(logrus.New(), ctx, nil)
 	handlerFunc(s, &reader, map[string]interface{}{})
 
-	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	msgs := (*captured)[string(messageCashShop.EnvCommandTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("OPEN_SURPRISE messages produced = %d, want 1", len(msgs))
 	}
@@ -168,7 +168,7 @@ func TestCashItemGachaponHandleMintsDistinctTransactionIds(t *testing.T) {
 	reader2 := request.NewRequestReader(&raw2, 0)
 	handlerFunc(s, &reader2, map[string]interface{}{})
 
-	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	msgs := (*captured)[string(messageCashShop.EnvCommandTopic)]
 	if len(msgs) != 2 {
 		t.Fatalf("OPEN_SURPRISE messages produced = %d, want 2", len(msgs))
 	}

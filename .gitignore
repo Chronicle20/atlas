@@ -70,6 +70,7 @@ deploy/k8s/secrets.yaml
 node_modules/
 /.cache/
 
-# `go build ./...` in libs/atlas-constants/gen names its binary after the
-# directory (gen) — trivially recreated, never a deliverable.
+# `go build ./...` in libs/atlas-constants/gen and libs/atlas-kafka/gen names
+# their binary after the directory (gen) — trivially recreated, never a deliverable.
 /libs/atlas-constants/gen/gen
+/libs/atlas-kafka/gen/gen

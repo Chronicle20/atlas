@@ -10,11 +10,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_RPS"
-	EnvEventTopic   = "EVENT_TOPIC_RPS"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_RPS"
+	EnvEventTopic   topic.Token = "EVENT_TOPIC_RPS"
+)
+
+const (
 
 	// CommandTypeBegin opens the first round of an already-open session (the
 	// player clicked "Start"; serverbound RPS_ACTION sub-op 0). CommandTypeSelect

@@ -63,7 +63,7 @@ func TestJukeboxArmSuccessCreatesTwoStepSaga(t *testing.T) {
 		t.Fatalf("announced %d packets on the success path, want 0 (no announce on the success path)", rec.calls)
 	}
 
-	msgs := (*captured)[sagaMsg.EnvCommandTopic]
+	msgs := (*captured)[string(sagaMsg.EnvCommandTopic)]
 	if len(msgs) != 1 {
 		t.Fatalf("saga commands emitted = %d, want exactly 1", len(msgs))
 	}

@@ -43,8 +43,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) ([]listener.HandlerHandle, error) {
 				var t string
+				var err error
 				var handles []listener.HandlerHandle
-				t, _ = topic.EnvProvider(l)(consumable2.EnvEventTopic)()
+				t, err = topic.EnvProvider(l)(consumable2.EnvEventTopic)()
+				if err != nil {
+					return nil, err
+				}
 				id, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorConsumableEvent(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -91,6 +95,42 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
+// errorAction is the client-facing reaction to a consumable ERROR event.
+// Extracted from handleErrorConsumableEvent's if-chain so the routing is
+// unit-testable without a server.Model, a writer.Producer, and the session
+// registry -- which is what lets a test prove POTION_LOCKED is recognized
+// rather than merely reaching the catch-all (task-280 FR-7).
+type errorAction int
+
+const (
+	// actionUnstick sends StatChanged with an empty update list, releasing the
+	// item-use exclusive-request lock and nothing else. This is the response
+	// for POTION_LOCKED (no client message, PRD Q3), for CONSUME_FAILED, and
+	// for any unrecognized type.
+	actionUnstick errorAction = iota
+	actionPetCashFoodError
+	actionInventoryFull
+	actionVegaInvalid
+)
+
+func consumableErrorAction(errorType string) errorAction {
+	switch errorType {
+	case consumable2.ErrorTypePetCannotConsume:
+		return actionPetCashFoodError
+	case consumable2.ErrorTypeInventoryFull:
+		return actionInventoryFull
+	case consumable2.ErrorTypeVegaInvalid:
+		return actionVegaInvalid
+	case consumable2.ErrorTypePotionLocked:
+		// Explicit rather than left to the default: the default's response is
+		// free to change when a future error type needs a different one, and
+		// POTION_LOCKED must not silently inherit it.
+		return actionUnstick
+	default:
+		return actionUnstick
+	}
+}
+
 func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[consumable2.Event[consumable2.ErrorBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e consumable2.Event[consumable2.ErrorBody]) {
 		if e.Type != consumable2.EventTypeError {
@@ -102,49 +142,37 @@ func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		if e.Body.Error == consumable2.ErrorTypePetCannotConsume {
-			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(petpkt.PetCashFoodResultWriter)(petpkt.NewPetCashFoodResultError().Encode))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
-			}
-			return
-		}
+		sp := session.NewProcessor(l, ctx)
+		unstick := session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
 
-		if e.Body.Error == consumable2.ErrorTypeInventoryFull {
-			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
+		var err error
+		switch consumableErrorAction(e.Body.Error) {
+		case actionPetCashFoodError:
+			err = sp.IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(petpkt.PetCashFoodResultWriter)(petpkt.NewPetCashFoodResultError().Encode))
+		case actionInventoryFull:
+			err = sp.IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
 				if aerr := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageDropPickUpInventoryFullBody())(s); aerr != nil {
 					return aerr
 				}
-				return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+				return unstick(s)
 			})
-			if err != nil {
-				l.WithError(err).Errorf("Unable to process inventory-full event for character [%d].", e.CharacterId)
-			}
-			return
-		}
-
-		if e.Body.Error == consumable2.ErrorTypeVegaInvalid {
+		case actionVegaInvalid:
 			// INVALID (0x42 on both verified versions) closes the dialog with
-			// the client's own "This item cannot be used." notice — required,
-			// since the dialog is excl-request-blocked after sending (design
-			// §2.3/§4.7); then enable-actions.
-			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
-				if err := session.Announce(l)(ctx)(wp)(cashpkt.VegaScrollWriter)(cashpkt.VegaScrollInvalidBody())(s); err != nil {
-					return err
+			// the client's own "This item cannot be used." notice -- required,
+			// since the dialog is excl-request-blocked after sending; then
+			// enable-actions.
+			err = sp.IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
+				if verr := session.Announce(l)(ctx)(wp)(cashpkt.VegaScrollWriter)(cashpkt.VegaScrollInvalidBody())(s); verr != nil {
+					return verr
 				}
-				return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+				return unstick(s)
 			})
-			if err != nil {
-				l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
-			}
-			return
+		default:
+			// POTION_LOCKED, CONSUME_FAILED, and any unrecognized type: the
+			// minimum bar is re-enabling client actions so the item-use
+			// exclusive-request lock doesn't stay stuck.
+			err = sp.IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), unstick)
 		}
-
-		// ErrorTypeConsumeFailed (and any other/unrecognized error type) has no
-		// dialog- or dedicated-packet-specific reaction — the minimum bar is
-		// re-enabling client actions so a failed consume (e.g. an atlas-data
-		// lookup miss) doesn't leave the item-use exclusive-request lock stuck.
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
 		}

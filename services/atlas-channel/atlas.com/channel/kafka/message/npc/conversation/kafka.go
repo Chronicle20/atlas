@@ -3,10 +3,14 @@ package conversation
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic      = "COMMAND_TOPIC_NPC_CONVERSATION"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_NPC_CONVERSATION"
+)
+
+const (
 	CommandTypeSimple    = "SIMPLE"
 	CommandTypeText      = "TEXT"
 	CommandTypeStyle     = "STYLE"

@@ -6,3 +6,5 @@ ida:
     function: CNpc::GenerateMovePath
     address: "0x7199ce"
     decompile_sha256: f902e50ec902d3c3a0985852d58bb346ddb5162358a7310682a5dc4d6733413c
+verifies:
+    - libs/atlas-packet/npc/serverbound/action_test.go#TestNPCActionBytesJMS185

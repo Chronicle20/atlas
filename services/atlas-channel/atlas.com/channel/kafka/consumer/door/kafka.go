@@ -6,11 +6,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnvEventTopicDoorStatus is the door status event topic env key. Byte-identical
 // to the atlas-doors D1 contract (services/atlas-doors/.../door/kafka.go).
-const EnvEventTopicDoorStatus = "EVENT_TOPIC_DOOR_STATUS"
+const EnvEventTopicDoorStatus topic.Token = "EVENT_TOPIC_DOOR_STATUS"
 
 const (
 	EventDoorStatusCreated     = "CREATED"

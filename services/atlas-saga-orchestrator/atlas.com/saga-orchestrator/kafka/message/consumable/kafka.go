@@ -7,16 +7,25 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CONSUMABLE"
+)
 
+const (
 	CommandApplyConsumableEffect  = "APPLY_CONSUMABLE_EFFECT"
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
+)
+
+const (
 
 	// Consumable status event constants
-	EnvEventTopicStatus          = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CONSUMABLE_STATUS"
+)
+
+const (
 	StatusEventTypeEffectApplied = "EFFECT_APPLIED"
 )
 

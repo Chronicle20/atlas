@@ -1,0 +1,16 @@
+package character
+
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, h handler.Handler) (string, error)) error {
+	return func(rf func(topic string, h handler.Handler) (string, error)) error {
+		var t string
+		t, _ = topic.EnvProvider(l)(characterMsg.EnvEventTopicStatus)()
+		if _, err := rf(t, h1); err != nil {
+			return err
+		}
+		t, _ = topic.EnvProvider(l)(characterMsg.EnvEventTopicOther)()
+		if _, err := rf(t, h2); err != nil {
+			return err
+		}
+		return nil
+	}
+}

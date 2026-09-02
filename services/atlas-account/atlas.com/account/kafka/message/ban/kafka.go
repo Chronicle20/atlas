@@ -1,10 +1,16 @@
 package ban
 
-import "time"
+import (
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_BAN"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_BAN"
+)
 
+const (
 	CommandTypeCreate = "CREATE"
 )
 

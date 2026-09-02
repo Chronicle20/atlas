@@ -7,11 +7,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopicDrop = "COMMAND_TOPIC_DROP"
-	CommandTypeSpawn    = "SPAWN"
+	EnvCommandTopicDrop topic.Token = "COMMAND_TOPIC_DROP"
+)
+
+const (
+	CommandTypeSpawn = "SPAWN"
 )
 
 type spawnCommand struct {

@@ -81,12 +81,18 @@ func (p *ProcessorImpl) RequestCatchMonster(f field.Model, characterId uint32, s
 
 	// Register the outcome handler BEFORE the reserve handler, and both BEFORE
 	// RequestReserve, so no terminal event can race ahead of its handler.
-	catchTopic, _ := topic.EnvProvider(p.l)(monsterMsg.EnvEventTopicCatch)()
+	catchTopic, err := topic.EnvProvider(p.l)(monsterMsg.EnvEventTopicCatch)()
+	if err != nil {
+		return err
+	}
 	if _, err = consumer.GetManager().RegisterHandler(catchTopic, message.AdaptHandler(message.OneTimeConfig(catchResolvedValidator(characterId, itemId), catchResolutionHandler(transactionId, characterId, slot, itemId, ci.Create())))); err != nil {
 		return p.catchError(characterId, itemId, consumable.CatchCauseInvalidItem, err)
 	}
 
-	compTopic, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	compTopic, err := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
 	handler := compartment.Consume(ConsumeCatch(f, monsterUniqueId, characterId, itemId, transactionId, slot))
 	if _, err = consumer.GetManager().RegisterHandler(compTopic, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {

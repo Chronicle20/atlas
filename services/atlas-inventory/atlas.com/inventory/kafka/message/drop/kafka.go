@@ -6,10 +6,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic               = "COMMAND_TOPIC_DROP"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_DROP"
+)
+
+const (
 	CommandTypeSpawnFromCharacter = "SPAWN_FROM_CHARACTER"
 	CommandTypeCancelReservation  = "CANCEL_RESERVATION"
 	CommandTypeRequestPickUp      = "REQUEST_PICK_UP"
@@ -70,7 +74,10 @@ type RequestPickUpCommandBody struct {
 }
 
 const (
-	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
+	EnvEventTopicDropStatus topic.Token = "EVENT_TOPIC_DROP_STATUS"
+)
+
+const (
 	StatusEventTypeReserved = "RESERVED"
 )
 

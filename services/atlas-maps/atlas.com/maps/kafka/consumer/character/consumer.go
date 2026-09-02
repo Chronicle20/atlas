@@ -40,7 +40,11 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
-		t, _ = topic.EnvProvider(l)(characterKafka.EnvEventTopicCharacterStatus)()
+		var err error
+		t, err = topic.EnvProvider(l)(characterKafka.EnvEventTopicCharacterStatus)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreatedFunc(db)))); err != nil {
 			return err
 		}
@@ -62,11 +66,17 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeletedFunc(l, db)))); err != nil {
 			return err
 		}
-		t, _ = topic.EnvProvider(l)(characterKafka.EnvCommandTopicChannelChangeRequest)()
+		t, err = topic.EnvProvider(l)(characterKafka.EnvCommandTopicChannelChangeRequest)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChannelChangeRequestFunc(db)))); err != nil {
 			return err
 		}
-		t, _ = topic.EnvProvider(l)(characterKafka.EnvCommandTopic)()
+		t, err = topic.EnvProvider(l)(characterKafka.EnvCommandTopic)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMapFunc(db)))); err != nil {
 			return err
 		}

@@ -19,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -27,7 +28,7 @@ import (
 // capture records the topic and decoded payload of every emitted message so the
 // test can assert the cross-service contracts without a live kafka broker.
 type beholderCapturedMessage struct {
-	topic   string
+	topic   topic.Token
 	payload []byte
 }
 
@@ -36,7 +37,7 @@ type beholderCaptureEmitter struct {
 	msg []beholderCapturedMessage
 }
 
-func (c *beholderCaptureEmitter) emit(_ context.Context, topic string, provider model.Provider[[]kafka.Message]) error {
+func (c *beholderCaptureEmitter) emit(_ context.Context, topic topic.Token, provider model.Provider[[]kafka.Message]) error {
 	msgs, err := provider()
 	if err != nil {
 		return err
@@ -49,12 +50,12 @@ func (c *beholderCaptureEmitter) emit(_ context.Context, topic string, provider 
 	return nil
 }
 
-func (c *beholderCaptureEmitter) byTopic(topic string) []beholderCapturedMessage {
+func (c *beholderCaptureEmitter) byTopic(t topic.Token) []beholderCapturedMessage {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	out := make([]beholderCapturedMessage, 0)
 	for _, m := range c.msg {
-		if m.topic == topic {
+		if m.topic == t {
 			out = append(out, m)
 		}
 	}

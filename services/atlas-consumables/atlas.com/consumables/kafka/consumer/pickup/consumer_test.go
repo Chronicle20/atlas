@@ -3,6 +3,7 @@ package pickup
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"testing"
 
@@ -21,7 +22,19 @@ import (
 // reinstalling the manager (DOM-24(e)).
 var emitted *producertest.Capture
 
+// resolvedMonsterBookTopic is deliberately distinct from mbmsg.EnvCommandTopic
+// (the token/env-var name). handlePickup must resolve the token exactly once
+// (via producer.ProviderImpl) and hand that single resolved value to the
+// writer; if it were resolved a second time (the regression this test
+// guards against), the second lookup would ask the environment for a
+// variable named after this resolved value, which is never set, and the
+// emit would fail closed.
+const resolvedMonsterBookTopic = "resolved-monster-book-command-topic"
+
 func TestMain(m *testing.M) {
+	if err := os.Setenv(string(mbmsg.EnvCommandTopic), resolvedMonsterBookTopic); err != nil {
+		log.Fatalf("failed to set %s: %v", mbmsg.EnvCommandTopic, err)
+	}
 	emitted = producertest.InstallCapturing()
 	os.Exit(m.Run())
 }
@@ -53,8 +66,9 @@ func TestHandlePickupCardItemEmitsMonsterBookCommand(t *testing.T) {
 
 	handlePickup(logger, ctx, cmd)
 
-	// EnvProvider falls back to the env var token name when unset.
-	msgs := emitted.Messages(mbmsg.EnvCommandTopic)
+	// The message must land on the resolved topic name, not the token
+	// itself — proving the token was resolved exactly once.
+	msgs := emitted.Messages(resolvedMonsterBookTopic)
 	if len(msgs) != 1 {
 		t.Fatalf("expected 1 monster book message, got %d", len(msgs))
 	}
@@ -97,7 +111,7 @@ func TestHandlePickupNonCardItemSkips(t *testing.T) {
 
 	handlePickup(logger, ctx, cmd)
 
-	if got := len(emitted.Messages(mbmsg.EnvCommandTopic)); got > 0 {
+	if got := len(emitted.Messages(resolvedMonsterBookTopic)); got > 0 {
 		t.Fatalf("expected no monster book emission for non-card item, got %d messages", got)
 	}
 }
@@ -119,7 +133,7 @@ func TestHandlePickupWrongTypeSkips(t *testing.T) {
 
 	handlePickup(logger, ctx, cmd)
 
-	if got := len(emitted.Messages(mbmsg.EnvCommandTopic)); got > 0 {
+	if got := len(emitted.Messages(resolvedMonsterBookTopic)); got > 0 {
 		t.Fatalf("expected no monster book emission for wrong type, got %d messages", got)
 	}
 }

@@ -82,7 +82,7 @@ func (h *harness) rawEvents(eventType string) [][]byte {
 	}
 	out := make([][]byte, 0)
 	for _, r := range rows {
-		if r.Topic != trademsg.EnvEventTopicStatus {
+		if r.Topic != string(trademsg.EnvEventTopicStatus) {
 			continue
 		}
 		var probe struct {

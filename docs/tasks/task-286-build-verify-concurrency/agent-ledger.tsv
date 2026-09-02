@@ -1,0 +1,51 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-28T21:44:20Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	583be745e	-	-	-	-
+2026-08-28T21:46:19Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	583be745e	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-28T21:47:45Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	52f568d7b	-	-	-	-
+2026-08-28T21:52:13Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	bb4a034b0	-	-	-	-
+2026-08-28T21:53:37Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	52f568d7b	CHANGES_REQUIRED	yes	-	-
+2026-08-28T21:56:20Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	bb4a034b0	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-28T22:34:38Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	90b0c2a05	-	-	-	-
+2026-08-28T22:36:52Z	agent	Task 2 fix 1	task-implementer	sonnet	-	-	-	-	DONE	42a59c45d	-	-	-	-
+2026-08-28T22:39:46Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	90b0c2a05	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-28T23:41:13Z	agent	Task 4 fix 1	task-implementer	sonnet	-	-	-	-	DONE	55bfc577d	-	-	-	-
+2026-08-28T23:41:13Z	handoff	after Task 4	controller	opus	-	-	-	-	handoff	-	-	-	-	-
+2026-08-29T00:27:24Z	agent	Task 2 fix 2	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T00:27:24Z	agent	Task 4 fix 1 re-review	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T00:28:41Z	agent	Task 4 fix 1 re-review	task-reviewer	sonnet	-	-	-	-	complete	55bfc577d	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-29T00:31:40Z	agent	Task 2 fix 2	task-implementer	sonnet	-	-	-	-	complete	8410746d2	-	-	-	-
+2026-08-29T00:31:40Z	agent	Task 2 fix 2 re-review	task-reviewer	sonnet	-	-	-	-	complete	8410746d2	APPROVED	no	-	-
+2026-08-29T01:14:19Z	agent	Task 4 trap fix	task-implementer	sonnet	-	-	-	-	complete	99d015b55	-	-	-	-
+2026-08-29T06:54:40Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	complete	19187a6b7	-	-	-	-
+2026-08-29T06:54:40Z	agent	Task 5 review	task-reviewer	sonnet	-	-	-	-	complete	19187a6b7	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-29T11:13:40Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T11:19:34Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	7b26b2d79	-	-	-	-
+2026-08-29T11:19:37Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T11:19:48Z	agent	Task 6 gate	task-verifier	-	-	-	-	-	PASS	7b26b2d79	-	-	-	-
+2026-08-29T11:20:41Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T11:22:26Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	7b26b2d79	APPROVED	no	docs/tasks/task-286-build-verify-concurrency/review-task-6.md	-
+2026-08-29T11:37:40Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE	7af8a679b	-	-	-	-
+2026-08-29T11:37:40Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T11:39:31Z	agent	Task 7 gate	task-verifier	-	-	-	-	-	PASS	7af8a679b	-	-	-	-
+2026-08-29T11:40:16Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T11:45:08Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	7af8a679b	APPROVED	no	docs/tasks/task-286-build-verify-concurrency/review-task-7.md	-
+2026-08-29T11:46:14Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE	f13b8b8be	-	-	-	-
+2026-08-29T11:46:14Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T11:49:57Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	f13b8b8be	CHANGES_REQUIRED	yes	docs/tasks/task-286-build-verify-concurrency/review-task-8.md	-
+2026-08-29T11:49:57Z	agent	Task 8 fix 1	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T11:50:21Z	agent	Task 7 review addendum	task-reviewer	sonnet	-	-	-	-	DONE	7af8a679b	APPROVED	no	-	-
+2026-08-29T11:52:26Z	agent	Task 8 fix 1	task-implementer	sonnet	-	-	-	-	DONE	162a0f51c	-	-	-	-
+2026-08-29T11:52:26Z	agent	Task 8 fix 1 re-review	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-29T11:54:55Z	agent	Task 8 fix 1 re-review	task-reviewer	sonnet	-	-	-	-	DONE	162a0f51c	APPROVED	no	docs/tasks/task-286-build-verify-concurrency/review-task-8-fix1.md	-
+2026-08-29T12:04:45Z	handoff	after Task 8	controller	opus	-	-	-	-	handoff	-	-	-	-	-
+2026-08-29T12:05:01Z	agent	Task 8 gate rerun	task-verifier	-	-	-	-	-	PASS	162a0f51c	-	-	-	-
+2026-08-29T13:17:50Z	agent	Task 8b	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	24ddd77fc	-	-	-	-
+2026-08-29T13:17:50Z	agent	Task 8b	task-reviewer	sonnet	-	-	-	-	DONE	24ddd77fc	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-29T13:43:22Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	EARLY_STOP	-	-	-	-	-
+2026-08-29T13:55:59Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DONE	2f8847fee	-	-	-	-
+2026-08-29T21:48:51Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	2f8847fee	APPROVED	no	-	-
+2026-08-29T23:01:00Z	agent	final gate	task-verifier	-	-	-	-	-	FAIL	6080dc121	-	-	-	-
+2026-08-29T23:01:00Z	agent	final gate (TMPDIR relocated)	task-verifier	-	-	-	-	-	PASS	6080dc121	-	-	-	-
+2026-08-30T15:16:53Z	agent	Criterion 5 after-figures	controller	fable	-	-	-	-	done	b92f8c3	-	-	-	-
+2026-08-30T15:19:08Z	agent	flagless gate (tuned host)	controller	fable	-	-	-	-	PASS	d149b8b	-	-	-	-
+2026-08-30T15:19:20Z	agent	post-gate tail review	task-reviewer	sonnet	-	-	-	-	-	-	APPROVED_WITH_FINDINGS	no	docs/tasks/task-286-build-verify-concurrency/reviews/review-post-gate-tail.md	-

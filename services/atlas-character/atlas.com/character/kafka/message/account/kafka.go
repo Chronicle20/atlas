@@ -1,7 +1,12 @@
 package account
 
+import "github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+
 const (
-	EnvEventTopicStatus  = "EVENT_TOPIC_ACCOUNT_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_ACCOUNT_STATUS"
+)
+
+const (
 	EventStatusCreated   = "CREATED"
 	EventStatusLoggedIn  = "LOGGED_IN"
 	EventStatusLoggedOut = "LOGGED_OUT"

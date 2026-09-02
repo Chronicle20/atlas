@@ -10,6 +10,7 @@ import (
 	"atlas-query-aggregator/monsterbook"
 	"atlas-query-aggregator/party"
 	"atlas-query-aggregator/party_quest"
+	"atlas-query-aggregator/playernpc"
 	"atlas-query-aggregator/quest"
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
@@ -40,6 +41,7 @@ type ValidationContextBuilder struct {
 	partyP      party.Processor
 	partyQuestP party_quest.Processor
 	mbP         monsterbook.Processor
+	playerNpcP  playernpc.Processor
 	l           logrus.FieldLogger
 	ctx         context.Context
 }
@@ -62,6 +64,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		partyP:      nil,
 		partyQuestP: nil,
 		mbP:         nil,
+		playerNpcP:  nil,
 		l:           nil,
 		ctx:         nil,
 	}
@@ -85,6 +88,7 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 		partyP:      party.NewProcessor(l, ctx),
 		partyQuestP: party_quest.NewProcessor(l, ctx),
 		mbP:         monsterbook.NewProcessor(l, ctx),
+		playerNpcP:  playernpc.NewProcessor(l, ctx),
 		l:           l,
 		ctx:         ctx,
 	}
@@ -145,6 +149,13 @@ func (b *ValidationContextBuilder) SetMonsterBookProcessor(p monsterbook.Process
 	return b
 }
 
+// SetPlayerNpcProcessor overrides the player-npc processor on the builder,
+// primarily so tests can inject a fake.
+func (b *ValidationContextBuilder) SetPlayerNpcProcessor(p playernpc.Processor) *ValidationContextBuilder {
+	b.playerNpcP = p
+	return b
+}
+
 // Build creates a validation context from the builder
 func (b *ValidationContextBuilder) Build() ValidationContext {
 	return ValidationContext{
@@ -164,6 +175,7 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		partyP:      b.partyP,
 		partyQuestP: b.partyQuestP,
 		mbP:         b.mbP,
+		playerNpcP:  b.playerNpcP,
 		l:           b.l,
 		ctx:         b.ctx,
 	}
@@ -195,7 +207,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition, PetTamenessCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition, PetTamenessCondition, CanSpawnPlayerNpcCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -344,6 +356,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		if len(input.Values) == 0 {
 			b.err = fmt.Errorf("values (pet template ids) required for petTameness conditions")
 		}
+	case CanSpawnPlayerNpcCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId (mapId) is required for canSpawnPlayerNpc conditions")
+		}
 	}
 
 	return b
@@ -421,6 +437,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 	case PqCustomDataCondition:
 		if b.step == "" {
 			b.err = fmt.Errorf("step (custom data key) is required for pqCustomData conditions")
+			return b
+		}
+	case CanSpawnPlayerNpcCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId (mapId) is required for canSpawnPlayerNpc conditions")
 			return b
 		}
 	}

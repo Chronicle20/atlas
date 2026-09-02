@@ -44,6 +44,10 @@ const (
 	PqCustomDataCondition           = "pqCustomData"
 	MonsterBookCountCondition       = "monsterBookCount"
 	PetTamenessCondition            = "petTameness"
+	// CanSpawnPlayerNpcCondition asks whether the character's own player-NPC
+	// could be spawned right now — the same eligibility predicate FR-1.1's
+	// automatic check uses, exposed to a conversation script (FR-6.1).
+	CanSpawnPlayerNpcCondition = "canSpawnPlayerNpc"
 )
 
 // Operator constants for validation conditions

@@ -2,10 +2,14 @@ package messenger
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic               = "COMMAND_TOPIC_MESSENGER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_MESSENGER"
+)
+
+const (
 	CommandMessengerCreate        = "CREATE"
 	CommandMessengerLeave         = "LEAVE"
 	CommandMessengerRequestInvite = "REQUEST_INVITE"
@@ -28,7 +32,10 @@ type RequestInviteBody struct {
 }
 
 const (
-	EnvEventStatusTopic             = "EVENT_TOPIC_MESSENGER_STATUS"
+	EnvEventStatusTopic topic.Token = "EVENT_TOPIC_MESSENGER_STATUS"
+)
+
+const (
 	EventMessengerStatusTypeCreated = "CREATED"
 	EventMessengerStatusTypeJoined  = "JOINED"
 	EventMessengerStatusTypeLeft    = "LEFT"

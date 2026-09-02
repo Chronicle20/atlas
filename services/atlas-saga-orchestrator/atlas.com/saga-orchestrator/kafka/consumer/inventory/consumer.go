@@ -27,7 +27,11 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
-		t, _ = topic.EnvProvider(l)(inventory2.EnvEventTopicInventoryStatus)()
+		var err error
+		t, err = topic.EnvProvider(l)(inventory2.EnvEventTopicInventoryStatus)()
+		if err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryCreatedEvent))); err != nil {
 			return err
 		}

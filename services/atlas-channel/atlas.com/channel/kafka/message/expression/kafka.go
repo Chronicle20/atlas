@@ -6,10 +6,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvExpressionCommand = "COMMAND_TOPIC_EXPRESSION"
+	EnvExpressionCommand topic.Token = "COMMAND_TOPIC_EXPRESSION"
 )
 
 type Command struct {
@@ -25,7 +26,7 @@ type Command struct {
 }
 
 const (
-	EnvExpressionEvent = "EVENT_TOPIC_EXPRESSION"
+	EnvExpressionEvent topic.Token = "EVENT_TOPIC_EXPRESSION"
 )
 
 type Event struct {

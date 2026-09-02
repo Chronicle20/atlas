@@ -48,7 +48,7 @@ func setupDoTTickTest(t *testing.T, sd information.SelfDestruction) (context.Con
 func killedEvents(t *testing.T, capture *producertest.Capture) []statusEventKilledBody {
 	t.Helper()
 	var bodies []statusEventKilledBody
-	for _, msg := range capture.Messages(EnvEventTopicMonsterStatus) {
+	for _, msg := range capture.Messages(string(EnvEventTopicMonsterStatus)) {
 		var env struct {
 			Type string          `json:"type"`
 			Body json.RawMessage `json:"body"`

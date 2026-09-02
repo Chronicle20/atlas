@@ -6,12 +6,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvPortalCommandTopic = "COMMAND_TOPIC_PORTAL"
-	CommandTypeEnter      = "ENTER"
-	CommandTypeWarp       = "WARP"
+	EnvPortalCommandTopic topic.Token = "COMMAND_TOPIC_PORTAL"
+)
+
+const (
+	CommandTypeEnter = "ENTER"
+	CommandTypeWarp  = "WARP"
 )
 
 type Command[E any] struct {

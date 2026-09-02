@@ -7,12 +7,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_PARTY_QUEST"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PARTY_QUEST"
+)
 
+const (
 	CommandTypeRegister     = "REGISTER"
 	CommandTypeStageAdvance = "STAGE_ADVANCE"
 )

@@ -1,0 +1,7 @@
+package character
+
+func InitHandlers(l logrus.FieldLogger) error {
+	t, _ := topic.EnvProvider(l)(characterMsg.EnvEventTopicStatus)()
+	doSomething(t)
+	return nil
+}

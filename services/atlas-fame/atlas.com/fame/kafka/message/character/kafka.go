@@ -4,15 +4,24 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
 	CommandRequestChangeFame = "REQUEST_CHANGE_FAME"
 
 	CommandActorTypeCharacter = "CHARACTER"
+)
 
-	EnvEventTopicCharacterStatus    = "EVENT_TOPIC_CHARACTER_STATUS"
+const (
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
 	EventCharacterStatusTypeDeleted = "DELETED"
 )
 

@@ -11,6 +11,7 @@ import (
 	mapKafka "atlas-maps/kafka/message/map"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -30,15 +31,15 @@ import (
 // services/atlas-maps/atlas.com/maps/tasks/mist_tick_test.go.
 type recordingProducer struct {
 	mu       sync.Mutex
-	messages map[string][]kafka.Message
+	messages map[topic.Token][]kafka.Message
 }
 
 func newRecordingProducer() *recordingProducer {
-	return &recordingProducer{messages: map[string][]kafka.Message{}}
+	return &recordingProducer{messages: map[topic.Token][]kafka.Message{}}
 }
 
 func (m *recordingProducer) Provider() producer.Provider {
-	return func(token string) kafkaProducer.MessageProducer {
+	return func(token topic.Token) kafkaProducer.MessageProducer {
 		return func(prov model.Provider[[]kafka.Message]) error {
 			msgs, err := prov()
 			if err != nil {
@@ -52,16 +53,16 @@ func (m *recordingProducer) Provider() producer.Provider {
 	}
 }
 
-func (m *recordingProducer) Messages(topic string) []kafka.Message {
+func (m *recordingProducer) Messages(t topic.Token) []kafka.Message {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return append([]kafka.Message(nil), m.messages[topic]...)
+	return append([]kafka.Message(nil), m.messages[t]...)
 }
 
 func (m *recordingProducer) Reset() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.messages = map[string][]kafka.Message{}
+	m.messages = map[topic.Token][]kafka.Message{}
 }
 
 func mkProcTenant(t *testing.T) tenant.Model {

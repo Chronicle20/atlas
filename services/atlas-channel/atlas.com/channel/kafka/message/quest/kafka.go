@@ -8,16 +8,23 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic                   = "COMMAND_TOPIC_QUEST_CONVERSATION"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_QUEST_CONVERSATION"
+)
+
+const (
 	CommandTypeStartQuestConversation = "START_QUEST_CONVERSATION"
 )
 
 // Quest service command topic and types (for atlas-quest)
 const (
-	EnvQuestCommandTopic        = "COMMAND_TOPIC_QUEST"
+	EnvQuestCommandTopic topic.Token = "COMMAND_TOPIC_QUEST"
+)
+
+const (
 	QuestCommandTypeStart       = "START"
 	QuestCommandTypeComplete    = "COMPLETE"
 	QuestCommandTypeForfeit     = "FORFEIT"
@@ -78,7 +85,10 @@ type RestoreItemCommandBody struct {
 
 // Status event types for quest status changes from atlas-quest service
 const (
-	EnvStatusEventTopic            = "EVENT_TOPIC_QUEST_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_QUEST_STATUS"
+)
+
+const (
 	StatusEventTypeStarted         = "STARTED"
 	StatusEventTypeCompleted       = "COMPLETED"
 	StatusEventTypeForfeited       = "FORFEITED"

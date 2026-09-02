@@ -8,10 +8,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_PET"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_PET"
+)
+
+const (
 	CommandPetSpawn          = "SPAWN"
 	CommandPetDespawn        = "DESPAWN"
 	CommandPetAttemptCommand = "ATTEMPT_COMMAND"
@@ -87,7 +91,7 @@ type SetSkillCommandBody struct {
 }
 
 const (
-	EnvCommandTopicMovement = "COMMAND_TOPIC_PET_MOVEMENT"
+	EnvCommandTopicMovement topic.Token = "COMMAND_TOPIC_PET_MOVEMENT"
 )
 
 type MovementCommand struct {
@@ -103,7 +107,10 @@ type MovementCommand struct {
 }
 
 const (
-	EnvStatusEventTopic             = "EVENT_TOPIC_PET_STATUS"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_PET_STATUS"
+)
+
+const (
 	StatusEventTypeCreated          = "CREATED"
 	StatusEventTypeDeleted          = "DELETED"
 	StatusEventTypeSpawned          = "SPAWNED"

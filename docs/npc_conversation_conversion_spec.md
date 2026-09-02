@@ -461,6 +461,7 @@ Verify in saga-orchestrator, but common operations:
 - `create_skill` - Create skill (params: `skillId`, `level`, `masterLevel`)
 - `update_skill` - Update skill (params: `skillId`, `level`, `masterLevel`)
 - `spawn_monster` - Spawn monsters at location (params: `monsterId`, `x`, `y`, `count`, `team`) - foothold resolved automatically
+- `deploy_player_npc` - Deploy the character's own player NPC (params: `mapId` - optional; nil deploys on the character's current map). WorldId and, when `mapId` is omitted, MapId are always resolved from the character's current location via atlas-maps. Eligibility is always enforced (fire-and-forget; no reply topic — see `canSpawnPlayerNpc` under conditions for the pre-check)
 - `complete_quest` - Complete a quest (params: `questId`, `npcId`) - stub implementation
 - `start_quest` - Start a quest (params: `questId`, `npcId`) - stub implementation
 - `apply_consumable_effect` - Apply consumable effects without consuming (params: `itemId`) - for NPC buffs (maps to `cm.useItem()`)

@@ -32,7 +32,11 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
-			t, _ := topic.EnvProvider(l)(merchant2.EnvCommandTopic)()
+			t, err := topic.EnvProvider(l)(merchant2.EnvCommandTopic)()
+			if err != nil {
+				l.WithError(err).Warnln("Merchant command topic not configured, skipping handler registration.")
+				return
+			}
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePlaceShopCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleOpenShopCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCloseShopCommand(db))))

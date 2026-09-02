@@ -18,6 +18,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -50,7 +51,7 @@ func newPuppetProcessor(t *testing.T, eff effect.Model) (*ProcessorImpl, *[]capt
 		ctx:     ctx,
 		t:       ten,
 		effects: stubEffectSource{eff: eff},
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+		emit: func(topic topic.Token, provider model.Provider[[]kafka.Message]) error {
 			msgs, perr := provider()
 			if perr != nil {
 				return perr

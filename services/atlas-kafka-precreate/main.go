@@ -19,6 +19,7 @@ import (
 	"atlas.com/kafka-precreate/internal/discover"
 	"atlas.com/kafka-precreate/internal/groups"
 	"atlas.com/kafka-precreate/internal/kafkaops"
+	"atlas.com/kafka-precreate/internal/manifest"
 	"atlas.com/kafka-precreate/internal/topics"
 )
 
@@ -53,8 +54,28 @@ func run() error {
 		Transport: &kafka.Transport{MetadataTTL: 1 * time.Second},
 	}
 
-	// Phase A: discover.
-	t := discover.FromEnviron(os.Environ())
+	// Phase A: discover. The topic set is the code-derived manifest mounted
+	// from the atlas-kafka-topics ConfigMap; names still resolve through
+	// atlas-env because they carry the per-environment suffix the manifest
+	// deliberately does not encode (task-276 FR-4.3).
+	path := os.Getenv("KAFKA_TOPIC_MANIFEST_PATH")
+	if path == "" {
+		path = "/etc/atlas/topics/topics.yaml"
+	}
+	m, err := manifest.Load(path)
+	if err != nil {
+		return fmt.Errorf("loading topic manifest from %s: %w", path, err)
+	}
+	t, err := manifest.Resolve(m, os.LookupEnv)
+	if err != nil {
+		return err
+	}
+	logrus.WithFields(logrus.Fields{
+		"phase":    "discover",
+		"manifest": path,
+		"tokens":   len(m.Topics),
+		"compact":  len(t.Compact),
+	}).Info("topic manifest loaded")
 	groupIDs := discover.Groups(os.Getenv("KAFKA_CONSUMER_GROUP"))
 	union := t.Union()
 

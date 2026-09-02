@@ -77,3 +77,23 @@ func IsZombified(bs []Model) bool {
 	}
 	return false
 }
+
+// IsPotionLocked reports whether bs contains an unexpired buff carrying a
+// STOP_PORTION stat change -- the Seal-style debuff that forbids potion use.
+// Magnitude is never consulted: the WZ `x` value is a client-side display
+// input, so presence is the entire predicate. Slice-level for the same
+// reason IsZombified is: every caller already holds the drained list.
+// See task-280 FR-3.
+func IsPotionLocked(bs []Model) bool {
+	for _, b := range bs {
+		if b.Expired() {
+			continue
+		}
+		for _, c := range b.changes {
+			if c.Type == charconst.TemporaryStatTypeStopPortion {
+				return true
+			}
+		}
+	}
+	return false
+}

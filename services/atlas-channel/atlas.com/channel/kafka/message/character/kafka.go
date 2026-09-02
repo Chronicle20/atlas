@@ -8,10 +8,14 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic               = "COMMAND_TOPIC_CHARACTER"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHARACTER"
+)
+
+const (
 	CommandRequestDistributeAp    = "REQUEST_DISTRIBUTE_AP"
 	CommandRequestDistributeSp    = "REQUEST_DISTRIBUTE_SP"
 	CommandRequestDropMeso        = "REQUEST_DROP_MESO"
@@ -91,7 +95,10 @@ type RedeemStoredExperienceCommandBody struct {
 }
 
 const (
-	EnvEventTopicCharacterStatus     = "EVENT_TOPIC_CHARACTER_STATUS"
+	EnvEventTopicCharacterStatus topic.Token = "EVENT_TOPIC_CHARACTER_STATUS"
+)
+
+const (
 	StatusEventTypeMapChanged        = "MAP_CHANGED"
 	StatusEventTypeJobChanged        = "JOB_CHANGED"
 	StatusEventTypeExperienceChanged = "EXPERIENCE_CHANGED"

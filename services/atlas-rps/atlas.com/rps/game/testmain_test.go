@@ -1,6 +1,7 @@
 package game_test
 
 import (
+	"atlas-rps/kafka/message/rps"
 	"os"
 	"testing"
 
@@ -12,6 +13,8 @@ import (
 // StartAndEmit in resource_test.go) discards instead of hanging on broker
 // retries. Mirrors kafka/consumer/rps/testmain_test.go.
 func TestMain(m *testing.M) {
+	_ = os.Setenv(string(rps.EnvCommandTopic), string(rps.EnvCommandTopic))
+	_ = os.Setenv(string(rps.EnvEventTopic), string(rps.EnvEventTopic))
 	producertest.InstallNoop()
 	os.Exit(m.Run())
 }

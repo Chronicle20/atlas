@@ -42,6 +42,7 @@ func TestZeroAssignmentIsHealthyIdle(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return c.Snapshot().GenerationID == 4 }, "generation was never observed")
@@ -94,6 +95,7 @@ func TestAssignedGenerationStartsOnePartitionLoop(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return len(gen.commits()) > 0 }, "assigned partition never delivered")
@@ -132,6 +134,7 @@ func TestUnassignedToAssignedResetsNoProgressState(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return c.Snapshot().GenerationID == 1 }, "first generation not observed")
@@ -173,6 +176,7 @@ func TestGroupProducerErrorBacksOffAndRetries(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return c.Snapshot().GenerationID == 1 }, "group was never retried after a join failure")
@@ -239,6 +243,7 @@ func TestGroupCloseWaitsForPartitionGoroutine(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	// Wait until the handler has actually been entered (not merely until the
@@ -304,6 +309,7 @@ func TestGateDoesNotJoinUntilTopicExists(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return counter.callCount() >= 1 }, "the gate never consulted the partition-count seam")
@@ -350,6 +356,7 @@ func TestGroupEngineRecoversWhenTopicAppears(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return len(gen.commits()) > 0 }, "the consumer never consumed after the topic appeared")
@@ -393,6 +400,7 @@ func TestGateExitsOnContextCancel(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return counter.callCount() >= 1 }, "the gate never consulted the partition-count seam")
@@ -430,6 +438,7 @@ func TestNilPartitionCountProducerSkipsGate(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return c.Snapshot().GenerationID == 4 }, "a nil pcp blocked the join; the gate must be inert without a seam")
@@ -451,6 +460,7 @@ func TestGateJoinsImmediatelyOnIndeterminateLookup(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return c.Snapshot().GenerationID == 4 }, "an indeterminate lookup held the consumer out of its group; FR-2.5 forbids it")
@@ -481,6 +491,7 @@ func TestEmptyAssignmentWarnsWhenTopicMissing(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool {
@@ -527,6 +538,7 @@ func TestEmptyAssignmentStaysHealthyIdleWhenPartitionsExist(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return c.Snapshot().GenerationID == 4 }, "generation was never observed")
@@ -572,6 +584,7 @@ func TestEmptyAssignmentIndeterminateLookupIsHealthyIdle(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool {
@@ -613,6 +626,7 @@ func TestSteadyPartitionCountCausesNoRejoin(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
 
 	waitFor(t, func() bool { return len(gen.commits()) > 0 }, "assigned partition never delivered")

@@ -74,7 +74,7 @@ func TestHandleChalkboardCollision(t *testing.T) {
 		reader := request.NewRequestReader(&req, 0)
 		CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
 
-		msgs := (*captured)[chalkboardMsg.EnvCommandTopic]
+		msgs := (*captured)[string(chalkboardMsg.EnvCommandTopic)]
 		if len(msgs) != 1 {
 			t.Fatalf("chalkboard SET messages produced = %d, want 1", len(msgs))
 		}
@@ -119,7 +119,7 @@ func TestHandleChalkboardCollision(t *testing.T) {
 		reader := request.NewRequestReader(&req, 0)
 		CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
 
-		msgs := (*captured)[chalkboardMsg.EnvCommandTopic]
+		msgs := (*captured)[string(chalkboardMsg.EnvCommandTopic)]
 		if len(msgs) != 1 {
 			t.Fatalf("chalkboard SET messages produced = %d, want 1", len(msgs))
 		}
@@ -146,7 +146,7 @@ func TestHandleChalkboardCollision(t *testing.T) {
 		rec := &gaugeProducerRecorder{}
 		CharacterCashItemUseHandleFunc(logrus.New(), ctx, rec.producer())(s, &reader, map[string]interface{}{})
 
-		msgs := (*captured)[chalkboardMsg.EnvCommandTopic]
+		msgs := (*captured)[string(chalkboardMsg.EnvCommandTopic)]
 		if len(msgs) != 0 {
 			t.Errorf("chalkboard SET messages produced = %d, want 0 — the Quick Delivery Ticket must not reach chalkboard.AttemptUse", len(msgs))
 		}

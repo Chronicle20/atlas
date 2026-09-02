@@ -1,10 +1,15 @@
 package rate
 
-import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 const (
-	EnvEventTopicWorldRate = "EVENT_TOPIC_WORLD_RATE"
+	EnvEventTopicWorldRate topic.Token = "EVENT_TOPIC_WORLD_RATE"
+)
 
+const (
 	TypeRateChanged = "RATE_CHANGED"
 )
 

@@ -3,10 +3,14 @@ package channel
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_CHANNEL_STATUS"
+	EnvCommandTopic topic.Token = "COMMAND_TOPIC_CHANNEL_STATUS"
+)
+
+const (
 	CommandTypeStatusRequest = "STATUS_REQUEST"
 )
 
@@ -15,7 +19,7 @@ type StatusCommand struct {
 }
 
 const (
-	EnvEventTopicStatus = "EVENT_TOPIC_CHANNEL_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_CHANNEL_STATUS"
 )
 
 type StatusEvent struct {

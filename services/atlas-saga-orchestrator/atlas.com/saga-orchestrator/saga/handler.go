@@ -19,6 +19,7 @@ import (
 	megaphone2 "atlas-saga-orchestrator/kafka/message/megaphone"
 	"atlas-saga-orchestrator/kafka/message/npc"
 	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
+	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
@@ -31,6 +32,7 @@ import (
 	party_quest "atlas-saga-orchestrator/party_quest"
 	"atlas-saga-orchestrator/pending_change"
 	"atlas-saga-orchestrator/pet"
+	"atlas-saga-orchestrator/playernpc"
 	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
 	"atlas-saga-orchestrator/rates"
@@ -56,6 +58,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -95,6 +98,9 @@ type Handler interface {
 	// green.
 	WithPartyProcessor(party.Processor) Handler
 	WithPendingChangeProcessor(pending_change.Processor) Handler
+	// WithPlayerNpcLocationProcessor is the injector seam for
+	// handleDeployPlayerNpc's atlas-maps location lookup (FR-6.2).
+	WithPlayerNpcLocationProcessor(playernpc.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -202,82 +208,85 @@ type Handler interface {
 	handleChangeCharacterWorld(s Saga, st Step[any]) error
 	handleStartItemConversation(s Saga, st Step[any]) error
 	handleStartNpcConversation(s Saga, st Step[any]) error
+	handleDeployPlayerNpc(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
-	l               logrus.FieldLogger
-	ctx             context.Context
-	t               tenant.Model
-	charP           character.Processor
-	compP           compartment.Processor
-	skillP          skill.Processor
-	validP          validation.Processor
-	guildP          guild.Processor
-	inviteP         invite.Processor
-	buddyListP      buddylist.Processor
-	petP            pet.Processor
-	footholdP       foothold.Processor
-	monsterP        monster.Processor
-	reactorDropP    reactorDrop.Processor
-	consumableP     consumable.Processor
-	portalP         portal.Processor
-	portalBlockingP portalBlocking.Processor
-	cashshopP       cashshop.Processor
-	mtsP            mts.Processor
-	parcelP         parcel.Processor
-	tradeP          tradesvc.Processor
-	systemMessageP  system_message.Processor
-	questP          quest.Processor
-	storageP        storage.Processor
-	buffP           buff.Processor
-	transportP      transport.Processor
-	savedLocationP  saved_location.Processor
-	gachaponP       gachapon.Processor
-	partyQuestP     party_quest.Processor
-	reactorP        reactor.Processor
-	mapCommandP     map_command.Processor
-	rpsP            rps.Processor
-	noteP           note.Processor
-	partyP          party.Processor
-	pendingChangeP  pending_change.Processor
+	l                  logrus.FieldLogger
+	ctx                context.Context
+	t                  tenant.Model
+	charP              character.Processor
+	compP              compartment.Processor
+	skillP             skill.Processor
+	validP             validation.Processor
+	guildP             guild.Processor
+	inviteP            invite.Processor
+	buddyListP         buddylist.Processor
+	petP               pet.Processor
+	footholdP          foothold.Processor
+	monsterP           monster.Processor
+	reactorDropP       reactorDrop.Processor
+	consumableP        consumable.Processor
+	portalP            portal.Processor
+	portalBlockingP    portalBlocking.Processor
+	cashshopP          cashshop.Processor
+	mtsP               mts.Processor
+	parcelP            parcel.Processor
+	tradeP             tradesvc.Processor
+	systemMessageP     system_message.Processor
+	questP             quest.Processor
+	storageP           storage.Processor
+	buffP              buff.Processor
+	transportP         transport.Processor
+	savedLocationP     saved_location.Processor
+	gachaponP          gachapon.Processor
+	partyQuestP        party_quest.Processor
+	reactorP           reactor.Processor
+	mapCommandP        map_command.Processor
+	rpsP               rps.Processor
+	noteP              note.Processor
+	partyP             party.Processor
+	pendingChangeP     pending_change.Processor
+	playerNpcLocationP playernpc.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 	return &HandlerImpl{
-		l:               l,
-		ctx:             ctx,
-		t:               tenant.MustFromContext(ctx),
-		charP:           character.NewProcessor(l, ctx),
-		compP:           compartment.NewProcessor(l, ctx),
-		skillP:          skill.NewProcessor(l, ctx),
-		validP:          validation.NewProcessor(l, ctx),
-		guildP:          guild.NewProcessor(l, ctx),
-		inviteP:         invite.NewProcessor(l, ctx),
-		buddyListP:      buddylist.NewProcessor(l, ctx),
-		petP:            pet.NewProcessor(l, ctx),
-		footholdP:       foothold.NewProcessor(l, ctx),
-		monsterP:        monster.NewProcessor(l, ctx),
-		reactorDropP:    reactorDrop.NewProcessor(l, ctx),
-		consumableP:     consumable.NewProcessor(l, ctx),
-		portalBlockingP: portalBlocking.NewProcessor(l, ctx),
-		cashshopP:       cashshop.NewProcessor(l, ctx),
-		mtsP:            mts.NewProcessor(l, ctx),
-		parcelP:         parcel.NewProcessor(l, ctx),
-		tradeP:          tradesvc.NewProcessor(l, ctx),
-		systemMessageP:  system_message.NewProcessor(l, ctx),
-		questP:          quest.NewProcessor(l, ctx),
-		storageP:        storage.NewProcessor(l, ctx),
-		buffP:           buff.NewProcessor(l, ctx),
-		transportP:      transport.NewProcessor(l, ctx),
-		savedLocationP:  saved_location.NewProcessor(l, ctx),
-		gachaponP:       gachapon.NewProcessor(l, ctx),
-		partyQuestP:     party_quest.NewProcessor(l, ctx),
-		reactorP:        reactor.NewProcessor(l, ctx),
-		mapCommandP:     map_command.NewProcessor(l, ctx),
-		rpsP:            rps.NewProcessor(l, ctx),
-		noteP:           note.NewProcessor(l, ctx),
-		partyP:          party.NewProcessor(l, ctx),
-		pendingChangeP:  pending_change.NewProcessor(l, ctx),
+		l:                  l,
+		ctx:                ctx,
+		t:                  tenant.MustFromContext(ctx),
+		charP:              character.NewProcessor(l, ctx),
+		compP:              compartment.NewProcessor(l, ctx),
+		skillP:             skill.NewProcessor(l, ctx),
+		validP:             validation.NewProcessor(l, ctx),
+		guildP:             guild.NewProcessor(l, ctx),
+		inviteP:            invite.NewProcessor(l, ctx),
+		buddyListP:         buddylist.NewProcessor(l, ctx),
+		petP:               pet.NewProcessor(l, ctx),
+		footholdP:          foothold.NewProcessor(l, ctx),
+		monsterP:           monster.NewProcessor(l, ctx),
+		reactorDropP:       reactorDrop.NewProcessor(l, ctx),
+		consumableP:        consumable.NewProcessor(l, ctx),
+		portalBlockingP:    portalBlocking.NewProcessor(l, ctx),
+		cashshopP:          cashshop.NewProcessor(l, ctx),
+		mtsP:               mts.NewProcessor(l, ctx),
+		parcelP:            parcel.NewProcessor(l, ctx),
+		tradeP:             tradesvc.NewProcessor(l, ctx),
+		systemMessageP:     system_message.NewProcessor(l, ctx),
+		questP:             quest.NewProcessor(l, ctx),
+		storageP:           storage.NewProcessor(l, ctx),
+		buffP:              buff.NewProcessor(l, ctx),
+		transportP:         transport.NewProcessor(l, ctx),
+		savedLocationP:     saved_location.NewProcessor(l, ctx),
+		gachaponP:          gachapon.NewProcessor(l, ctx),
+		partyQuestP:        party_quest.NewProcessor(l, ctx),
+		reactorP:           reactor.NewProcessor(l, ctx),
+		mapCommandP:        map_command.NewProcessor(l, ctx),
+		rpsP:               rps.NewProcessor(l, ctx),
+		noteP:              note.NewProcessor(l, ctx),
+		partyP:             party.NewProcessor(l, ctx),
+		pendingChangeP:     pending_change.NewProcessor(l, ctx),
+		playerNpcLocationP: playernpc.NewProcessor(l, ctx),
 	}
 }
 
@@ -816,6 +825,18 @@ func (h *HandlerImpl) WithNoteProcessor(noteP note.Processor) Handler {
 	}
 }
 
+// WithPlayerNpcLocationProcessor returns a Handler with the given player-npc
+// location processor substituted; used by tests to fake atlas-maps'
+// GetCurrentLocation lookup without hitting the network.
+func (h *HandlerImpl) WithPlayerNpcLocationProcessor(playerNpcLocationP playernpc.Processor) Handler {
+	return &HandlerImpl{
+		l:                  h.l,
+		ctx:                h.ctx,
+		t:                  h.t,
+		playerNpcLocationP: playerNpcLocationP,
+	}
+}
+
 // ActionHandler is a function type for handling different saga action types
 type ActionHandler func(s Saga, st Step[any]) error
 
@@ -925,6 +946,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleStartItemConversation, true
 	case StartNpcConversation:
 		return h.handleStartNpcConversation, true
+	case DeployPlayerNpc:
+		return h.handleDeployPlayerNpc, true
 	case AcceptToStorage:
 		return h.handleAcceptToStorage, true
 	case ReleaseFromCharacter:
@@ -1393,6 +1416,50 @@ func (h *HandlerImpl) handleStartNpcConversation(s Saga, st Step[any]) error {
 		"character_id":    payload.CharacterId,
 		"npc_template_id": payload.NpcTemplateId,
 	}).Debug("Dispatched npc conversation START; awaiting STARTED/START_ERROR.")
+
+	return nil
+}
+
+// handleDeployPlayerNpc handles the DeployPlayerNpc action (FR-6.2).
+//
+// Event-driven, not self-completing (Task 23b): the command carries the
+// saga's transaction id, and the step waits for the command consumer's
+// COMMAND_SUCCEEDED/COMMAND_FAILED reply (kafka/consumer/playernpc) to
+// complete it. COMMAND_FAILED's design §8.3 code travels on the step's
+// result via the existing errorCode convention (FR-6.3).
+//
+// DeployPlayerNpcPayload carries no WorldId field, so WorldId is always
+// resolved via playerNpcLocationP.GetCurrentLocation, even when the payload
+// supplies an explicit MapId; the explicit MapId wins over the resolved one.
+func (h *HandlerImpl) handleDeployPlayerNpc(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(DeployPlayerNpcPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	worldId, currentMapId, _, err := h.playerNpcLocationP.GetCurrentLocation(payload.CharacterId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to resolve current location for player npc deploy.")
+		return err
+	}
+
+	mapId := currentMapId
+	if payload.MapId != nil {
+		mapId = _map.Id(*payload.MapId)
+	}
+
+	err = producer.ProviderImpl(h.l)(h.ctx)(playernpcmsg.EnvCommandTopic)(DeployPlayerNpcCommandProvider(s.TransactionId(), payload.CharacterId, worldId, mapId))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit player npc deploy command.")
+		return err
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"world_id":       worldId,
+		"map_id":         mapId,
+	}).Debug("Dispatched player npc deploy command.")
 
 	return nil
 }

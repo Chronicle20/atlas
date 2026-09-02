@@ -4,10 +4,14 @@ import (
 	"github.com/google/uuid"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 const (
-	EnvEventTopicStatus = "EVENT_TOPIC_TRANSPORT_STATUS"
+	EnvEventTopicStatus topic.Token = "EVENT_TOPIC_TRANSPORT_STATUS"
+)
+
+const (
 	EventStatusArrived  = "ARRIVED"
 	EventStatusDeparted = "DEPARTED"
 )

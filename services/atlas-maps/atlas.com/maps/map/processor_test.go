@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -116,17 +117,17 @@ func (m *mockCharacterProcessor) GetExitCalls() []exitCall {
 
 type mockProducerProvider struct {
 	mu       sync.Mutex
-	messages map[string][]kafka.Message
+	messages map[topic.Token][]kafka.Message
 }
 
 func newMockProducerProvider() *mockProducerProvider {
 	return &mockProducerProvider{
-		messages: make(map[string][]kafka.Message),
+		messages: make(map[topic.Token][]kafka.Message),
 	}
 }
 
 func (m *mockProducerProvider) Provider() producer.Provider {
-	return func(token string) producer.MessageProducer {
+	return func(token topic.Token) producer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {
@@ -140,10 +141,10 @@ func (m *mockProducerProvider) Provider() producer.Provider {
 	}
 }
 
-func (m *mockProducerProvider) GetMessages(topic string) []kafka.Message {
+func (m *mockProducerProvider) GetMessages(t topic.Token) []kafka.Message {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return append([]kafka.Message(nil), m.messages[topic]...)
+	return append([]kafka.Message(nil), m.messages[t]...)
 }
 
 func createTestContext() context.Context {

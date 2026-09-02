@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -21,7 +22,7 @@ import (
 // EnvServiceStatusTopic names the env var carrying the Kafka topic that
 // service config CRUD events are enqueued onto. When unset (e.g. in unit
 // tests that don't exercise the publish path), Enqueue is skipped.
-const EnvServiceStatusTopic = "EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS"
+const EnvServiceStatusTopic topic.Token = "EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS"
 
 // serviceOutboxKey returns the outbox message key for a service. The
 // "service:" prefix prevents collisions with tenant keys on a shared
@@ -34,7 +35,7 @@ func serviceOutboxKey(id uuid.UUID) []byte {
 // inside the caller's transaction. When the topic env var is unset, the
 // call is a no-op so unit tests don't have to set it.
 func enqueueServiceStatus(tx *gorm.DB, id uuid.UUID, config any) error {
-	topic := os.Getenv(EnvServiceStatusTopic)
+	topic := os.Getenv(string(EnvServiceStatusTopic))
 	if topic == "" {
 		return nil
 	}

@@ -2,8 +2,9 @@
 
 ### Responsibility
 
-Discover the set of Kafka topics and override consumer groups an Atlas
-environment declares through process environment variables, ensure every
+Discover the set of Kafka topics an Atlas environment declares — from the
+mounted topic manifest, resolved against the process environment — and the
+override consumer groups it declares, ensure every
 declared topic exists on the cluster with the correct cleanup configuration,
 and — for any declared override consumer group that is safe to seed — commit
 end-of-log offsets so a first (or re-)sync does not replay the full retention
@@ -35,14 +36,16 @@ window.
 
 ### Invariants
 
-- A topic-shaped environment variable is one whose name has prefix
-  `COMMAND_TOPIC_` or `EVENT_TOPIC_` and whose value is non-empty; every
-  other variable is ignored by discovery.
-- Exactly three variable names are classified compacted:
+- The topic set is exactly the manifest's token list — every `topic.Token`
+  constant `libs/atlas-kafka/gen` found across `services/` and `libs/`.
+  Discovery does not scrape the environment for topic-shaped names; a token
+  the manifest does not name is not created, and a token it does name that
+  resolves to no non-empty value is fatal.
+- Exactly three tokens are classified compacted:
   `EVENT_TOPIC_CONFIGURATION_TENANT_STATUS`,
   `EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS`,
-  `EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS`. Every other topic-shaped
-  variable is classified plain.
+  `EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS`. Every other token is
+  classified plain, per its manifest `cleanup` field.
 - `discover.Topics.Plain` and `discover.Topics.Compact` are disjoint: a value
   classified compact is removed from the plain set if also present there.
 - `discover.Groups` splits its input on `\n`, drops only empty lines (after
@@ -93,7 +96,9 @@ window.
 
 The tool runs five phases in sequence from `main.run()`:
 
-1. **Discover** — `discover.FromEnviron` scrapes `os.Environ()` into a
+1. **Discover** — `manifest.Load` reads the manifest at
+   `KAFKA_TOPIC_MANIFEST_PATH` (default `/etc/atlas/topics/topics.yaml`) and
+   `manifest.Resolve` resolves each token against the environment into a
    `discover.Topics`; `discover.Groups` parses `KAFKA_CONSUMER_GROUP` into a
    group ID list.
 2. **Create/Alter** — `topics.Ensure` creates the topic union and applies the
@@ -114,8 +119,11 @@ A consumer group's observed state, as returned by `groups.probeState`
 
 ### Processors
 
-- `discover.FromEnviron(environ []string) Topics` — classifies topic-shaped
-  environment variables into plain and compacted sets.
+- `manifest.Load(path string) (Manifest, error)` — reads and parses the
+  mounted topic manifest.
+- `manifest.Resolve(m Manifest, look func(string) (string, bool)) (discover.Topics, error)`
+  — resolves each manifest token to its concrete topic name and classifies
+  the result into plain and compacted sets; an unresolvable token is fatal.
 - `discover.Groups(raw string) []string` — parses the newline-delimited
   consumer group list.
 - `discover.StateIsSeedable(state string) bool` — reports whether a group

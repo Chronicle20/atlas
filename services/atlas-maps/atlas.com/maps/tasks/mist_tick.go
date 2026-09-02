@@ -14,6 +14,7 @@ import (
 	mapchar "atlas-maps/map/character"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -95,17 +96,17 @@ const mistTenantConcurrency = 4
 // EnvCommandTopicCharacterBuff is the Kafka topic where APPLY-disease
 // commands are published. Mirrors atlas-monsters' value (services
 // communicate via topic-name only — no shared library import).
-const EnvCommandTopicCharacterBuff = "COMMAND_TOPIC_CHARACTER_BUFF"
+const EnvCommandTopicCharacterBuff topic.Token = "COMMAND_TOPIC_CHARACTER_BUFF"
 
 // EnvCommandTopicMonster is the Kafka topic where APPLY_STATUS commands are
 // published. Mirrors atlas-channel's value (services communicate via
 // topic-name only -- no shared library import).
-const EnvCommandTopicMonster = "COMMAND_TOPIC_MONSTER"
+const EnvCommandTopicMonster topic.Token = "COMMAND_TOPIC_MONSTER"
 
 // EnvCommandTopicCharacter is the Kafka topic where CHANGE_MP commands are
 // published. Mirrors atlas-channel's value (services communicate via
 // topic-name only -- no shared library import).
-const EnvCommandTopicCharacter = "COMMAND_TOPIC_CHARACTER"
+const EnvCommandTopicCharacter topic.Token = "COMMAND_TOPIC_CHARACTER"
 
 // CharacterLookup resolves a character's current world coordinates and HP.
 // Injected as a seam so MistTick can be unit-tested without standing up the

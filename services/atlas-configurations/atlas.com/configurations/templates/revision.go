@@ -29,6 +29,13 @@ import (
 // key, and on any deployment with a non-empty ATLAS_ENVIRONMENT (e.g.
 // atlas-main) the stored side would hash a value the shipped side never has,
 // making SeedDrift permanently true for every template.
+//
+// This hash is NOT comparable with drift.Aggregate. Revision hashes the
+// STRUCT, in field-declaration order; drift.Aggregate hashes a MAP, in
+// key-sorted order. Same document, different bytes. Each is only ever
+// compared against itself -- Revision for template-vs-shipped-seed-file,
+// drift for tenant-vs-baseline-template. Crossing them produces a flag
+// that is permanently true for every row.
 func Revision(rm RestModel) (string, error) {
 	rm.Id = ""
 	rm.Environment = ""

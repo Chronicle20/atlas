@@ -43,7 +43,7 @@ func TestMapObjects_Endpoint(t *testing.T) {
 	url := fmt.Sprintf("%s/data/maps/103000800/objects", ts.URL)
 	resp, err := http.DefaultClient.Do(mapsRequest(url, tn.Id()))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 

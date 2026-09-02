@@ -2,6 +2,8 @@ package tenants
 
 import (
 	"atlas-configurations/templates"
+	tmplhandler "atlas-configurations/templates/socket/handler"
+	tmplwriter "atlas-configurations/templates/socket/writer"
 	"atlas-configurations/tenants/npcs"
 	"context"
 	"encoding/json"
@@ -329,6 +331,66 @@ func TestResetEndpoint(t *testing.T) {
 			t.Fatalf("status = %d, want 409, body=%s", rr.Code, rr.Body.String())
 		}
 		assertJSONAPIErrorDocument(t, rr, "409")
+	})
+
+	t.Run("ValidationFailureIs422", func(t *testing.T) {
+		db := setupViewTestDB(t)
+		l := testLogger()
+		router := mux.NewRouter()
+		InitResource(testServerInformation{})(db)(router, l)
+		p := NewProcessor(l, context.Background(), db)
+
+		// Same conflicting-unsupported-state fixture as
+		// reset_test.go:TestResetById_ValidationFailureIsNotPersisted: a
+		// handler that is both live and marked unsupported fails pure
+		// socket validation, which ResetById surfaces as a
+		// *validationFailureError -- 422 on the reset path, not 400
+		// (resource.go's default arm; see resource.go's inline comment on
+		// why reset differs from PATCH).
+		seedTemplate(t, db, "GMS", 83, 1, func(rm *templates.RestModel) {
+			rm.Socket.Handlers = []tmplhandler.RestModel{
+				{OpCode: "0x01", Validator: "NoOpValidator", Handler: "LoginHandle", Services: []string{"login"}},
+			}
+			rm.Socket.Writers = []tmplwriter.RestModel{
+				{OpCode: "0x00", Writer: "AuthSuccess", Services: []string{"login"}},
+			}
+			rm.Socket.Unsupported.Handlers = []string{"LoginHandle"}
+		})
+		id := seedTenant(t, db, p, "GMS", 83, 1, func(rm *RestModel) {
+			rm.UsesPin = false
+		})
+
+		rr := doReset(t, router, id.String(), "")
+		if rr.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("status = %d, want 422, body=%s", rr.Code, rr.Body.String())
+		}
+		if ct := rr.Header().Get("Content-Type"); ct != "application/vnd.api+json" {
+			t.Errorf("Content-Type = %q, want application/vnd.api+json", ct)
+		}
+		var doc struct {
+			Errors []struct {
+				Status string         `json:"status"`
+				Title  string         `json:"title"`
+				Detail string         `json:"detail"`
+				Meta   map[string]any `json:"meta"`
+			} `json:"errors"`
+		}
+		if err := json.Unmarshal(rr.Body.Bytes(), &doc); err != nil {
+			t.Fatalf("unmarshal error document: %v (body=%s)", err, rr.Body.String())
+		}
+		if len(doc.Errors) != 1 {
+			t.Fatalf("len(errors) = %d, want 1 (body=%s)", len(doc.Errors), rr.Body.String())
+		}
+		want := `"LoginHandle" is marked unsupported but is also defined in socket.handlers`
+		if doc.Errors[0].Detail != want {
+			t.Errorf("errors[0].detail = %q, want %q", doc.Errors[0].Detail, want)
+		}
+		if doc.Errors[0].Title != "validation failed" {
+			t.Errorf("errors[0].title = %q, want %q", doc.Errors[0].Title, "validation failed")
+		}
+		if got := doc.Errors[0].Meta["path"]; got != "socket.unsupported.handlers[0]" {
+			t.Errorf("errors[0].meta.path = %v, want socket.unsupported.handlers[0]", got)
+		}
 	})
 
 	t.Run("InvalidUUIDIs400", func(t *testing.T) {

@@ -13,6 +13,15 @@
 //     parameter. A defined type alone cannot catch this: Go implicitly
 //     converts an untyped string constant to the parameter's named type at
 //     the call site, so the type checker alone sees a well-typed call.
+//     This diagnostic deliberately does NOT filter on the value's shape.
+//     It originally required the value to match diagnostic 2's
+//     `^[A-Z0-9_]*TOPIC[A-Z0-9_]*$`, which inverted the intent: a legacy
+//     Kafka topic NAME such as "tenant.status" — precisely the shape still
+//     needing migration to a token — never matched, so atlas-tenants kept a
+//     lowercase topic name at a topic.Token parameter and the guard passed
+//     while every tenant emit failed at runtime (task-288). Widening it
+//     produced zero new violations fleet-wide across all 69 services/ and
+//     24 libs/ modules, so no shape filter is warranted here.
 //  2. raw-env-topic-read — os.Getenv/os.LookupEnv called with a bare string
 //     literal that looks like a topic token name (contains "TOPIC"),
 //     instead of `string(SomeTypedConst)`. An env var name that lexically
@@ -155,12 +164,12 @@ func isTopicTokenType(t types.Type) bool {
 // reportIfBareTokenArg reports arg if it is a bare string literal, or a
 // reference (identifier or qualified selector) to a constant whose own
 // declared type is not topic.Token — an untyped string constant reaching a
-// topic.Token parameter only by Go's implicit conversion at the call site —
-// and its value looks like a topic token name (design D2b diagnostic 1: the
-// same `^[A-Z0-9_]*TOPIC[A-Z0-9_]*$` pattern diagnostic 2 uses). Any other
-// argument shape (a conversion, a function call, a variable, a field of
-// type topic.Token) is out of scope: it is either already sanctioned or not
-// decidable without risking a false positive.
+// topic.Token parameter only by Go's implicit conversion at the call site.
+// The value's shape is irrelevant — see the package comment for why the
+// original `^[A-Z0-9_]*TOPIC[A-Z0-9_]*$` filter was removed (task-288). Any
+// other argument shape (a conversion, a function call, a variable, a field
+// of type topic.Token) is out of scope: it is either already sanctioned or
+// not decidable without risking a false positive.
 func reportIfBareTokenArg(pass *analysis.Pass, arg ast.Expr) {
 	switch e := arg.(type) {
 	case *ast.BasicLit:
@@ -168,7 +177,7 @@ func reportIfBareTokenArg(pass *analysis.Pass, arg ast.Expr) {
 			return
 		}
 		val, err := strconv.Unquote(e.Value)
-		if err != nil || !rawEnvTopicPattern.MatchString(val) {
+		if err != nil {
 			return
 		}
 		pass.Reportf(arg.Pos(), "bare topic literal %q reaching a topic.Token parameter; declare it as a topic.Token constant", val)
@@ -191,9 +200,6 @@ func reportIfUntypedConstRef(pass *analysis.Pass, arg ast.Expr, obj types.Object
 		return
 	}
 	val := constant.StringVal(c.Val())
-	if !rawEnvTopicPattern.MatchString(val) {
-		return
-	}
 	pass.Reportf(arg.Pos(), "bare topic literal %q reaching a topic.Token parameter; declare it as a topic.Token constant", val)
 }
 

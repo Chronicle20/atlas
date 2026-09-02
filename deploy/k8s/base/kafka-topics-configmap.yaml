@@ -321,6 +321,8 @@ data:
         cleanup: delete
       - token: EVENT_TOPIC_TELEPORT_ROCK_STATUS
         cleanup: delete
+      - token: EVENT_TOPIC_TENANT_STATUS
+        cleanup: delete
       - token: EVENT_TOPIC_TRADE_CUSTODY_STATUS
         cleanup: delete
       - token: EVENT_TOPIC_TRADE_STATUS

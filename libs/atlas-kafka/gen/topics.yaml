@@ -966,6 +966,10 @@ topics:
     packages:
       - atlas-channel/kafka/message/teleportrock
       - atlas-character/kafka/message/teleportrock
+  - token: EVENT_TOPIC_TENANT_STATUS
+    cleanup: delete
+    packages:
+      - atlas-tenants/tenant
   - token: EVENT_TOPIC_TRADE_CUSTODY_STATUS
     cleanup: delete
     packages:

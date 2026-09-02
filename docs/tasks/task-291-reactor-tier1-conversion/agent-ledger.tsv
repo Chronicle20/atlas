@@ -42,3 +42,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-02T15:36:40Z	agent	Task 14	task-reviewer	sonnet	-	-	-	-	DONE	ee40a0549	APPROVED	no	-	-
 2026-09-02T15:59:56Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	ee40a0549	APPROVED	no	-	-
 2026-09-02T16:04:51Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	ee40a0549	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-02T16:09:22Z	agent	DOM-20 fix	task-implementer	sonnet	-	-	-	-	DONE	9a3ba432e	-	-	-	-
+2026-09-02T16:42:18Z	agent	pre-PR	gate	-	-	-	-	-	PASS	1c3f78101	-	-	-	-

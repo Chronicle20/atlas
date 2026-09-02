@@ -129,3 +129,96 @@ change closes — the jms cell now carries a byte fixture pinned to observed wir
 - **JMS movement decode.** The same session logged
   `Code [185] not configured for use in movement (element 1 of 164, reader at
   offset 9)` — a separate misalignment in the movement codec, not addressed here.
+
+---
+
+# Part 2 — JMS 185.1 MOVE_PLAYER decode is 28 bytes misaligned
+
+## Symptom
+
+Same session, same tenant:
+
+    Code [93] not configured for use in movement (element 1 of 121, reader at
+    offset 9). This is a decode misalignment, not an unknown fragment type.
+
+`121` is not an element count; it is `0x79`, a byte of the anti-cheat header
+being read as one.
+
+## Root cause
+
+`libs/atlas-packet/character/serverbound/move.go` gated the self-move anti-cheat
+header — `dr0`, `dr1`, `dr2`, `dr3`, the move `crc`, `dwKey`, `crc32` — on
+`IsRegion("GMS")`. For JMS the decoder therefore read a single `fieldKey` byte
+and went straight into `CMovePath`, 28 bytes early.
+
+The same shape as Part 1, and not a coincidence: this client wraps its
+cheat-sensitive serverbound ops (attack, move) in the same damage-randomizer
+header, and every gate for that header was written GMS-only.
+
+## Evidence — nine live captures
+
+All `MOVE_PLAYER` (`op=0x0020`, opcode 32) `[PKT IN ]` frames logged in a 90
+minute window, 2026-09-02, same tenant. Wire lengths 90, 98, 108, 108, 116,
+126, 134, 144, 188. Every one is consistent with a 29-byte header
+(`dr0`,`dr1`,`fieldKey`,`dr2`,`dr3`,`crc`,`dwKey`,`crc32`) placing the
+`CMovePath` blob at frame offset `0x1f`:
+
+| wire len | origin x,y at 0x1f | count at 0x23 |
+|---|---|---|
+| 90 | −77, 215 | 2 |
+| 98 | −71, 215 | 3 |
+| 108 | −93, 440 | 3 |
+| 116 | 55, 215 | 4 |
+| 126 | −7, 153 | 4 |
+| 134 | 119, 191 | 5 |
+| 144 | 181, 198 | 5 |
+| 188 | 231, 206 | 8 |
+
+Element count rises monotonically with frame length; `dr0` (`e1ffffff`) and
+`dr1` (`c3795d8d`) are constant across all nine, `dr2`/`dr3` are per-session
+constants, and the `dwKey` slot carries a small counter. 9/9, not a spot-check.
+
+## The earlier decompile conclusion was applied to the wrong function
+
+`move.go` carried this comment:
+
+> IDA JMS v185 CVecCtrlUser::EndUpdateActive@0xaaa076: encodes
+> Encode1(detectFlag) then if active: Encode1(fieldKey)+Encode4(crc)+
+> CMovePath::Flush — NO dr0/dr1/dr2/dr3/dwKey/crc32 fields. The || JMS clause on
+> dr-field gates was incorrect; JMS uses GMS v83-style layout (no dr fields).
+
+The decompile of `0xaaa076` is accurate — that function really does write
+`bActive`, `fieldKey`, `crc`, `Flush`. It is simply not the sender behind any
+observed frame:
+
+- its tail is a 6-byte `bActive`/`fieldKey`/`crc` run, but the six bytes
+  before the blob on the wire are `00 00` followed by a 4-byte word;
+- its whole body is inside `if (bActive)`, so a frame with `0x00` at that
+  offset would be 6 bytes long — yet two frames differing only in that byte
+  (`0x01` vs `0x00`) are both 108 bytes.
+
+The registry's primary fname for this op is `CUserLocal::OnKey`, which the
+retail SCY dump does not decompile — the same virtualization that hides the
+attack senders' encode tails. `EndUpdateActive` is a second, unused send path.
+The lesson is the one CLAUDE.md already states: a decompile of *a* function is
+not evidence about *the* function until the opcode-construction site is tied to
+it.
+
+## Not covered
+
+`model.Movement` does not model the 18-byte `CMovePath` tail (count byte, eight
+keypad-state bytes, flag byte, origin and final position) that every jms frame
+ends with, on any version. Nothing follows it on the wire and Atlas never reads
+it, so it is harmless; `TestCharacterMoveBytesJMS185` asserts it is exactly 18
+bytes rather than tolerating an open-ended remainder.
+
+## Still open after both parts
+
+JMS magic and ranged attacks. Their senders — `CUserLocal::TryDoingMagicAttack`
+@`0xa1d280` and `CUserLocal::TryDoingShootAttack` @`0xa19266` — were checked in
+the IDB this session and are virtualized exactly like melee: the last reachable
+call in each is `DR_check` (@`0xa205e5` and @`0xa1c4a0`), with no encode tail.
+They inherit the head fix from Part 1, but the magic secondary dr-block, the
+magic trailing word, and the ranged bullet/`exJablin` fields cannot be settled
+from the binary. They need one live magic capture and one live ranged capture,
+after which they pin exactly like melee did.

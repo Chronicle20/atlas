@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
+	"atlas-data/map/object"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	"atlas-data/point"
@@ -43,6 +44,7 @@ type RestModel struct {
 	BackgroundTypes   []BackgroundTypeRestModel `json:"backgroundTypes"`
 	XLimit            XLimitRestModel           `json:"x_limit"`
 	Reactors          []reactor.RestModel       `json:"-"`
+	Objects           []object.RestModel        `json:"-"`
 	NPCs              []npc.RestModel           `json:"-"`
 	Monsters          []monster.RestModel       `json:"-"`
 }
@@ -74,6 +76,7 @@ func (r RestModel) GetReferences() []jsonapi.Reference {
 	rfs := make([]jsonapi.Reference, 0)
 	rfs = append(rfs, jsonapi.Reference{Type: "portals", Name: "portals"})
 	rfs = append(rfs, jsonapi.Reference{Type: "reactors", Name: "reactors"})
+	rfs = append(rfs, jsonapi.Reference{Type: "objects", Name: "objects"})
 	rfs = append(rfs, jsonapi.Reference{Type: "npcs", Name: "npcs"})
 	rfs = append(rfs, jsonapi.Reference{Type: "monsters", Name: "monsters"})
 	return rfs
@@ -93,6 +96,13 @@ func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 			ID:   strconv.Itoa(int(x.Id)),
 			Type: "reactors",
 			Name: "reactors",
+		})
+	}
+	for _, x := range r.Objects {
+		rfs = append(rfs, jsonapi.ReferenceID{
+			ID:   x.Name,
+			Type: "objects",
+			Name: "objects",
 		})
 	}
 	for _, x := range r.NPCs {
@@ -118,6 +128,9 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 		rfs = append(rfs, x)
 	}
 	for _, x := range r.Reactors {
+		rfs = append(rfs, x)
+	}
+	for _, x := range r.Objects {
 		rfs = append(rfs, x)
 	}
 	for _, x := range r.NPCs {
@@ -157,6 +170,18 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			res = append(res, rm)
 		}
 		r.Reactors = res
+	}
+	if name == "objects" {
+		res := make([]object.RestModel, 0)
+		for _, x := range IDs {
+			rm := object.RestModel{}
+			err := rm.SetID(x)
+			if err != nil {
+				return err
+			}
+			res = append(res, rm)
+		}
+		r.Objects = res
 	}
 	if name == "npcs" {
 		res := make([]npc.RestModel, 0)
@@ -217,6 +242,22 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 			}
 		}
 		r.Reactors = res
+	}
+	if refMap, ok := references["objects"]; ok {
+		res := make([]object.RestModel, 0)
+		for _, rid := range r.GetReferencedIDs() {
+			var data jsonapi.Data
+			if data, ok = refMap[rid.ID]; ok && data.Type == rid.Type {
+				var rm object.RestModel
+				err := jsonapi.ProcessIncludeData(&rm, data, references)
+				if err != nil {
+					return err
+				}
+				_ = rm.SetID(rid.ID)
+				res = append(res, rm)
+			}
+		}
+		r.Objects = res
 	}
 	if refMap, ok := references["npcs"]; ok {
 		res := make([]npc.RestModel, 0)

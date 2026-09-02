@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
+	"atlas-data/map/object"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	npc2 "atlas-data/npc"
@@ -102,6 +103,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			m.Recovery = i.GetFloatWithDefault("recovery", 1)
 			m.BackgroundTypes = getBackgroundTypes(exml)
 			m.Reactors = getReactors(exml)
+			m.Objects = getObjects(l, exml)
 			monsters, npcs := getLife(t, exml)
 			m.Monsters = monsters
 			m.NPCs = npcs
@@ -336,6 +338,51 @@ func getBackgroundTypes(exml xml.Node) []BackgroundTypeRestModel {
 	}
 
 	return results
+}
+
+// getObjects collects the map's named "obj" entries. They are spread across
+// the map's numbered layers, so every layer is scanned. An entry's "l2"
+// property is its declared default state - the value a field reset restores
+// it to. Entries without a "name" property cannot be addressed by
+// CField::OnSetObjectState and are skipped.
+func getObjects(l logrus.FieldLogger, exml xml.Node) []object.RestModel {
+	results := make([]object.RestModel, 0)
+	for _, layer := range exml.ChildNodes {
+		if _, err := strconv.Atoi(layer.Name); err != nil {
+			continue
+		}
+		od, err := layer.ChildByName("obj")
+		if err != nil {
+			continue
+		}
+		for _, o := range od.ChildNodes {
+			name := o.GetString("name", "")
+			if name == "" {
+				continue
+			}
+			results = append(results, object.RestModel{
+				Name:  name,
+				State: objectState(l, name, o.GetString("l2", "")),
+			})
+		}
+	}
+	return results
+}
+
+// objectState parses a WZ "l2" value into an object state. WZ authors it as a
+// string, and not every object carries a numeric one; anything unparseable is
+// reported as state 0 rather than failing the map read.
+func objectState(l logrus.FieldLogger, name string, value string) uint32 {
+	if value == "" {
+		l.Debugf("Map object [%s] declares no l2 state, defaulting to 0.", name)
+		return 0
+	}
+	s, err := strconv.ParseUint(value, 10, 32)
+	if err != nil {
+		l.WithError(err).Debugf("Map object [%s] declares non-numeric l2 state [%s], defaulting to 0.", name, value)
+		return 0
+	}
+	return uint32(s)
 }
 
 func getReactors(exml xml.Node) []reactor.RestModel {

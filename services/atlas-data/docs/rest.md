@@ -595,6 +595,7 @@ Returns a specific map.
     "relationships": {
       "portals": {},
       "reactors": {},
+      "objects": {},
       "npcs": {},
       "monsters": {}
     }
@@ -652,6 +653,41 @@ Returns all reactors in a map. Paginated (default 50, max 250).
 #### Response Model
 
 - 200: Array of reactors resources (map reactor sub-model)
+- 404: Map not found
+
+---
+
+### GET /api/data/maps/{mapId}/objects
+
+Returns the map's named WZ `obj` entries — the field objects addressable by
+`SetObjectState`. Paginated (default 50, max 250). The resource `id` is the
+object's WZ `name`; `state` is its declared default (the WZ `l2` property), the
+state a field reset restores it to. Entries without a `name` are not addressable
+and are not returned; an absent or non-numeric `l2` is reported as state 0.
+
+#### Parameters
+
+- mapId (path): Map ID
+
+#### Response Model
+
+- 200: Array of objects resources
+
+```json
+{
+  "data": [
+    {
+      "type": "objects",
+      "id": "gate",
+      "attributes": {
+        "name": "gate",
+        "state": 1
+      }
+    }
+  ]
+}
+```
+
 - 404: Map not found
 
 ---

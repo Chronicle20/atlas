@@ -373,12 +373,12 @@ export const tenantsService = {
       sections && sections.length > 0
         ? { data: { type: "tenants", attributes: { sections } } }
         : undefined;
-    const config = await api.post<TenantConfig>(
+    const response = await api.post<ApiSingleResponse<TenantConfig>>(
       `${CONFIG_PATH}/${id}/reset`,
       body,
       options,
     );
-    return sortTenantConfig(config);
+    return sortTenantConfig(response.data);
   },
 
   createTenantFromTemplate(template: {

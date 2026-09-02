@@ -125,7 +125,11 @@ describe("tenantsService.updateTenantConfiguration", () => {
 
 describe("reset", () => {
   beforeEach(() => {
-    post.mockReset().mockResolvedValue(seededConfig());
+    // The server wraps the reset response in the same JSON:API envelope as
+    // tenant create (server.MarshalResponse[ViewRestModel] in resource.go),
+    // not a bare resource. Resolve the mock with that shape so these tests
+    // are diagnostic of the real wire contract.
+    post.mockReset().mockResolvedValue({ data: seededConfig() });
   });
 
   it("posts with no body for a whole-document reset", async () => {

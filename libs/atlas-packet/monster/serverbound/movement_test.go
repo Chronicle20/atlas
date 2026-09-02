@@ -17,8 +17,11 @@ import (
 // packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v83 ida=0x66b6fc
 // packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v87 ida=0x6a6381
 // packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v95 ida=0x651100
-// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=jms_v185 ida=0x6e8892
 // packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=gms_v84 ida=0x6818c3
+//
+// jms_v185 is verified by TestMonsterMovementBytesJMS185 below. A RoundTrip
+// cannot catch a tail the client sends and the decoder never reads, or a tail
+// placed at the wrong offset relative to the trailing chase block.
 func TestMonsterMovementVersionBoundary(t *testing.T) {
 	p := MovementRequest{uniqueId: 1, moveId: 2, skillData: 0x0305, hackedCodeCRC: 9, tChaseDuration: 9}
 	enc := func(major uint16) []byte {
@@ -225,5 +228,95 @@ func TestMonsterMovementOperationString(t *testing.T) {
 	}
 	if p.String() == "" {
 		t.Error("expected non-empty string")
+	}
+}
+
+// TestMonsterMovementBytesJMS185 pins the jms_v185 MOVE_LIFE wire, hand-built
+// from the decompiled field order — this is NOT captured wire (no live
+// MOVE_LIFE frame was obtained; log sweeps timed out). See
+// docs/tasks/fix-jms185-attack-decode/sibling-movement-ops-findings.md §2.
+//
+// CMob::GenerateMovePath @0x6e8892 calls CMovePath::Flush @0x6e9423 (which
+// writes the keypad+rect tail — see monsterMoveKeyPadTail) and only THEN
+// writes bChasing/hasTarget/bChasing2/bChasingHack/tChaseDuration, so the
+// tail must sit BETWEEN the movement blob and that trailing block, not after
+// it. This fixture asserts that exact placement byte-for-byte.
+//
+// packet-audit:verify packet=monster/serverbound/MonsterMovementRequest version=jms_v185 ida=0x6e8892
+func TestMonsterMovementBytesJMS185(t *testing.T) {
+	p := MovementRequest{}
+	p.uniqueId = 1001
+	p.moveId = 55
+	p.dwFlag = 1
+	p.nActionAndDir = -3
+	p.skillData = 0x0305
+	p.moveFlags = 0
+	p.hackedCode = 0
+	p.flyCtxTargetX = 100
+	p.flyCtxTargetY = 200
+	p.hackedCodeCRC = 999
+	// movement stays empty (StartX/StartY + 0 elements = 5 bytes)
+	p.movement.StartX = 10
+	p.movement.StartY = 20
+	// keyPadStates has an ODD entry count (3), exercising the final-byte
+	// low-nibble-only packing rule.
+	p.keyPadStates = []byte{1, 2, 3}
+	p.moveRectLeft = -10
+	p.moveRectTop = 20
+	p.moveRectRight = 30
+	p.moveRectBottom = -40
+	p.bChasing = 1
+	p.hasTarget = 0
+	p.bChasing2 = 1
+	p.bChasingHack = 0
+	p.tChaseDuration = 500
+
+	ctx := test.CreateContext("JMS", 185, 1)
+	want := []byte{
+		0xE9, 0x03, 0x00, 0x00, // uniqueId 1001
+		0x37, 0x00, // moveId 55
+		0x01,                   // dwFlag 1
+		0xFD,                   // nActionAndDir -3
+		0x05, 0x03, 0x00, 0x00, // skillData 0x0305
+		0x00, 0x00, 0x00, 0x00, // multiTargetForBall (empty: count=0)
+		0x00, 0x00, 0x00, 0x00, // randTimeForAreaAttack (empty: count=0)
+		0x00,                   // moveFlags 0
+		0x00, 0x00, 0x00, 0x00, // hackedCode 0
+		0x64, 0x00, 0x00, 0x00, // flyCtxTargetX 100
+		0xC8, 0x00, 0x00, 0x00, // flyCtxTargetY 200
+		0xE7, 0x03, 0x00, 0x00, // hackedCodeCRC 999
+		0x0A, 0x00, 0x14, 0x00, 0x00, // movement: StartX=10, StartY=20, count=0
+		// --- keypad + rect tail (monsterMoveKeyPadTail) ---
+		0x03,       // keypad entry count = 3
+		0x21, 0x03, // packed nibbles: (1|2<<4)=0x21, (3, no high nibble)=0x03
+		0xF6, 0xFF, // moveRectLeft -10
+		0x14, 0x00, // moveRectTop 20
+		0x1E, 0x00, // moveRectRight 30
+		0xD8, 0xFF, // moveRectBottom -40
+		// --- trailing chase block (AFTER the tail, per Flush ordering) ---
+		0x01,                   // bChasing 1
+		0x00,                   // hasTarget 0
+		0x01,                   // bChasing2 1
+		0x00,                   // bChasingHack 0
+		0xF4, 0x01, 0x00, 0x00, // tChaseDuration 500
+	}
+	got := test.Encode(t, ctx, p.Encode, nil)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("jms185 movement bytes:\n got % x\nwant % x", got, want)
+	}
+
+	// Round-trip the pinned bytes back through Decode to confirm the tail
+	// lands in the right place on read too, not just write.
+	var out MovementRequest
+	test.RoundTrip(t, ctx, p.Encode, out.Decode, nil)
+	if len(out.KeyPadStates()) != 3 {
+		t.Errorf("expected 3 keypad entries, got %d", len(out.KeyPadStates()))
+	}
+	gl, gt, gr, gb := out.MoveRect()
+	if gl != -10 || gt != 20 || gr != 30 || gb != -40 {
+		t.Errorf("expected move rect -10,20,30,-40, got %d,%d,%d,%d", gl, gt, gr, gb)
+	}
+	if out.bChasing != 1 || out.tChaseDuration != 500 {
+		t.Errorf("expected trailing chase block intact after tail, got bChasing=%d tChaseDuration=%d", out.bChasing, out.tChaseDuration)
 	}
 }

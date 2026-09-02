@@ -75,3 +75,4 @@ node_modules/
 /libs/atlas-constants/gen/gen
 /libs/atlas-kafka/gen/gen
 /tools/gen-map-action-schema/gen-map-action-schema
+/tools/catalog-lint/catalog-lint

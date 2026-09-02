@@ -7,11 +7,23 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 )
+
+// versionDirPattern matches the version-directory naming convention the
+// seeder itself emits: fmt.Sprintf("%d_%d", major, minor) in
+// libs/atlas-seeder/catalog.go's filesystemSource.Roots. A directory that
+// matches this shape is a genuine <region>/<major>_<minor> version root
+// regardless of what subdomains it happens to carry; one that doesn't
+// (e.g. deploy/seed/shared/all, whose "version" segment is the literal
+// string "all") is the version-agnostic shared root documented in
+// tools/catalog-lint/subdomains.go and libs/atlas-seeder's
+// NewFilesystemCatalogSourceWithShared, not a map-action version root.
+var versionDirPattern = regexp.MustCompile(`^\d+_\d+$`)
 
 // mapActionDoc is one map-action seed document gathered during the tree
 // walk, carrying enough context to run the replication, spawn-guard and
@@ -84,12 +96,14 @@ func relKeyOf(d mapActionDoc) string {
 }
 
 // discoverRoots re-reads the top two directory levels of root
-// (<region>/<version>) to find every version root that carries a
-// map-actions subdomain, including ones that hold no map-action document
-// at all — the case a doc-derived root set alone would miss. Roots
-// without a map-actions/ directory (e.g. deploy/seed/shared/all, which
-// carries only version-agnostic transport config) are not map-action
-// roots and are excluded.
+// (<region>/<version>) to find every genuine version root, including ones
+// that hold no map-action document at all — the case a doc-derived root
+// set alone would miss (a root missing its entire map-actions/ directory
+// must still surface as a replication violation, not escape the check
+// silently). A directory counts as a version root when its name matches
+// versionDirPattern; deploy/seed/shared/all does not (its version segment
+// is "all", not "<major>_<minor>") and is excluded, whether or not it
+// happens to carry a map-actions/ directory.
 func discoverRoots(root string) []string {
 	var roots []string
 	regionEntries, err := os.ReadDir(root)
@@ -105,11 +119,7 @@ func discoverRoots(root string) []string {
 			continue
 		}
 		for _, ve := range versionEntries {
-			if !ve.IsDir() {
-				continue
-			}
-			info, err := os.Stat(filepath.Join(root, re.Name(), ve.Name(), "map-actions"))
-			if err != nil || !info.IsDir() {
+			if !ve.IsDir() || !versionDirPattern.MatchString(ve.Name()) {
 				continue
 			}
 			roots = append(roots, re.Name()+"/"+ve.Name())

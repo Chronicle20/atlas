@@ -299,11 +299,13 @@ func TestRedeemStoredExperienceIsExactlyOnce(t *testing.T) {
 	require.Empty(t, expEvts, "replayed redeem must not emit EXPERIENCE_CHANGED")
 }
 
-// TestRedeemStoredExperienceDistributionIsItem asserts the EXPERIENCE_CHANGED
-// event emitted by a redeem carries exactly one distribution tagged ITEM, so
-// downstream consumers can distinguish a stored-EXP redeem from other EXP
-// sources.
-func TestRedeemStoredExperienceDistributionIsItem(t *testing.T) {
+// TestRedeemStoredExperienceDistributionIsWhite asserts the EXPERIENCE_CHANGED
+// event emitted by a redeem carries the redeemed amount as a WHITE
+// distribution (plus the showEffect White+Chat display pair), not ITEM, so
+// the client renders it as primary EXP gained rather than an equip item
+// bonus modifier. It also pins that the appended showEffect pair does not
+// double-award the persisted experience.
+func TestRedeemStoredExperienceDistributionIsWhite(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
 	p := character.NewProcessor(testLogger(), tctx, db)
@@ -315,13 +317,33 @@ func TestRedeemStoredExperienceDistributionIsItem(t *testing.T) {
 
 	cha := channel.NewModel(1, 2)
 	require.NoError(t, p.CreditStoredExperienceAndEmit(uuid.New(), cha, c.Id(), 5000, "seed"))
+	startingExperience := c.Experience()
 
 	baseline := maxOutboxId(t, db)
 	require.NoError(t, p.RedeemStoredExperienceAndEmit(uuid.New(), cha, c.Id()))
 
 	expEvts := decodeExperienceChangedSince(t, db, baseline)
 	require.Len(t, expEvts, 1)
-	require.Len(t, expEvts[0].Body.Distributions, 1)
-	require.Equal(t, character2.ExperienceDistributionTypeItem, expEvts[0].Body.Distributions[0].ExperienceType)
-	require.Equal(t, uint32(5000), expEvts[0].Body.Distributions[0].Amount)
+	for _, d := range expEvts[0].Body.Distributions {
+		require.NotEqual(t, character2.ExperienceDistributionTypeItem, d.ExperienceType, "redeem must not emit an ITEM distribution")
+	}
+
+	whiteCount := 0
+	chatCount := 0
+	for _, d := range expEvts[0].Body.Distributions {
+		if d.ExperienceType == character2.ExperienceDistributionTypeWhite {
+			whiteCount++
+			require.Equal(t, uint32(5000), d.Amount)
+		}
+		if d.ExperienceType == character2.ExperienceDistributionTypeChat {
+			chatCount++
+			require.Equal(t, uint32(5000), d.Amount)
+		}
+	}
+	require.GreaterOrEqual(t, whiteCount, 1, "expected at least one WHITE distribution")
+	require.Equal(t, 1, chatCount, "showEffect should append exactly one CHAT distribution")
+
+	got, err := p.GetById()(c.Id())
+	require.NoError(t, err)
+	require.Equal(t, startingExperience+5000, got.Experience(), "redeem must not double-award experience")
 }

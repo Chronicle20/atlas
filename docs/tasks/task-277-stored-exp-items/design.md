@@ -369,9 +369,9 @@ New commands on the existing character command topic:
   (the key the channel snapshot registry already maps, `snapshot/registry.go:264`).
 - `CommandRedeemStoredExperience = "REDEEM_STORED_EXPERIENCE"`, body `{channelId}`. One
   transaction: read balance → zero it → `AwardExperience` with a single
-  `ExperienceDistributionTypeItem` distribution → emit `EXPERIENCE_CHANGED` and
-  `STAT_CHANGED{EXPERIENCE, GACHAPON_EXPERIENCE}`. Zero balance and level > 50 are silent
-  no-ops (FR-11).
+  `ExperienceDistributionTypeWhite` distribution and `showEffect = true` → emit
+  `EXPERIENCE_CHANGED` and `STAT_CHANGED{EXPERIENCE, GACHAPON_EXPERIENCE}`. Zero balance and
+  level > 50 are silent no-ops (FR-11).
 
 Processor: `CreditStoredExperience` / `RedeemStoredExperience` in the established
 `...AndEmit` + `(mb *message.Buffer)` pair shape. `SetGachaponExperience` already exists on

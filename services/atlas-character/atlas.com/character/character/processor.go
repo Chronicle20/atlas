@@ -1555,8 +1555,8 @@ func (p *ProcessorImpl) RedeemStoredExperience(mb *message.Buffer) func(transact
 			if err := dynamicUpdate(tx)(SetGachaponExperience(0))(c); err != nil {
 				return err
 			}
-			experience := []ExperienceModel{NewExperienceModel(character2.ExperienceDistributionTypeItem, redeemed, 0)}
-			return ip.AwardExperience(mb)(transactionId, characterId, channel, experience, false)
+			experience := []ExperienceModel{NewExperienceModel(character2.ExperienceDistributionTypeWhite, redeemed, 0)}
+			return ip.AwardExperience(mb)(transactionId, characterId, channel, experience, true)
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Could not redeem stored experience for character [%d].", characterId)

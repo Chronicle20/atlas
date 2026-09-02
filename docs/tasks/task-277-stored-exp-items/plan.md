@@ -977,7 +977,7 @@ The two no-op cases assert FR-11 literally: no write, no event, and (necessarily
 
 `TestRedeemStoredExperienceIsExactlyOnce` — seed balance `5000`, level `30`, then call `RedeemStoredExperienceAndEmit` twice with different transaction ids. Assert the character's experience rose by exactly `5000` in total (not `10000`), the balance is `0`, and the second call emitted no messages. This is FR-13 / the duplicate-replay assertion: the second call reads `0` inside its own transaction and short-circuits.
 
-`TestRedeemStoredExperienceDistributionIsItem` — seed balance `5000`, level `30`, redeem, then unmarshal the `EXPERIENCE_CHANGED` message and assert it carries exactly one distribution whose `ExperienceType == character2.ExperienceDistributionTypeItem` (`"ITEM"`) and whose `Amount == 5000`.
+`TestRedeemStoredExperienceDistributionIsWhite` — seed balance `5000`, level `30`, redeem, then unmarshal the `EXPERIENCE_CHANGED` message and assert it carries a `character2.ExperienceDistributionTypeWhite` (`"WHITE"`) distribution with `Amount == 5000` (plus the `showEffect` White+Chat display pair `AwardExperience` appends), no `ExperienceDistributionTypeItem` distribution, and that persisted experience rose by exactly `5000`, not `10000`.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -1059,8 +1059,8 @@ func (p *ProcessorImpl) RedeemStoredExperience(mb *message.Buffer) func(transact
 			if err := dynamicUpdate(tx)(SetGachaponExperience(0))(c); err != nil {
 				return err
 			}
-			experience := []ExperienceModel{NewExperienceModel(character2.ExperienceDistributionTypeItem, redeemed, 0)}
-			return ip.AwardExperience(mb)(transactionId, characterId, channel, experience, false)
+			experience := []ExperienceModel{NewExperienceModel(character2.ExperienceDistributionTypeWhite, redeemed, 0)}
+			return ip.AwardExperience(mb)(transactionId, characterId, channel, experience, true)
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Could not redeem stored experience for character [%d].", characterId)

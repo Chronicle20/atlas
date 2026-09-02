@@ -22,6 +22,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 )
 
 // EnvTenantStatusTopic names the env var carrying the Kafka topic that
@@ -153,6 +154,11 @@ func (p *ProcessorImpl) baselineFor(region string, majorVersion uint16, minorVer
 				"majorVersion": majorVersion,
 				"minorVersion": minorVersion,
 			}).Warn("Unable to resolve baseline template; reporting no baseline")
+			// baselineFor is a single-tenant helper with no baseline
+			// template id to attribute the failure to (the lookup is what
+			// failed); entityId=0 signals a component-wide degradation,
+			// matching the login.character.rankings precedent.
+			degrade.Observe(p.l, "configurations.tenants.templates", 0, err)
 		}
 		return templates.RestModel{}, false
 	}

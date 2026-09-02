@@ -304,6 +304,29 @@ func TestResetEndpoint(t *testing.T) {
 		assertJSONAPIErrorDocument(t, rr, "400")
 	})
 
+	t.Run("EnvelopelessBodyIs400WithErrorDocument", func(t *testing.T) {
+		// Valid JSON that is not a JSON:API envelope -- no "data.type" --
+		// used to fall through normalizeResetBody into jsonapi.Unmarshal's
+		// own decode-failure path, which writes a bare, content-type-less
+		// 400 with no body. FR-4.2 only defines "reset everything" for an
+		// absent or `{}` body, so this input class stays a 400, but through
+		// the same vnd.api+json errors-array shape every other error on
+		// this endpoint uses.
+		db := setupViewTestDB(t)
+		l := testLogger()
+		router := mux.NewRouter()
+		InitResource(testServerInformation{})(db)(router, l)
+		p := NewProcessor(l, context.Background(), db)
+
+		id := seedTenant(t, db, p, "GMS", 83, 1, nil)
+
+		rr := doReset(t, router, id.String(), `{"foo":1}`)
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want 400, body=%s", rr.Code, rr.Body.String())
+		}
+		assertJSONAPIErrorDocument(t, rr, "400")
+	})
+
 	t.Run("UnknownTenantIs404", func(t *testing.T) {
 		db := setupViewTestDB(t)
 		l := testLogger()

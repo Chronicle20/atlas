@@ -1,0 +1,54 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Evan dragon cutscene PromiseDragon - locks the UI and plays the gendered Direction4 scene",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "gender",
+              "value": "0"
+            }
+          ],
+          "id": "intro_male",
+          "operations": [
+            {
+              "type": "lock_ui"
+            },
+            {
+              "params": {
+                "path": "Effect/Direction4.img/PromiseDragon/Scene0"
+              },
+              "type": "show_intro"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "gender",
+              "value": "1"
+            }
+          ],
+          "id": "intro_female",
+          "operations": [
+            {
+              "type": "lock_ui"
+            },
+            {
+              "params": {
+                "path": "Effect/Direction4.img/PromiseDragon/Scene1"
+              },
+              "type": "show_intro"
+            }
+          ]
+        }
+      ],
+      "scriptName": "PromiseDragon"
+    },
+    "id": "PromiseDragon",
+    "type": "map-action"
+  }
+}

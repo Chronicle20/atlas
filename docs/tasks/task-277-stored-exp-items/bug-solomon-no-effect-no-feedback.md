@@ -82,12 +82,16 @@ the values (`Item.wz/Consume/0237.img.xml`, node `02370000`):
 ```
 
 This is not a code defect on the branch. It is the exact "ingest-order caveat"
-the task predicted (`prd.md:241-243`, `design.md:342-344,453-454`). The
-**producible gap** is that the PRD's own acceptance item —
-`prd.md:331` "If a WZ `spec` field was added to `atlas-data`, a tenant re-ingest
-follow-up is [recorded in docs/TODO.md]" — is still unchecked and no such entry
-exists in `docs/TODO.md`. task-219's equivalent entry is at `docs/TODO.md:641`
-and is the precedent to mirror.
+the task predicted (`prd.md:241-243`, `design.md:342-344,453-454`).
+
+**Correction (post-review).** This section originally claimed no re-ingest entry
+existed in `docs/TODO.md`. That was wrong: `## task-277 follow-up: tenant Item.wz
+re-ingest for Writ of Solomon spec/exp` was already on the branch at
+`docs/TODO.md:681`, added by ancestor commit `49d3a05ca`. The controller's grep
+ran against the MAIN repo's `docs/TODO.md` rather than the worktree's and so
+missed it. The genuine gap was narrower: the PRD acceptance box at `prd.md:331`
+was still unchecked. `1e33a1a78` expanded the existing entry and ticked the box.
+Do not cite the original claim elsewhere.
 
 ### Cause 2 (why there is no feedback): CONSUME_FAILED is silent by design
 
@@ -193,4 +197,29 @@ why it now needs its own message.
 
 ## Resolution
 
-_Pending._
+- `1e33a1a78` — fix(consumables,channel): Writ of Solomon rejections get their
+  own message. Implements `## Fix` 1 and 2: the `docs/TODO.md` re-ingest
+  follow-up (line 681), `prd.md:331` ticked, three sentinel errors in
+  `solomon.go`, three error-type constants on both sides of the Kafka seam,
+  three arms in `consumeErrorType` / `consumableErrorAction`, and a new action
+  that announces a SYSTEM_MESSAGE before unsticking. Module-local
+  `go build ./... && go test ./...` green in both atlas-consumables and
+  atlas-channel.
+- `993b6af7b` — controller fix: the level-gate copy was inverted. `consumeSolomon`
+  rejects when the character's level EXCEEDS `maxLevel` (02370000 caps at 50),
+  but the string read "You are not experienced enough…", i.e. the opposite rule.
+  Now "Your level is too high to use the Writ of Solomon."
+
+**Message copy still needs the user's approval** — all three strings are new
+player-facing text with no WZ or client-string source:
+- `SolomonNoExperienceMessage` = "The Writ of Solomon has no effect."
+- `SolomonLevelExceededMessage` = "Your level is too high to use the Writ of Solomon."
+- `SolomonBalanceNotEmptyMessage` = "You already have stored EXP banked. Use it before using another Writ of Solomon."
+
+**Live re-test: NOT done, and cannot be done until the re-ingest runs.** The user
+took the re-ingest themselves. Until Item.wz `Consume` is re-ingested against
+this build, `spec/exp` stays absent and every Writ still rejects — it now says so
+instead of doing nothing, but banking EXP is unverified end-to-end.
+
+Repo-wide gate and cross-seam review over `0aeb0f33a..993b6af7b`: dispatched,
+verdicts recorded in `agent-ledger.tsv`.

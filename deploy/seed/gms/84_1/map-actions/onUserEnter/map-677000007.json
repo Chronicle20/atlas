@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Boss map 677000007 - spawns Crocell (9400611) at (171, 50) and announces it",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "spawn_boss",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9400611",
+                "spawnIfAbsent": "true",
+                "x": "171",
+                "y": "50"
+              },
+              "type": "spawn_monster"
+            },
+            {
+              "params": {
+                "message": "Crocell has appeared!"
+              },
+              "type": "drop_message"
+            }
+          ]
+        }
+      ],
+      "scriptName": "677000007"
+    },
+    "id": "677000007",
+    "type": "map-action"
+  }
+}

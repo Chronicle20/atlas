@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Boss map 677000001 - spawns Marbas (9400612) at (461, 61) and announces it",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "spawn_boss",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9400612",
+                "spawnIfAbsent": "true",
+                "x": "461",
+                "y": "61"
+              },
+              "type": "spawn_monster"
+            },
+            {
+              "params": {
+                "message": "Marbas has appeared!"
+              },
+              "type": "drop_message"
+            }
+          ]
+        }
+      ],
+      "scriptName": "677000001"
+    },
+    "id": "677000001",
+    "type": "map-action"
+  }
+}

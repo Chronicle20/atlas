@@ -130,7 +130,7 @@ const (
 	// SolomonLevelExceededMessage is announced for
 	// ErrorTypeSolomonLevelExceeded: the character's level exceeds the item's
 	// maxLevel. The Writ is never consumed.
-	SolomonLevelExceededMessage = "You are not experienced enough to use the Writ of Solomon."
+	SolomonLevelExceededMessage = "Your level is too high to use the Writ of Solomon."
 	// SolomonBalanceNotEmptyMessage is announced for
 	// ErrorTypeSolomonBalanceNotEmpty: the character already has a non-zero
 	// stored EXP balance banked. The Writ is never consumed.

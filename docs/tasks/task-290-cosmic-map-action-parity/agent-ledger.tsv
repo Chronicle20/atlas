@@ -54,3 +54,10 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-02T17:47:34Z	agent	Fix round 1	gate	-	-	-	-	-	PASS	5a95c9df5	-	-	-	-
 2026-09-02T17:47:34Z	handoff	after Fix round 1	-	-	-	-	-	-	-	-	-	-	-	110000
 2026-09-02T17:47:45Z	agent	Fix round 1	task-reviewer	sonnet	-	-	-	-	DONE	5a95c9df5	APPROVED	no	.superpowers/sdd/plan/task-A12-review-fix1.md	-
+2026-09-02T17:57:51Z	agent	pre-PR	verify.sh-flagless	-	-	-	-	-	dispatched	3f37fe6da	-	-	/var/tmp/atlas/gates/task290-final-verify.log	-
+2026-09-02T18:01:13Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	38	-	-	DONE	3f37fe6da	APPROVED	no	docs/tasks/task-290-cosmic-map-action-parity/audit.md	-
+2026-09-02T18:09:00Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	77	-	-	DONE	3f37fe6da	CHANGES_REQUIRED	yes	docs/tasks/task-290-cosmic-map-action-parity/backend-audit/audit.md	-
+2026-09-02T18:14:11Z	agent	Fix DOM-20 group B	task-implementer	sonnet	-	24	-	-	DONE	6774405be	-	-	-	-
+2026-09-02T18:15:02Z	agent	Fix EXT-01/EXT-02	task-implementer	sonnet	-	38	-	-	DONE	3df6ac945	-	-	-	-
+2026-09-02T18:15:23Z	agent	Fix DOM-20 group A	task-implementer	sonnet	-	20	-	-	DONE	734eaf035	-	-	-	-
+2026-09-02T18:16:49Z	agent	Fix mapId/Instance	task-implementer	sonnet	-	16	-	-	DONE	4365c0bd1	-	-	-	-

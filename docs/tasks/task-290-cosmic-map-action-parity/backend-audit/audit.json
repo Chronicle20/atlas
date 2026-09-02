@@ -1,0 +1,120 @@
+{
+  "service": "atlas-map-actions,atlas-monsters,atlas-saga-orchestrator",
+  "path": "services/atlas-map-actions;services/atlas-monsters;services/atlas-saga-orchestrator;libs/atlas-saga;libs/atlas-script-core;tools/catalog-lint;tools/gen-map-action-schema",
+  "date": "2026-09-02",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "script (atlas-map-actions)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-02/03", "name": "entity.go ToEntity/Make", "status": "pass", "evidence": "script/entity.go:113,179"},
+        {"id": "DOM-04/05", "name": "rest.go Transform/TransformSlice", "status": "pass", "evidence": "script/rest.go:66"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "script/rest.go:32-42"},
+        {"id": "DOM-30", "name": "AndEmit + message.Buffer for writes", "status": "n-a", "evidence": "no new Kafka emit path added"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "executor_test.go:39,61,95,187 and evaluator_test.go:80,127,164,189 and rest_test.go:27,67,100 are standalone Test funcs, not tests:=[]struct{}+t.Run"},
+        {"id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "pass", "evidence": "executor_test.go:20-35 injects recording mapactionsaga.Processor fake"}
+      ]
+    },
+    {
+      "name": "validation (atlas-map-actions)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-05", "name": "model.go holds domain Model", "status": "pass", "evidence": "validation/model.go:10-16"},
+        {"id": "DOM-21", "name": "Constants reuse", "status": "n-a", "evidence": "plain field addition Values []int"}
+      ]
+    },
+    {
+      "name": "world (atlas-monsters)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic outside handler", "status": "pass", "evidence": "world/resource.go:199-204 only interprets processor signal"},
+        {"id": "SUB-02", "name": "Writes via processor/administrator", "status": "pass", "evidence": "world/resource.go:194 p.Create(f, input)"},
+        {"id": "SUB-03", "name": "POST uses RegisterInputHandler[T]", "status": "pass", "evidence": "world/resource.go:38"},
+        {"id": "SUB-04", "name": "No manual JSON parsing", "status": "pass", "evidence": "grep confirmed absent in world/resource.go"},
+        {"id": "DOM-17", "name": "Domain errors mapped to specific HTTP status", "status": "warn", "evidence": "world/resource.go:196 maps all p.Create errors to 400; pre-existing, not introduced by this diff"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "world/resource_create_test.go:29 TestCreateMonsterInMapSuppressedSpawnReturns204 standalone"},
+        {"id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "pass", "evidence": "world/resource_create_test.go:38 seeds via GetMonsterRegistry().CreateMonster which is in-memory only, registry.go:396-404"}
+      ]
+    },
+    {
+      "name": "monster (atlas-monsters)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "monster/rest.go:38"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "processor_test.go:2676,2723,2759,2799,2834 all standalone"},
+        {"id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "pass", "evidence": "processor_test.go:2683 emit: func(...) error { return nil } — pre-existing per-test injection pattern used 22x in file"},
+        {"id": "CARRIED-FORWARD", "name": "mapId override + field instance mismatch", "status": "fail", "evidence": "script/executor.go:196-234, monster/processor.go:259-278, saga/handler.go:2086-2089 — see dedicated audit.md section"}
+      ]
+    },
+    {
+      "name": "monster (saga-orchestrator)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor/ProcessorImpl in processor.go", "status": "pass", "evidence": "monster/processor.go:11-38"},
+        {"id": "FILE-02", "name": "RestModel/Transform in rest.go", "status": "pass", "evidence": "monster/rest.go:12-83"},
+        {"id": "FILE-03", "name": "Cross-service calls in requests.go", "status": "pass", "evidence": "monster/requests.go"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "Processor.SpawnMonster re-signed processor.go:13; only non-test reference is saga/handler.go, updated in same diff; no mock exists for this interface"},
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "monster/rest.go:29-58 SpawnResponseRestModel has neither method"},
+        {"id": "EXT-02", "name": "httptest integration test with representative fixture", "status": "fail", "evidence": "no _test.go file exists under saga-orchestrator/monster/"},
+        {"id": "EXT-03", "name": "Only genuine 404 -> not-found", "status": "pass", "evidence": "monster/processor.go:31-34 returns err verbatim, no reclassification"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl", "status": "pass", "evidence": "monster/requests.go:16 requests.RootUrlFor(ctx, \"MONSTERS\")"}
+      ]
+    },
+    {
+      "name": "saga (saga-orchestrator)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-31", "name": "Tenant/trace only in context", "status": "pass", "evidence": "saga/handler.go:2086-2089 WorldId/ChannelId/MapId/Instance are domain routing fields, not tenant/trace"}
+      ]
+    },
+    {
+      "name": "condition (libs/atlas-script-core)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go validating Build()", "status": "pass", "evidence": "condition/builder.go:90-92"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "condition/model_test.go:8,21,31,44,54,61,71 all standalone"}
+      ]
+    },
+    {
+      "name": "atlas-saga (libs)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "Constants reuse", "status": "n-a", "evidence": "libs/atlas-saga/payloads.go:520 field addition, not a new type/const"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "payloads_test.go:12,41,50,92,123 all standalone"},
+        {"id": "DOM-34/35", "name": "Migration hygiene", "status": "n-a", "evidence": "no symbol moved between service and libs/atlas-*"}
+      ]
+    },
+    {
+      "name": "tools/catalog-lint, tools/gen-map-action-schema",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "n-a", "evidence": "CLI tooling, no Processor/RestModel/Entity constructs present"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "mapactions_test.go 12/12 and main_test.go 5/5 not table-driven"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "SpawnMonsterPayload-adjacent hazard sweep: services/atlas-npc-conversations and services/atlas-reactor-actions also produce SpawnMonsterPayload but are unchanged by this diff and out of stated scope; not swept for the same mapId/instance defect class.",
+    "DOM-17: full error-path trace of world/resource.go's p.Create->StatusBadRequest branch against every monster/processor.go error source (registry failures vs. monsterInformation lookup failures) not performed; flagged WARN from the visible line only."
+  ],
+  "blocking": [
+    "DOM-20: script/executor_test.go:39,61,95,187 — 4 of 6 new tests not table-driven",
+    "DOM-20: script/evaluator_test.go:80,127,164,189 — 4 of 5 new tests not table-driven",
+    "DOM-20: script/rest_test.go:27,67,100 — 3 of 3 new tests not table-driven",
+    "DOM-20: monster/processor_test.go (atlas-monsters):2676,2723,2759,2799,2834 — 5 of 5 new tests not table-driven",
+    "DOM-20: world/resource_create_test.go:29 — 1 of 1 new test not table-driven",
+    "DOM-20: libs/atlas-saga/payloads_test.go:12,41,50,92,123 — 5 of 5 new tests not table-driven",
+    "DOM-20: libs/atlas-script-core/condition/model_test.go:8,21,31,44,54,61,71 — 7 of 7 new tests not table-driven",
+    "DOM-20: tools/catalog-lint/mapactions_test.go (12/12) and tools/gen-map-action-schema/main_test.go (5/5) not table-driven",
+    "EXT-01: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/monster/rest.go:29-58 — SpawnResponseRestModel missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/monster/ — no test file exists, no integration coverage of SpawnMonster including new SpawnIfAbsent field",
+    "CARRIED-FORWARD: services/atlas-map-actions/atlas.com/map-actions/script/executor.go:196-234 — mapId override + f.Instance() produces mismatched field identity; newly introduced by this branch (previously inert under hard-coded uuid.Nil), dormant today, no test coverage of the combination; recommend filing as explicit follow-up rather than same-PR fix"
+  ],
+  "nonBlocking": [
+    "DOM-17 (WARN): services/atlas-monsters/atlas.com/monsters/world/resource.go:196 maps every p.Create error to 400 regardless of cause; pre-existing, not introduced by this diff"
+  ]
+}

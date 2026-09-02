@@ -47,11 +47,18 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 	case "unlock_ui":
 		return e.executeUiLock(f, characterId, false)
 	default:
-		e.l.Warnf("Unknown operation type [%s] for character [%d].", op.Type(), characterId)
-		return nil
+		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
+		// no-op. The schema's operation enum is generated from this switch
+		// (tools/gen-map-action-schema.sh), so a document cannot name an
+		// operation this switch lacks without failing catalog-lint first.
+		return fmt.Errorf("unknown operation type [%s]", op.Type())
 	}
 }
 
+// ExecuteOperations runs a rule's operations in document order and stops at the
+// first error. An unknown operation therefore suppresses every operation after
+// it in the same rule (design D3). That is deliberate: a half-applied cutscene
+// or a spawn without its announcement is worse than a loud failure at map entry.
 func (e *OperationExecutor) ExecuteOperations(f field.Model, characterId uint32, ops []operation.Model) error {
 	for _, op := range ops {
 		if err := e.ExecuteOperation(f, characterId, op); err != nil {

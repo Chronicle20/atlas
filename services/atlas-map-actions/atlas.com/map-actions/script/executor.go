@@ -9,6 +9,7 @@ import (
 
 	mapactionsaga "atlas-map-actions/saga"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -204,12 +205,16 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 
 	// Use event mapId by default, allow override
 	mapId := f.MapId()
+	instance := f.Instance()
 	if mapIdStr, hasMapId := params["mapId"]; hasMapId {
 		mId, err := strconv.ParseUint(mapIdStr, 10, 32)
 		if err != nil {
 			return fmt.Errorf("invalid mapId [%s]: %w", mapIdStr, err)
 		}
 		mapId = _map.Id(mId)
+		// A foreign map id cannot be scoped by this field's instance UUID, so the
+		// spawn is sent unscoped, matching pre-F3 behavior for the override path.
+		instance = uuid.Nil
 	}
 
 	e.l.Debugf("Spawning monster [%d] at (%d,%d) count [%d] for character [%d].", monsterId, x, y, count, characterId)
@@ -226,7 +231,7 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 				WorldId:       f.WorldId(),
 				ChannelId:     f.ChannelId(),
 				MapId:         mapId,
-				Instance:      f.Instance(),
+				Instance:      instance,
 				MonsterId:     uint32(monsterId),
 				X:             x,
 				Y:             y,

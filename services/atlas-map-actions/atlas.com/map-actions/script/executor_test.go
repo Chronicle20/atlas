@@ -155,6 +155,63 @@ func TestExecuteSpawnMonsterCarriesFieldInstance(t *testing.T) {
 	}
 }
 
+func TestExecuteSpawnMonsterMapIdOverrideClearsInstance(t *testing.T) {
+	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	fieldMapId := _map.Id(926000000)
+	overrideMapId := _map.Id(910510000)
+
+	tests := []struct {
+		name         string
+		params       map[string]string
+		wantMapId    _map.Id
+		wantInstance uuid.UUID
+	}{
+		{
+			name:         "no mapId param uses field mapId and field instance",
+			params:       map[string]string{"monsterId": "9100013"},
+			wantMapId:    fieldMapId,
+			wantInstance: inst,
+		},
+		{
+			name:         "mapId param overrides mapId and clears instance",
+			params:       map[string]string{"monsterId": "9100013", "mapId": "910510000"},
+			wantMapId:    overrideMapId,
+			wantInstance: uuid.Nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), fieldMapId).SetInstance(inst).Build()
+
+			op, err := operation.NewBuilder().SetType("spawn_monster").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnMonsterPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.SpawnMonsterPayload")
+			}
+			if payload.MapId != tt.wantMapId {
+				t.Errorf("payload.MapId = %v, want %v", payload.MapId, tt.wantMapId)
+			}
+			if payload.Instance != tt.wantInstance {
+				t.Errorf("payload.Instance = %v, want %v", payload.Instance, tt.wantInstance)
+			}
+		})
+	}
+}
+
 func TestExecuteSpawnMonsterSpawnIfAbsent(t *testing.T) {
 	tests := []struct {
 		name          string

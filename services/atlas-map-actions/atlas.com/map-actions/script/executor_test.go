@@ -36,104 +36,122 @@ func newTestOperationExecutor() (*OperationExecutor, *recordingSagaProcessor) {
 	return e, rec
 }
 
-func TestExecuteOperationUnknownTypeErrors(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910510000)).Build()
-	op, err := operation.NewBuilder().SetType("play_sound").Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+func TestExecuteOperationUnknownType(t *testing.T) {
+	tests := []struct {
+		name        string
+		execute     func(e *OperationExecutor, f field.Model) error
+		wantErr     string
+		wantCreated int
+	}{
+		{
+			name: "ExecuteOperation errors and creates nothing",
+			execute: func(e *OperationExecutor, f field.Model) error {
+				op, err := operation.NewBuilder().SetType("play_sound").Build()
+				if err != nil {
+					t.Fatalf("operation.NewBuilder().Build(): %v", err)
+				}
+				return e.ExecuteOperation(f, 1, op)
+			},
+			wantErr:     "unknown operation type [play_sound]",
+			wantCreated: 0,
+		},
+		{
+			name: "ExecuteOperations aborts after unknown operation",
+			execute: func(e *OperationExecutor, f field.Model) error {
+				fieldEffect, err := operation.NewBuilder().
+					SetType("field_effect").
+					SetParams(map[string]string{"path": "maplemap/enter/1000000"}).
+					Build()
+				if err != nil {
+					t.Fatalf("operation.NewBuilder().Build(): %v", err)
+				}
+				playSound, err := operation.NewBuilder().SetType("play_sound").Build()
+				if err != nil {
+					t.Fatalf("operation.NewBuilder().Build(): %v", err)
+				}
+				unlockUi, err := operation.NewBuilder().SetType("unlock_ui").Build()
+				if err != nil {
+					t.Fatalf("operation.NewBuilder().Build(): %v", err)
+				}
+				return e.ExecuteOperations(f, 1, []operation.Model{fieldEffect, playSound, unlockUi})
+			},
+			wantErr:     "unknown operation type [play_sound]",
+			wantCreated: 1,
+		},
 	}
 
-	err = e.ExecuteOperation(f, 1, op)
-	if err == nil {
-		t.Fatalf("ExecuteOperation() error = nil, want non-nil")
-	}
-	if err.Error() != "unknown operation type [play_sound]" {
-		t.Errorf("ExecuteOperation() error = %q, want %q", err.Error(), "unknown operation type [play_sound]")
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910510000)).Build()
 
-	if len(rec.created) != 0 {
-		t.Errorf("len(rec.created) = %d, want 0", len(rec.created))
-	}
-}
+			err := tt.execute(e, f)
+			if err == nil {
+				t.Fatalf("error = nil, want non-nil")
+			}
+			if err.Error() != tt.wantErr {
+				t.Errorf("error = %q, want %q", err.Error(), tt.wantErr)
+			}
 
-func TestExecuteOperationsAbortsAfterUnknownOperation(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910510000)).Build()
-
-	fieldEffect, err := operation.NewBuilder().
-		SetType("field_effect").
-		SetParams(map[string]string{"path": "maplemap/enter/1000000"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-	playSound, err := operation.NewBuilder().SetType("play_sound").Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-	unlockUi, err := operation.NewBuilder().SetType("unlock_ui").Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	err = e.ExecuteOperations(f, 1, []operation.Model{fieldEffect, playSound, unlockUi})
-	if err == nil {
-		t.Fatalf("ExecuteOperations() error = nil, want non-nil")
-	}
-	if err.Error() != "unknown operation type [play_sound]" {
-		t.Errorf("ExecuteOperations() error = %q, want %q", err.Error(), "unknown operation type [play_sound]")
-	}
-
-	if len(rec.created) != 1 {
-		t.Errorf("len(rec.created) = %d, want 1", len(rec.created))
+			if len(rec.created) != tt.wantCreated {
+				t.Errorf("len(rec.created) = %d, want %d", len(rec.created), tt.wantCreated)
+			}
+		})
 	}
 }
 
 func TestExecuteSpawnMonsterCarriesFieldInstance(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("spawn_monster").
-		SetParams(map[string]string{"monsterId": "9100013", "x": "82", "y": "200"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "carries field instance"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnMonsterPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.SpawnMonsterPayload")
-	}
-	if payload.Instance != inst {
-		t.Errorf("payload.Instance = %v, want %v", payload.Instance, inst)
-	}
-	if payload.MapId != _map.Id(926000000) {
-		t.Errorf("payload.MapId = %v, want %v", payload.MapId, _map.Id(926000000))
-	}
-	if payload.MonsterId != 9100013 {
-		t.Errorf("payload.MonsterId = %d, want %d", payload.MonsterId, 9100013)
-	}
-	if payload.X != 82 {
-		t.Errorf("payload.X = %d, want %d", payload.X, 82)
-	}
-	if payload.Y != 200 {
-		t.Errorf("payload.Y = %d, want %d", payload.Y, 200)
-	}
-	if payload.Count != 1 {
-		t.Errorf("payload.Count = %d, want %d", payload.Count, 1)
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("spawn_monster").
+				SetParams(map[string]string{"monsterId": "9100013", "x": "82", "y": "200"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnMonsterPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.SpawnMonsterPayload")
+			}
+			if payload.Instance != inst {
+				t.Errorf("payload.Instance = %v, want %v", payload.Instance, inst)
+			}
+			if payload.MapId != _map.Id(926000000) {
+				t.Errorf("payload.MapId = %v, want %v", payload.MapId, _map.Id(926000000))
+			}
+			if payload.MonsterId != 9100013 {
+				t.Errorf("payload.MonsterId = %d, want %d", payload.MonsterId, 9100013)
+			}
+			if payload.X != 82 {
+				t.Errorf("payload.X = %d, want %d", payload.X, 82)
+			}
+			if payload.Y != 200 {
+				t.Errorf("payload.Y = %d, want %d", payload.Y, 200)
+			}
+			if payload.Count != 1 {
+				t.Errorf("payload.Count = %d, want %d", payload.Count, 1)
+			}
+		})
 	}
 }
 
@@ -185,43 +203,53 @@ func TestExecuteSpawnMonsterSpawnIfAbsent(t *testing.T) {
 }
 
 func TestExecuteSpawnMonsterMonsterIdsPicksFromSet(t *testing.T) {
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("spawn_monster").
-		SetParams(map[string]string{"monsterIds": "3300005,3300006,3300007", "x": "-28", "y": "-67"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "picks from set"},
 	}
 
-	seen := map[uint32]bool{}
-	for i := 0; i < 200; i++ {
-		e, rec := newTestOperationExecutor()
-		if err := e.ExecuteOperation(f, 1, op); err != nil {
-			t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-		}
-		payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnMonsterPayload)
-		if !ok {
-			t.Fatalf("Steps[0].Payload is not saga.SpawnMonsterPayload")
-		}
-		if payload.MonsterId != 3300005 && payload.MonsterId != 3300006 && payload.MonsterId != 3300007 {
-			t.Fatalf("payload.MonsterId = %d, want one of 3300005, 3300006, 3300007", payload.MonsterId)
-		}
-		seen[payload.MonsterId] = true
-		if payload.X != -28 {
-			t.Errorf("payload.X = %d, want %d", payload.X, -28)
-		}
-		if payload.Y != -67 {
-			t.Errorf("payload.Y = %d, want %d", payload.Y, -67)
-		}
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
 
-	for _, id := range []uint32{3300005, 3300006, 3300007} {
-		if !seen[id] {
-			t.Errorf("monsterId %d never chosen across 200 runs", id)
-		}
+			op, err := operation.NewBuilder().
+				SetType("spawn_monster").
+				SetParams(map[string]string{"monsterIds": "3300005,3300006,3300007", "x": "-28", "y": "-67"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			seen := map[uint32]bool{}
+			for i := 0; i < 200; i++ {
+				e, rec := newTestOperationExecutor()
+				if err := e.ExecuteOperation(f, 1, op); err != nil {
+					t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+				}
+				payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnMonsterPayload)
+				if !ok {
+					t.Fatalf("Steps[0].Payload is not saga.SpawnMonsterPayload")
+				}
+				if payload.MonsterId != 3300005 && payload.MonsterId != 3300006 && payload.MonsterId != 3300007 {
+					t.Fatalf("payload.MonsterId = %d, want one of 3300005, 3300006, 3300007", payload.MonsterId)
+				}
+				seen[payload.MonsterId] = true
+				if payload.X != -28 {
+					t.Errorf("payload.X = %d, want %d", payload.X, -28)
+				}
+				if payload.Y != -67 {
+					t.Errorf("payload.Y = %d, want %d", payload.Y, -67)
+				}
+			}
+
+			for _, id := range []uint32{3300005, 3300006, 3300007} {
+				if !seen[id] {
+					t.Errorf("monsterId %d never chosen across 200 runs", id)
+				}
+			}
+		})
 	}
 }
 

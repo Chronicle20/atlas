@@ -22,42 +22,69 @@ func fullRestConditionModel() RestConditionModel {
 	}
 }
 
-// TestExtractConditionCarriesEveryField verifies that every field on a
-// RestConditionModel survives extraction into a condition.Model.
-func TestExtractConditionCarriesEveryField(t *testing.T) {
-	r := fullRestConditionModel()
+// TestConditionCarriesEveryField verifies that every field on a
+// RestConditionModel and a seed-JSON condition survives their respective
+// paths into a condition.Model.
+func TestConditionCarriesEveryField(t *testing.T) {
+	tests := []struct {
+		name  string
+		build func() (condition.Model, error)
+	}{
+		{
+			name: "extractCondition",
+			build: func() (condition.Model, error) {
+				return extractCondition(fullRestConditionModel())
+			},
+		},
+		{
+			name: "convertJsonCondition",
+			build: func() (condition.Model, error) {
+				raw := `{"type":"questProgress","operator":"=","value":"0","values":["1000","1100"],"referenceId":"21747","step":"9300351","worldId":"0","channelId":"1","includeEquipped":true}`
 
-	c, err := extractCondition(r)
-	if err != nil {
-		t.Fatalf("extractCondition: %v", err)
+				var jc jsonCondition
+				if err := json.Unmarshal([]byte(raw), &jc); err != nil {
+					return condition.Model{}, err
+				}
+				return convertJsonCondition(jc)
+			},
+		},
 	}
 
-	if c.Type() != "questProgress" {
-		t.Errorf("Type() = %q, want %q", c.Type(), "questProgress")
-	}
-	if c.Operator() != "=" {
-		t.Errorf("Operator() = %q, want %q", c.Operator(), "=")
-	}
-	if c.Value() != "0" {
-		t.Errorf("Value() = %q, want %q", c.Value(), "0")
-	}
-	if !reflect.DeepEqual(c.Values(), []string{"1000", "1100"}) {
-		t.Errorf("Values() = %v, want %v", c.Values(), []string{"1000", "1100"})
-	}
-	if c.ReferenceIdRaw() != "21747" {
-		t.Errorf("ReferenceIdRaw() = %q, want %q", c.ReferenceIdRaw(), "21747")
-	}
-	if c.Step() != "9300351" {
-		t.Errorf("Step() = %q, want %q", c.Step(), "9300351")
-	}
-	if c.WorldId() != "0" {
-		t.Errorf("WorldId() = %q, want %q", c.WorldId(), "0")
-	}
-	if c.ChannelId() != "1" {
-		t.Errorf("ChannelId() = %q, want %q", c.ChannelId(), "1")
-	}
-	if !c.IncludeEquipped() {
-		t.Errorf("IncludeEquipped() = %v, want %v", c.IncludeEquipped(), true)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := tt.build()
+			if err != nil {
+				t.Fatalf("build: %v", err)
+			}
+
+			if c.Type() != "questProgress" {
+				t.Errorf("Type() = %q, want %q", c.Type(), "questProgress")
+			}
+			if c.Operator() != "=" {
+				t.Errorf("Operator() = %q, want %q", c.Operator(), "=")
+			}
+			if c.Value() != "0" {
+				t.Errorf("Value() = %q, want %q", c.Value(), "0")
+			}
+			if !reflect.DeepEqual(c.Values(), []string{"1000", "1100"}) {
+				t.Errorf("Values() = %v, want %v", c.Values(), []string{"1000", "1100"})
+			}
+			if c.ReferenceIdRaw() != "21747" {
+				t.Errorf("ReferenceIdRaw() = %q, want %q", c.ReferenceIdRaw(), "21747")
+			}
+			if c.Step() != "9300351" {
+				t.Errorf("Step() = %q, want %q", c.Step(), "9300351")
+			}
+			if c.WorldId() != "0" {
+				t.Errorf("WorldId() = %q, want %q", c.WorldId(), "0")
+			}
+			if c.ChannelId() != "1" {
+				t.Errorf("ChannelId() = %q, want %q", c.ChannelId(), "1")
+			}
+			if !c.IncludeEquipped() {
+				t.Errorf("IncludeEquipped() = %v, want %v", c.IncludeEquipped(), true)
+			}
+		})
 	}
 }
 
@@ -65,76 +92,42 @@ func TestExtractConditionCarriesEveryField(t *testing.T) {
 // built with every field populated round-trips through transformRule back into
 // an identical RestConditionModel.
 func TestTransformRuleRoundTripsEveryConditionField(t *testing.T) {
-	want := fullRestConditionModel()
-
-	c, err := condition.NewBuilder().
-		SetType("questProgress").
-		SetOperator("=").
-		SetValue("0").
-		SetValues([]string{"1000", "1100"}).
-		SetReferenceId("21747").
-		SetStep("9300351").
-		SetWorldId("0").
-		SetChannelId("1").
-		SetIncludeEquipped(true).
-		Build()
-	if err != nil {
-		t.Fatalf("condition.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "round-trips every field"},
 	}
 
-	rule := NewRuleBuilder().SetId("r1").AddCondition(c).Build()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			want := fullRestConditionModel()
 
-	restRule := transformRule(rule)
-	if len(restRule.Conditions) != 1 {
-		t.Fatalf("len(restRule.Conditions) = %d, want 1", len(restRule.Conditions))
-	}
+			c, err := condition.NewBuilder().
+				SetType("questProgress").
+				SetOperator("=").
+				SetValue("0").
+				SetValues([]string{"1000", "1100"}).
+				SetReferenceId("21747").
+				SetStep("9300351").
+				SetWorldId("0").
+				SetChannelId("1").
+				SetIncludeEquipped(true).
+				Build()
+			if err != nil {
+				t.Fatalf("condition.NewBuilder().Build(): %v", err)
+			}
 
-	got := restRule.Conditions[0]
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("transformRule condition = %+v, want %+v", got, want)
-	}
-}
+			rule := NewRuleBuilder().SetId("r1").AddCondition(c).Build()
 
-// TestConvertJsonConditionCarriesEveryField verifies that every field in a
-// seed-JSON condition survives decoding into a condition.Model.
-func TestConvertJsonConditionCarriesEveryField(t *testing.T) {
-	raw := `{"type":"questProgress","operator":"=","value":"0","values":["1000","1100"],"referenceId":"21747","step":"9300351","worldId":"0","channelId":"1","includeEquipped":true}`
+			restRule := transformRule(rule)
+			if len(restRule.Conditions) != 1 {
+				t.Fatalf("len(restRule.Conditions) = %d, want 1", len(restRule.Conditions))
+			}
 
-	var jc jsonCondition
-	if err := json.Unmarshal([]byte(raw), &jc); err != nil {
-		t.Fatalf("json.Unmarshal: %v", err)
-	}
-
-	c, err := convertJsonCondition(jc)
-	if err != nil {
-		t.Fatalf("convertJsonCondition: %v", err)
-	}
-
-	if c.Type() != "questProgress" {
-		t.Errorf("Type() = %q, want %q", c.Type(), "questProgress")
-	}
-	if c.Operator() != "=" {
-		t.Errorf("Operator() = %q, want %q", c.Operator(), "=")
-	}
-	if c.Value() != "0" {
-		t.Errorf("Value() = %q, want %q", c.Value(), "0")
-	}
-	if !reflect.DeepEqual(c.Values(), []string{"1000", "1100"}) {
-		t.Errorf("Values() = %v, want %v", c.Values(), []string{"1000", "1100"})
-	}
-	if c.ReferenceIdRaw() != "21747" {
-		t.Errorf("ReferenceIdRaw() = %q, want %q", c.ReferenceIdRaw(), "21747")
-	}
-	if c.Step() != "9300351" {
-		t.Errorf("Step() = %q, want %q", c.Step(), "9300351")
-	}
-	if c.WorldId() != "0" {
-		t.Errorf("WorldId() = %q, want %q", c.WorldId(), "0")
-	}
-	if c.ChannelId() != "1" {
-		t.Errorf("ChannelId() = %q, want %q", c.ChannelId(), "1")
-	}
-	if !c.IncludeEquipped() {
-		t.Errorf("IncludeEquipped() = %v, want %v", c.IncludeEquipped(), true)
+			got := restRule.Conditions[0]
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("transformRule condition = %+v, want %+v", got, want)
+			}
+		})
 	}
 }

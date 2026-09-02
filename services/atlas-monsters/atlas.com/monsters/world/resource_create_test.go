@@ -27,46 +27,56 @@ import (
 // resulting zero Model into a misleading 200 with a zero-valued monster
 // body; it returns 204 No Content instead (task A7, Step 1/6 decision).
 func TestCreateMonsterInMapSuppressedSpawnReturns204(t *testing.T) {
-	tenantId := uuid.New()
-	ten, err := tenant.Create(tenantId, "GMS", 83, 1)
-	require.NoError(t, err)
-	ctx := tenant.WithContext(context.Background(), ten)
+	tests := []struct {
+		name string
+	}{
+		{name: "suppressed spawn returns 204"},
+	}
 
-	worldId := world.Id(3)
-	channelId := channel.Id(3)
-	mapId := mapconst.Id(300000000)
-	instanceId := uuid.Nil
-	f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tenantId := uuid.New()
+			ten, err := tenant.Create(tenantId, "GMS", 83, 1)
+			require.NoError(t, err)
+			ctx := tenant.WithContext(context.Background(), ten)
 
-	reg := monster.GetMonsterRegistry()
-	reg.CreateMonster(ctx, ten, f, 9100013, 82, 200, 0, 0, 0, 100, 100, "", "")
+			worldId := world.Id(3)
+			channelId := channel.Id(3)
+			mapId := mapconst.Id(300000000)
+			instanceId := uuid.Nil
+			f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 
-	body, err := jsonapi.Marshal(&monster.RestModel{
-		MonsterId:     9100013,
-		X:             82,
-		Y:             200,
-		SpawnIfAbsent: true,
-	})
-	require.NoError(t, err)
+			reg := monster.GetMonsterRegistry()
+			reg.CreateMonster(ctx, ten, f, 9100013, 82, 200, 0, 0, 0, 100, 100, "", "")
 
-	srv := httptest.NewServer(setupWorldRouter())
-	defer srv.Close()
+			body, err := jsonapi.Marshal(&monster.RestModel{
+				MonsterId:     9100013,
+				X:             82,
+				Y:             200,
+				SpawnIfAbsent: true,
+			})
+			require.NoError(t, err)
 
-	url := fmt.Sprintf("%s/worlds/%d/channels/%d/maps/%d/instances/%s/monsters", srv.URL, worldId, channelId, mapId, instanceId)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("TENANT_ID", tenantId.String())
-	req.Header.Set("REGION", "GMS")
-	req.Header.Set("MAJOR_VERSION", "83")
-	req.Header.Set("MINOR_VERSION", "1")
+			srv := httptest.NewServer(setupWorldRouter())
+			defer srv.Close()
 
-	resp, err := (&http.Client{}).Do(req)
-	require.NoError(t, err)
-	defer func() { _ = resp.Body.Close() }()
+			url := fmt.Sprintf("%s/worlds/%d/channels/%d/maps/%d/instances/%s/monsters", srv.URL, worldId, channelId, mapId, instanceId)
+			req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("TENANT_ID", tenantId.String())
+			req.Header.Set("REGION", "GMS")
+			req.Header.Set("MAJOR_VERSION", "83")
+			req.Header.Set("MINOR_VERSION", "1")
 
-	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+			resp, err := (&http.Client{}).Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
 
-	inField := reg.GetMonstersInMap(ten, f)
-	require.Len(t, inField, 1, "the suppressed spawn must not have added a second monster")
+			require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+			inField := reg.GetMonstersInMap(ten, f)
+			require.Len(t, inField, 1, "the suppressed spawn must not have added a second monster")
+		})
+	}
 }

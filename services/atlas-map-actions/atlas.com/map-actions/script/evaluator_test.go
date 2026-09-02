@@ -77,126 +77,119 @@ func TestEvaluateMapIdOperators(t *testing.T) {
 	}
 }
 
-func TestEvaluateViaQueryAggregatorCarriesEveryField(t *testing.T) {
-	var captured []validation.ConditionInput
-	e := newTestConditionEvaluator()
-	e.validationP = &mock.ProcessorMock{
-		ValidateCharacterStateFunc: func(characterId uint32, conditions []validation.ConditionInput) (validation.ValidationResult, error) {
-			captured = conditions
-			return validation.NewValidationResult(characterId, true), nil
+func TestEvaluateViaQueryAggregator(t *testing.T) {
+	tests := []struct {
+		name    string
+		build   func() (condition.Model, error)
+		wantErr string
+		check   func(t *testing.T, captured []validation.ConditionInput, called bool)
+	}{
+		{
+			name: "carries every field",
+			build: func() (condition.Model, error) {
+				return condition.NewBuilder().
+					SetType("questProgress").
+					SetOperator("=").
+					SetValue("0").
+					SetReferenceId("21747").
+					SetStep("9300351").
+					SetIncludeEquipped(true).
+					Build()
+			},
+			check: func(t *testing.T, captured []validation.ConditionInput, called bool) {
+				if len(captured) != 1 {
+					t.Fatalf("len(captured) = %d, want 1", len(captured))
+				}
+				want := validation.ConditionInput{
+					Type:            "questProgress",
+					Operator:        "=",
+					Value:           0,
+					Values:          nil,
+					ReferenceId:     21747,
+					Step:            "9300351",
+					WorldId:         world.Id(0),
+					ChannelId:       channel.Id(1),
+					IncludeEquipped: true,
+				}
+				if !reflect.DeepEqual(captured[0], want) {
+					t.Errorf("captured[0] = %+v, want %+v", captured[0], want)
+				}
+			},
+		},
+		{
+			name: "in operator uses values",
+			build: func() (condition.Model, error) {
+				return condition.NewBuilder().
+					SetType("jobId").
+					SetOperator("in").
+					SetValues([]string{"1000", "1100", "1110", "1200", "1210", "1300", "1310", "1400", "1410", "1500", "1510"}).
+					Build()
+			},
+			check: func(t *testing.T, captured []validation.ConditionInput, called bool) {
+				if len(captured) != 1 {
+					t.Fatalf("len(captured) = %d, want 1", len(captured))
+				}
+				wantValues := []int{1000, 1100, 1110, 1200, 1210, 1300, 1310, 1400, 1410, 1500, 1510}
+				if captured[0].Value != 0 {
+					t.Errorf("captured[0].Value = %d, want 0", captured[0].Value)
+				}
+				if !reflect.DeepEqual(captured[0].Values, wantValues) {
+					t.Errorf("captured[0].Values = %v, want %v", captured[0].Values, wantValues)
+				}
+			},
+		},
+		{
+			name: "rejects non-integer scalar value",
+			build: func() (condition.Model, error) {
+				return condition.NewBuilder().SetType("level").SetOperator(">=").SetValue("ten").Build()
+			},
+			wantErr: "invalid condition value [ten]",
+			check: func(t *testing.T, captured []validation.ConditionInput, called bool) {
+				if called {
+					t.Errorf("aggregator was called, want it never called")
+				}
+			},
+		},
+		{
+			name: "rejects non-integer values entry",
+			build: func() (condition.Model, error) {
+				return condition.NewBuilder().SetType("jobId").SetOperator("in").SetValues([]string{"1000", "abc"}).Build()
+			},
+			wantErr: "invalid condition values entry [abc]",
 		},
 	}
 
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910510000)).Build()
-	cond, err := condition.NewBuilder().
-		SetType("questProgress").
-		SetOperator("=").
-		SetValue("0").
-		SetReferenceId("21747").
-		SetStep("9300351").
-		SetIncludeEquipped(true).
-		Build()
-	if err != nil {
-		t.Fatalf("condition.NewBuilder().Build(): %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var captured []validation.ConditionInput
+			called := false
+			e := newTestConditionEvaluator()
+			e.validationP = &mock.ProcessorMock{
+				ValidateCharacterStateFunc: func(characterId uint32, conditions []validation.ConditionInput) (validation.ValidationResult, error) {
+					captured = conditions
+					called = true
+					return validation.NewValidationResult(characterId, true), nil
+				},
+			}
 
-	if _, err := e.EvaluateCondition(f, 1, cond); err != nil {
-		t.Fatalf("EvaluateCondition() unexpected error: %v", err)
-	}
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910510000)).Build()
+			cond, err := tt.build()
+			if err != nil {
+				t.Fatalf("condition.NewBuilder().Build(): %v", err)
+			}
 
-	if len(captured) != 1 {
-		t.Fatalf("len(captured) = %d, want 1", len(captured))
-	}
+			_, err = e.EvaluateCondition(f, 1, cond)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("EvaluateCondition() error = %v, want containing %q", err, tt.wantErr)
+				}
+			} else if err != nil {
+				t.Fatalf("EvaluateCondition() unexpected error: %v", err)
+			}
 
-	want := validation.ConditionInput{
-		Type:            "questProgress",
-		Operator:        "=",
-		Value:           0,
-		Values:          nil,
-		ReferenceId:     21747,
-		Step:            "9300351",
-		WorldId:         world.Id(0),
-		ChannelId:       channel.Id(1),
-		IncludeEquipped: true,
-	}
-	if !reflect.DeepEqual(captured[0], want) {
-		t.Errorf("captured[0] = %+v, want %+v", captured[0], want)
-	}
-}
-
-func TestEvaluateViaQueryAggregatorInOperatorUsesValues(t *testing.T) {
-	var captured []validation.ConditionInput
-	e := newTestConditionEvaluator()
-	e.validationP = &mock.ProcessorMock{
-		ValidateCharacterStateFunc: func(characterId uint32, conditions []validation.ConditionInput) (validation.ValidationResult, error) {
-			captured = conditions
-			return validation.NewValidationResult(characterId, true), nil
-		},
-	}
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910510000)).Build()
-	cond, err := condition.NewBuilder().
-		SetType("jobId").
-		SetOperator("in").
-		SetValues([]string{"1000", "1100", "1110", "1200", "1210", "1300", "1310", "1400", "1410", "1500", "1510"}).
-		Build()
-	if err != nil {
-		t.Fatalf("condition.NewBuilder().Build(): %v", err)
-	}
-
-	if _, err := e.EvaluateCondition(f, 1, cond); err != nil {
-		t.Fatalf("EvaluateCondition() unexpected error: %v", err)
-	}
-
-	if len(captured) != 1 {
-		t.Fatalf("len(captured) = %d, want 1", len(captured))
-	}
-
-	wantValues := []int{1000, 1100, 1110, 1200, 1210, 1300, 1310, 1400, 1410, 1500, 1510}
-	if captured[0].Value != 0 {
-		t.Errorf("captured[0].Value = %d, want 0", captured[0].Value)
-	}
-	if !reflect.DeepEqual(captured[0].Values, wantValues) {
-		t.Errorf("captured[0].Values = %v, want %v", captured[0].Values, wantValues)
-	}
-}
-
-func TestEvaluateViaQueryAggregatorRejectsNonIntegerScalarValue(t *testing.T) {
-	called := false
-	e := newTestConditionEvaluator()
-	e.validationP = &mock.ProcessorMock{
-		ValidateCharacterStateFunc: func(characterId uint32, conditions []validation.ConditionInput) (validation.ValidationResult, error) {
-			called = true
-			return validation.NewValidationResult(characterId, true), nil
-		},
-	}
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910510000)).Build()
-	cond, err := condition.NewBuilder().SetType("level").SetOperator(">=").SetValue("ten").Build()
-	if err != nil {
-		t.Fatalf("condition.NewBuilder().Build(): %v", err)
-	}
-
-	_, err = e.EvaluateCondition(f, 1, cond)
-	if err == nil || !strings.Contains(err.Error(), "invalid condition value [ten]") {
-		t.Fatalf("EvaluateCondition() error = %v, want containing %q", err, "invalid condition value [ten]")
-	}
-	if called {
-		t.Errorf("aggregator was called, want it never called")
-	}
-}
-
-func TestEvaluateViaQueryAggregatorRejectsNonIntegerValuesEntry(t *testing.T) {
-	e := newTestConditionEvaluator()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910510000)).Build()
-	cond, err := condition.NewBuilder().SetType("jobId").SetOperator("in").SetValues([]string{"1000", "abc"}).Build()
-	if err != nil {
-		t.Fatalf("condition.NewBuilder().Build(): %v", err)
-	}
-
-	_, err = e.EvaluateCondition(f, 1, cond)
-	if err == nil || !strings.Contains(err.Error(), "invalid condition values entry [abc]") {
-		t.Fatalf("EvaluateCondition() error = %v, want containing %q", err, "invalid condition values entry [abc]")
+			if tt.check != nil {
+				tt.check(t, captured, called)
+			}
+		})
 	}
 }

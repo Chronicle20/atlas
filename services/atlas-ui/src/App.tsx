@@ -124,11 +124,6 @@ const PortalDetailPage = lazyWithReload(() =>
 const FieldsPage = lazyWithReload(() =>
   import("@/pages/FieldsPage").then((m) => ({ default: m.FieldsPage })),
 );
-const FieldDetailPage = lazyWithReload(() =>
-  import("@/pages/FieldDetailPage").then((m) => ({
-    default: m.FieldDetailPage,
-  })),
-);
 const MerchantsPage = lazyWithReload(() =>
   import("@/pages/MerchantsPage").then((m) => ({ default: m.MerchantsPage })),
 );
@@ -382,10 +377,6 @@ export function App() {
                       element={<PortalDetailPage />}
                     />
                     <Route path="/fields" element={<FieldsPage />} />
-                    <Route
-                      path="/fields/:worldId/:channelId/:mapId/:instanceId"
-                      element={<FieldDetailPage />}
-                    />
                     <Route path="/transports" element={<TransportsPage />} />
                     <Route
                       path="/transports/routes/:routeId"

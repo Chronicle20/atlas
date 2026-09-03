@@ -53,6 +53,13 @@ vi.mock("@/lib/hooks/api/useMaps", () => ({
   useMapNames: (ids: number[]) => useMapNamesMock(ids),
 }));
 
+// bug-fields-ui item 6: FieldsPage dispatches to FieldDetailPage on
+// `?instance=`. FieldDetailPage's own rendering is FieldDetailPage.test.tsx's
+// job — stub it here to a marker so this file only asserts the dispatch.
+vi.mock("@/pages/FieldDetailPage", () => ({
+  FieldDetailPage: () => <div data-testid="field-detail-page" />,
+}));
+
 function makeWorld(id: string, name: string): WorldData {
   return {
     id,
@@ -202,12 +209,14 @@ describe("FieldsPage", () => {
     expect(screen.getByRole("option", { name: "Bera" })).toBeInTheDocument();
     await user.click(screen.getByRole("option", { name: "Scania" }));
 
+    // CHANNELS_WORLD_0 has channelId 1/2/3 (0-based); options display
+    // 1-indexed (item 15) — the underlying values stay 0-based.
     await user.click(screen.getByLabelText("Channel"));
     expect(
-      await screen.findByRole("option", { name: "1" }),
+      await screen.findByRole("option", { name: "2" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "2" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "3" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "4" })).toBeInTheDocument();
   });
 
   it("does not render a hard-coded world list when useWorlds returns []", async () => {
@@ -244,7 +253,7 @@ describe("FieldsPage", () => {
     await user.type(screen.getByLabelText("Map filter"), "Henesys");
 
     await waitFor(() => {
-      expect(screen.getByText("Henesys (910340000)")).toBeInTheDocument();
+      expect(screen.getByText("Henesys")).toBeInTheDocument();
       expect(screen.queryByText("100000000")).not.toBeInTheDocument();
     });
   });
@@ -285,8 +294,10 @@ describe("FieldsPage", () => {
     const user = userEvent.setup();
     renderPage();
 
+    // Channel option labels display 1-indexed (item 15): raw channelId 3
+    // is the option labelled "4".
     await user.click(screen.getByLabelText("Channel"));
-    await user.click(await screen.findByRole("option", { name: "3" }));
+    await user.click(await screen.findByRole("option", { name: "4" }));
 
     await waitFor(() => {
       const empty = screen.getByTestId("empty-state");
@@ -301,8 +312,10 @@ describe("FieldsPage", () => {
     const user = userEvent.setup();
     renderPage();
 
+    // Channel option labels display 1-indexed (item 15): raw channelId 3
+    // is the option labelled "4".
     await user.click(screen.getByLabelText("Channel"));
-    await user.click(await screen.findByRole("option", { name: "3" }));
+    await user.click(await screen.findByRole("option", { name: "4" }));
     await user.type(screen.getByLabelText("Map filter"), "910340000");
 
     const clearButton = await screen.findByRole("button", {
@@ -317,25 +330,27 @@ describe("FieldsPage", () => {
     });
   });
 
-  it("result columns include Map, Channel, Instance, Characters and Map links to the field", async () => {
+  it("result columns are Channel, Map, Instance, Characters (in that order) and Map links to the field", async () => {
     useMapNamesMock.mockReturnValue({ 910340000: "Henesys" });
     renderPage();
 
-    expect(
-      screen.getByRole("columnheader", { name: "Map" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("columnheader", { name: "Channel" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("columnheader", { name: "Instance" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("columnheader", { name: "Characters" }),
-    ).toBeInTheDocument();
+    const headers = screen
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent);
+    expect(headers).toEqual(["Channel", "Map", "Instance", "Characters"]);
 
-    const link = screen.getByRole("link", { name: /Henesys/ });
-    expect(link).toHaveAttribute("href", "/fields/0/1/910340000/instance-a");
+    const link = screen.getByRole("link", { name: "Henesys" });
+    expect(link).toHaveAttribute(
+      "href",
+      "/fields?world=0&channel=1&map=910340000&instance=instance-a",
+    );
+  });
+
+  it("channel is shown 1-indexed in the results grid (value stays 0-based)", async () => {
+    renderPage();
+
+    // FIELDS[0] has channelId 1 (0-based) — displayed as "2".
+    expect(screen.getByRole("cell", { name: "2" })).toBeInTheDocument();
   });
 
   it("exposes refresh and last updated", () => {
@@ -345,6 +360,34 @@ describe("FieldsPage", () => {
       screen.getByRole("button", { name: /refresh/i }),
     ).toBeInTheDocument();
     expect(screen.getByTestId("fields-last-updated")).toBeInTheDocument();
+  });
+
+  it("title and runtime badge each render on their own row (item 18)", () => {
+    renderPage();
+
+    const heading = screen.getByRole("heading", { name: "Fields" });
+    const badge = screen.getByText("Runtime");
+    expect(heading).toBeInTheDocument();
+    expect(badge).toBeInTheDocument();
+    // Not siblings in the same flex row — the badge's row is a distinct
+    // element from the one containing the heading (item 18: badge below the
+    // title, not inline with it).
+    expect(badge.closest("h1")).toBeNull();
+  });
+
+  it("filter bar is a Search Fields card with a result count and a Clear button (item 19)", async () => {
+    renderPage();
+
+    expect(screen.getByText("Search Fields")).toBeInTheDocument();
+    expect(screen.getByText(/fields match/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
+  });
+
+  it("dispatches to the field-detail view when ?instance= is present (item 6)", () => {
+    renderPage("/fields?world=0&channel=1&map=910340000&instance=instance-a");
+
+    expect(screen.getByTestId("field-detail-page")).toBeInTheDocument();
+    expect(screen.queryByLabelText("World")).not.toBeInTheDocument();
   });
 
   it("does not poll", async () => {

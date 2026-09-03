@@ -97,7 +97,7 @@ describe("LiveFieldsSection", () => {
     });
     expect(link).toHaveAttribute(
       "href",
-      `/fields/0/1/${MAP_ID}/00000000-0000-0000-0000-000000000000`,
+      `/fields?world=0&channel=1&map=${MAP_ID}&instance=00000000-0000-0000-0000-000000000000`,
     );
   });
 

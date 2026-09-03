@@ -39,7 +39,7 @@ function LiveFieldRow({ field, enabled }: LiveFieldRowProps) {
       <TableCell>{channelId}</TableCell>
       <TableCell>
         <Link
-          to={`/fields/${worldId}/${channelId}/${mapId}/${instanceId}`}
+          to={`/fields?world=${worldId}&channel=${channelId}&map=${mapId}&instance=${instanceId}`}
           className="font-mono text-xs underline"
         >
           {instanceId}

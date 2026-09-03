@@ -2,16 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import {
-  MemoryRouter,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FieldDetailPage } from "@/pages/FieldDetailPage";
+import { characterKeys } from "@/lib/hooks/api/useCharacters";
 import type { Tenant } from "@/types/models/tenant";
 import type { MapData } from "@/services/api/maps.service";
 import type { WorldData } from "@/services/api/worlds.service";
@@ -95,14 +90,20 @@ vi.mock("@/components/features/maps/MapImagePanel", () => ({
 // each id via useCharacter/useJobNameLookup; stub both so this page's tests
 // stay focused on the page shell, not the tab's own row rendering (that's
 // FieldCharactersTab.test.tsx's job).
-vi.mock("@/lib/hooks/api/useCharacters", () => ({
-  useCharacter: () => ({
-    data: undefined,
-    isLoading: false,
-    isError: false,
-    error: null,
-  }),
-}));
+vi.mock("@/lib/hooks/api/useCharacters", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/hooks/api/useCharacters")
+  >("@/lib/hooks/api/useCharacters");
+  return {
+    ...actual,
+    useCharacter: () => ({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    }),
+  };
+});
 vi.mock("@/lib/hooks/api/useJobGraph", () => ({
   useJobNameLookup: () => (id: number) => `Job ${id}`,
 }));
@@ -266,28 +267,24 @@ function NavigateButton({ to }: { to: string }) {
   return <button onClick={() => navigate(to)}>External tab navigation</button>;
 }
 
-function renderPage(initialPath = `/fields/0/1/910340000/${INSTANCE_ID}`) {
+const DEFAULT_QUERY = `world=0&channel=1&map=910340000&instance=${INSTANCE_ID}`;
+
+function renderPage(initialPath = `/fields?${DEFAULT_QUERY}`) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
     </QueryClientProvider>
   );
-  return render(
+  const result = render(
     <>
-      <Routes>
-        <Route
-          path="/fields/:worldId/:channelId/:mapId/:instanceId"
-          element={<FieldDetailPage />}
-        />
-      </Routes>
+      <FieldDetailPage />
       <LocationSpy />
-      <NavigateButton
-        to={`/fields/0/1/910340000/${INSTANCE_ID}?tab=monsters`}
-      />
+      <NavigateButton to={`/fields?${DEFAULT_QUERY}&tab=monsters`} />
     </>,
     { wrapper },
   );
+  return { ...result, qc };
 }
 
 describe("FieldDetailPage", () => {
@@ -332,12 +329,17 @@ describe("FieldDetailPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("world/channel/instance outrank the map id", () => {
+  it("world/channel/instance outrank the map id, channel shown 1-indexed", () => {
     renderPage();
 
+    // World 0 has no match in the mocked useWorlds data, so it falls back
+    // to the raw id. channel query param is "1" (0-based) — displayed "2"
+    // (bug-fields-ui item 7/15: render-time only, the URL/query stays 0-based).
     expect(screen.getByText(/World 0/)).toBeInTheDocument();
-    expect(screen.getByText(/Channel 1/)).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(INSTANCE_ID))).toBeInTheDocument();
+    expect(screen.getByText(/Channel 2/)).toBeInTheDocument();
+    expect(screen.getAllByText(new RegExp(INSTANCE_ID)).length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.queryByRole("heading", { name: /910340000/ }),
     ).not.toBeInTheDocument();
@@ -352,36 +354,12 @@ describe("FieldDetailPage", () => {
     expect(screen.getByText("Runtime")).toBeInTheDocument();
   });
 
-  it("View Map Definition link", () => {
+  it("View Map Definition is an icon link, not a text link inside the header", () => {
     renderPage();
 
-    expect(
-      screen.getByRole("link", { name: /view map definition/i }),
-    ).toHaveAttribute("href", "/maps/910340000");
-  });
-
-  it("live summary shows character count", () => {
-    useFieldCharactersMock.mockReturnValue(queryResult(makeFieldCharacters(3)));
-    renderPage();
-
-    expect(screen.getByTestId("field-character-count")).toHaveTextContent("3");
-  });
-
-  it("live summary groups monsters by name", () => {
-    renderPage();
-
-    const groups = screen.getAllByTestId("field-monster-group");
-    expect(groups).toHaveLength(2);
-    expect(screen.getByText("×2")).toBeInTheDocument();
-    expect(screen.getByText("×1")).toBeInTheDocument();
-  });
-
-  it("live summary shows tracked object count", () => {
-    renderPage();
-
-    expect(screen.getByTestId("field-tracked-object-count")).toHaveTextContent(
-      "—",
-    );
+    const link = screen.getByRole("link", { name: /view map definition/i });
+    expect(link).toHaveAttribute("href", "/maps/910340000");
+    expect(link).not.toHaveTextContent("View Map Definition");
   });
 
   it("tabs render with counts", () => {
@@ -405,7 +383,7 @@ describe("FieldDetailPage", () => {
   });
 
   it("?tab= selects the tab on load", () => {
-    renderPage(`/fields/0/1/910340000/${INSTANCE_ID}?tab=objects`);
+    renderPage(`/fields?${DEFAULT_QUERY}&tab=objects`);
 
     expect(screen.getByRole("tab", { name: /map objects/i })).toHaveAttribute(
       "data-state",
@@ -518,5 +496,17 @@ describe("FieldDetailPage", () => {
     expect(portalsResult.refetch).toHaveBeenCalled();
     expect(npcsResult.refetch).toHaveBeenCalled();
     expect(reactorsResult.refetch).toHaveBeenCalled();
+  });
+
+  it("refresh also invalidates character-detail queries so per-row position enrichment refetches (item 11, real bug)", async () => {
+    const user = userEvent.setup();
+    const { qc } = renderPage();
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+
+    await user.click(screen.getByRole("button", { name: /refresh/i }));
+
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: characterKeys.details() }),
+    );
   });
 });

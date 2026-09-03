@@ -1,19 +1,25 @@
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { RefreshCw } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Map as MapIcon, RefreshCw } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { PageLoader } from "@/components/common/PageLoader";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { HoverHighlightProvider } from "@/components/features/maps/HoverHighlightContext";
 import { MapImagePanel } from "@/components/features/maps/MapImagePanel";
 import { FieldHeader } from "@/components/features/fields/FieldHeader";
-import { FieldSummaryPanels } from "@/components/features/fields/FieldSummaryPanels";
 import { FieldTabs } from "@/components/features/fields/FieldTabs";
 import { FieldCharactersTab } from "@/components/features/fields/FieldCharactersTab";
 import { FieldMonstersTab } from "@/components/features/fields/FieldMonstersTab";
 import { FieldObjectsTab } from "@/components/features/fields/FieldObjectsTab";
 import { useMap } from "@/lib/hooks/api/useMaps";
 import { useWorlds } from "@/lib/hooks/api/useWorlds";
+import { characterKeys } from "@/lib/hooks/api/useCharacters";
 import {
   useFieldCharacters,
   useLiveMonsters,
@@ -55,13 +61,12 @@ const DEFAULT_TAB = "characters";
 // empty (resolved) result from `useFieldCharacters` is the torn-down signal
 // (FR-22), not an error.
 export function FieldDetailPage() {
-  const {
-    worldId: worldIdParam,
-    channelId: channelIdParam,
-    mapId,
-    instanceId,
-  } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const worldIdParam = searchParams.get("world");
+  const channelIdParam = searchParams.get("channel");
+  const mapId = searchParams.get("map");
+  const instanceId = searchParams.get("instance");
+  const queryClient = useQueryClient();
 
   const worldId = Number(worldIdParam);
   const channelId = Number(channelIdParam);
@@ -94,15 +99,25 @@ export function FieldDetailPage() {
   const npcsQuery = useMapNpcs(mapId ?? "");
   const reactorsQuery = useMapReactors(mapId ?? "");
 
-  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
-    mapQuery,
-    charactersQuery,
-    monstersQuery,
-    objectsQuery,
-    portalsQuery,
-    npcsQuery,
-    reactorsQuery,
-  ]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh(
+    [
+      mapQuery,
+      charactersQuery,
+      monstersQuery,
+      objectsQuery,
+      portalsQuery,
+      npcsQuery,
+      reactorsQuery,
+    ],
+    {
+      // Character rows enrich themselves through useCharacter inside
+      // FieldCharacterRow — those per-row detail queries aren't in the list
+      // above, so without this Refresh never refetches them and x/y stay
+      // stale (bug-fields-ui item 11, real bug).
+      alsoRefresh: () =>
+        queryClient.invalidateQueries({ queryKey: characterKeys.details() }),
+    },
+  );
 
   const tab = searchParams.get("tab") ?? DEFAULT_TAB;
   const handleTabChange = (next: string) => {
@@ -184,25 +199,43 @@ export function FieldDetailPage() {
         <FieldHeader
           worldId={worldIdParam ?? ""}
           channelId={channelIdParam ?? ""}
-          mapId={mapId ?? ""}
           instanceId={instanceId ?? ""}
           mapName={attrs.name}
           worldName={worldName}
         />
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void onRefresh()}
-            disabled={isRefreshing}
-            aria-busy={isRefreshing}
-          >
-            <RefreshCw
-              className={cn("h-4 w-4 mr-1.5", isRefreshing && "animate-spin")}
-            />
-            Refresh
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to={`/maps/${mapId}`}
+                aria-label="View Map Definition"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "icon" }),
+                )}
+              >
+                <MapIcon className="h-4 w-4" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>View Map Definition</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => void onRefresh()}
+                disabled={isRefreshing}
+                aria-busy={isRefreshing}
+                aria-label="Refresh"
+              >
+                <RefreshCw
+                  className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh</TooltipContent>
+          </Tooltip>
           {lastUpdatedAt != null && lastUpdatedAt > 0 && (
             <span
               className="text-xs text-muted-foreground"
@@ -219,21 +252,15 @@ export function FieldDetailPage() {
       </div>
 
       <HoverHighlightProvider>
-        <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-          <MapImagePanel
-            mapId={mapId ?? ""}
-            mapName={attrs.name}
-            mapArea={attrs.mapArea ?? null}
-            portals={portalsQuery.data}
-            npcs={npcsQuery.data}
-            monsters={toPositionedMonsters(monstersQuery.data)}
-            reactors={reactorsQuery.data}
-          />
-          <FieldSummaryPanels
-            characterCount={characterCount}
-            liveMonsters={monstersQuery.data}
-          />
-        </div>
+        <MapImagePanel
+          mapId={mapId ?? ""}
+          mapName={attrs.name}
+          mapArea={attrs.mapArea ?? null}
+          portals={portalsQuery.data}
+          npcs={npcsQuery.data}
+          monsters={toPositionedMonsters(monstersQuery.data)}
+          reactors={reactorsQuery.data}
+        />
 
         <FieldTabs
           characterCount={characterCount}

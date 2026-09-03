@@ -8,6 +8,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTenant } from "@/context/tenant-context";
 import { useCharacter } from "@/lib/hooks/api/useCharacters";
 import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
@@ -44,7 +50,6 @@ export function FieldCharactersTab({ characterIds }: FieldCharactersTabProps) {
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
-          <TableHead>Character ID</TableHead>
           <TableHead>Level</TableHead>
           <TableHead>Job</TableHead>
           <TableHead>Position</TableHead>
@@ -75,7 +80,6 @@ function FieldCharacterRow({ characterId, jobName }: FieldCharacterRowProps) {
     return (
       <TableRow>
         <TableCell>{characterId}</TableCell>
-        <TableCell>{characterId}</TableCell>
         <TableCell>—</TableCell>
         <TableCell>—</TableCell>
         <TableCell>—</TableCell>
@@ -88,11 +92,19 @@ function FieldCharacterRow({ characterId, jobName }: FieldCharacterRowProps) {
   return (
     <TableRow>
       <TableCell>
-        <Link to={`/characters/${characterId}`} className="underline">
-          {name}
-        </Link>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link to={`/characters/${characterId}`} className="underline">
+                {name}
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent copyable>
+              <p>{characterId}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </TableCell>
-      <TableCell>{characterId}</TableCell>
       <TableCell>{level}</TableCell>
       <TableCell>{jobName(jobId)}</TableCell>
       <TableCell>{`(${x}, ${y})`}</TableCell>

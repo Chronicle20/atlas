@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
@@ -127,21 +128,36 @@ describe("FieldCharactersTab", () => {
     renderTab(["100"]);
 
     expect(screen.getByText("Bob")).toBeInTheDocument();
-    expect(screen.getByText("100")).toBeInTheDocument();
     expect(screen.getByText("42")).toBeInTheDocument();
     expect(screen.getByText("Beginner")).toBeInTheDocument();
     expect(screen.getByText(/640/)).toBeInTheDocument();
     expect(screen.getByText(/120/)).toBeInTheDocument();
   });
 
-  it("has no State column", () => {
+  it("has no Character ID or State column", () => {
     useCharacterMock.mockImplementation((_tenant: unknown, id: string) =>
       queryResult({ data: makeCharacter(id, { name: "Bob" }) }),
     );
 
     renderTab(["100"]);
 
+    expect(
+      screen.queryByRole("columnheader", { name: "Character ID" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("State")).not.toBeInTheDocument();
+  });
+
+  it("the Name cell exposes the copyable id via a tooltip (bug-fields-ui item 10)", async () => {
+    useCharacterMock.mockImplementation((_tenant: unknown, id: string) =>
+      queryResult({ data: makeCharacter(id, { name: "Bob" }) }),
+    );
+    const user = userEvent.setup();
+
+    renderTab(["100"]);
+
+    expect(screen.queryByText("100")).not.toBeInTheDocument();
+    await user.hover(screen.getByRole("link", { name: "Bob" }));
+    expect(await screen.findByText("100")).toBeInTheDocument();
   });
 
   it("pending enrichment shows the raw id", () => {

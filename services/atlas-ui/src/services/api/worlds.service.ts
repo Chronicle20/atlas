@@ -36,13 +36,20 @@ export interface ChannelData {
   };
 }
 
+// The backend caps page[size] at 250 (paginate.MaxPageSize), which is also
+// the default when unspecified — an unparameterised request silently
+// truncates at 250. Request the max explicitly.
+const PAGE_SIZE = 250;
+
 class WorldsService {
   async getWorlds(): Promise<WorldData[]> {
-    return api.getList<WorldData>("/api/worlds/");
+    return api.getList<WorldData>(`/api/worlds/?page[size]=${PAGE_SIZE}`);
   }
 
   async getChannels(worldId: number): Promise<ChannelData[]> {
-    return api.getList<ChannelData>(`/api/worlds/${worldId}/channels`);
+    return api.getList<ChannelData>(
+      `/api/worlds/${worldId}/channels?page[size]=${PAGE_SIZE}`,
+    );
   }
 }
 

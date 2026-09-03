@@ -72,7 +72,7 @@ Load the owning document before acting in its area; it holds the mechanics this 
 | Dispatching a reviewer, or writing up a review | [docs/review-protocol.md](docs/review-protocol.md) |
 | A `verify.sh` guard failed, or script and CI disagree | [docs/verification.md](docs/verification.md) |
 | A bare task number, or a superpowers skill outside a phase command | [docs/superpowers-integration.md](docs/superpowers-integration.md) |
-| Committing, pushing, rebasing; a stray `main` commit, a push that didn't build, `gh` 401 | [docs/git-workflow.md](docs/git-workflow.md) |
+| Committing, pushing, rebasing, writing a PR body; a stray `main` commit, a push that didn't build, `gh` 401 | [docs/git-workflow.md](docs/git-workflow.md) |
 | A Go dependency's source, a long-running process, a mechanical repo fact, shell/editing conventions | [docs/tooling-conventions.md](docs/tooling-conventions.md) |
 | About to read a large document, diff, plan, or tool result | [docs/slice-first.md](docs/slice-first.md) |
 | The PR is open and something is wrong (Phase 5, `/fix-pr-bug`) | [docs/post-implementation.md](docs/post-implementation.md) |

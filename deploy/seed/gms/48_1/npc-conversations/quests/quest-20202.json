@@ -248,6 +248,10 @@
                 },
                 {
                   "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
                   "text": "Exit"
                 }
               ],

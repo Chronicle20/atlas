@@ -835,6 +835,62 @@ func TestRearmOneTime(t *testing.T) {
 	})
 }
 
+// TestRearmOneTime_ConcurrentTrueExactlyOnce pins RearmOneTime's atomicity: no
+// matter how many callers race against the same fired field, exactly one may
+// observe true. map/processor.go's Exit uses that bool as the exactly-once
+// gate for its DESTROY_FIELD emit (design D7), so two callers both observing
+// true would double-emit DESTROY_FIELD for a single re-arm.
+func TestRearmOneTime_ConcurrentTrueExactlyOnce(t *testing.T) {
+	client, _ := setupSpawnTestRedis(t)
+	r := newTestRegistry(client)
+	ctx := context.Background()
+	mapKey := newClaimTestMapKey(t)
+
+	var points []monster2.SpawnPoint
+	for i := uint32(1); i <= 10; i++ {
+		points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
+	}
+	mockDP := &mockSpawnDataProcessor{spawnPoints: points}
+	if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
+		t.Fatalf("InitializeForMap: %v", err)
+	}
+	if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
+		t.Fatalf("ClaimOneTimeSpawnPoints: %v", err)
+	}
+
+	var mu sync.Mutex
+	var results []bool
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rearmed, err := r.RearmOneTime(ctx, mapKey)
+			if err != nil {
+				t.Errorf("RearmOneTime: %v", err)
+				return
+			}
+			mu.Lock()
+			results = append(results, rearmed)
+			mu.Unlock()
+		}()
+	}
+	wg.Wait()
+
+	if len(results) != 8 {
+		t.Fatalf("got %d results, want 8", len(results))
+	}
+	trues := 0
+	for _, v := range results {
+		if v {
+			trues++
+		}
+	}
+	if trues != 1 {
+		t.Errorf("RearmOneTime returned true %d times across 8 concurrent callers, want exactly 1", trues)
+	}
+}
+
 // TestRearmOneTime_IsPerFieldKey verifies re-arming one field's one-time state
 // is fully scoped by the field key: channel and instance are both part of the
 // key, so re-arming one field must never affect another.

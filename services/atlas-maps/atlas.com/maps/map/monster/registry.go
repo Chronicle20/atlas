@@ -279,6 +279,24 @@ end
 return entries
 `)
 
+// rearmOneTimeScript atomically clears the meta hash's "onetimeFired" field and
+// reports whether it was present in the same round trip.
+//
+// HDEL is a single atomic Redis write: it deletes the field and returns the
+// deleted-field count in one call, so two concurrent RearmOneTime invocations
+// against the same field can never both observe "was present" — exactly the
+// same exactly-once guarantee HSETNX gives claimOneTimeScript above. That
+// guarantee matters here because the caller's bool is the exactly-once gate
+// for map/processor.go's Exit DESTROY_FIELD emit (design D7): a read-then-write
+// Exists+Del pair would let both callers see "existed" and both re-arm/emit.
+//
+// KEYS[1] = meta hash
+// ARGV[1] = field name to delete ("onetimeFired")
+// Returns: 1 if the field was present and deleted, 0 if it was already absent.
+var rearmOneTimeScript = goredis.NewScript(`
+return redis.call('HDEL', KEYS[1], ARGV[1])
+`)
+
 // InitializeForMap seeds a field's spawn points if it has not been seeded yet.
 // The classification happens once, in memory, off a single paginated drain of
 // atlas-data's /maps/{id}/monsters — two filtered providers would mean two
@@ -451,20 +469,20 @@ func (r *SpawnPointRegistry) ClaimOneTimeSpawnPoints(ctx context.Context, mapKey
 // as they do on main (design D7).
 //
 // Touches only the meta hash: the recurring hash and its cooldown state are
-// untouched (FR-3.3). Routed through the meta TenantKeyedHash (Exists then
-// Del) rather than a raw client HDEL, per the atlas-redis key-guard.
+// untouched (FR-3.3). Backed by rearmOneTimeScript's atomic HDEL rather than a
+// raw client call, so it satisfies the atlas-redis key-guard without giving up
+// the single-round-trip atomicity the caller's exactly-once bool depends on.
 func (r *SpawnPointRegistry) RearmOneTime(ctx context.Context, mapKey character.MapKey) (bool, error) {
-	existed, err := r.meta.Exists(ctx, mapKey.Tenant, mapKey, metaFieldOneTimeFired)
+	result, err := rearmOneTimeScript.Run(ctx, r.client,
+		[]string{r.metaKey(mapKey)}, metaFieldOneTimeFired).Result()
 	if err != nil {
 		return false, err
 	}
-	if !existed {
-		return false, nil
+	deleted, ok := result.(int64)
+	if !ok {
+		return false, fmt.Errorf("unexpected rearmOneTimeScript result type %T", result)
 	}
-	if err := r.meta.Del(ctx, mapKey.Tenant, mapKey, metaFieldOneTimeFired); err != nil {
-		return false, err
-	}
-	return true, nil
+	return deleted > 0, nil
 }
 
 // Reset clears all spawn point registries, across every tenant. Primarily

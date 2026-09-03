@@ -410,11 +410,12 @@ type SetQuestProgressPayload struct {
 // AreaName is the human-readable region label Cosmic passes to
 // earnTitleMessage("<n>/<m> regions explored."). It is carried on the
 // payload because the seed supplies it and it is the only human-readable
-// label of the region, but it is currently unused: atlas-data does not
-// serve the quest's per-status infoNumber or infoEx(0) threshold Cosmic
-// compares the visited count against (MapScriptMethods.java:104-139), so
-// neither the completion packet nor the progress message can be sent
-// faithfully. Only the visited-map count is recorded.
+// label of the region, but it is currently unused: atlas-data now serves the
+// quest's infoNumber and infoEx(0) threshold, and the handler writes the
+// visited-map count as quest progress via RequestUpdateProgress when the map
+// is newly recorded, but Cosmic's getShowQuestCompletion/earnTitleMessage
+// packets are still not sent -- see ExplorerQuestResult's doc comment in
+// atlas-saga-orchestrator for why.
 type ExplorerQuestPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action

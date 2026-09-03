@@ -14,6 +14,7 @@ import (
 	_map "atlas-maps/map"
 	"atlas-maps/map/jukebox"
 	spawnMonster "atlas-maps/map/monster"
+	"atlas-maps/map/npc"
 	"atlas-maps/map/weather"
 	"atlas-maps/tasks"
 	"atlas-maps/visit"
@@ -147,6 +148,7 @@ func main() {
 		AddRouteInitializer(_map.InitResource(GetServer())).
 		AddRouteInitializer(weather.InitResource(GetServer())).
 		AddRouteInitializer(jukebox.InitResource(GetServer())).
+		AddRouteInitializer(npc.InitResource(GetServer())).
 		AddRouteInitializer(visit.InitResource(GetServer())(db)).
 		AddRouteInitializer(location.InitResource(GetServer())(db, func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) location.WarpProcessor {
 			return warp.NewProcessor(l, ctx, db)

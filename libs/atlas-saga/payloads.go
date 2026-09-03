@@ -590,6 +590,31 @@ type ClearDropsPayload struct {
 	Instance    uuid.UUID  `json:"instance"`
 }
 
+// ResetReactorsPayload represents the payload required to reset reactors on
+// a field to state 0. MinState is a pointer so "reset every reactor" (nil)
+// and "reset only reactors at state 0" (pointer to 0) are distinguishable;
+// a non-nil value mirrors 926120300.js's getInactiveReactors filter
+// (state >= 7) computed in script before calling Java's single
+// resetReactors(List) overload (task-290 G5).
+type ResetReactorsPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	Instance    uuid.UUID  `json:"instance"`
+	MinState    *int8      `json:"minState,omitempty"`
+}
+
+// ShuffleReactorsPayload represents the payload required to randomly
+// permute the positions of every reactor on a field (task-290 G5).
+type ShuffleReactorsPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	Instance    uuid.UUID  `json:"instance"`
+}
+
 // DeployPlayerNpcPayload represents the payload required to deploy a
 // character's own player NPC (FR-6.2). MapId is optional: nil means deploy
 // on the character's current map (design §9.1); a caller supplying it —

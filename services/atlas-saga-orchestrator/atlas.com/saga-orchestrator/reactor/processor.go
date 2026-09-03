@@ -31,6 +31,14 @@ const (
 type Processor interface {
 	// HitReactorByName resolves a reactor by name in a field, then produces a HIT command
 	HitReactorByName(f field.Model, characterId uint32, reactorName string) error
+	// ResetReactors resets every reactor on the field to state 0 via
+	// atlas-reactors' POST .../reactors/reset. minState is optional: nil
+	// resets every reactor; non-nil resets only reactors whose state is at
+	// least *minState (task-290 G5).
+	ResetReactors(f field.Model, minState *int8) error
+	// ShuffleReactors randomly permutes the positions of every reactor on
+	// the field via atlas-reactors' POST .../reactors/shuffle (task-290 G5).
+	ShuffleReactors(f field.Model) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -80,6 +88,26 @@ func (p *ProcessorImpl) getReactorsByName(worldId world.Id, channelId channel.Id
 		ExtractReactor,
 		model.Filters[ReactorRestModel](),
 	)()
+}
+
+// ResetReactors resets every reactor on the field to state 0 (optionally
+// filtered by a minimum state) via atlas-reactors' POST .../reactors/reset.
+func (p *ProcessorImpl) ResetReactors(f field.Model, minState *int8) error {
+	_, err := requestResetReactors(p.ctx, f, minState)(p.l, p.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to reset reactors: %w", err)
+	}
+	return nil
+}
+
+// ShuffleReactors randomly permutes the positions of every reactor on the
+// field via atlas-reactors' POST .../reactors/shuffle.
+func (p *ProcessorImpl) ShuffleReactors(f field.Model) error {
+	_, err := requestShuffleReactors(p.ctx, f)(p.l, p.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to shuffle reactors: %w", err)
+	}
+	return nil
 }
 
 // produceHitCommand produces a HIT command to COMMAND_TOPIC_REACTOR
@@ -167,4 +195,53 @@ func requestReactorsByName(ctx context.Context, worldId world.Id, channelId chan
 		root+"worlds/%d/channels/%d/maps/%d/instances/%s/reactors?name=%s",
 		worldId, channelId, mapId, instance.String(), name,
 	))
+}
+
+// ResetReactorsInputRestModel is the body of POST .../reactors/reset.
+// MinState is a pointer so "reset every reactor" (nil) and "reset only
+// reactors at state 0" (pointer to 0) are distinguishable.
+type ResetReactorsInputRestModel struct {
+	Id       string `json:"-"`
+	MinState *int8  `json:"minState,omitempty"`
+}
+
+func (r ResetReactorsInputRestModel) GetName() string {
+	return "reactors"
+}
+
+func (r ResetReactorsInputRestModel) GetID() string {
+	return r.Id
+}
+
+// ShuffleReactorsInputRestModel is the (empty) body of POST .../reactors/shuffle.
+type ShuffleReactorsInputRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r ShuffleReactorsInputRestModel) GetName() string {
+	return "reactors"
+}
+
+func (r ShuffleReactorsInputRestModel) GetID() string {
+	return r.Id
+}
+
+func requestResetReactors(ctx context.Context, f field.Model, minState *int8) requests.Request[struct{}] {
+	root, err := getReactorsBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[struct{}](err)
+	}
+	url := fmt.Sprintf(root+"worlds/%d/channels/%d/maps/%d/instances/%s/reactors/reset",
+		f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+	return requests.PostRequest[struct{}](url, ResetReactorsInputRestModel{MinState: minState})
+}
+
+func requestShuffleReactors(ctx context.Context, f field.Model) requests.Request[struct{}] {
+	root, err := getReactorsBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[struct{}](err)
+	}
+	url := fmt.Sprintf(root+"worlds/%d/channels/%d/maps/%d/instances/%s/reactors/shuffle",
+		f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+	return requests.PostRequest[struct{}](url, ShuffleReactorsInputRestModel{})
 }

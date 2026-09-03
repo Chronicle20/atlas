@@ -72,6 +72,10 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeSpawnNpc(f, characterId, op)
 	case "clear_drops":
 		return e.executeClearDrops(f, characterId, op)
+	case "reset_reactors":
+		return e.executeResetReactors(f, characterId, op)
+	case "shuffle_reactors":
+		return e.executeShuffleReactors(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -386,6 +390,71 @@ func (e *OperationExecutor) executeClearDrops(f field.Model, characterId uint32,
 			saga.Pending,
 			saga.ClearDrops,
 			saga.ClearDropsPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				MapId:       f.MapId(),
+				Instance:    f.Instance(),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeResetReactors resets reactors on the current field to state 0,
+// mirroring Cosmic's MapleMap.resetReactors(List<Reactor>) (MapleMap.java:1563).
+// The optional minState param mirrors 926120300.js's getInactiveReactors
+// filter (state >= 7) computed in script -- there is no state-filtered Java
+// overload, so this is one operation with an optional minimum-state filter,
+// not two.
+func (e *OperationExecutor) executeResetReactors(f field.Model, characterId uint32, op operation.Model) error {
+	e.l.Debugf("Resetting reactors on field for character [%d].", characterId)
+
+	params := op.Params()
+	var minState *int8
+	if s, has := params["minState"]; has {
+		parsed, err := strconv.ParseInt(s, 10, 8)
+		if err != nil {
+			return fmt.Errorf("invalid minState [%s]: %w", s, err)
+		}
+		v := int8(parsed)
+		minState = &v
+	}
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-reset-reactors").
+		AddStep(
+			fmt.Sprintf("reset-reactors-%d", characterId),
+			saga.Pending,
+			saga.ResetReactors,
+			saga.ResetReactorsPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				MapId:       f.MapId(),
+				Instance:    f.Instance(),
+				MinState:    minState,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeShuffleReactors randomly permutes the positions of every reactor on
+// the current field, mirroring Cosmic's MapleMap.shuffleReactors()
+// (MapleMap.java:1580). It takes no params.
+func (e *OperationExecutor) executeShuffleReactors(f field.Model, characterId uint32, op operation.Model) error {
+	e.l.Debugf("Shuffling reactors on field for character [%d].", characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-shuffle-reactors").
+		AddStep(
+			fmt.Sprintf("shuffle-reactors-%d", characterId),
+			saga.Pending,
+			saga.ShuffleReactors,
+			saga.ShuffleReactorsPayload{
 				CharacterId: characterId,
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),

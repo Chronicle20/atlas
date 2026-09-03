@@ -56,6 +56,10 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case ClearDropsPayload:
 		return p.CharacterId
+	case ResetReactorsPayload:
+		return p.CharacterId
+	case ShuffleReactorsPayload:
+		return p.CharacterId
 	case CompleteQuestPayload:
 		return p.CharacterId
 	case StartQuestPayload:

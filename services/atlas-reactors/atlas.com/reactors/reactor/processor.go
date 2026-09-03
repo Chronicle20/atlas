@@ -5,6 +5,7 @@ import (
 	"atlas-reactors/reactor/data"
 	"atlas-reactors/reactor/data/state"
 	"context"
+	"math/rand/v2"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -35,6 +36,8 @@ type Processor interface {
 	Touch(reactorId uint32, characterId uint32, touching bool) error
 	Trigger(r Model, characterId uint32)
 	TriggerAndDestroy(r Model, characterId uint32) error
+	ResetInField(f field.Model, minState *int8) (int, error)
+	ShuffleInField(f field.Model) error
 }
 
 type ProcessorImpl struct {
@@ -339,6 +342,77 @@ func (p *ProcessorImpl) Trigger(r Model, characterId uint32) {
 func (p *ProcessorImpl) TriggerAndDestroy(r Model, characterId uint32) error {
 	p.Trigger(r, characterId)
 	return p.Destroy()(r)
+}
+
+// ResetInField resets every matching reactor on the field to state 0,
+// mirroring Cosmic's MapleMap.resetReactors(List<Reactor>) (MapleMap.java:1563).
+// Cosmic skips any reactor whose forceDelayedRespawn() returns true --
+// atlas-reactors has no analogue of that flag, so every reactor in the
+// field is a candidate. When minState is non-nil, only reactors whose
+// State() is at least *minState are reset; this is 926120300.js's
+// getInactiveReactors filter (state >= 7) computed in script and passed to
+// the single resetReactors(List) overload -- there is no state-filtered
+// Java overload, so this is modelled as one reset with an optional
+// minimum-state filter rather than two methods. Returns the count reset.
+func (p *ProcessorImpl) ResetInField(f field.Model, minState *int8) (int, error) {
+	t := tenant.MustFromContext(p.ctx)
+	reactors := GetRegistry().GetInField(t, f)
+	count := 0
+	for _, r := range reactors {
+		if minState != nil && r.State() < *minState {
+			continue
+		}
+		cancelStateTimeout(r.Id())
+		updated, err := GetRegistry().Update(t, r.Id(), func(b *Builder) {
+			b.SetState(0)
+		})
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to reset reactor [%d].", r.Id())
+			return count, err
+		}
+		count++
+		if err := producer.ProviderImpl(p.l)(p.ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false)); err != nil {
+			p.l.WithError(err).Warnf("Failed to emit status event for reset reactor [%d].", r.Id())
+		}
+	}
+	p.l.Debugf("Reset [%d] reactors in map [%d] instance [%s].", count, f.MapId(), f.Instance())
+	return count, nil
+}
+
+// ShuffleInField randomly permutes the positions of every reactor on the
+// field, mirroring Cosmic's MapleMap.shuffleReactors() (MapleMap.java:1580).
+// Only (x,y) is reassigned onto the same reactor objects -- ids, states and
+// identities are untouched.
+func (p *ProcessorImpl) ShuffleInField(f field.Model) error {
+	t := tenant.MustFromContext(p.ctx)
+	reactors := GetRegistry().GetInField(t, f)
+	if len(reactors) < 2 {
+		return nil
+	}
+
+	type position struct {
+		x int16
+		y int16
+	}
+	positions := make([]position, len(reactors))
+	for i, r := range reactors {
+		positions[i] = position{x: r.X(), y: r.Y()}
+	}
+	rand.Shuffle(len(positions), func(i, j int) {
+		positions[i], positions[j] = positions[j], positions[i]
+	})
+
+	for i, r := range reactors {
+		pos := positions[i]
+		if _, err := GetRegistry().Update(t, r.Id(), func(b *Builder) {
+			b.SetPosition(pos.x, pos.y)
+		}); err != nil {
+			p.l.WithError(err).Errorf("Unable to shuffle reactor [%d] position.", r.Id())
+			return err
+		}
+	}
+	p.l.Debugf("Shuffled positions of [%d] reactors in map [%d] instance [%s].", len(reactors), f.MapId(), f.Instance())
+	return nil
 }
 
 func containsSkill(skills []uint32, skillId uint32) bool {

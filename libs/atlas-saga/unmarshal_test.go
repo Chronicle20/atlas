@@ -1883,3 +1883,111 @@ func TestUnmarshalClearDropsStep(t *testing.T) {
 		t.Errorf("payload = %+v, want %+v", p, want)
 	}
 }
+
+// TestUnmarshalResetReactorsStepWithoutMinState proves a reset_reactors step
+// with no minState param decodes with MinState nil, meaning "reset every
+// reactor" -- the whole-map resetReactors(List) path with no filter.
+func TestUnmarshalResetReactorsStepWithoutMinState(t *testing.T) {
+	instance := uuid.New()
+	raw := fmt.Sprintf(`{
+		"stepId": "reset-reactors-1",
+		"status": "pending",
+		"action": "reset_reactors",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 922000000,
+			"instance": %q
+		}
+	}`, instance.String())
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ResetReactors {
+		t.Fatalf("expected action ResetReactors, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ResetReactorsPayload)
+	if !ok {
+		t.Fatalf("expected ResetReactorsPayload, got %T", step.Payload)
+	}
+	if p.MinState != nil {
+		t.Errorf("expected MinState nil, got %v", *p.MinState)
+	}
+	want := ResetReactorsPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), MapId: _map.Id(922000000), Instance: instance}
+	if p.CharacterId != want.CharacterId || p.WorldId != want.WorldId || p.ChannelId != want.ChannelId || p.MapId != want.MapId || p.Instance != want.Instance {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}
+
+// TestUnmarshalResetReactorsStepWithMinState proves a reset_reactors step
+// with a minState param decodes with a non-nil MinState pointer -- this is
+// 926120300.js's getInactiveReactors filter (state >= 7) computed in
+// script.
+func TestUnmarshalResetReactorsStepWithMinState(t *testing.T) {
+	instance := uuid.New()
+	raw := fmt.Sprintf(`{
+		"stepId": "reset-reactors-2",
+		"status": "pending",
+		"action": "reset_reactors",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 922000000,
+			"instance": %q,
+			"minState": 7
+		}
+	}`, instance.String())
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ResetReactors {
+		t.Fatalf("expected action ResetReactors, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ResetReactorsPayload)
+	if !ok {
+		t.Fatalf("expected ResetReactorsPayload, got %T", step.Payload)
+	}
+	if p.MinState == nil || *p.MinState != 7 {
+		t.Fatalf("expected MinState pointing to 7, got %v", p.MinState)
+	}
+}
+
+// TestUnmarshalShuffleReactorsStep proves a shuffle_reactors step decodes
+// into ShuffleReactorsPayload.
+func TestUnmarshalShuffleReactorsStep(t *testing.T) {
+	instance := uuid.New()
+	raw := fmt.Sprintf(`{
+		"stepId": "shuffle-reactors-1",
+		"status": "pending",
+		"action": "shuffle_reactors",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 922000000,
+			"instance": %q
+		}
+	}`, instance.String())
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ShuffleReactors {
+		t.Fatalf("expected action ShuffleReactors, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ShuffleReactorsPayload)
+	if !ok {
+		t.Fatalf("expected ShuffleReactorsPayload, got %T", step.Payload)
+	}
+	want := ShuffleReactorsPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), MapId: _map.Id(922000000), Instance: instance}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}

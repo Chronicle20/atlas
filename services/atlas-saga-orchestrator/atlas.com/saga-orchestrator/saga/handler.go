@@ -148,6 +148,8 @@ type Handler interface {
 	handleSpawnMonster(s Saga, st Step[any]) error
 	handleSpawnNpc(s Saga, st Step[any]) error
 	handleClearDrops(s Saga, st Step[any]) error
+	handleResetReactors(s Saga, st Step[any]) error
+	handleShuffleReactors(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
@@ -968,6 +970,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSpawnNpc, true
 	case ClearDrops:
 		return h.handleClearDrops, true
+	case ResetReactors:
+		return h.handleResetReactors, true
+	case ShuffleReactors:
+		return h.handleShuffleReactors, true
 	case SpawnReactorDrops:
 		return h.handleSpawnReactorDrops, true
 	case CompleteQuest:
@@ -2268,6 +2274,57 @@ func (h *HandlerImpl) handleClearDrops(s Saga, st Step[any]) error {
 	}
 
 	h.l.Debugf("Successfully cleared drops in world %d, channel %d, map %d",
+		payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleResetReactors handles the ResetReactors action, mirroring Cosmic's
+// MapleMap.resetReactors(List<Reactor>) (MapleMap.java:1563). There is no
+// state-filtered Java overload -- 926120300.js computes an inactive-reactor
+// filter (state >= 7) in script and passes the resulting list to the same
+// single-overload reset -- so MinState is an optional filter, not a
+// separate action (task-290 G5).
+func (h *HandlerImpl) handleResetReactors(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ResetReactorsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	if err := h.reactorP.ResetReactors(f, payload.MinState); err != nil {
+		h.logActionError(s, st, err, "Failed to reset reactors")
+		return err
+	}
+
+	h.l.Debugf("Successfully reset reactors in world %d, channel %d, map %d",
+		payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleShuffleReactors handles the ShuffleReactors action, mirroring
+// Cosmic's MapleMap.shuffleReactors() (MapleMap.java:1580): only reactor
+// positions move, not ids, states or identities (task-290 G5).
+func (h *HandlerImpl) handleShuffleReactors(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShuffleReactorsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	if err := h.reactorP.ShuffleReactors(f); err != nil {
+		h.logActionError(s, st, err, "Failed to shuffle reactors")
+		return err
+	}
+
+	h.l.Debugf("Successfully shuffled reactors in world %d, channel %d, map %d",
 		payload.WorldId, payload.ChannelId, payload.MapId)
 
 	return nil

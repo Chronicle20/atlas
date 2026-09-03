@@ -209,6 +209,21 @@ const (
 	// MapleMap's no-arg drop clear is whole-map, not owner-filtered (task-290 G5).
 	ClearDrops Action = "clear_drops"
 
+	// ResetReactors resets reactors on a field to state 0, mirroring
+	// Cosmic's MapleMap.resetReactors(List<Reactor>) (MapleMap.java:1563).
+	// There is no state-filtered Java overload -- 926120300.js computes an
+	// inactive-reactor filter (state >= 7) in script and passes the
+	// resulting list to the same single-overload reset -- so this is
+	// modelled as one reset with an optional minimum-state filter, not two
+	// actions (task-290 G5).
+	ResetReactors Action = "reset_reactors"
+
+	// ShuffleReactors randomly permutes the positions of every reactor on a
+	// field, mirroring Cosmic's MapleMap.shuffleReactors() (MapleMap.java:1580).
+	// Only positions move; ids, states and identities are untouched
+	// (task-290 G5).
+	ShuffleReactors Action = "shuffle_reactors"
+
 	// Storage actions
 	ShowStorage          Action = "show_storage"
 	DepositToStorage     Action = "deposit_to_storage"

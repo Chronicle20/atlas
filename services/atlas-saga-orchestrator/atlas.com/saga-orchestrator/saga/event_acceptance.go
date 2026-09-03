@@ -354,6 +354,8 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.SpawnMonster:               {},
 	sharedsaga.SpawnNpc:                   {},
 	sharedsaga.ClearDrops:                 {},
+	sharedsaga.ResetReactors:              {},
+	sharedsaga.ShuffleReactors:            {},
 	sharedsaga.SpawnReactorDrops:          {},
 	sharedsaga.HitReactor:                 {},
 	sharedsaga.BroadcastPqMessage:         {},

@@ -180,6 +180,11 @@ func (p *ProcessorImpl) getMonsterMax(characterCount int, spawnPointCount int) i
 // spawn points to "eligible" is sufficient to let the existing
 // character-enter/periodic SpawnMonsters passes repopulate the field on
 // their normal cadence, so no additional spawn pass is triggered here.
+//
+// Accepted trade-off: the monster-clear leg is not compensated if the
+// spawn-point restore leg fails afterward. That window is reachable today
+// only for a map with no spawn-point data; TestResetFieldOnUnknownMapErrors
+// pins that path.
 func (p *ProcessorImpl) ResetField(f field.Model, difficulty int) error {
 	_ = difficulty
 

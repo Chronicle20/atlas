@@ -9,6 +9,7 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	notemock "atlas-saga-orchestrator/note/mock"
+	"atlas-saga-orchestrator/npc_spawn"
 	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
 	questp "atlas-saga-orchestrator/quest"
 	questmock "atlas-saga-orchestrator/quest/mock"
@@ -347,6 +348,221 @@ func TestHandleWarpToRandomPortal(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestHandleWarpToMap(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       WarpToMapPayload
+		mockError     error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case",
+			payload: WarpToMapPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   1,
+				// Deliberately distinct from the map the character is
+				// standing in (100000000, used elsewhere in this file) so a
+				// payload.MapId/source-field mixup would fail this assertion
+				// (task-290 FIX-SEAM1 item 1).
+				MapId: 200000000,
+			},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Warp error",
+			payload: WarpToMapPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   1,
+				MapId:       200000000,
+			},
+			mockError:     errors.New("failed to warp"),
+			expectError:   true,
+			errorContains: "failed to warp",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup
+
+			charP := &mock.ProcessorMock{}
+
+			logger, _ := test.NewNullLogger()
+			logger.SetLevel(logrus.DebugLevel)
+
+			_, ctx := setupContext()
+
+			// Configure mock
+			charP.WarpToMapAndEmitFunc = func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+				// Verify parameters: the destination map reaching the
+				// character processor is the payload's target, not the map
+				// the character is already standing in.
+				assert.Equal(t, tt.payload.CharacterId, characterId)
+				assert.Equal(t, tt.payload.WorldId, worldId)
+				assert.Equal(t, tt.payload.ChannelId, channelId)
+				assert.Equal(t, tt.payload.MapId, mapId)
+
+				return tt.mockError
+			}
+
+			// Create test saga and step
+			transactionId := uuid.New()
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
+
+			step := NewStep[any]("test-step", Pending, WarpToMap, tt.payload)
+
+			// Execute
+			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleWarpToMap(saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// footholdProcessorStub is a minimal hand-written foothold.Processor test
+// double; unlike the other collaborators in this file, foothold has no
+// moq-generated mock package.
+type footholdProcessorStub struct {
+	fh  uint32
+	err error
+}
+
+func (s footholdProcessorStub) GetFootholdBelow(_ _map.Id, _, _ int16) (uint32, error) {
+	return s.fh, s.err
+}
+
+// npcSpawnProcessorStub is a minimal hand-written npc_spawn.Processor test
+// double; unlike the other collaborators in this file, npc_spawn has no
+// moq-generated mock package.
+type npcSpawnProcessorStub struct {
+	fn func(f field.Model, req npc_spawn.SpawnRequest) error
+}
+
+func (s npcSpawnProcessorStub) SpawnNpc(f field.Model, req npc_spawn.SpawnRequest) error {
+	return s.fn(f, req)
+}
+
+func TestHandleSpawnNpc(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       SpawnNpcPayload
+		footholdId    uint32
+		footholdErr   error
+		spawnErr      error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case",
+			payload: SpawnNpcPayload{
+				CharacterId:   12345,
+				WorldId:       0,
+				ChannelId:     1,
+				MapId:         100000000,
+				Instance:      uuid.New(),
+				NpcId:         9010000,
+				X:             100,
+				Y:             200,
+				SpawnIfAbsent: true,
+			},
+			footholdId:  7,
+			expectError: false,
+		},
+		{
+			name: "Spawn error",
+			payload: SpawnNpcPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   1,
+				MapId:       100000000,
+				Instance:    uuid.New(),
+				NpcId:       9010000,
+				X:           100,
+				Y:           200,
+			},
+			footholdId:    7,
+			spawnErr:      errors.New("failed to spawn npc"),
+			expectError:   true,
+			errorContains: "failed to spawn npc",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			logger.SetLevel(logrus.DebugLevel)
+
+			_, ctx := setupContext()
+
+			footholdP := footholdProcessorStub{fh: tt.footholdId, err: tt.footholdErr}
+
+			var capturedField field.Model
+			var capturedReq npc_spawn.SpawnRequest
+			npcSpawnP := npcSpawnProcessorStub{fn: func(f field.Model, req npc_spawn.SpawnRequest) error {
+				capturedField = f
+				capturedReq = req
+				return tt.spawnErr
+			}}
+
+			// Create test saga and step
+			transactionId := uuid.New()
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
+
+			step := NewStep[any]("test-step", Pending, SpawnNpc, tt.payload)
+
+			// Execute
+			err = NewHandler(logger, ctx).
+				WithFootholdProcessor(footholdP).
+				WithNpcSpawnProcessor(npcSpawnP).
+				handleSpawnNpc(saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// The payload's npc identity and position must reach the
+			// downstream call unchanged (task-290 FIX-SEAM1 item 2).
+			assert.Equal(t, tt.payload.WorldId, capturedField.WorldId())
+			assert.Equal(t, tt.payload.ChannelId, capturedField.ChannelId())
+			assert.Equal(t, tt.payload.MapId, capturedField.MapId())
+			assert.Equal(t, tt.payload.Instance, capturedField.Instance())
+			assert.Equal(t, tt.payload.NpcId, capturedReq.NpcId)
+			assert.Equal(t, tt.payload.X, capturedReq.X)
+			assert.Equal(t, tt.payload.Y, capturedReq.Y)
+			assert.Equal(t, int16(tt.footholdId), capturedReq.Fh)
+			assert.Equal(t, tt.payload.SpawnIfAbsent, capturedReq.SpawnIfAbsent)
 		})
 	}
 }

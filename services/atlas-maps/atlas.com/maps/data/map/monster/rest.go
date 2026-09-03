@@ -36,6 +36,14 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
+func (r *RestModel) SetToOneReferenceID(_ string, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 func Extract(rm RestModel) (SpawnPoint, error) {
 	return SpawnPoint{
 		Id:       rm.Id,

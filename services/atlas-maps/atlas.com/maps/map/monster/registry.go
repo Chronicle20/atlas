@@ -250,6 +250,35 @@ end
 return 1
 `)
 
+// claimOneTimeScript atomically claims a field's one-time batch and returns it
+// in the same round trip.
+//
+// HSETNX is the claim: a single atomic Redis write, strictly stronger than the
+// read-then-write FR-2.3 forbids. Folding the payload fetch into the same
+// script makes both the firing path and the already-disarmed path exactly one
+// round trip, which is the PRD §8 performance requirement.
+//
+// The meta hash is claimed even when the one-time hash is empty. That costs one
+// wasted HSETNX on the first pass for a recurring-only field and keeps the
+// script single-branch; the field is then "disarmed with nothing to fire",
+// which is indistinguishable from "fired" and equally correct.
+//
+// KEYS[1] = meta hash, KEYS[2] = one-time hash
+// ARGV[1] = nowMilli
+// Returns: {} when the field is already disarmed or has no one-time points,
+//
+//	otherwise the HGETALL of the one-time hash.
+var claimOneTimeScript = goredis.NewScript(`
+if redis.call('HSETNX', KEYS[1], 'onetimeFired', ARGV[1]) == 0 then
+    return {}
+end
+local entries = redis.call('HGETALL', KEYS[2])
+if #entries == 0 then
+    return {}
+end
+return entries
+`)
+
 // InitializeForMap seeds a field's spawn points if it has not been seeded yet.
 // The classification happens once, in memory, off a single paginated drain of
 // atlas-data's /maps/{id}/monsters — two filtered providers would mean two
@@ -376,6 +405,59 @@ func (r *SpawnPointRegistry) ResetCooldown(ctx context.Context, mapKey character
 	key := r.recurringKey(mapKey)
 	nowMilli := time.Now().UnixMilli()
 	resetCooldownScript.Run(ctx, r.client, []string{key}, templateId, nowMilli)
+}
+
+// ClaimOneTimeSpawnPoints disarms the field and returns its one-time spawn
+// points, or nil if the field was already disarmed or has none. Exactly one
+// concurrent caller can receive a non-empty batch.
+//
+// Crash window: if the pod dies between this returning and CreateMonster being
+// issued, the batch is lost until the field re-arms. That is inherent to any
+// claim-then-act split, and CreateMonster is already fire-and-forget on the
+// recurring path.
+func (r *SpawnPointRegistry) ClaimOneTimeSpawnPoints(ctx context.Context, mapKey character.MapKey) ([]*CooldownSpawnPoint, error) {
+	result, err := claimOneTimeScript.Run(ctx, r.client,
+		[]string{r.metaKey(mapKey), r.oneTimeKey(mapKey)},
+		time.Now().UnixMilli()).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	arr, ok := result.([]interface{})
+	if !ok || len(arr) == 0 {
+		return nil, nil
+	}
+
+	var claimed []*CooldownSpawnPoint
+	for i := 1; i < len(arr); i += 2 {
+		valueStr, ok := arr[i].(string)
+		if !ok {
+			continue
+		}
+		var stored storedSpawnPoint
+		if err := json.Unmarshal([]byte(valueStr), &stored); err != nil {
+			continue
+		}
+		claimed = append(claimed, fromStored(stored))
+	}
+
+	return claimed, nil
+}
+
+// RearmOneTime clears a field's one-time fired marker, returning true iff the
+// marker was actually present — i.e. iff the field had fired and is now armed
+// again. The caller uses that bool to scope the DESTROY_FIELD despawn to fields
+// that really fired a batch, so the 4,207 unaffected maps keep behaving exactly
+// as they do on main (design D7).
+//
+// HDEL is atomic, so no Lua is needed. It touches only the meta hash: the
+// recurring hash and its cooldown state are untouched (FR-3.3).
+func (r *SpawnPointRegistry) RearmOneTime(ctx context.Context, mapKey character.MapKey) (bool, error) {
+	n, err := r.client.HDel(ctx, r.metaKey(mapKey), metaFieldOneTimeFired).Result()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
 
 // Reset clears all spawn point registries, across every tenant. Primarily

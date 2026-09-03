@@ -31,3 +31,10 @@ func (r *questDataRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+// Required JSON:API relationship stubs (libs/atlas-rest gotcha): api2go errors
+// out decoding any response unless the target implements these, even with no
+// relationships present.
+func (r *questDataRestModel) SetToOneReferenceID(_, _ string) error { return nil }
+
+func (r *questDataRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }

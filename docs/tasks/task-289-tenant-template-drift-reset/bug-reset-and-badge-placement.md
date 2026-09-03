@@ -82,4 +82,8 @@ placement only.
 
 ## Resolution
 
-_Pending._
+Fixed in `32723e0d7` (branch `task-289-tenant-template-drift-reset`).
+`tools/verify.sh --quick --base c2c720c5f` exited 0; the full atlas-ui vitest
+suite (283 files / 2400 tests) passed separately, covering what `--quick` skips.
+The flagless gate still owes a pre-PR run. Not yet confirmed by live testing in
+the browser.

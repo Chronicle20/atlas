@@ -28,7 +28,11 @@
 #
 # Env:
 #   ATLAS_SLOT_DIR          slot directory (default: /var/tmp/atlas/slots)
-#   ATLAS_BUILD_SLOTS       number of slots, positive integer (default: 4)
+#   ATLAS_SLOT_THREADS      thread budget of one slot (default: 6); K and the
+#                           verify.sh Go pool width both derive from it
+#   ATLAS_BUILD_SLOTS       number of slots, positive integer (default:
+#                           physical_cores / ATLAS_SLOT_THREADS, floored at 1
+#                           — see _build_slot_default below)
 #   ATLAS_BUILD_SLOT_TIMEOUT  seconds to wait before giving up; unset/empty
 #                             means block forever
 
@@ -46,12 +50,62 @@ _build_slot_dir() {
     printf '%s\n' "${ATLAS_SLOT_DIR:-/var/tmp/atlas/slots}"
 }
 
+# _build_slot_physical_cores — physical cores on this host, not SMT threads.
+#
+# Go compilation scales with physical cores; SMT buys ~20-30%, not 2x. The
+# original K=4 was sized from `nproc` (24) on a 12-core 5900X and was ~2x
+# oversubscribed before any Claude session, docker, or k8s took a core.
+# `lscpu -p` lists one row per logical CPU with its CORE,SOCKET pair; unique
+# pairs are the physical cores. Falls back to nproc/2 when lscpu is absent
+# (it is present on WSL2 and every Linux CI runner this repo uses).
+_build_slot_physical_cores() {
+    local cores=""
+    if command -v lscpu >/dev/null 2>&1; then
+        cores="$(lscpu -p=CORE,SOCKET 2>/dev/null | grep -v '^#' | sort -u | wc -l | tr -d ' ')"
+    fi
+    if [ -z "$cores" ] || [ "$cores" -lt 1 ] 2>/dev/null; then
+        local logical
+        logical="$(nproc 2>/dev/null || echo 2)"
+        cores=$((logical / 2))
+    fi
+    [ "$cores" -lt 1 ] && cores=1
+    printf '%s\n' "$cores"
+}
+
+# _build_slot_threads — the thread budget ONE slot is allowed to consume.
+#
+# This is the single number everything else derives from: K below, and
+# tools/verify.sh's Go pool width (workers = slot threads / `go build -p`).
+# Keeping it in one place is what stops K and the pool from being sized on
+# different assumptions — the original K=4 assumed 6 threads per slot while
+# the pool inside a slot ran 4 workers x 6 threads.
+_build_slot_threads() {
+    local t="${ATLAS_SLOT_THREADS:-6}"
+    case "$t" in *[!0-9]* | '') t=6 ;; esac
+    [ "$t" -lt 1 ] && t=1
+    printf '%s\n' "$t"
+}
+
+# _build_slot_default — K when ATLAS_BUILD_SLOTS is unset.
+#
+# K = physical_cores / slot_threads, floored at 1, so K slots each consuming
+# their full budget add up to the physical cores and no more. 12 cores at 6
+# threads -> 2 slots; 24 cores -> 4; a 4-core laptop -> 1.
+_build_slot_default() {
+    local cores k
+    cores="$(_build_slot_physical_cores)"
+    k=$((cores / $(_build_slot_threads)))
+    [ "$k" -lt 1 ] && k=1
+    printf '%s\n' "$k"
+}
+
 # _build_slot_count — resolves and validates ATLAS_BUILD_SLOTS.
 #
 # Prints the count on stdout and returns 0, or prints nothing and returns 2
 # when the value is not a positive integer.
 _build_slot_count() {
-    local n="${ATLAS_BUILD_SLOTS:-4}"
+    local n="${ATLAS_BUILD_SLOTS:-}"
+    [ -z "$n" ] && n="$(_build_slot_default)"
     case "$n" in
         *[!0-9]* | '')
             echo "build-slot: ATLAS_BUILD_SLOTS must be a positive integer, got '$n'" >&2

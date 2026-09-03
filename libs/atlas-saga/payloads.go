@@ -565,6 +565,20 @@ type SpawnMonsterPayload struct {
 	SpawnIfAbsent bool       `json:"spawnIfAbsent,omitempty"` // FR-2.1: suppress the spawn when a monster of this template is already on the field. The decision is made by atlas-monsters against its own registry, not here.
 }
 
+// SpawnNpcPayload represents the payload required to place a scripted NPC
+// on a field.
+type SpawnNpcPayload struct {
+	CharacterId   uint32     `json:"characterId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+	NpcId         uint32     `json:"npcId"`
+	X             int16      `json:"x"`
+	Y             int16      `json:"y"`
+	SpawnIfAbsent bool       `json:"spawnIfAbsent,omitempty"`
+}
+
 // DeployPlayerNpcPayload represents the payload required to deploy a
 // character's own player NPC (FR-6.2). MapId is optional: nil means deploy
 // on the character's current map (design §9.1); a caller supplying it —

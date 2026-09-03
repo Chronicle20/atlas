@@ -195,6 +195,10 @@ const (
 	SpawnMonster      Action = "spawn_monster"
 	SpawnReactorDrops Action = "spawn_reactor_drops"
 
+	// SpawnNpc places a scripted NPC on a field. Distinct from DeployPlayerNpc,
+	// which deploys a character's own player-NPC (task-290 G2).
+	SpawnNpc Action = "spawn_npc"
+
 	// DeployPlayerNpc deploys the character's player NPC (FR-6.2). It is not a
 	// local operation in atlas-npc-conversations: it mutates cross-service state
 	// (atlas-player-npcs), so it is dispatched through the saga orchestrator like

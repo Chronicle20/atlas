@@ -68,6 +68,8 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeClearSkill(f, characterId, op)
 	case "warp_to_map":
 		return e.executeWarpToMap(f, characterId, op)
+	case "spawn_npc":
+		return e.executeSpawnNpc(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -291,6 +293,76 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 				X:             x,
 				Y:             y,
 				Count:         count,
+				SpawnIfAbsent: spawnIfAbsent,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeSpawnNpc places a scripted NPC on the current field, mirroring
+// Cosmic's AbstractPlayerInteraction.spawnNpc. Unlike spawn_monster, x/y are
+// required rather than defaulting to 0: every G2 script that places an NPC
+// gives it an explicit Point (task-290 G2).
+func (e *OperationExecutor) executeSpawnNpc(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	npcIdStr, ok := params["npcId"]
+	if !ok {
+		return fmt.Errorf("spawn_npc operation requires npcId parameter")
+	}
+	npcId, err := strconv.ParseUint(npcIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid npcId [%s]: %w", npcIdStr, err)
+	}
+
+	xStr, hasX := params["x"]
+	if !hasX {
+		return fmt.Errorf("spawn_npc operation requires x parameter")
+	}
+	xVal, err := strconv.ParseInt(xStr, 10, 16)
+	if err != nil {
+		return fmt.Errorf("invalid x [%s]: %w", xStr, err)
+	}
+	x := int16(xVal)
+
+	yStr, hasY := params["y"]
+	if !hasY {
+		return fmt.Errorf("spawn_npc operation requires y parameter")
+	}
+	yVal, err := strconv.ParseInt(yStr, 10, 16)
+	if err != nil {
+		return fmt.Errorf("invalid y [%s]: %w", yStr, err)
+	}
+	y := int16(yVal)
+
+	var spawnIfAbsent bool
+	if s, has := params["spawnIfAbsent"]; has {
+		parsed, err := strconv.ParseBool(s)
+		if err != nil {
+			return fmt.Errorf("invalid spawnIfAbsent [%s]: %w", s, err)
+		}
+		spawnIfAbsent = parsed
+	}
+
+	e.l.Debugf("Spawning npc [%d] at (%d,%d) for character [%d].", npcId, x, y, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-spawn-npc").
+		AddStep(
+			fmt.Sprintf("spawn-npc-%d-%d", characterId, npcId),
+			saga.Pending,
+			saga.SpawnNpc,
+			saga.SpawnNpcPayload{
+				CharacterId:   characterId,
+				WorldId:       f.WorldId(),
+				ChannelId:     f.ChannelId(),
+				MapId:         f.MapId(),
+				Instance:      f.Instance(),
+				NpcId:         uint32(npcId),
+				X:             x,
+				Y:             y,
 				SpawnIfAbsent: spawnIfAbsent,
 			},
 		).Build()

@@ -163,6 +163,10 @@ const (
 	SpawnMonster      = sharedsaga.SpawnMonster
 	SpawnReactorDrops = sharedsaga.SpawnReactorDrops
 
+	// SpawnNpc places a scripted NPC on a field (task-290 G2). Distinct from
+	// DeployPlayerNpc, which deploys a character's own player-NPC.
+	SpawnNpc = sharedsaga.SpawnNpc
+
 	// DeployPlayerNpc deploys the character's own player NPC (FR-6.2). Not a
 	// local operation in atlas-npc-conversations: it mutates cross-service
 	// state, so it dispatches through the saga orchestrator.
@@ -348,6 +352,7 @@ type (
 	BlockPortalPayload                  = sharedsaga.BlockPortalPayload
 	UnblockPortalPayload                = sharedsaga.UnblockPortalPayload
 	SpawnMonsterPayload                 = sharedsaga.SpawnMonsterPayload
+	SpawnNpcPayload                     = sharedsaga.SpawnNpcPayload
 	DeployPlayerNpcPayload              = sharedsaga.DeployPlayerNpcPayload
 	SpawnReactorDropsPayload            = sharedsaga.SpawnReactorDropsPayload
 	ShowStoragePayload                  = sharedsaga.ShowStoragePayload
@@ -1278,6 +1283,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case DeployPlayerNpc:
 		var payload DeployPlayerNpcPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SpawnNpc:
+		var payload SpawnNpcPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

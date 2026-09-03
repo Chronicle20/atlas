@@ -27,6 +27,7 @@ import (
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/note"
+	"atlas-saga-orchestrator/npc_spawn"
 	"atlas-saga-orchestrator/parcel"
 	"atlas-saga-orchestrator/party"
 	party_quest "atlas-saga-orchestrator/party_quest"
@@ -101,6 +102,9 @@ type Handler interface {
 	// WithPlayerNpcLocationProcessor is the injector seam for
 	// handleDeployPlayerNpc's atlas-maps location lookup (FR-6.2).
 	WithPlayerNpcLocationProcessor(playernpc.Processor) Handler
+	// WithNpcSpawnProcessor is the injector seam for handleSpawnNpc's
+	// atlas-maps NPC placement call (task-290 G2).
+	WithNpcSpawnProcessor(npc_spawn.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -138,6 +142,7 @@ type Handler interface {
 	handleRevivePet(s Saga, st Step[any]) error
 	handleRenamePet(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
+	handleSpawnNpc(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
@@ -253,6 +258,7 @@ type HandlerImpl struct {
 	partyP             party.Processor
 	pendingChangeP     pending_change.Processor
 	playerNpcLocationP playernpc.Processor
+	npcSpawnP          npc_spawn.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -292,6 +298,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		partyP:             party.NewProcessor(l, ctx),
 		pendingChangeP:     pending_change.NewProcessor(l, ctx),
 		playerNpcLocationP: playernpc.NewProcessor(l, ctx),
+		npcSpawnP:          npc_spawn.NewProcessor(l, ctx),
 	}
 }
 
@@ -842,6 +849,18 @@ func (h *HandlerImpl) WithPlayerNpcLocationProcessor(playerNpcLocationP playernp
 	}
 }
 
+// WithNpcSpawnProcessor returns a Handler with the given npc-spawn processor
+// substituted, for use by handleSpawnNpc (task-290 G2).
+func (h *HandlerImpl) WithNpcSpawnProcessor(npcSpawnP npc_spawn.Processor) Handler {
+	return &HandlerImpl{
+		l:         h.l,
+		ctx:       h.ctx,
+		t:         h.t,
+		footholdP: h.footholdP,
+		npcSpawnP: npcSpawnP,
+	}
+}
+
 // ActionHandler is a function type for handling different saga action types
 type ActionHandler func(s Saga, st Step[any]) error
 
@@ -927,6 +946,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleRenamePet, true
 	case SpawnMonster:
 		return h.handleSpawnMonster, true
+	case SpawnNpc:
+		return h.handleSpawnNpc, true
 	case SpawnReactorDrops:
 		return h.handleSpawnReactorDrops, true
 	case CompleteQuest:
@@ -2162,6 +2183,48 @@ func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
 
 	h.l.Debugf("Successfully spawned %d monsters (id=%d) at (%d, %d, fh=%d) in world %d, channel %d, map %d",
 		count, payload.MonsterId, payload.X, payload.Y, fh, payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleSpawnNpc handles the SpawnNpc action, mirroring Cosmic's
+// AbstractPlayerInteraction.spawnNpc: it resolves a foothold below the
+// requested position the same way handleSpawnMonster does, and places the
+// NPC on the field via atlas-maps' field NPC registry (task-290 G2).
+func (h *HandlerImpl) handleSpawnNpc(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SpawnNpcPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Look up foothold from atlas-data
+	fh, err := h.footholdP.GetFootholdBelow(payload.MapId, payload.X, payload.Y)
+	if err != nil {
+		h.l.WithError(err).Warnf("Failed to get foothold for map %d at (%d, %d), using fh=0", payload.MapId, payload.X, payload.Y)
+		fh = 0
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	req := npc_spawn.SpawnRequest{
+		WorldId:       payload.WorldId,
+		ChannelId:     payload.ChannelId,
+		MapId:         payload.MapId,
+		NpcId:         payload.NpcId,
+		X:             payload.X,
+		Y:             payload.Y,
+		Fh:            int16(fh),
+		SpawnIfAbsent: payload.SpawnIfAbsent,
+	}
+	if err := h.npcSpawnP.SpawnNpc(f, req); err != nil {
+		h.logActionError(s, st, err, fmt.Sprintf("Failed to spawn npc %d", payload.NpcId))
+		return err
+	}
+
+	h.l.Debugf("Successfully spawned npc %d at (%d, %d, fh=%d) in world %d, channel %d, map %d",
+		payload.NpcId, payload.X, payload.Y, fh, payload.WorldId, payload.ChannelId, payload.MapId)
 
 	return nil
 }

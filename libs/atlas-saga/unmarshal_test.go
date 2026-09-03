@@ -1814,3 +1814,37 @@ func TestUnmarshalBoatEffectStep(t *testing.T) {
 		t.Errorf("payload = %+v, want %+v", p, want)
 	}
 }
+
+func TestUnmarshalSpawnNpcStep(t *testing.T) {
+	raw := `{
+		"stepId": "spawn-npc-1",
+		"status": "pending",
+		"action": "spawn_npc",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 108010600,
+			"npcId": 1104100,
+			"x": 2830,
+			"y": 78,
+			"spawnIfAbsent": true
+		}
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != SpawnNpc {
+		t.Fatalf("expected action SpawnNpc, got %q", step.Action)
+	}
+	p, ok := step.Payload.(SpawnNpcPayload)
+	if !ok {
+		t.Fatalf("expected SpawnNpcPayload, got %T", step.Payload)
+	}
+	want := SpawnNpcPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), MapId: _map.Id(108010600), NpcId: 1104100, X: 2830, Y: 78, SpawnIfAbsent: true}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}

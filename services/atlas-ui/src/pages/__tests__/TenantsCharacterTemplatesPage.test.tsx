@@ -91,6 +91,9 @@ describe("TenantsCharacterTemplatesPage", () => {
     );
     expect(screen.getByTestId("tenant-layout")).toBeInTheDocument();
     expect(screen.getByTestId("shared-editor")).toBeInTheDocument();
+    // Routed through TenantSectionResetBar, which still renders the (mocked)
+    // TenantResetButton - this is the scoped reset for this sub-section.
+    expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
     const { adapter } = editorMock.mock.calls[0]![0] as {
       adapter: { templates: unknown };
     };

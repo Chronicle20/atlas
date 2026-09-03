@@ -58,8 +58,6 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
               Tenant Details
             </h2>
             <p className="text-muted-foreground">{id}</p>
-          </div>
-          <div className="flex items-center gap-2">
             {driftedSections.length > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -74,6 +72,8 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
                 </TooltipContent>
               </Tooltip>
             )}
+          </div>
+          <div className="flex items-center gap-2">
             <ConfigExportButton kind="tenant" id={id} />
             <TenantResetButton id={id} />
           </div>

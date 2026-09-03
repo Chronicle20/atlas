@@ -134,6 +134,37 @@ describe("TenantDetailLayout", () => {
     expect(badgeText).not.toHaveTextContent("npcs");
   });
 
+  it("places the drift badge in the left header block, beneath the tenant id", () => {
+    vi.mocked(useTenantConfiguration).mockReturnValue({
+      data: {
+        id: "tnt-1",
+        attributes: {
+          socket: { handlers: [], writers: [] },
+          templateDrift: true,
+          sectionDrift: {
+            properties: false,
+            socket: true,
+            characters: false,
+            npcs: false,
+            cashShop: false,
+            mapleLife: false,
+          },
+        },
+      },
+    } as never);
+    renderAt("tnt-1");
+
+    const badgeText = screen.getByText(/Differs from template:/);
+    const headerBlock = screen.getByText("Tenant Details").parentElement;
+    expect(headerBlock).toContainElement(badgeText);
+    expect(headerBlock).not.toContainElement(
+      screen.getByRole("button", { name: "Export" }),
+    );
+    expect(headerBlock).not.toContainElement(
+      screen.getByRole("button", { name: /reset to template/i }),
+    );
+  });
+
   it("renders no drift summary when nothing has drifted", () => {
     vi.mocked(useTenantConfiguration).mockReturnValue({
       data: {

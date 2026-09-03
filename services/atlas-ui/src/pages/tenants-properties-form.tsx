@@ -20,7 +20,7 @@ import {
   useUpdateTenantConfiguration,
 } from "@/lib/hooks/api/useTenants";
 import { toast } from "sonner";
-import { TenantResetButton } from "@/components/features/tenants/TenantResetButton";
+import { TenantSectionResetBar } from "@/components/features/tenants/TenantSectionResetBar";
 
 const propertiesFormSchema = z.object({
   region: z
@@ -105,93 +105,95 @@ export function PropertiesForm() {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="region"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Region</FormLabel>
-              <FormControl>
-                <Input placeholder={tenant.attributes.region} {...field} />
-              </FormControl>
-              <FormDescription>The MapleStory region.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="major"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Major Version</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder={String(tenant.attributes.majorVersion)}
-                  {...field}
-                  onChange={(e) =>
-                    field.onChange(parseInt(e.target.value) || 0)
-                  }
-                />
-              </FormControl>
-              <FormDescription>The MapleStory major version.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="minor"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Minor Version</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder={String(tenant.attributes.minorVersion)}
-                  {...field}
-                  onChange={(e) =>
-                    field.onChange(parseInt(e.target.value) || 0)
-                  }
-                />
-              </FormControl>
-              <FormDescription>The MapleStory minor version.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="usesPin"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs">
-              <div className="space-y-0.5">
-                <FormLabel>Uses PIN system</FormLabel>
-                <FormDescription>
-                  Receive emails about new products, features, and more.
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <div className="flex flex-row gap-2 justify-end">
-          <TenantResetButton
-            id={id}
-            sections={["properties"]}
-            sectionLabel="global properties"
+    <>
+      <TenantSectionResetBar
+        id={id}
+        sections={["properties"]}
+        sectionLabel="global properties"
+      />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="region"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Region</FormLabel>
+                <FormControl>
+                  <Input placeholder={tenant.attributes.region} {...field} />
+                </FormControl>
+                <FormDescription>The MapleStory region.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <Button type="submit">Save</Button>
-        </div>
-      </form>
-    </Form>
+          <FormField
+            control={form.control}
+            name="major"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Major Version</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder={String(tenant.attributes.majorVersion)}
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(parseInt(e.target.value) || 0)
+                    }
+                  />
+                </FormControl>
+                <FormDescription>The MapleStory major version.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="minor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Minor Version</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder={String(tenant.attributes.minorVersion)}
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(parseInt(e.target.value) || 0)
+                    }
+                  />
+                </FormControl>
+                <FormDescription>The MapleStory minor version.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="usesPin"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs">
+                <div className="space-y-0.5">
+                  <FormLabel>Uses PIN system</FormLabel>
+                  <FormDescription>
+                    Receive emails about new products, features, and more.
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <div className="flex flex-row gap-2 justify-end">
+            <Button type="submit">Save</Button>
+          </div>
+        </form>
+      </Form>
+    </>
   );
 }

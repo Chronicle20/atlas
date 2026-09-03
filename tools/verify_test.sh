@@ -314,8 +314,9 @@ go_layer_body="$(awk '/^go_layer\(\) \{/,/^\}$/' "$VERIFY")"
 assert_true "go_layer exports GOMAXPROCS" \
   "$(printf '%s\n' "$go_layer_body" | grep -F 'export GOMAXPROCS' >/dev/null && echo true)"
 assert_true "go build and go test take distinct -p budgets" \
-  "$(printf '%s\n' "$go_layer_body" | grep -F 'go build -p "${ATLAS_GO_P' >/dev/null \
+  "$(printf '%s\n' "$go_layer_body" | grep -F 'go build -p "$GO_P"' >/dev/null \
      && printf '%s\n' "$go_layer_body" | grep -F 'go test -p "${ATLAS_GO_TEST_P' >/dev/null \
+     && grep -F 'GO_P="${ATLAS_GO_P:-' "$VERIFY" >/dev/null \
      && echo true)"
 assert_true "go vet takes no -p (not a valid go vet flag)" \
   "$(printf '%s\n' "$go_layer_body" | grep -F 'go vet -p' >/dev/null && echo false || echo true)"

@@ -1,13 +1,16 @@
 package _map
 
 import (
+	monsterData "atlas-maps/data/map/monster"
 	"atlas-maps/kafka/message"
 	mapKafka "atlas-maps/kafka/message/map"
+	monsterKafka "atlas-maps/kafka/message/monster"
 	"atlas-maps/map/character"
 	"atlas-maps/map/environment"
 	monster2 "atlas-maps/map/monster"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -793,5 +796,295 @@ func TestExit_NoEnvironmentTrackedIsNoop(t *testing.T) {
 	entries := environment.NewProcessor(logger, ctx).GetAll(f)
 	if len(entries) != 0 {
 		t.Fatalf("Expected no environment state, got %d entries", len(entries))
+	}
+}
+
+// mockMonsterDataProcessor implements monsterData.Processor for seeding the
+// spawn point registry via InitializeForMap. GetSpawnPoints returns the
+// unfiltered slice; the registry's Classify partitions it by MobTime/Hide.
+type mockMonsterDataProcessor struct {
+	spawnPoints []monsterData.SpawnPoint
+}
+
+func (m *mockMonsterDataProcessor) SpawnPointProvider(_ _map.Id) model.Provider[[]monsterData.SpawnPoint] {
+	return func() ([]monsterData.SpawnPoint, error) { return m.spawnPoints, nil }
+}
+
+func (m *mockMonsterDataProcessor) SpawnableSpawnPointProvider(_ _map.Id) model.Provider[[]monsterData.SpawnPoint] {
+	return func() ([]monsterData.SpawnPoint, error) { return m.spawnPoints, nil }
+}
+
+func (m *mockMonsterDataProcessor) GetSpawnPoints(_ _map.Id) ([]monsterData.SpawnPoint, error) {
+	return m.spawnPoints, nil
+}
+
+func (m *mockMonsterDataProcessor) GetSpawnableSpawnPoints(_ _map.Id) ([]monsterData.SpawnPoint, error) {
+	return m.spawnPoints, nil
+}
+
+// seedSpawnPoints initializes the shared spawn point registry for f (keyed on
+// the tenant in ctx) with points, and returns the resulting MapKey.
+func seedSpawnPoints(t *testing.T, ctx context.Context, f field.Model, points []monsterData.SpawnPoint) character.MapKey {
+	t.Helper()
+	mapKey := character.MapKey{Tenant: tenant.MustFromContext(ctx), Field: f}
+	dp := &mockMonsterDataProcessor{spawnPoints: points}
+	l, _ := test.NewNullLogger()
+	if err := monster2.GetRegistry().InitializeForMap(ctx, mapKey, dp, l); err != nil {
+		t.Fatalf("InitializeForMap: %v", err)
+	}
+	return mapKey
+}
+
+func oneTimeSpawnPoints(n int) []monsterData.SpawnPoint {
+	points := make([]monsterData.SpawnPoint, 0, n)
+	for i := 1; i <= n; i++ {
+		points = append(points, monsterData.SpawnPoint{Id: uint32(i), Template: 9300044, MobTime: -1})
+	}
+	return points
+}
+
+func recurringSpawnPoints(n int) []monsterData.SpawnPoint {
+	points := make([]monsterData.SpawnPoint, 0, n)
+	for i := 1; i <= n; i++ {
+		points = append(points, monsterData.SpawnPoint{Id: uint32(i), Template: 9300044, MobTime: 0})
+	}
+	return points
+}
+
+func TestProcessorImpl_Exit_RearmsAndDestroysOnEmpty(t *testing.T) {
+	worldId := world.Id(1)
+	channelId := channel.Id(1)
+	mapId := _map.Id(100000000)
+	transactionId := uuid.New()
+	characterId := uint32(12345)
+
+	t.Run("last character leaves a fired field", func(t *testing.T) {
+		logger, _ := test.NewNullLogger()
+		ctx := createTestContext()
+		f := field.NewBuilder(worldId, channelId, mapId).Build()
+		mapKey := seedSpawnPoints(t, ctx, f, oneTimeSpawnPoints(10))
+		if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
+			t.Fatalf("ClaimOneTimeSpawnPoints (seed fire): %v", err)
+		}
+
+		mockCp := &mockCharacterProcessor{
+			getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return nil, nil },
+		}
+		mockPp := newMockProducerProvider()
+		p := createTestProcessor(logger, ctx, mockCp, mockPp)
+
+		buf := message.NewBuffer()
+		if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
+			t.Fatalf("Exit returned error: %v", err)
+		}
+
+		messages := buf.GetAll()
+		if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
+			t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
+		}
+		destroyMsgs := messages[monsterKafka.EnvCommandTopic]
+		if len(destroyMsgs) != 1 {
+			t.Fatalf("Expected 1 DESTROY_FIELD message, got %d", len(destroyMsgs))
+		}
+
+		var cmd monsterKafka.FieldCommand[monsterKafka.DestroyFieldBody]
+		if err := json.Unmarshal(destroyMsgs[0].Value, &cmd); err != nil {
+			t.Fatalf("Failed to unmarshal destroy message: %v", err)
+		}
+		if cmd.Type != monsterKafka.CommandTypeDestroyField {
+			t.Errorf("Expected type %q, got %q", monsterKafka.CommandTypeDestroyField, cmd.Type)
+		}
+		if cmd.MapId != f.MapId() {
+			t.Errorf("Expected mapId %v, got %v", f.MapId(), cmd.MapId)
+		}
+
+		claimed, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey)
+		if err != nil {
+			t.Fatalf("post-Exit ClaimOneTimeSpawnPoints: %v", err)
+		}
+		if len(claimed) != 10 {
+			t.Errorf("Expected re-armed field to yield 10 claimed points, got %d", len(claimed))
+		}
+	})
+
+	t.Run("characters remain", func(t *testing.T) {
+		logger, _ := test.NewNullLogger()
+		ctx := createTestContext()
+		f := field.NewBuilder(worldId, channelId, mapId).Build()
+		mapKey := seedSpawnPoints(t, ctx, f, oneTimeSpawnPoints(10))
+		if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
+			t.Fatalf("ClaimOneTimeSpawnPoints (seed fire): %v", err)
+		}
+
+		mockCp := &mockCharacterProcessor{
+			getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return []uint32{2222}, nil },
+		}
+		mockPp := newMockProducerProvider()
+		p := createTestProcessor(logger, ctx, mockCp, mockPp)
+
+		buf := message.NewBuffer()
+		if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
+			t.Fatalf("Exit returned error: %v", err)
+		}
+
+		messages := buf.GetAll()
+		if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
+			t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
+		}
+		if len(messages[monsterKafka.EnvCommandTopic]) != 0 {
+			t.Fatalf("Expected 0 DESTROY_FIELD messages, got %d", len(messages[monsterKafka.EnvCommandTopic]))
+		}
+
+		claimed, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey)
+		if err != nil {
+			t.Fatalf("post-Exit ClaimOneTimeSpawnPoints: %v", err)
+		}
+		if len(claimed) != 0 {
+			t.Errorf("Expected still-disarmed field to yield 0 claimed points, got %d", len(claimed))
+		}
+	})
+
+	t.Run("never-fired field empties", func(t *testing.T) {
+		logger, _ := test.NewNullLogger()
+		ctx := createTestContext()
+		f := field.NewBuilder(worldId, channelId, mapId).Build()
+		seedSpawnPoints(t, ctx, f, recurringSpawnPoints(4))
+
+		mockCp := &mockCharacterProcessor{
+			getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return nil, nil },
+		}
+		mockPp := newMockProducerProvider()
+		p := createTestProcessor(logger, ctx, mockCp, mockPp)
+
+		buf := message.NewBuffer()
+		if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
+			t.Fatalf("Exit returned error: %v", err)
+		}
+
+		messages := buf.GetAll()
+		if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
+			t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
+		}
+		if len(messages[monsterKafka.EnvCommandTopic]) != 0 {
+			t.Fatalf("Expected 0 DESTROY_FIELD messages, got %d", len(messages[monsterKafka.EnvCommandTopic]))
+		}
+	})
+
+	t.Run("unseeded field empties", func(t *testing.T) {
+		logger, _ := test.NewNullLogger()
+		ctx := createTestContext()
+		f := field.NewBuilder(worldId, channelId, mapId).Build()
+
+		mockCp := &mockCharacterProcessor{
+			getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return nil, nil },
+		}
+		mockPp := newMockProducerProvider()
+		p := createTestProcessor(logger, ctx, mockCp, mockPp)
+
+		buf := message.NewBuffer()
+		if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
+			t.Fatalf("Exit returned error: %v", err)
+		}
+
+		messages := buf.GetAll()
+		if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
+			t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
+		}
+		if len(messages[monsterKafka.EnvCommandTopic]) != 0 {
+			t.Fatalf("Expected 0 DESTROY_FIELD messages, got %d", len(messages[monsterKafka.EnvCommandTopic]))
+		}
+	})
+}
+
+// TestProcessorImpl_Exit_RearmIsPerFieldKey is the FR-3.4 regression: re-arming
+// one channel instance of a map must not affect a sibling channel instance's
+// one-time state.
+func TestProcessorImpl_Exit_RearmIsPerFieldKey(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	ctx := createTestContext()
+	worldId := world.Id(1)
+	mapId := _map.Id(100000000)
+	transactionId := uuid.New()
+	characterId := uint32(12345)
+
+	fieldCh0 := field.NewBuilder(worldId, channel.Id(0), mapId).Build()
+	fieldCh1 := field.NewBuilder(worldId, channel.Id(1), mapId).Build()
+
+	mapKeyCh0 := seedSpawnPoints(t, ctx, fieldCh0, oneTimeSpawnPoints(10))
+	mapKeyCh1 := seedSpawnPoints(t, ctx, fieldCh1, oneTimeSpawnPoints(10))
+	if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKeyCh0); err != nil {
+		t.Fatalf("ClaimOneTimeSpawnPoints ch0 (seed fire): %v", err)
+	}
+	if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKeyCh1); err != nil {
+		t.Fatalf("ClaimOneTimeSpawnPoints ch1 (seed fire): %v", err)
+	}
+
+	mockCp := &mockCharacterProcessor{
+		getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return nil, nil },
+	}
+	mockPp := newMockProducerProvider()
+	p := createTestProcessor(logger, ctx, mockCp, mockPp)
+
+	buf := message.NewBuffer()
+	if err := p.Exit(buf)(transactionId, fieldCh0, characterId); err != nil {
+		t.Fatalf("Exit returned error: %v", err)
+	}
+
+	claimedCh0, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKeyCh0)
+	if err != nil {
+		t.Fatalf("ClaimOneTimeSpawnPoints ch0: %v", err)
+	}
+	if len(claimedCh0) != 10 {
+		t.Errorf("Expected channel 0 to be re-armed with 10 points, got %d", len(claimedCh0))
+	}
+
+	claimedCh1, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKeyCh1)
+	if err != nil {
+		t.Fatalf("ClaimOneTimeSpawnPoints ch1: %v", err)
+	}
+	if len(claimedCh1) != 0 {
+		t.Errorf("Expected channel 1 to remain disarmed, got %d claimed points", len(claimedCh1))
+	}
+}
+
+// TestProcessorImpl_Exit_LogsRearm is the FR-4.3 regression: a re-arm must be
+// observable at debug level.
+func TestProcessorImpl_Exit_LogsRearm(t *testing.T) {
+	logger, hook := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	ctx := createTestContext()
+	worldId := world.Id(1)
+	channelId := channel.Id(1)
+	mapId := _map.Id(100000000)
+	transactionId := uuid.New()
+	characterId := uint32(12345)
+
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+	mapKey := seedSpawnPoints(t, ctx, f, oneTimeSpawnPoints(10))
+	if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
+		t.Fatalf("ClaimOneTimeSpawnPoints (seed fire): %v", err)
+	}
+
+	mockCp := &mockCharacterProcessor{
+		getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return nil, nil },
+	}
+	mockPp := newMockProducerProvider()
+	p := createTestProcessor(logger, ctx, mockCp, mockPp)
+
+	buf := message.NewBuffer()
+	if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
+		t.Fatalf("Exit returned error: %v", err)
+	}
+
+	want := fmt.Sprintf("Re-armed one-time spawn points for field [%s].", f.Id())
+	found := false
+	for _, entry := range hook.AllEntries() {
+		if entry.Message == want {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected a debug log entry %q, got none", want)
 	}
 }

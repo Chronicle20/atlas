@@ -39,26 +39,19 @@ func (b *builder) SetMapId(mapId _map.Id) *builder {
 	return b
 }
 
-func (b *builder) Build() Model {
-	return Model{
-		id:          b.id,
-		characterId: b.characterId,
-		questId:     b.questId,
-		mapId:       b.mapId,
-	}
-}
-
-// BuildWithValidation returns the built Model with validation, returning an
-// error if required fields are missing. This is the recommended method for
-// new code (matches quest.builder's own remediation for this rule).
-func (b *builder) BuildWithValidation() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.characterId == 0 {
 		return Model{}, ErrMissingCharacterId
 	}
 	if b.questId == 0 {
 		return Model{}, ErrMissingQuestId
 	}
-	return b.Build(), nil
+	return Model{
+		id:          b.id,
+		characterId: b.characterId,
+		questId:     b.questId,
+		mapId:       b.mapId,
+	}, nil
 }
 
 // Validation errors for builder

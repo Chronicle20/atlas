@@ -87,6 +87,29 @@ func TestRecordMedalMapDeduplicates(t *testing.T) {
 	}
 }
 
+func TestRecordMedalMapRejectsMissingIdentifiers(t *testing.T) {
+	tests := []struct {
+		name        string
+		characterId uint32
+		questId     uint32
+	}{
+		{name: "characterId of 0 is rejected", characterId: 0, questId: 29005},
+		{name: "questId of 0 is rejected", characterId: 1, questId: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
+			tctx := tenant.WithContext(context.Background(), testTenant())
+			p := testProcessor(tctx, db)
+
+			if _, err := p.Record(tt.characterId, tt.questId, _map.Id(100000000)); err == nil {
+				t.Fatalf("Record(%d, %d, ...) = nil error, want a builder validation error", tt.characterId, tt.questId)
+			}
+		})
+	}
+}
+
 func TestRecordMedalMapCountsDistinctMaps(t *testing.T) {
 	tests := []struct {
 		name string

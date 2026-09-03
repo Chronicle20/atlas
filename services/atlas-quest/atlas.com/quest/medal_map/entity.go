@@ -34,7 +34,7 @@ func Make(e entity) (Model, error) {
 		SetCharacterId(e.CharacterId).
 		SetQuestId(e.QuestId).
 		SetMapId(_map.Id(e.MapId)).
-		BuildWithValidation()
+		Build()
 }
 
 // ToEntity is the inverse of Make for the fields Model owns. TenantId is not

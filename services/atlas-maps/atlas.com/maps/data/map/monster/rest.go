@@ -49,5 +49,6 @@ func Extract(rm RestModel) (SpawnPoint, error) {
 		Rx1:      rm.RX1,
 		X:        rm.X,
 		Y:        rm.Y,
+		Hide:     rm.Hide,
 	}, nil
 }

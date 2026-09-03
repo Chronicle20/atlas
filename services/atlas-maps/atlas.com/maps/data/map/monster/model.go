@@ -14,4 +14,5 @@ type SpawnPoint struct {
 	Rx1      int16  // Right boundary of spawn area
 	X        int16  // X coordinate for spawn position
 	Y        int16  // Y coordinate for spawn position
+	Hide     bool   // WZ life `hide` flag; a hidden point is never auto-spawned (FR-1.4)
 }

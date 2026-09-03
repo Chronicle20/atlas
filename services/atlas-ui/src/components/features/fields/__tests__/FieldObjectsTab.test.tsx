@@ -113,4 +113,20 @@ describe("FieldObjectsTab", () => {
       screen.getByText(/does not validate a name against the map/i),
     ).toBeInTheDocument();
   });
+
+  it("does not show the empty state while the defined-objects query is still loading (B3)", () => {
+    render(<FieldObjectsTab defined={undefined} tracked={undefined} />);
+
+    expect(screen.queryByText(/no map objects/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Loading map objects...")).toBeInTheDocument();
+  });
+
+  it("shows the empty state once the defined-objects query resolves empty", () => {
+    render(<FieldObjectsTab defined={[]} tracked={[]} />);
+
+    expect(
+      screen.queryByText("Loading map objects..."),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/no map objects/i)).toBeInTheDocument();
+  });
 });

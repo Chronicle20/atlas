@@ -43,7 +43,17 @@ export function FieldMonstersTab({
     );
   }
 
-  if (!monsters || monsters.length === 0) {
+  if (monsters === undefined) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">Loading monsters...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (monsters.length === 0) {
     return (
       <Card>
         <CardContent className="pt-6">

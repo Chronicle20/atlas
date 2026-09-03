@@ -52,9 +52,24 @@ export function FieldObjectsTab({
     );
   }
 
+  // `defined` is this map's declared objects; a still-in-flight query is
+  // the loading state (`tracked` legitimately stays undefined until Task 22
+  // wires it up, per the docstring above, so it never gates loading).
+  if (defined === undefined) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">
+            Loading map objects...
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const trackedObjects = tracked ?? [];
   const trackedIds = new Set(trackedObjects.map((object) => object.id));
-  const untrackedObjects = (defined ?? []).filter(
+  const untrackedObjects = defined.filter(
     (object) => !trackedIds.has(object.id),
   );
 

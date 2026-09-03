@@ -152,4 +152,22 @@ describe("FieldMonstersTab", () => {
       screen.getByText("No monsters are currently in this field."),
     ).toBeInTheDocument();
   });
+
+  it("does not show the empty state while the query is still loading (B3)", () => {
+    renderTab(undefined);
+
+    expect(
+      screen.queryByText("No monsters are currently in this field."),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Loading monsters...")).toBeInTheDocument();
+  });
+
+  it("shows the empty state once the query resolves with no monsters", () => {
+    renderTab([]);
+
+    expect(screen.queryByText("Loading monsters...")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("No monsters are currently in this field."),
+    ).toBeInTheDocument();
+  });
 });

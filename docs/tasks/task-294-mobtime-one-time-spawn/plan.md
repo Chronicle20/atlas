@@ -61,7 +61,7 @@ Module root: `services/atlas-maps/atlas.com/maps`.
 
 - Produces: `monster.SpawnPoint.Hide bool`; `monster.Classified{Recurring, OneTime, Hidden []SpawnPoint}`; `func Classify(points []SpawnPoint) Classified`. Task 2 consumes both.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `data/map/monster/classify_test.go`, package `monster`. Two test functions.
 
@@ -91,7 +91,7 @@ Assert: `Recurring` ids are exactly `[1, 2]` in that order; `OneTime` ids are ex
 
 Add a third subtest `empty input` calling `Classify(nil)` and asserting all three slices have length 0.
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 Run from `services/atlas-maps/atlas.com/maps`:
 
@@ -101,7 +101,7 @@ go test ./data/map/monster/ -run 'TestClassify|TestExtractCarriesHide' -v
 
 Expected: FAIL — `undefined: Classify`, `undefined: Classified`, and `unknown field Hide in struct literal of type SpawnPoint`.
 
-- [ ] **Step 3: Add `Hide` to the model**
+- [x] **Step 3: Add `Hide` to the model**
 
 In `data/map/monster/model.go`, append to `SpawnPoint`:
 
@@ -110,7 +110,7 @@ In `data/map/monster/model.go`, append to `SpawnPoint`:
 	Hide     bool   // WZ life `hide` flag; a hidden point is never auto-spawned (FR-1.4)
 ```
 
-- [ ] **Step 4: Carry `Hide` through `Extract`**
+- [x] **Step 4: Carry `Hide` through `Extract`**
 
 In `data/map/monster/rest.go`, add the field to the returned literal:
 
@@ -120,7 +120,7 @@ In `data/map/monster/rest.go`, add the field to the returned literal:
 	}, nil
 ```
 
-- [ ] **Step 5: Write `Classify`**
+- [x] **Step 5: Write `Classify`**
 
 New file `data/map/monster/classify.go`:
 
@@ -162,7 +162,7 @@ func Classify(points []SpawnPoint) Classified {
 }
 ```
 
-- [ ] **Step 6: Run the tests and verify they pass**
+- [x] **Step 6: Run the tests and verify they pass**
 
 ```bash
 go test ./data/map/monster/ -v
@@ -170,7 +170,7 @@ go test ./data/map/monster/ -v
 
 Expected: PASS, including the pre-existing `processor_drain_test.go` cases.
 
-- [ ] **Step 7: Build the module**
+- [x] **Step 7: Build the module**
 
 ```bash
 go build ./...
@@ -178,7 +178,7 @@ go build ./...
 
 Expected: exit 0. `Spawnable` and friends still exist, so nothing else breaks.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add data/map/monster/model.go data/map/monster/rest.go data/map/monster/classify.go data/map/monster/classify_test.go
@@ -209,7 +209,7 @@ Module root: `services/atlas-maps/atlas.com/maps`.
   - unexported: `(r *SpawnPointRegistry).recurringKey/oneTimeKey/metaKey(mapKey) string`
   - unexported consts `metaFieldSeeded = "seeded"`, `metaFieldOneTimeFired = "onetimeFired"`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `map/monster/registry_test.go`. First update the shared helper (this is required for every later test in the file, and `newTestRegistry` currently builds only one hash — a nil `oneTime`/`meta` would panic):
 
@@ -247,7 +247,7 @@ Read the counts with `r.Count(ctx, mapKey)` and `r.CountOneTime(ctx, mapKey)`; r
 
 `TestFlushTenant_ClearsAllThreeHashes` — seed the mixed case for one tenant, assert all three keys exist via `client.Exists`, call `r.FlushTenant(ctx, l, tid)`, assert `deleted == 3` and all three keys are gone. (This is the FR-3.5 key-pattern pin; the arming-behavior half of FR-3.5 lands in Task 3.)
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ```bash
 go test ./map/monster/ -run 'TestInitializeForMap_Partitions|TestInitializeForMap_IsIdempotent|TestRegistryKeys|TestFlushTenant_ClearsAllThree' -v
@@ -255,7 +255,7 @@ go test ./map/monster/ -run 'TestInitializeForMap_Partitions|TestInitializeForMa
 
 Expected: FAIL — `undefined: CountOneTime`, `undefined: metaKey`, `undefined: metaFieldSeeded`, `undefined: newRegistry`.
 
-- [ ] **Step 3: Extract a constructor and add the three hashes**
+- [x] **Step 3: Extract a constructor and add the three hashes**
 
 Replace the `SpawnPointRegistry` struct, `InitRegistry`, and `spawnHashKey` in `map/monster/registry.go`:
 
@@ -339,7 +339,7 @@ func (r *SpawnPointRegistry) metaKey(mapKey character.MapKey) string {
 
 Delete the package-level `spawnHashKey` function entirely. It read `registryInstance.hashes` rather than the receiver's, which silently bypassed any non-singleton registry. Replace its three call sites (`registry.go:195`, `:256`, `:289`) with `r.recurringKey(mapKey)`.
 
-- [ ] **Step 4: Replace the seed script**
+- [x] **Step 4: Replace the seed script**
 
 Replace `initializeScript` with a three-key version. `redis.call('HSET', ...)` per pair rather than one variadic HSET keeps the script identical in shape to what it replaces and avoids a Lua `unpack` length limit on the 50-point maps.
 
@@ -375,7 +375,7 @@ return 1
 `)
 ```
 
-- [ ] **Step 5: Rewrite `InitializeForMap`**
+- [x] **Step 5: Rewrite `InitializeForMap`**
 
 Replace the body (`registry.go:194-234`):
 
@@ -427,7 +427,7 @@ func (r *SpawnPointRegistry) InitializeForMap(ctx context.Context, mapKey charac
 
 Note the removed `if len(spawnPoints) == 0 { return nil }` early return: a zero-point field must still be stamped `seeded`.
 
-- [ ] **Step 6: Point `Count` at the recurring hash and add `CountOneTime`**
+- [x] **Step 6: Point `Count` at the recurring hash and add `CountOneTime`**
 
 `Count`'s body is already `r.hashes.Len(...)`, which is now the recurring hash — leave the code, update the doc comment, and add the sibling:
 
@@ -451,7 +451,7 @@ func (r *SpawnPointRegistry) CountOneTime(ctx context.Context, mapKey character.
 }
 ```
 
-- [ ] **Step 7: Run the package tests**
+- [x] **Step 7: Run the package tests**
 
 ```bash
 go test ./map/monster/ -v
@@ -459,7 +459,7 @@ go test ./map/monster/ -v
 
 Expected: PASS, including the pre-existing `TestInitializeForMap`, `TestCount`, `TestReserveEligibleSpawnPoints_*`, `TestResetCooldown`, `TestMapKeyIsolation`, `TestSpawnMonsters_*` and all four `TestSpawnPointRegistry_FlushTenant_*` / `TestFlushTenant_*` cases. If `TestFlushTenant_MatchesWriteKeyUnderEnvPrefix` (`registry_test.go:135`) asserts a literal key without `v2:`, update the expected literal to the `v2:` shape and no other part of the test.
 
-- [ ] **Step 8: Build and vet the module**
+- [x] **Step 8: Build and vet the module**
 
 ```bash
 go build ./... && go vet ./...
@@ -467,7 +467,7 @@ go build ./... && go vet ./...
 
 Expected: exit 0.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add map/monster/registry.go map/monster/registry_test.go
@@ -496,7 +496,7 @@ Module root: `services/atlas-maps/atlas.com/maps`.
 
   Task 4 consumes `ClaimOneTimeSpawnPoints`; Task 6 consumes `RearmOneTime`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `map/monster/registry_test.go`. Setup shape copied from Task 2's tests (miniredis client + `newTestRegistry` + `tenant.Create(uuid.New(), "GMS", 83, 1)`).
 
@@ -528,7 +528,7 @@ For the second subtest, also assert `r.Count(ctx, mapKey) == 4` afterwards and t
 
 `TestFlushTenant_ReArmsDisarmedField` — seed 10 one-time; claim (10); `FlushTenant`; `InitializeForMap` again with the same stub; claim. Assert the post-flush claim returns 10. (FR-3.5 behavior half.)
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ```bash
 go test ./map/monster/ -run 'TestClaimOneTime|TestRearmOneTime|TestFlushTenant_ReArms' -v
@@ -536,7 +536,7 @@ go test ./map/monster/ -run 'TestClaimOneTime|TestRearmOneTime|TestFlushTenant_R
 
 Expected: FAIL — `r.ClaimOneTimeSpawnPoints undefined`, `r.RearmOneTime undefined`.
 
-- [ ] **Step 3: Add the claim script**
+- [x] **Step 3: Add the claim script**
 
 In `map/monster/registry.go`, after `resetCooldownScript`:
 
@@ -570,7 +570,7 @@ return entries
 `)
 ```
 
-- [ ] **Step 4: Add `ClaimOneTimeSpawnPoints` and `RearmOneTime`**
+- [x] **Step 4: Add `ClaimOneTimeSpawnPoints` and `RearmOneTime`**
 
 ```go
 // ClaimOneTimeSpawnPoints disarms the field and returns its one-time spawn
@@ -629,7 +629,7 @@ func (r *SpawnPointRegistry) RearmOneTime(ctx context.Context, mapKey character.
 
 Note the decode loop starts at `i = 1` and steps by 2, taking values from an HGETALL-shaped `[field, value, field, value, ...]` array — unlike `ReserveEligibleSpawnPoints`, whose array has a leading total element.
 
-- [ ] **Step 5: Run the tests and verify they pass**
+- [x] **Step 5: Run the tests and verify they pass**
 
 ```bash
 go test ./map/monster/ -v
@@ -637,7 +637,7 @@ go test ./map/monster/ -v
 
 Expected: PASS, all new and pre-existing tests.
 
-- [ ] **Step 6: Run the package with the race detector**
+- [x] **Step 6: Run the package with the race detector**
 
 ```bash
 go test -race ./map/monster/
@@ -645,7 +645,7 @@ go test -race ./map/monster/
 
 Expected: PASS, no race reports — this is the gate on the concurrency test.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add map/monster/registry.go map/monster/registry_test.go
@@ -671,7 +671,7 @@ Module root: `services/atlas-maps/atlas.com/maps`.
 - Consumes from Task 3: `ClaimOneTimeSpawnPoints`; from Task 2: `Count` (recurring), `CountOneTime`.
 - Produces: no new exported surface. `SpawnMonsters(transactionId uuid.UUID, f field.Model) error` signature unchanged.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `map/monster/processor_test.go`. Every case calls `registry.Reset(ctx)` first, as the existing tests do.
 
@@ -699,7 +699,7 @@ Assert:
 
 `TestSpawnMonsters_ZeroSpawnPointsLogsBothCounts` (FR-4.1) — no spawn points at all, 1 character. Use `test.NewNullLogger()` from `github.com/sirupsen/logrus/hooks/test` (already imported by `map/processor_test.go`; add the import here), set `logger.SetLevel(logrus.DebugLevel)`, and assert one entry in `hook.AllEntries()` has message `Field [<f.Id()>] has no spawn points: one-time [0] recurring [0].`. Assert `SpawnMonsters` returned `nil`.
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ```bash
 go test ./map/monster/ -run 'TestSpawnMonsters_OneTime|TestSpawnMonsters_Mixed|TestSpawnMonsters_Hidden|TestSpawnMonsters_RecurringOnly|TestSpawnMonsters_ZeroSpawnPoints' -v
@@ -707,7 +707,7 @@ go test ./map/monster/ -run 'TestSpawnMonsters_OneTime|TestSpawnMonsters_Mixed|T
 
 Expected: FAIL — the one-time subtests create 0 monsters, and the zero-point subtest finds no log entry.
 
-- [ ] **Step 3: Fire the batch and switch to the recurring denominator**
+- [x] **Step 3: Fire the batch and switch to the recurring denominator**
 
 In `map/monster/processor.go`, replace lines 99-121 (from `totalCount, err := registry.Count(...)` through the `toSpawn <= 0` return) with:
 
@@ -778,7 +778,7 @@ The `routine.Go` closure captures `sp` by value because `sp := csp.SpawnPoint` i
 
 Everything from `seed := time.Now().UnixNano() & 0x7fffffff` onward is unchanged.
 
-- [ ] **Step 4: Update the package doc comment**
+- [x] **Step 4: Update the package doc comment**
 
 The package comment at `map/monster/processor.go:1-18` and the `SpawnMonsters` doc comment at `:67-73` describe the old five-step flow. Update `SpawnMonsters`' comment to:
 
@@ -792,7 +792,7 @@ The package comment at `map/monster/processor.go:1-18` and the `SpawnMonsters` d
 //  5. Atomically reserve up to that many eligible recurring points and spawn them
 ```
 
-- [ ] **Step 5: Run the tests and verify they pass**
+- [x] **Step 5: Run the tests and verify they pass**
 
 ```bash
 go test ./map/monster/ -v
@@ -800,7 +800,7 @@ go test ./map/monster/ -v
 
 Expected: PASS, all new and pre-existing tests.
 
-- [ ] **Step 6: Build and vet**
+- [x] **Step 6: Build and vet**
 
 ```bash
 go build ./... && go vet ./...
@@ -808,7 +808,7 @@ go build ./... && go vet ./...
 
 Expected: exit 0.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add map/monster/processor.go map/monster/processor_test.go
@@ -842,7 +842,7 @@ Module root: `services/atlas-maps/atlas.com/maps`.
 
   Task 6 consumes `EnvCommandTopic` and `destroyFieldCommandProvider`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `map/producer_test.go`, package `_map`. This is the cross-service seam test CLAUDE.md's review gate requires: `verify.sh` cannot see envelope drift between two services, and the consumer's body is `struct{}`, so a silent field-name drift fails open with no error anywhere.
 
@@ -854,7 +854,7 @@ New file `map/producer_test.go`, package `_map`. This is the cross-service seam 
 - Assert the values: `worldId` = `1`, `channelId` = `2`, `mapId` = `920010920`, `instance` = `"11111111-2222-3333-4444-555555555555"`, `type` = `"DESTROY_FIELD"`, `body` = `{}`.
 - Assert `msgs[0].Key` equals `producer.CreateKey(int(f.MapId()))`.
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 ```bash
 go test ./map/ -run TestDestroyFieldCommandProvider -v
@@ -862,7 +862,7 @@ go test ./map/ -run TestDestroyFieldCommandProvider -v
 
 Expected: FAIL — `undefined: destroyFieldCommandProvider`.
 
-- [ ] **Step 3: Add the envelope to the maps-side kafka message package**
+- [x] **Step 3: Add the envelope to the maps-side kafka message package**
 
 In `kafka/message/monster/kafka.go`, extend the existing const blocks and append the types:
 
@@ -902,7 +902,7 @@ type DestroyFieldBody struct{}
 
 The file already imports `uuid`, `channel`, `_map`, `world` and `topic`; no import change is needed.
 
-- [ ] **Step 4: Add the provider**
+- [x] **Step 4: Add the provider**
 
 In `map/producer.go`, add the import `monsterKafka "atlas-maps/kafka/message/monster"` and append:
 
@@ -926,7 +926,7 @@ func destroyFieldCommandProvider(f field.Model) model.Provider[[]kafka.Message] 
 }
 ```
 
-- [ ] **Step 5: Run the test and verify it passes**
+- [x] **Step 5: Run the test and verify it passes**
 
 ```bash
 go test ./map/ -run TestDestroyFieldCommandProvider -v
@@ -934,7 +934,7 @@ go test ./map/ -run TestDestroyFieldCommandProvider -v
 
 Expected: PASS.
 
-- [ ] **Step 6: Build and vet**
+- [x] **Step 6: Build and vet**
 
 ```bash
 go build ./... && go vet ./...
@@ -942,7 +942,7 @@ go build ./... && go vet ./...
 
 Expected: exit 0. `destroyFieldCommandProvider` is referenced only by the test until Task 6; `go vet` does not flag an unused package-level function.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add kafka/message/monster/kafka.go map/producer.go map/producer_test.go
@@ -967,7 +967,7 @@ Module root: `services/atlas-maps/atlas.com/maps`.
 - Consumes from Task 3: `monster2.GetRegistry().RearmOneTime(ctx, character.MapKey) (bool, error)`; from Task 5: `monsterKafka.EnvCommandTopic`, `destroyFieldCommandProvider`.
 - Produces: no signature change. `Exit(mb *message.Buffer) func(uuid.UUID, field.Model, uint32) error`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `map/processor_test.go`. Each case builds the field's registry state directly via `monster2.GetRegistry()` before calling `Exit`, and reads the tenant out of `createTestContext()` so the `MapKey` matches (`te, _ := tenant.FromContext(ctx)`; add the import if absent).
 
@@ -990,7 +990,7 @@ For the first subtest, additionally unmarshal the single destroy message and ass
 
 `TestProcessorImpl_Exit_LogsRearm` (FR-4.3) — the fired-field case with `logger.SetLevel(logrus.DebugLevel)`; assert a hook entry with message `Re-armed one-time spawn points for field [<f.Id()>].`.
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 ```bash
 go test ./map/ -run 'TestProcessorImpl_Exit_Rearm|TestProcessorImpl_Exit_Logs' -v
@@ -998,7 +998,7 @@ go test ./map/ -run 'TestProcessorImpl_Exit_Rearm|TestProcessorImpl_Exit_Logs' -
 
 Expected: FAIL — no `DESTROY_FIELD` message is buffered and a post-`Exit` claim returns 0.
 
-- [ ] **Step 3: Add the field-empties block**
+- [x] **Step 3: Add the field-empties block**
 
 Replace `map/processor.go:105-110` with:
 
@@ -1048,7 +1048,7 @@ Add these imports to `map/processor.go`:
 
 **Rebase note (FR-3.2):** PR #1566 / task-278 adds a field-empties block at this exact site and is confirmed *not* in this branch's history (`git log --oneline main | grep task-278` → no match). If #1566 lands first, merge into a **single** `len(remaining) == 0` block carrying both bodies — never two adjacent emptiness checks.
 
-- [ ] **Step 4: Run the tests and verify they pass**
+- [x] **Step 4: Run the tests and verify they pass**
 
 ```bash
 go test ./map/ -v
@@ -1056,7 +1056,7 @@ go test ./map/ -v
 
 Expected: PASS, including the pre-existing `TestProcessorImpl_Exit`, `TestProcessorImpl_ExitAndEmit`, `TestProcessorImpl_TransitionMap`, `TestProcessorImpl_TransitionChannel` cases. Those use a `mockCharacterProcessor` whose `getCharactersInMapFunc` is nil and therefore returns `nil, nil` — an empty field — so they will now exercise the re-arm path against an unseeded field, which is a no-op returning `false` and emits nothing.
 
-- [ ] **Step 5: Run the module tests with the race detector**
+- [x] **Step 5: Run the module tests with the race detector**
 
 ```bash
 go test -race ./...
@@ -1064,7 +1064,7 @@ go test -race ./...
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add map/processor.go map/processor_test.go
@@ -1088,7 +1088,7 @@ Module root: `services/atlas-maps/atlas.com/maps`.
 - Consumes: nothing new.
 - Produces: `monster.Processor` shrinks to exactly two methods.
 
-- [ ] **Step 1: Confirm there are no remaining callers**
+- [x] **Step 1: Confirm there are no remaining callers**
 
 Run from the worktree root:
 
@@ -1098,7 +1098,7 @@ grep -rn "GetSpawnableSpawnPoints\|SpawnableSpawnPointProvider\|Spawnable(" serv
 
 Expected: hits only in `data/map/monster/processor.go`, `map/monster/processor_test.go`, and `services/atlas-maps/docs/domain.md` — the three files this task edits. If any other file appears, STOP and report: an earlier task left a caller behind.
 
-- [ ] **Step 2: Shrink the interface and delete the methods**
+- [x] **Step 2: Shrink the interface and delete the methods**
 
 `data/map/monster/processor.go` — the interface becomes:
 
@@ -1111,11 +1111,11 @@ type Processor interface {
 
 Delete `SpawnableSpawnPointProvider` (lines 46-48), `GetSpawnableSpawnPoints` (54-56) and `Spawnable` (58-60). A predicate named `Spawnable` that no longer means "spawnable" is a live trap for the next reader; `Classify` is the single classification authority now.
 
-- [ ] **Step 3: Shrink the mock**
+- [x] **Step 3: Shrink the mock**
 
 In `map/monster/processor_test.go`, delete `func (m *mockDataProcessor) SpawnableSpawnPointProvider(...)` and `func (m *mockDataProcessor) GetSpawnableSpawnPoints(...)`. `SpawnPointProvider` and `GetSpawnPoints` stay and already return the unfiltered `mockSpawnPoints` slice.
 
-- [ ] **Step 4: Update the service docs**
+- [x] **Step 4: Update the service docs**
 
 In `services/atlas-maps/docs/domain.md`, replace the two bullets at lines 350 and 352 with:
 
@@ -1126,7 +1126,7 @@ In `services/atlas-maps/docs/domain.md`, replace the two bullets at lines 350 an
 
 Keep the surrounding bullets and the `SpawnPointProvider` line as-is.
 
-- [ ] **Step 5: Build, vet and test the whole module**
+- [x] **Step 5: Build, vet and test the whole module**
 
 ```bash
 go build ./... && go vet ./... && go test ./...
@@ -1134,7 +1134,7 @@ go build ./... && go vet ./... && go test ./...
 
 Expected: exit 0, all packages PASS. A compile error here means a caller was missed in Step 1.
 
-- [ ] **Step 6: Run the repo verification gate**
+- [x] **Step 6: Run the repo verification gate**
 
 From the worktree root:
 
@@ -1144,7 +1144,7 @@ tools/verify.sh
 
 Expected: exit 0, flagless. `--quick` / `--no-docker` do not count.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/data/map/monster/processor.go \

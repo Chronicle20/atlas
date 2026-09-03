@@ -281,6 +281,8 @@ data:
         cleanup: delete
       - token: EVENT_TOPIC_NPC_SHOP_STATUS
         cleanup: delete
+      - token: EVENT_TOPIC_NPC_STATUS
+        cleanup: delete
       - token: EVENT_TOPIC_PARCEL_CUSTODY_STATUS
         cleanup: delete
       - token: EVENT_TOPIC_PARCEL_STATUS

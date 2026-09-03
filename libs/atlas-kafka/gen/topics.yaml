@@ -843,6 +843,11 @@ topics:
       - atlas-channel/kafka/message/npc/shop
       - atlas-npc/kafka/message/shops
       - atlas-saga-orchestrator/kafka/message/npcshop
+  - token: EVENT_TOPIC_NPC_STATUS
+    cleanup: delete
+    packages:
+      - atlas-channel/kafka/message/npc
+      - atlas-maps/kafka/message/npc
   - token: EVENT_TOPIC_PARCEL_CUSTODY_STATUS
     cleanup: delete
     packages:

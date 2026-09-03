@@ -1,6 +1,7 @@
 package npc
 
 import (
+	npcKafka "atlas-maps/kafka/message/npc"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -50,7 +51,10 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	m := NewModel(f, getRegistry().NextId(), input.NpcId, input.X, input.Y, input.Fh)
 	getRegistry().Add(key, m)
 
-	p.l.Debugf("Created npc [%d] with id [%d] in field [%s].", input.NpcId, m.UniqueId(), f.Id())
+	p.l.Debugf("Created npc [%d] with id [%d] in field [%s]. Emitting NPC Status.", input.NpcId, m.UniqueId(), f.Id())
+	if err := emit(p.l, p.ctx, npcKafka.EnvEventTopicNpcStatus, CreatedEventProvider(f, m)); err != nil {
+		p.l.WithError(err).Errorf("Unable to emit npc created event for npc [%d] in field [%s].", m.UniqueId(), f.Id())
+	}
 	return m, nil
 }
 

@@ -191,3 +191,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-03T22:07:55Z	agent	seam shard 1	task-reviewer	sonnet	-	-	-	-	DONE	d058fd34a	APPROVED_WITH_FINDINGS	yes	-	-
 2026-09-03T22:08:26Z	agent	seam shard 2	task-reviewer	sonnet	-	-	-	-	DONE	d058fd34a	APPROVED_WITH_FINDINGS	yes	-	-
 2026-09-03T22:09:28Z	agent	seam shard 2	task-reviewer	sonnet	-	-	-	-	DONE	d058fd34a	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-03T22:14:10Z	agent	FIX-SEAM1	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	8f7607901	-	-	-	-
+2026-09-03T22:43:19Z	agent	flagless gate (final)	verify.sh	-	-	-	-	-	PASS	42b526bd4	-	-	-	-

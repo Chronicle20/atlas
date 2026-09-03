@@ -53,6 +53,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -2487,19 +2488,50 @@ func (h *HandlerImpl) handleForfeitQuest(s Saga, st Step[any]) error {
 	return nil
 }
 
-// handleExplorerQuest handles the ExplorerQuest action (task-290 G14),
+// handleExplorerQuest handles the ExplorerQuest action (task-290 G14/C22b),
 // mirroring Cosmic's MapScriptMethods.explorerQuest: force-start the quest,
-// then synchronously record the current map on atlas-quest's medal-map set.
+// synchronously record the current map on atlas-quest's medal-map set, and
+// -- when the map was newly recorded -- write the resulting visited-map
+// count as quest progress under the quest's infoNumber, exactly as
+// handleSetQuestProgress does.
 func (h *HandlerImpl) handleExplorerQuest(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(ExplorerQuestPayload)
 	if !ok {
 		return errors.New("invalid payload")
 	}
 
-	err := h.questP.RequestExplorerQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, uint32(payload.MapId))
+	result, err := h.questP.RequestExplorerQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, uint32(payload.MapId))
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to credit explorer quest.")
 		return err
+	}
+
+	// Cosmic returns early on a duplicate map
+	// (`if (!qs.addMedalMap(...)) return;`, MapScriptMethods.java:116-118)
+	// and never writes progress in that case.
+	if !result.NewlyRecorded {
+		return nil
+	}
+
+	progress := strconv.Itoa(int(result.Count))
+	if err := h.questP.RequestUpdateProgress(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, result.InfoNumber, progress); err != nil {
+		h.logActionError(s, st, err, "Unable to write explorer quest progress.")
+		return err
+	}
+
+	// Cosmic's explorerQuest then compares the visited count against the
+	// quest's infoEx(0) threshold to choose between
+	// getShowQuestCompletion(questId) and
+	// earnTitleMessage("<n>/<m> regions explored.") (MapScriptMethods.java:
+	// 128-136). Both are client packets with no existing writer/action in
+	// this service, so sending them is out of scope here (see
+	// ExplorerQuestResult's doc comment); the comparison is logged instead.
+	if result.Threshold > 0 {
+		if int(result.Count) >= result.Threshold {
+			h.l.Infof("Character [%d] met explorer quest [%d] threshold: [%d]/[%d] regions explored.", payload.CharacterId, payload.QuestId, result.Count, result.Threshold)
+		} else {
+			h.l.Debugf("Character [%d] progressed explorer quest [%d]: [%d]/[%d] regions explored.", payload.CharacterId, payload.QuestId, result.Count, result.Threshold)
+		}
 	}
 
 	return nil

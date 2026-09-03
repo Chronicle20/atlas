@@ -20,12 +20,17 @@ func (r *medalMapPostRestModel) SetID(id string) error {
 	return nil
 }
 
-// medalMapRestModel is atlas-quest's medal-map record response. It carries
-// only the resulting distinct-map count -- see medal_map.Processor's doc
-// comment in atlas-quest for why no threshold/completed field exists.
+// medalMapRestModel is atlas-quest's medal-map record response. Count is the
+// resulting distinct-map count; NewlyRecorded is Cosmic's
+// `qs.addMedalMap(...)` dedup result (MapScriptMethods.java:104-139:
+// `if (!qs.addMedalMap(...)) return;`) -- RequestExplorerQuest uses it to
+// gate the progress write that follows a record. No threshold/completed
+// field exists here -- see atlas-quest's medal_map.Processor doc comment for
+// the infoEx(0) comparison, which is derived from atlas-data separately.
 type medalMapRestModel struct {
-	Id    string `json:"-"`
-	Count uint32 `json:"count"`
+	Id            string `json:"-"`
+	Count         uint32 `json:"count"`
+	NewlyRecorded bool   `json:"newlyRecorded"`
 }
 
 func (r medalMapRestModel) GetName() string {

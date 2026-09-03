@@ -9,6 +9,7 @@ import (
 	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	notemock "atlas-saga-orchestrator/note/mock"
 	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
+	questp "atlas-saga-orchestrator/quest"
 	questmock "atlas-saga-orchestrator/quest/mock"
 	systemMessageMock "atlas-saga-orchestrator/system_message/mock"
 	"atlas-saga-orchestrator/validation"
@@ -1901,12 +1902,114 @@ func TestHandleExplorerQuest_Routing(t *testing.T) {
 
 	var calls []string
 	questP := &questmock.ProcessorMock{
-		RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) error {
+		RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
 			calls = append(calls, "explorer")
 			assert.Equal(t, world.Id(1), worldId)
 			assert.Equal(t, uint32(12345), characterId)
 			assert.Equal(t, uint32(29700), questId)
 			assert.Equal(t, uint32(101000000), mapId)
+			return questp.ExplorerQuestResult{}, nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("test").
+		Build()
+	require.NoError(t, err)
+
+	step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+		CharacterId: 12345,
+		WorldId:     1,
+		ChannelId:   0,
+		QuestId:     29700,
+		MapId:       _map.Id(101000000),
+		AreaName:    "Ellinia",
+	})
+
+	h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+
+	actionHandler, ok := h.GetHandler(ExplorerQuest)
+	require.True(t, ok, "ExplorerQuest handler not registered")
+
+	err = actionHandler(s, step)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"explorer"}, calls)
+}
+
+// TestHandleExplorerQuest_WritesProgressWhenNewlyRecorded verifies that when
+// RequestExplorerQuest reports the medal map was newly recorded, the handler
+// writes the resulting count as quest progress under the resolved
+// infoNumber (task-290 C22b, mirroring Cosmic's
+// `getPlayer().setQuestProgress(quest.getId(), (int)quest.getInfoNumber(qs.getStatus()), status)`,
+// MapScriptMethods.java:124).
+func TestHandleExplorerQuest_WritesProgressWhenNewlyRecorded(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	var calls []string
+	questP := &questmock.ProcessorMock{
+		RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
+			calls = append(calls, "explorer")
+			return questp.ExplorerQuestResult{Count: 3, NewlyRecorded: true, InfoNumber: 10024, Threshold: 5}, nil
+		},
+		RequestUpdateProgressFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error {
+			calls = append(calls, "progress")
+			assert.Equal(t, world.Id(1), worldId)
+			assert.Equal(t, uint32(12345), characterId)
+			assert.Equal(t, uint32(29700), questId)
+			assert.Equal(t, uint32(10024), infoNumber)
+			assert.Equal(t, "3", progress)
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("test").
+		Build()
+	require.NoError(t, err)
+
+	step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+		CharacterId: 12345,
+		WorldId:     1,
+		ChannelId:   0,
+		QuestId:     29700,
+		MapId:       _map.Id(101000000),
+		AreaName:    "Ellinia",
+	})
+
+	h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+
+	actionHandler, ok := h.GetHandler(ExplorerQuest)
+	require.True(t, ok, "ExplorerQuest handler not registered")
+
+	err = actionHandler(s, step)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"explorer", "progress"}, calls)
+}
+
+// TestHandleExplorerQuest_SkipsProgressWhenNotNewlyRecorded verifies that
+// re-entering an already-recorded map (RequestExplorerQuest reports
+// NewlyRecorded=false) does not write quest progress, mirroring Cosmic's
+// `if (!qs.addMedalMap(...)) return;` early return (MapScriptMethods.java:
+// 116-118).
+func TestHandleExplorerQuest_SkipsProgressWhenNotNewlyRecorded(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	var calls []string
+	questP := &questmock.ProcessorMock{
+		RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
+			calls = append(calls, "explorer")
+			return questp.ExplorerQuestResult{Count: 3, NewlyRecorded: false}, nil
+		},
+		RequestUpdateProgressFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error {
+			calls = append(calls, "progress")
 			return nil
 		},
 	}

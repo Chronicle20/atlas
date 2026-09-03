@@ -20,14 +20,17 @@ func (r *PostRestModel) SetID(id string) error {
 	return nil
 }
 
-// RestModel is the medal-map record response. It reports only the resulting
-// distinct-map count -- no threshold or completed flag, because atlas-data
-// does not serve the quest's infoEx(0) threshold Cosmic compares against
-// (see Processor's doc comment). A caller wanting completion semantics must
-// derive them from a data source this task did not find.
+// RestModel is the medal-map record response. Count is the resulting
+// distinct-map count; NewlyRecorded is Cosmic's `qs.addMedalMap(...)` dedup
+// result -- callers use it to gate the quest-progress write that follows a
+// record (task-290 C22b/G14: Cosmic's explorerQuest returns early on a
+// duplicate map and never writes progress). No threshold/completed field
+// exists here -- see Processor's doc comment for the infoEx(0) comparison,
+// which callers derive themselves from atlas-data.
 type RestModel struct {
-	Id    string `json:"-"`
-	Count uint32 `json:"count"`
+	Id            string `json:"-"`
+	Count         uint32 `json:"count"`
+	NewlyRecorded bool   `json:"newlyRecorded"`
 }
 
 func (r RestModel) GetName() string {
@@ -45,6 +48,7 @@ func (r *RestModel) SetID(id string) error {
 
 func Transform(result RecordResult) (RestModel, error) {
 	return RestModel{
-		Count: result.Count,
+		Count:         result.Count,
+		NewlyRecorded: result.NewlyRecorded,
 	}, nil
 }

@@ -15,7 +15,7 @@ type ProcessorMock struct {
 	RequestCompleteQuestFunc  func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, npcId uint32, selection int32, force bool, rewards []quest.ItemReward) error
 	RequestForfeitQuestFunc   func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32) error
 	RequestUpdateProgressFunc func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error
-	RequestExplorerQuestFunc  func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) error
+	RequestExplorerQuestFunc  func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error)
 }
 
 var _ questp.Processor = (*ProcessorMock)(nil)
@@ -48,9 +48,9 @@ func (m *ProcessorMock) RequestUpdateProgress(transactionId uuid.UUID, worldId w
 	return nil
 }
 
-func (m *ProcessorMock) RequestExplorerQuest(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) error {
+func (m *ProcessorMock) RequestExplorerQuest(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
 	if m.RequestExplorerQuestFunc != nil {
 		return m.RequestExplorerQuestFunc(transactionId, worldId, characterId, questId, mapId)
 	}
-	return nil
+	return questp.ExplorerQuestResult{}, nil
 }

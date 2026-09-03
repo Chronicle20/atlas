@@ -1,0 +1,208 @@
+{
+  "service": "task-290-cosmic-map-action-parity (shard 1 of 2)",
+  "path": "services/atlas-saga-orchestrator, libs/atlas-saga, services/atlas-quest, services/atlas-character",
+  "date": "2026-09-03",
+  "range": "3f37fe6da..9c2b9be13",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "area_info (atlas-character)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go / validating Build()", "status": "fail", "evidence": "area_info/builder.go:38-44 Build() has no invariant validation"},
+        {"id": "DOM-02", "name": "entity.go ToEntity()", "status": "fail", "evidence": "no ToEntity() in area_info/entity.go"},
+        {"id": "DOM-03", "name": "entity.go Make(Entity)(Model,error)", "status": "fail", "evidence": "no Make() in area_info/entity.go; provider.go has modelFromEntity instead"},
+        {"id": "DOM-04", "name": "rest.go Transform", "status": "pass", "evidence": "area_info/rest.go:15"},
+        {"id": "DOM-05", "name": "rest.go TransformSlice", "status": "pass", "evidence": "area_info/rest.go:32, resource.go:57"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "area_info/processor.go:20"},
+        {"id": "DOM-07", "name": "Handler passes d.Logger()", "status": "pass", "evidence": "area_info/resource.go:51,75,110"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "n-a", "evidence": "no POST/PATCH route in this package (GET/GET/PUT only)"},
+        {"id": "DOM-09", "name": "Transform error-checked", "status": "pass", "evidence": "resource.go:57,60,85,88,116,119"},
+        {"id": "DOM-11", "name": "provider.go lazy readers", "status": "n-a", "evidence": "provider.go has only a mapper, no query function"},
+        {"id": "DOM-12", "name": "no os.Getenv in handlers", "status": "pass", "evidence": "grep empty"},
+        {"id": "DOM-13", "name": "no cross-domain orchestration", "status": "pass", "evidence": "each handler calls one Processor method"},
+        {"id": "DOM-14", "name": "handlers call processor not provider", "status": "pass", "evidence": "resource.go"},
+        {"id": "DOM-15", "name": "no db writes in handlers", "status": "pass", "evidence": "resource.go"},
+        {"id": "DOM-16", "name": "administrator.go holds writes", "status": "pass", "evidence": "area_info/administrator.go:8"},
+        {"id": "DOM-17", "name": "domain errors mapped to status", "status": "pass", "evidence": "resource.go:77-80"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "rest.go:8,13,17,54,58,62"},
+        {"id": "DOM-19", "name": "request models flat", "status": "pass", "evidence": "PutRestModel rest.go:52-56"},
+        {"id": "DOM-27", "name": "WriteErrorResponse for 500s", "status": "pass", "evidence": "resource.go:53,60,81,88,112,119; main.go:89"},
+        {"id": "DOM-31", "name": "tenant/trace only in context", "status": "pass", "evidence": "no tenant field on RestModel"},
+        {"id": "DOM-32", "name": "routes via server wrapper", "status": "pass", "evidence": "resource.go:21,25; rest/handler.go:68-95"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "area_info/processor.go"},
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "pass", "evidence": "area_info/rest.go"},
+        {"id": "FILE-03", "name": "cross-service requests in requests.go", "status": "n-a", "evidence": "package makes no external calls"},
+        {"id": "FILE-04", "name": "entity/Migration/TableName in entity.go", "status": "pass", "evidence": "area_info/entity.go:9,16,21"},
+        {"id": "FILE-05", "name": "readers/writers correctly placed", "status": "fail", "evidence": "administrator.go:19,28 readers misplaced, belong in provider.go; cf. pending_change/provider.go:39ff"},
+        {"id": "FILE-06", "name": "no catch-all file", "status": "pass", "evidence": "single-responsibility files"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "fail", "evidence": "area_info/processor_test.go: 4/4 funcs standalone"},
+        {"id": "DOM-24", "name": "producer stub for emit-reaching tests", "status": "n-a", "evidence": "package never emits Kafka"}
+      ]
+    },
+    {
+      "name": "medal_map (atlas-quest)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go / validating Build()", "status": "fail", "evidence": "medal_map/builder.go:38-44 Build() has no invariant validation"},
+        {"id": "DOM-02", "name": "entity.go ToEntity()", "status": "fail", "evidence": "no ToEntity() in medal_map/entity.go"},
+        {"id": "DOM-03", "name": "entity.go Make(Entity)(Model,error)", "status": "fail", "evidence": "no Make() in medal_map/entity.go; cf. quest/entity.go:33 which has it"},
+        {"id": "DOM-04", "name": "rest.go Transform", "status": "pass", "evidence": "medal_map/rest.go:47"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "medal_map/processor.go:23"},
+        {"id": "DOM-07", "name": "Handler passes d.Logger()", "status": "pass", "evidence": "medal_map/resource.go:18"},
+        {"id": "DOM-08", "name": "POST via RegisterInputHandler[T]", "status": "pass", "evidence": "medal_map/resource.go:18"},
+        {"id": "DOM-09", "name": "Transform error-checked", "status": "pass", "evidence": "resource.go"},
+        {"id": "DOM-11", "name": "provider.go lazy readers", "status": "n-a", "evidence": "no provider.go exists"},
+        {"id": "DOM-16", "name": "administrator.go holds writes", "status": "pass", "evidence": "medal_map/administrator.go:14"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "rest.go:5,26"},
+        {"id": "DOM-19", "name": "request models flat", "status": "pass", "evidence": "rest.go"},
+        {"id": "DOM-27", "name": "WriteErrorResponse for 500s", "status": "pass", "evidence": "resource.go; main.go:67"},
+        {"id": "DOM-31", "name": "tenant/trace only in context", "status": "pass", "evidence": "no tenant field on RestModel"},
+        {"id": "DOM-32", "name": "routes via server wrapper", "status": "pass", "evidence": "rest/handler.go:68-95"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "medal_map/processor.go"},
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "pass", "evidence": "medal_map/rest.go"},
+        {"id": "FILE-04", "name": "entity/Migration/TableName in entity.go", "status": "pass", "evidence": "medal_map/entity.go"},
+        {"id": "FILE-05", "name": "readers/writers correctly placed", "status": "fail", "evidence": "administrator.go:27 countByCharacterAndQuest is a reader misplaced in administrator.go, no provider.go exists; cf. quest/provider.go:11ff"},
+        {"id": "FILE-06", "name": "no catch-all file", "status": "pass", "evidence": "single-responsibility files"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "fail", "evidence": "medal_map/processor_test.go: 4/4 funcs standalone"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/area_info",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "area_info/processor.go:9-14,26"},
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "pass", "evidence": "area_info/rest.go"},
+        {"id": "FILE-03", "name": "requests in requests.go", "status": "pass", "evidence": "area_info/requests.go:17,30"},
+        {"id": "FILE-06", "name": "no catch-all file", "status": "pass", "evidence": "3 single-responsibility files"},
+        {"id": "DOM-33", "name": "interface change updates every mock", "status": "pass", "evidence": "area_info/mock/processor.go:8-19"},
+        {"id": "EXT-01", "name": "target model relationship stubs", "status": "fail", "evidence": "area_info/rest.go RestModel has no SetToOneReferenceID/SetToManyReferenceIDs"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no _test.go file in package"},
+        {"id": "EXT-03", "name": "only genuine 404 -> not-found", "status": "pass", "evidence": "area_info/processor.go:28-31"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "area_info/requests.go:15"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/quest",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "quest/processor.go"},
+        {"id": "FILE-02", "name": "RestModel in rest.go-suffixed files", "status": "pass", "evidence": "medal_map_rest.go, quest_data_rest.go"},
+        {"id": "FILE-03", "name": "requests in requests.go-suffixed files", "status": "pass", "evidence": "medal_map_requests.go, quest_data_requests.go"},
+        {"id": "DOM-33", "name": "interface change updates every mock", "status": "pass", "evidence": "quest/mock/processor_mock.go new file, full Processor coverage"},
+        {"id": "EXT-01", "name": "target model relationship stubs", "status": "fail", "evidence": "medalMapRestModel and questDataRestModel both missing SetToOneReferenceID/SetToManyReferenceIDs"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no _test.go at top level of quest package; RequestExplorerQuest untested"},
+        {"id": "EXT-03", "name": "only genuine 404 -> not-found", "status": "pass", "evidence": "processor.go RequestExplorerQuest"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "medal_map_requests.go:16, quest_data_requests.go:15"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/npc_spawn",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor/RestModel/requests split", "status": "pass", "evidence": "processor.go, rest.go, requests.go each own responsibility"},
+        {"id": "EXT-01", "name": "target model relationship stubs", "status": "fail", "evidence": "npc_spawn/rest.go:32-53 SpawnResponseRestModel missing SetToOneReferenceID/SetToManyReferenceIDs; sibling monster/rest.go got fixed in same diff"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no _test.go file in package"},
+        {"id": "EXT-03", "name": "only genuine 404 -> not-found", "status": "pass", "evidence": "processor.go:29-32"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "requests.go:11"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/drops",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor/requests split", "status": "pass", "evidence": "processor.go, requests.go"},
+        {"id": "EXT-01", "name": "target model relationship stubs", "status": "n-a", "evidence": "bodyless DELETE, no response to decode"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "pass", "evidence": "drops_test.go:24,61 httptest.NewServer"},
+        {"id": "EXT-03", "name": "only genuine failure handling", "status": "pass", "evidence": "drops_test.go:61-80"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "requests.go:15"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "fail", "evidence": "drops_test.go: 2/2 funcs standalone"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/field",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "field/processor.go:14-19,26,34"},
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "fail", "evidence": "field/processor.go:44-58 ResetFieldInputRestModel defined in processor.go, no rest.go exists"},
+        {"id": "FILE-03", "name": "requests in requests.go", "status": "fail", "evidence": "field/processor.go:36-39,60-67 getBaseRequest/requestResetField in processor.go, no requests.go exists"},
+        {"id": "FILE-06", "name": "no catch-all file", "status": "fail", "evidence": "field/processor.go collapses Processor+RestModel+requests (task-102 pattern)"},
+        {"id": "EXT-01", "name": "target model relationship stubs", "status": "n-a", "evidence": "response type struct{}, no fields to decode; MakePostRequest skips unmarshal when contentLength==0"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no _test.go file in package"},
+        {"id": "EXT-03", "name": "only genuine 404 -> not-found", "status": "pass", "evidence": "field/processor.go:26-29"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "field/processor.go:38"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/reactor",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "fail", "evidence": "processor.go:199-217 ResetReactorsInputRestModel/ShuffleReactorsInputRestModel added to already-collapsed file"},
+        {"id": "FILE-03", "name": "requests in requests.go", "status": "fail", "evidence": "processor.go:229-243 requestResetReactors/requestShuffleReactors added to already-collapsed file"},
+        {"id": "FILE-06", "name": "no catch-all file", "status": "fail", "evidence": "processor.go is package's only file, pre-existing collapse extended by this diff"},
+        {"id": "EXT-01", "name": "target model relationship stubs", "status": "n-a", "evidence": "response type struct{}, no fields to decode"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no _test.go file in package; ResetReactors/ShuffleReactors untested"},
+        {"id": "EXT-03", "name": "only genuine 404 -> not-found", "status": "pass", "evidence": "processor.go:93,102"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "getReactorsBaseRequest processor.go:185"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/character,skill,monster,system_message",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-33", "name": "interface change updates every mock", "status": "pass", "evidence": "character/mock/processor.go, system_message/mock/processor.go both updated"},
+        {"id": "DOM-30", "name": "AndEmit + message.Buffer for DB-coupled writes", "status": "pass", "evidence": "character/processor.go:108-112 message.Emit; system_message/processor.go:117-129 no DB write on path, matches siblings"},
+        {"id": "EXT-01", "name": "monster REST model relationship stubs (prior-audit fix)", "status": "pass", "evidence": "monster/rest.go:63-67 SetToOneReferenceID/SetToManyReferenceIDs added, closes prior shard's blocking finding"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/saga (handler.go, model.go, event_acceptance.go)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-31", "name": "tenant/trace only in context", "status": "pass", "evidence": "new payload types carry WorldId/ChannelId/domain fields only"},
+        {"id": "DOM-33", "name": "interface change updates every mock", "status": "pass", "evidence": "HandlerImpl implements 4 new Handler methods, no separate Handler mock exists"},
+        {"id": "NO-ID-1", "name": "Handler struct-copy bug in 3 new injectors", "status": "fail", "evidence": "handler.go:887-916 WithNpcSpawnProcessor/WithDropsProcessor/WithFieldProcessor drop every field except a few, contradicting WithAreaInfoProcessor's own doc comment 2 methods above"},
+        {"id": "NO-ID-2", "name": "allActions exhaustiveness list stale for 9/10 new Actions", "status": "fail", "evidence": "event_acceptance_test.go:14-64 allActions only gained ClearSkill, missing WarpToMap/ExplorerQuest/SpawnNpc/ClearDrops/ResetReactors/ShuffleReactors/ResetField/PlaySound/ChangeMusic/BoatEffect"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "fail", "evidence": "handler_test.go: TestHandleUpdateAreaInfo(:1841), TestHandleExplorerQuest_Routing(:1899), TestHandleExplorerQuest_WritesProgressWhenNewlyRecorded(:1948), TestHandleExplorerQuest_SkipsProgressWhenNotNewlyRecorded(:2001) all standalone"},
+        {"id": "DOM-24", "name": "producer stub for emit-reaching tests", "status": "pass", "evidence": "handler_test.go new tests inject ProcessorMocks throughout"}
+      ]
+    },
+    {
+      "name": "libs/atlas-saga",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-19", "name": "payload structs flat", "status": "pass", "evidence": "11 new payload types in payloads.go, all flat"},
+        {"id": "DOM-21", "name": "no redeclared constant/type", "status": "pass", "evidence": "new Action/condition constants in existing typed-const blocks"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "fail", "evidence": "unmarshal_test.go (new, 395 lines): 52/53 funcs standalone; payloads_test.go was rewritten table-driven in this diff, closing prior audit finding"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "RequestExplorerQuest InfoEx[0] strconv.Atoi wire-format assumption: would require reading atlas-data's quest REST model, outside this shard's scope",
+    "Whether any caller outside this shard's four modules chains WithNpcSpawnProcessor/WithDropsProcessor/WithFieldProcessor or the new character/system_message processor methods in a way that triggers the struct-copy bug: only checked within scope, no repo-wide grep performed",
+    "Whether atlas-saga-orchestrator/reactor's pre-existing FILE-02/03/06 collapse was already flagged by an earlier audit: the prior shard's audit did not cover this package, so this is reported fresh"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-character/atlas.com/character/area_info/builder.go:38-44 - Build() has no invariant validation",
+    "DOM-01: services/atlas-quest/atlas.com/quest/medal_map/builder.go:38-44 - same",
+    "DOM-02/DOM-03: services/atlas-character/atlas.com/character/area_info/entity.go - no ToEntity()/Make()",
+    "DOM-02/DOM-03: services/atlas-quest/atlas.com/quest/medal_map/entity.go - same",
+    "FILE-05: services/atlas-character/atlas.com/character/area_info/administrator.go:19,28 - readers misplaced, belong in provider.go",
+    "FILE-05: services/atlas-quest/atlas.com/quest/medal_map/administrator.go:27 - reader misplaced, no provider.go exists",
+    "FILE-02/FILE-03/FILE-06: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/field/processor.go - Processor+RestModel+requests collapsed into one file",
+    "FILE-02/FILE-03/FILE-06: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/reactor/processor.go:199-243 - diff adds more content to an already-collapsed file",
+    "EXT-01: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/area_info/rest.go - RestModel missing relationship stubs",
+    "EXT-01: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/quest/medal_map_rest.go and quest_data_rest.go - both target models missing relationship stubs",
+    "EXT-01: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/npc_spawn/rest.go:32-53 - SpawnResponseRestModel missing relationship stubs",
+    "EXT-02: no test file in saga-orchestrator/area_info, saga-orchestrator/quest (top level), saga-orchestrator/field, saga-orchestrator/npc_spawn, saga-orchestrator/reactor",
+    "NO-ID-1: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/handler.go:887-916 - WithNpcSpawnProcessor/WithDropsProcessor/WithFieldProcessor drop every Handler field except a few, unexercised by any test",
+    "NO-ID-2: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/event_acceptance_test.go:14-64 - allActions exhaustiveness list missing 9 of 10 new Actions",
+    "DOM-20: not table-driven across area_info/processor_test.go, medal_map/processor_test.go, drops/drops_test.go, saga/handler_test.go (4 new funcs), libs/atlas-saga/unmarshal_test.go (52/53)"
+  ],
+  "nonBlocking": [
+    "Zero test coverage for 10 of 12 new saga handler methods (handleWarpToMap, handleClearSkill, handleSpawnNpc, handleClearDrops, handleResetReactors, handleShuffleReactors, handleResetField, handlePlaySound, handleChangeMusic, handleBoatEffect)"
+  ]
+}

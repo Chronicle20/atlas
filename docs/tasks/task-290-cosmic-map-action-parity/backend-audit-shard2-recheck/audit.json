@@ -1,0 +1,36 @@
+{
+  "service": "task-290-cosmic-map-action-parity-shard2-recheck",
+  "path": "services/atlas-maps, services/atlas-channel, services/atlas-query-aggregator, services/atlas-map-actions, services/atlas-reactors, services/atlas-drops, services/atlas-data, services/atlas-configurations, services/atlas-monsters, libs/atlas-script-core, tools/catalog-lint, tools/gen-map-action-schema",
+  "date": "2026-09-03",
+  "priorAuditRange": "3f37fe6da..9c2b9be13",
+  "recheckRange": "9c2b9be13..ffba7aded",
+  "recheckHead": "ffba7aded9d82b0bd780605d46a3846038433436",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "rechecked": [
+    {"id": "DOM-01", "priorFile": "services/atlas-maps/atlas.com/maps/map/npc/", "verdict": "closed", "evidence": "services/atlas-maps/atlas.com/maps/map/npc/builder.go:1-38 (commit d26497798) adds ModelBuilder with NewModelBuilder()/Build()"},
+    {"id": "DOM-05", "priorFile": "services/atlas-maps/atlas.com/maps/map/npc/resource.go:48", "verdict": "closed", "evidence": "map/npc/rest.go:36-46 adds TransformSlice; resource.go:48 now calls TransformSlice(ns)"},
+    {"id": "DOM-27", "priorFile": "services/atlas-maps/atlas.com/maps/map/npc/resource.go:44,88", "verdict": "closed", "evidence": "resource.go:44,88 now call server.WriteErrorResponse(d.Logger())(w)(err)"},
+    {"id": "FILE-03", "priorFile": "services/atlas-maps/atlas.com/maps/monster/processor.go:79-84", "verdict": "closed", "evidence": "monster/processor.go:79-82 DeleteInMap now calls inMapUrl(p.ctx, f) from requests.go:26-37; fmt import removed"},
+    {"id": "DOM-08", "priorFile": "services/atlas-reactors/atlas.com/reactors/reactor/resource.go:33", "verdict": "closed", "evidence": "resource.go:33 uses rest.RegisterInputHandler[ShuffleInputRestModel]; rest.go:68-84 adds the typed model with full JSON:API triad; caller atlas-saga-orchestrator/reactor/requests.go:41-48 already posts a JSON:API-shaped ShuffleReactorsInputRestModel{} via requests.PostRequest, which jsonapi.Marshal's correctly and round-trips through server-side jsonapi.Unmarshal in libs/atlas-rest/server/context.go:56 -- caller-safe, no caller change needed"},
+    {"id": "DOM-33", "priorFile": "services/atlas-drops/atlas.com/drops/drop/mock/processor.go", "verdict": "closed", "evidence": "mock/processor.go:30 adds ClearForFieldFunc field; :156-161 adds ClearForField method matching drop.Processor.ClearForField(f field.Model) (int, error) at processor.go:62"},
+    {"id": "DOM-04/EXT-01", "priorFile": "services/atlas-query-aggregator/atlas.com/query-aggregator/area_info/rest.go", "verdict": "closed", "evidence": "rest.go:58-65 adds Transform(Model)(RestModel,error); rest.go:43-56 adds SetToOneReferenceID/SetToManyReferenceIDs plus full jsonapi reference set"},
+    {"id": "DOM-20", "priorFile": "services/atlas-maps/atlas.com/maps/map/npc/processor_test.go", "verdict": "closed-syntactically", "evidence": "all 6 funcs now wrap tests := []struct{name string}{...} + t.Run; each table has exactly one entry (cosmetic wrapper, non-blocking caveat)"},
+    {"id": "DOM-20", "priorFile": "services/atlas-maps/atlas.com/maps/map/npc/registry_test.go", "verdict": "closed-syntactically", "evidence": "all 4 funcs table-wrapped, single-entry tables (cosmetic wrapper, non-blocking caveat)"},
+    {"id": "DOM-20", "priorFile": "services/atlas-maps/atlas.com/maps/map/monster/processor_test.go", "verdict": "closed", "evidence": "TestResetFieldRestoresSpawnPointsAndClearsMonsters:1166, TestResetFieldIsFieldScoped:1232, TestResetFieldOnUnknownMapErrors:1303 all table-wrapped"},
+    {"id": "DOM-20", "priorFile": "services/atlas-drops/atlas.com/drops/drop/processor_test.go", "verdict": "closed", "evidence": "processor_test.go:1009-1157 TestClearForField merges the 4 prior standalone funcs into one genuine 4-case table (distinct name+run per case)"},
+    {"id": "DOM-20", "priorFile": "services/atlas-reactors/atlas.com/reactors/reactor/processor_test.go", "verdict": "closed-syntactically", "evidence": "TestResetInFieldResetsEveryReactor:629, TestResetInFieldHonorsMinState:668, TestResetInFieldIsFieldScoped:716, TestShuffleInFieldPermutesPositionsOnly:760, TestShuffleInFieldWithOneReactorIsANoOp all table-wrapped, single-entry tables (cosmetic wrapper, non-blocking caveat)"},
+    {"id": "DOM-20", "priorFile": "services/atlas-map-actions/atlas.com/map-actions/script/executor_test.go", "verdict": "closed", "evidence": "awk sweep of every func Test...{...} block for tests? *:?= *[]struct: zero MISS across all previously-flagged and newly-named functions; go test ./script/... -count=1 passes"}
+  ],
+  "newViolations": [],
+  "notEvaluable": [],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-20: services/atlas-maps/atlas.com/maps/map/npc/processor_test.go - 6 functions use single-entry tables (syntactically compliant, not genuinely data-driven)",
+    "DOM-20: services/atlas-maps/atlas.com/maps/map/npc/registry_test.go - 4 functions use single-entry tables",
+    "DOM-20: services/atlas-reactors/atlas.com/reactors/reactor/processor_test.go - 5 functions (ResetInField/ShuffleInField group) use single-entry tables",
+    "DOM-17 (WARN, carried forward unchanged): services/atlas-maps/atlas.com/maps/map/npc/resource.go:70 maps every p.Create error to 400 regardless of cause"
+  ]
+}

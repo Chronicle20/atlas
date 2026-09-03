@@ -96,3 +96,94 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-02T21:17:15Z	agent	Task C8	task-reviewer	sonnet	-	-	-	-	DONE	f8f4cb815	APPROVED	no	-	-
 2026-09-02T21:20:28Z	handoff	after Task C8	-	-	-	-	-	-	-	-	-	-	-	30000
 2026-09-02T21:23:54Z	agent	Task C7	task-verifier	haiku	-	-	-	-	PASS	40becf6ff	-	-	-	-
+2026-09-03T09:22:52Z	agent	Task C8	gate	-	-	-	-	-	PASS	f8f4cb815	-	-	-	-
+2026-09-03T09:35:35Z	agent	Task C9	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	b341a8775	-	-	-	-
+2026-09-03T09:35:35Z	agent	Task C9	task-reviewer	sonnet	-	-	-	-	done	b341a8775	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T09:38:06Z	agent	Task C10	task-implementer	sonnet	-	-	-	-	DONE	c3d74493e	-	-	-	-
+2026-09-03T09:39:16Z	agent	Task C10	task-reviewer	sonnet	-	-	-	-	done	c3d74493e	APPROVED	no	-	-
+2026-09-03T09:41:27Z	agent	Task C11	task-implementer	sonnet	-	-	-	-	DONE	61307f074	-	-	-	-
+2026-09-03T09:42:06Z	agent	Task C9	gate	-	-	-	-	-	PASS	b341a8775	-	-	-	-
+2026-09-03T09:42:46Z	agent	Task C11	task-reviewer	sonnet	-	-	-	-	done	61307f074	APPROVED	no	-	-
+2026-09-03T09:48:31Z	agent	Task C9b	packet-implementer	opus	-	-	-	-	DONE_PARTIAL_BLOCKED	a4eff2415	-	-	-	-
+2026-09-03T09:52:38Z	agent	Tasks C10-C11	gate	-	-	-	-	-	PASS	61307f074	-	-	-	-
+2026-09-03T09:53:25Z	agent	Task C12	task-implementer	sonnet	-	-	-	-	DONE	32ac1aa1d	-	-	-	-
+2026-09-03T10:14:00Z	agent	Task C9c	task-implementer	sonnet	-	-	-	-	BLOCKED	-	-	-	-	-
+2026-09-03T10:14:01Z	agent	Task C9d	task-implementer	sonnet	-	-	-	-	DONE	3ed3ba3e5	-	-	-	-
+2026-09-03T10:26:15Z	agent	Task C9d	task-reviewer	sonnet	-	-	-	-	complete	3ed3ba3e5	APPROVED	no	-	-
+2026-09-03T10:26:42Z	agent	Task C13	task-implementer	sonnet	-	-	-	-	DONE	cc64b0358	-	-	-	-
+2026-09-03T10:27:33Z	agent	Task C12	task-reviewer	sonnet	-	-	-	-	complete	32ac1aa1d	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T10:29:52Z	agent	Task C13	task-reviewer	sonnet	-	-	-	-	complete	cc64b0358	APPROVED	no	-	-
+2026-09-03T10:37:40Z	agent	Task C14	task-implementer	sonnet	-	-	-	-	PARTIAL	c35e9e446	-	-	-	-
+2026-09-03T10:46:17Z	agent	Task C14 cont	task-implementer	sonnet	-	-	-	-	DONE	ec4b3b7ee	-	-	-	-
+2026-09-03T10:49:12Z	agent	Task C15	task-implementer	sonnet	-	-	-	-	DONE	541fdc7	-	-	-	-
+2026-09-03T10:49:51Z	agent	Task C14	task-reviewer	sonnet	-	-	-	-	complete	ec4b3b7ee	APPROVED	no	-	-
+2026-09-03T10:52:20Z	agent	Task SP	task-implementer	sonnet	-	-	-	-	DONE	2e50db2ab	-	-	-	-
+2026-09-03T10:52:38Z	agent	Task C15	task-reviewer	sonnet	-	-	-	-	complete	541fdc7	APPROVED	no	-	-
+2026-09-03T11:02:01Z	agent	Task SP	task-reviewer	sonnet	-	-	-	-	completed	2e50db2ab	APPROVED	no	-	-
+2026-09-03T11:21:34Z	agent	Task BC	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	c26bdf00a	-	-	-	-
+2026-09-03T11:21:34Z	agent	Task BC	task-reviewer	sonnet	-	-	-	-	completed	c26bdf00a	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-03T11:23:15Z	agent	Task BC	gate	-	-	-	-	-	PASS	c26bdf00a	-	-	-	-
+2026-09-03T11:28:55Z	agent	Task C16	task-implementer	sonnet	-	-	-	-	PARTIAL	65b60f7f9	-	-	-	-
+2026-09-03T11:30:59Z	agent	Task C16	task-implementer	sonnet	-	-	-	-	DONE	bb682ec67	-	-	-	-
+2026-09-03T11:33:38Z	agent	Task C16	task-reviewer	sonnet	-	-	-	-	completed	bb682ec67	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T11:39:34Z	agent	Task BC2	task-implementer	sonnet	-	-	-	-	DONE	19ffc9a4b	-	-	-	-
+2026-09-03T11:46:40Z	agent	Task BC2	task-reviewer	sonnet	-	-	-	-	completed	19ffc9a4b	APPROVED	no	-	-
+2026-09-03T11:46:40Z	agent	Task C16	gate	-	-	-	-	-	ERROR	bb682ec67	-	-	-	-
+2026-09-03T11:52:38Z	agent	Task C17	task-implementer	sonnet	-	-	-	-	PARTIAL	0a3b63d19	-	-	-	-
+2026-09-03T11:54:16Z	agent	Task C17	task-implementer	sonnet	-	-	-	-	DONE	60992787c	-	-	-	-
+2026-09-03T11:54:17Z	handoff	after Task C17	-	-	-	-	-	-	-	-	-	-	-	95000
+2026-09-03T11:57:21Z	agent	Task C17	task-reviewer	sonnet	-	-	-	-	completed	60992787c	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T12:04:35Z	agent	Task C17	gate	-	-	-	-	-	PASS	60992787c	-	-	-	-
+2026-09-03T12:15:41Z	agent	Task C18	task-implementer	sonnet	-	-	-	-	DONE	a8fb2207d	-	-	-	-
+2026-09-03T12:18:47Z	agent	Task C18	task-reviewer	sonnet	-	-	-	-	completed	a8fb2207d	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T12:26:36Z	agent	Task C18	gate	-	-	-	-	-	PASS	a8fb2207d	-	-	-	-
+2026-09-03T12:31:48Z	agent	Task C19	task-implementer	sonnet	-	-	-	-	DONE	692e3f3a3	-	-	-	-
+2026-09-03T12:32:42Z	agent	Task C19	gate	-	-	-	-	-	PASS	692e3f3a3	-	-	-	-
+2026-09-03T12:37:52Z	agent	Task C19	task-reviewer	sonnet	-	-	-	-	completed	692e3f3a3	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T12:45:17Z	agent	Task C20	task-implementer	sonnet	-	-	-	-	PARTIAL	d2ca80bb0	-	-	-	-
+2026-09-03T12:55:13Z	agent	Task C20	task-implementer	sonnet	-	-	-	-	DONE	9ce335e21	-	-	-	-
+2026-09-03T12:57:38Z	agent	Task C20	gate	-	-	-	-	-	ERROR	9ce335e21	-	-	-	-
+2026-09-03T13:06:41Z	agent	Task C20	task-reviewer	sonnet	-	-	-	-	completed	9ce335e21	CHANGES_REQUIRED	yes	-	-
+2026-09-03T13:11:47Z	agent	Task C20 fix 1	task-implementer	sonnet	-	-	-	-	DONE	3b02d51b4	-	-	-	-
+2026-09-03T13:11:48Z	handoff	after Task C20	-	-	-	-	-	-	-	-	-	-	-	90000
+2026-09-03T13:14:44Z	agent	Task C20	gate	-	-	-	-	-	ERROR	3b02d51b4	-	-	-	-
+2026-09-03T15:25:57Z	agent	Task C20	gate	-	-	-	-	-	PASS	3b02d51b4	-	-	-	-
+2026-09-03T15:27:28Z	agent	Task C21	task-implementer	sonnet	-	-	-	-	DONE	4b9669b	-	-	-	-
+2026-09-03T15:35:28Z	agent	Task C21	task-reviewer	sonnet	-	-	-	-	completed	4b9669bed	CHANGES_REQUIRED	yes	-	-
+2026-09-03T15:42:10Z	agent	Task C21 fix 1	task-implementer	sonnet	-	-	-	-	DONE	bdb833f72	-	-	-	-
+2026-09-03T15:42:10Z	agent	Task C22	task-implementer	sonnet	-	-	-	-	PARTIAL	16908ebc1	-	-	-	-
+2026-09-03T15:45:54Z	agent	Task C22 cont	task-implementer	sonnet	-	-	-	-	DONE	519c8335e	-	-	-	-
+2026-09-03T15:52:54Z	handoff	after Task C22	-	-	-	-	-	-	-	-	-	-	-	140000
+2026-09-03T16:02:32Z	agent	Task C21+C22	gate	-	-	-	-	-	PASS	519c8335e	-	-	-	-
+2026-09-03T16:18:36Z	agent	Task C22	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T16:18:36Z	agent	Task C22b	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T16:21:18Z	agent	Task C22	task-reviewer	sonnet	-	-	-	-	complete	519c8335e	APPROVED	no	-	-
+2026-09-03T16:31:07Z	agent	Task C22b	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	7830166f9	-	-	-	-
+2026-09-03T16:37:08Z	agent	Task C22b	task-reviewer	sonnet	-	-	-	-	complete	7830166f9	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-03T16:37:08Z	agent	Task C23	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T16:40:55Z	agent	Task C23	task-implementer	sonnet	-	-	-	-	DONE	fc3dbd313	-	-	-	-
+2026-09-03T16:40:56Z	agent	Task C23b	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T16:43:12Z	agent	Task C23b	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	9c2b9be13	-	-	-	-
+2026-09-03T16:45:11Z	agent	Task C23	task-reviewer	sonnet	-	-	-	-	complete	fc3dbd313	APPROVED	no	-	-
+2026-09-03T16:46:38Z	agent	Task C23b	task-reviewer	sonnet	-	-	-	-	complete	9c2b9be13	APPROVED	no	-	-
+2026-09-03T16:46:38Z	agent	branch-end gate	task-verifier	haiku	-	-	-	-	dispatched	9c2b9be13	-	-	-	-
+2026-09-03T17:28:03Z	agent	branch-end gate	task-verifier	haiku	-	-	-	-	PASS	9c2b9be13	-	-	-	-
+2026-09-03T18:51:25Z	agent	review C1-C4	plan-adherence-reviewer	sonnet	-	-	-	-	complete	9c2b9be13	APPROVED	no	-	-
+2026-09-03T18:53:35Z	agent	review C5-C15	plan-adherence-reviewer	sonnet	-	-	-	-	complete	9c2b9be13	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T18:57:50Z	agent	review C16-C23	plan-adherence-reviewer	sonnet	-	-	-	-	complete	9c2b9be13	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T19:08:16Z	agent	FIX-BE2A	task-implementer	sonnet	-	-	-	-	DONE	a5948b5fc	-	-	-	-
+2026-09-03T19:17:35Z	agent	FIX-BE1A	task-implementer	sonnet	-	-	-	-	DONE	4f790da4d	-	-	-	-
+2026-09-03T19:29:17Z	agent	FIX-BE1B	task-implementer	sonnet	-	-	-	-	DONE	0213dda9f	-	-	-	-
+2026-09-03T19:29:17Z	handoff	after FIX-BE1B	-	-	-	-	-	-	-	-	-	-	-	100000
+2026-09-03T19:31:35Z	agent	FIX-BE1C	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T19:40:53Z	agent	FIX-BE1C	task-implementer	sonnet	-	-	-	-	DONE	7a5989ed2	-	-	-	-
+2026-09-03T19:40:53Z	agent	FIX-BE1D	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T19:46:31Z	agent	FIX-BE1D	task-implementer	sonnet	-	-	-	-	DONE	dd88cd13b	-	-	-	-
+2026-09-03T19:46:31Z	agent	FIX-BE2B	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T19:59:29Z	agent	FIX-BE2B	task-implementer	sonnet	-	-	-	-	DONE	ffba7aded	-	-	-	-
+2026-09-03T19:59:31Z	agent	gate 519c8335e..7a5989ed2	verify.sh	-	-	-	-	-	PASS	7a5989ed2	-	-	-	-
+2026-09-03T19:59:32Z	handoff	after FIX-BE2B	-	-	-	-	-	-	-	-	-	-	-	40000
+2026-09-03T21:24:50Z	agent	FIX-BE1E	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T21:27:50Z	agent	FIX-BE1E	task-implementer	sonnet	-	-	-	-	DONE	433dd7f02	-	-	-	-
+2026-09-03T21:30:04Z	agent	FIX-BE1E	task-reviewer	sonnet	-	-	-	-	DONE	433dd7f02	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T21:57:21Z	agent	flagless gate	verify.sh	-	-	-	-	-	PASS	433dd7f02	-	-	-	-

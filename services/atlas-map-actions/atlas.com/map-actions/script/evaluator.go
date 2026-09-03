@@ -107,6 +107,7 @@ func (e *ConditionEvaluator) evaluateViaQueryAggregator(f field.Model, character
 		WorldId:         f.WorldId(),
 		ChannelId:       f.ChannelId(),
 		IncludeEquipped: cond.IncludeEquipped(),
+		ValueString:     cond.ValueString(),
 	}
 
 	result, err := e.validationP.ValidateCharacterState(characterId, []validation.ConditionInput{validationCondition})

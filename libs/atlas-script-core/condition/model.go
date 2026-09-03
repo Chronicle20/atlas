@@ -17,6 +17,7 @@ type Model struct {
 	values          []string // For the `in` operator: the candidate set. Kept as
 	// strings for the same reason value/referenceId are —
 	// a context reference must survive to the boundary.
+	valueString string // For areaInfo conditions: the substring to test for.
 }
 
 // Type returns the condition type
@@ -76,6 +77,11 @@ func (c Model) IncludeEquipped() bool {
 // Values returns the candidate set for the `in` operator. Nil for scalar conditions.
 func (c Model) Values() []string {
 	return c.values
+}
+
+// ValueString returns the string value used by areaInfo conditions.
+func (c Model) ValueString() string {
+	return c.valueString
 }
 
 // Evaluator is the interface for evaluating conditions

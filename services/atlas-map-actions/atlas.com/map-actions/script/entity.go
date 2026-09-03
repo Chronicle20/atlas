@@ -54,6 +54,7 @@ type jsonCondition struct {
 	WorldId         string   `json:"worldId,omitempty"`
 	ChannelId       string   `json:"channelId,omitempty"`
 	IncludeEquipped bool     `json:"includeEquipped,omitempty"`
+	ValueString     string   `json:"valueString,omitempty"`
 }
 
 // jsonOperation represents an operation in JSON format
@@ -131,6 +132,9 @@ func convertJsonCondition(jc jsonCondition) (condition.Model, error) {
 	if jc.ChannelId != "" {
 		builder.SetChannelId(jc.ChannelId)
 	}
+	if jc.ValueString != "" {
+		builder.SetValueString(jc.ValueString)
+	}
 
 	return builder.Build()
 }
@@ -188,6 +192,7 @@ func convertRuleToJson(rule Rule) jsonRule {
 			WorldId:         cond.WorldId(),
 			ChannelId:       cond.ChannelId(),
 			IncludeEquipped: cond.IncludeEquipped(),
+			ValueString:     cond.ValueString(),
 		})
 	}
 

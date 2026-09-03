@@ -68,6 +68,7 @@
           "description": "Type of condition",
           "enum": [
             "map_id",
+            "areaInfo",
             "buddyCapacity",
             "buff",
             "canSpawnPlayerNpc",
@@ -130,6 +131,10 @@
         "referenceId": {
           "type": "string",
           "description": "Reference identifier (e.g., quest ID for quest_status conditions)"
+        },
+        "valueString": {
+          "type": "string",
+          "description": "Substring to test for in the stored areaInfo string (areaInfo conditions only)"
         }
       }
     },

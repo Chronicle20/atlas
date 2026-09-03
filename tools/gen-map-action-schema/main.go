@@ -368,6 +368,7 @@ type conditionProperties struct {
 	Operator    enumProp   `json:"operator"`
 	Value       simpleProp `json:"value"`
 	ReferenceId simpleProp `json:"referenceId"`
+	ValueString simpleProp `json:"valueString"`
 }
 
 type operationDef struct {
@@ -479,6 +480,10 @@ func render(conditionTypes, operators, operations []string, allOf json.RawMessag
 					ReferenceId: simpleProp{
 						Type:        "string",
 						Description: "Reference identifier (e.g., quest ID for quest_status conditions)",
+					},
+					ValueString: simpleProp{
+						Type:        "string",
+						Description: "Substring to test for in the stored areaInfo string (areaInfo conditions only)",
 					},
 				},
 			},

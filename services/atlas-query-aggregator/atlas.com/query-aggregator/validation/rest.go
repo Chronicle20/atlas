@@ -280,6 +280,10 @@ func validateConditionInput(input ConditionInput) error {
 		if input.ReferenceId == 0 {
 			return fmt.Errorf("referenceId (mapId) is required for canSpawnPlayerNpc conditions")
 		}
+	case AreaInfoCondition:
+		if input.ReferenceId == 0 || input.ValueString == "" {
+			return fmt.Errorf("referenceId and valueString are required for areaInfo conditions")
+		}
 	case SkillLevelCondition:
 		if input.ReferenceId == 0 {
 			return fmt.Errorf("referenceId is required for skillLevel conditions")

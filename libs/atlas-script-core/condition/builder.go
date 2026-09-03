@@ -15,6 +15,7 @@ type Builder struct {
 	channelId       string
 	includeEquipped bool
 	values          []string
+	valueString     string
 }
 
 // NewBuilder creates a new Builder
@@ -82,6 +83,12 @@ func (b *Builder) AddValue(value string) *Builder {
 	return b
 }
 
+// SetValueString sets the string value used by areaInfo conditions.
+func (b *Builder) SetValueString(valueString string) *Builder {
+	b.valueString = valueString
+	return b
+}
+
 // Build builds the Model
 func (b *Builder) Build() (Model, error) {
 	if b.conditionType == "" {
@@ -104,5 +111,6 @@ func (b *Builder) Build() (Model, error) {
 		channelId:       b.channelId,
 		includeEquipped: b.includeEquipped,
 		values:          b.values,
+		valueString:     b.valueString,
 	}, nil
 }

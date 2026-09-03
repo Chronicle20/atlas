@@ -41,6 +41,7 @@ type RestConditionModel struct {
 	WorldId         string   `json:"worldId,omitempty"`
 	ChannelId       string   `json:"channelId,omitempty"`
 	IncludeEquipped bool     `json:"includeEquipped,omitempty"`
+	ValueString     string   `json:"valueString,omitempty"`
 }
 
 // RestOperationModel represents an operation in REST format
@@ -129,6 +130,7 @@ func transformRule(rule Rule) RestRuleModel {
 			WorldId:         cond.WorldId(),
 			ChannelId:       cond.ChannelId(),
 			IncludeEquipped: cond.IncludeEquipped(),
+			ValueString:     cond.ValueString(),
 		})
 	}
 
@@ -217,6 +219,9 @@ func extractCondition(r RestConditionModel) (condition.Model, error) {
 	}
 	if r.ChannelId != "" {
 		builder.SetChannelId(r.ChannelId)
+	}
+	if r.ValueString != "" {
+		builder.SetValueString(r.ValueString)
 	}
 
 	return builder.Build()

@@ -94,6 +94,7 @@ func TestEvaluateViaQueryAggregator(t *testing.T) {
 					SetReferenceId("21747").
 					SetStep("9300351").
 					SetIncludeEquipped(true).
+					SetValueString("miss=o").
 					Build()
 			},
 			check: func(t *testing.T, captured []validation.ConditionInput, called bool) {
@@ -110,6 +111,7 @@ func TestEvaluateViaQueryAggregator(t *testing.T) {
 					WorldId:         world.Id(0),
 					ChannelId:       channel.Id(1),
 					IncludeEquipped: true,
+					ValueString:     "miss=o",
 				}
 				if !reflect.DeepEqual(captured[0], want) {
 					t.Errorf("captured[0] = %+v, want %+v", captured[0], want)

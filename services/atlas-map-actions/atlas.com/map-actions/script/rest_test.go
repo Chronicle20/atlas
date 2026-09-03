@@ -19,6 +19,7 @@ func fullRestConditionModel() RestConditionModel {
 		WorldId:         "0",
 		ChannelId:       "1",
 		IncludeEquipped: true,
+		ValueString:     "miss=o",
 	}
 }
 
@@ -39,7 +40,7 @@ func TestConditionCarriesEveryField(t *testing.T) {
 		{
 			name: "convertJsonCondition",
 			build: func() (condition.Model, error) {
-				raw := `{"type":"questProgress","operator":"=","value":"0","values":["1000","1100"],"referenceId":"21747","step":"9300351","worldId":"0","channelId":"1","includeEquipped":true}`
+				raw := `{"type":"questProgress","operator":"=","value":"0","values":["1000","1100"],"referenceId":"21747","step":"9300351","worldId":"0","channelId":"1","includeEquipped":true,"valueString":"miss=o"}`
 
 				var jc jsonCondition
 				if err := json.Unmarshal([]byte(raw), &jc); err != nil {
@@ -84,6 +85,9 @@ func TestConditionCarriesEveryField(t *testing.T) {
 			if !c.IncludeEquipped() {
 				t.Errorf("IncludeEquipped() = %v, want %v", c.IncludeEquipped(), true)
 			}
+			if c.ValueString() != "miss=o" {
+				t.Errorf("ValueString() = %q, want %q", c.ValueString(), "miss=o")
+			}
 		})
 	}
 }
@@ -112,6 +116,7 @@ func TestTransformRuleRoundTripsEveryConditionField(t *testing.T) {
 				SetWorldId("0").
 				SetChannelId("1").
 				SetIncludeEquipped(true).
+				SetValueString("miss=o").
 				Build()
 			if err != nil {
 				t.Fatalf("condition.NewBuilder().Build(): %v", err)

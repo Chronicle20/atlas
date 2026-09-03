@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"atlas-query-aggregator/area_info"
 	"atlas-query-aggregator/asset"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/compartment"
@@ -2516,5 +2517,135 @@ func TestTransportInTransitAcceptedBySetType(t *testing.T) {
 	b := NewConditionBuilder().SetType("transportInTransit")
 	if err := b.err; err != nil {
 		t.Errorf("SetType(\"transportInTransit\") returned an error: %v", err)
+	}
+}
+
+// fakeAreaInfoProcessor is a test double for area_info.Processor, mirroring
+// fakeTransportProcessor's shape.
+type fakeAreaInfoProcessor struct {
+	info string
+	err  error
+}
+
+func (f *fakeAreaInfoProcessor) GetByArea(characterId uint32, area uint16) (area_info.Model, error) {
+	if f.err != nil {
+		return area_info.Model{}, f.err
+	}
+	return area_info.Extract(area_info.RestModel{
+		CharacterId: characterId,
+		Area:        area,
+		Info:        f.info,
+	})
+}
+
+// TestAreaInfoCondition pins Cosmic's containsAreaInfo semantics: a
+// substring test against the stored area-info string, not equality and not
+// a parse of "k=v;" pairs into a set (task-290 gap G12).
+func TestAreaInfoCondition(t *testing.T) {
+	char, err := character.NewBuilder().SetId(123).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		stored      string
+		valueString string
+		expect      bool
+	}{
+		{"exact match", "miss=o", "miss=o", true},
+		{"substring match within a larger stored string", "miss=o;arr=o;helper=clear", "miss=o", true},
+		{"no match", "miss=x", "miss=o", false},
+		{"empty stored", "", "miss=o", false},
+		{
+			// rienArrow guard after rienArrow ran: the stored string no
+			// longer contains "arr=o" (it's been cleared), so a substring
+			// check against "miss=o;helper=clear" must fail even though
+			// every individual key=value pair in valueString would be
+			// present if evaluated as a set membership test. Pins
+			// substring-not-parse.
+			"rienArrow guard after rienArrow ran",
+			"miss=o;arr=o;helper=clear",
+			"miss=o;helper=clear",
+			false,
+		},
+		{"partial substring across separator boundary", "miss=o;arr=o", "o;arr", true},
+		{"stored equals valueString with different case does not match (case sensitive)", "MISS=O", "miss=o", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := ValidationContext{
+				character: char,
+				areaInfoP: &fakeAreaInfoProcessor{info: tc.stored},
+			}
+
+			cond := Condition{
+				conditionType: AreaInfoCondition,
+				operator:      Equals,
+				value:         1,
+				referenceId:   101000000,
+				valueString:   tc.valueString,
+			}
+
+			result := cond.EvaluateWithContext(ctx)
+			if result.Passed != tc.expect {
+				t.Errorf("stored=%q valueString=%q: Passed = %v, want %v (%s)", tc.stored, tc.valueString, result.Passed, tc.expect, result.Description)
+			}
+
+			// Equality would also pass "exact match" and fail every
+			// substring-only case identically to expect here, so this
+			// table alone doesn't distinguish substring from equality.
+			// The "substring match within a larger stored string" and
+			// "partial substring across separator boundary" cases would
+			// FAIL under a strict `stored == valueString` implementation,
+			// which is the pin this test exists to provide.
+		})
+	}
+}
+
+// TestAreaInfoRequiresReferenceIdAndValueString ensures the builder rejects
+// an areaInfo condition missing either required field, with the exact
+// message design/plan specify.
+func TestAreaInfoRequiresReferenceIdAndValueString(t *testing.T) {
+	const wantMsg = "referenceId and valueString are required for areaInfo conditions"
+
+	t.Run("missing referenceId", func(t *testing.T) {
+		_, err := NewConditionBuilder().FromInput(ConditionInput{
+			Type:        string(AreaInfoCondition),
+			Operator:    "=",
+			Value:       1,
+			ValueString: "miss=o",
+		}).Build()
+		if err == nil {
+			t.Fatal("expected an error when referenceId is missing")
+		}
+		if err.Error() != wantMsg {
+			t.Errorf("err = %q, want %q", err.Error(), wantMsg)
+		}
+	})
+
+	t.Run("missing valueString", func(t *testing.T) {
+		_, err := NewConditionBuilder().FromInput(ConditionInput{
+			Type:        string(AreaInfoCondition),
+			Operator:    "=",
+			Value:       1,
+			ReferenceId: 101000000,
+		}).Build()
+		if err == nil {
+			t.Fatal("expected an error when valueString is missing")
+		}
+		if err.Error() != wantMsg {
+			t.Errorf("err = %q, want %q", err.Error(), wantMsg)
+		}
+	})
+}
+
+// TestAreaInfoAcceptedBySetType catches the builder.go accepted-type
+// omission design §3.6 warns about.
+func TestAreaInfoAcceptedBySetType(t *testing.T) {
+	b := NewConditionBuilder().SetType("areaInfo")
+	if err := b.err; err != nil {
+		t.Errorf("SetType(\"areaInfo\") returned an error: %v", err)
 	}
 }

@@ -16,6 +16,7 @@ type ConditionInput struct {
 	WorldId         world.Id   `json:"worldId,omitempty"`
 	ChannelId       channel.Id `json:"channelId,omitempty"`
 	IncludeEquipped bool       `json:"includeEquipped,omitempty"`
+	ValueString     string     `json:"valueString,omitempty"`
 }
 
 // ValidationResult represents the result of a validation

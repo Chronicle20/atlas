@@ -6,6 +6,7 @@ import (
 	"atlas-query-aggregator/quest"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -102,6 +103,7 @@ type Condition struct {
 	worldId         world.Id   // Used for mapCapacity conditions
 	channelId       channel.Id // Used for mapCapacity conditions
 	includeEquipped bool       // For item conditions: also check equipped items
+	valueString     string     // Used for areaInfo conditions
 }
 
 // Evaluate evaluates the condition against a character model
@@ -559,6 +561,18 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			}
 			return "not in transit"
 		}(), state)
+
+	case AreaInfoCondition:
+		// Cosmic's containsAreaInfo is a substring test against the stored
+		// area-info string, not equality and not a k=v pair parse.
+		stored := ctx.GetAreaInfo(uint16(c.referenceId))
+		if strings.Contains(stored, c.valueString) {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+
+		description = fmt.Sprintf("Area %d info contains %q (stored: %q)", c.referenceId, c.valueString, stored)
 
 	case CanSpawnPlayerNpcCondition:
 		// Delegate to the single eligibility predicate atlas-player-npcs

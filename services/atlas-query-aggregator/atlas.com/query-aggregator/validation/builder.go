@@ -197,6 +197,7 @@ type ConditionBuilder struct {
 	worldId         world.Id
 	channelId       channel.Id
 	includeEquipped bool
+	valueString     string
 	err             error
 }
 
@@ -212,7 +213,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, TransportInTransitCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition, PetTamenessCondition, CanSpawnPlayerNpcCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, TransportInTransitCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition, PetTamenessCondition, CanSpawnPlayerNpcCondition, AreaInfoCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -275,6 +276,16 @@ func (b *ConditionBuilder) SetStep(step string) *ConditionBuilder {
 	return b
 }
 
+// SetValueString sets the string value (for areaInfo conditions)
+func (b *ConditionBuilder) SetValueString(valueString string) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.valueString = valueString
+	return b
+}
+
 // SetIncludeEquipped sets whether to include equipped items in item condition checks
 func (b *ConditionBuilder) SetIncludeEquipped(includeEquipped bool) *ConditionBuilder {
 	if b.err != nil {
@@ -303,6 +314,11 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	// Set step for quest progress validation
 	if input.Step != "" {
 		b.SetStep(input.Step)
+	}
+
+	// Set valueString for areaInfo conditions
+	if input.ValueString != "" {
+		b.SetValueString(input.ValueString)
 	}
 
 	// Set worldId and channelId for mapCapacity conditions
@@ -368,6 +384,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	case CanSpawnPlayerNpcCondition:
 		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId (mapId) is required for canSpawnPlayerNpc conditions")
+		}
+	case AreaInfoCondition:
+		if input.ReferenceId == 0 || input.ValueString == "" {
+			b.err = fmt.Errorf("referenceId and valueString are required for areaInfo conditions")
 		}
 	}
 
@@ -458,6 +478,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 			b.err = fmt.Errorf("referenceId (mapId) is required for canSpawnPlayerNpc conditions")
 			return b
 		}
+	case AreaInfoCondition:
+		if b.referenceId == nil || b.valueString == "" {
+			b.err = fmt.Errorf("referenceId and valueString are required for areaInfo conditions")
+			return b
+		}
 	}
 
 	return b
@@ -480,6 +505,7 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 		worldId:         b.worldId,
 		channelId:       b.channelId,
 		includeEquipped: b.includeEquipped,
+		valueString:     b.valueString,
 	}
 
 	if b.referenceId != nil {

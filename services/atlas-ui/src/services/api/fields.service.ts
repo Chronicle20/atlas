@@ -23,6 +23,11 @@ export interface FieldFilters {
 // truncates at 250 fields. Request the max explicitly.
 const PAGE_SIZE = 250;
 
+export interface FieldCharacterData {
+  id: string;
+  type: string;
+}
+
 class FieldsService {
   async getFields(filters: FieldFilters): Promise<FieldData[]> {
     const params = new URLSearchParams({ "page[size]": String(PAGE_SIZE) });
@@ -33,6 +38,21 @@ class FieldsService {
     if (filters.mapId !== undefined)
       params.set("filter[mapId]", String(filters.mapId));
     return api.getList<FieldData>(`/api/fields?${params.toString()}`);
+  }
+
+  // The backend caps page[size] at 250 (paginate.MaxPageSize), which is also
+  // the default when unspecified — an unparameterised request silently
+  // truncates the roster at 250. Request the max explicitly.
+  async getFieldCharacters(
+    worldId: number,
+    channelId: number,
+    mapId: number,
+    instanceId: string,
+  ): Promise<FieldCharacterData[]> {
+    const params = new URLSearchParams({ "page[size]": String(PAGE_SIZE) });
+    return api.getList<FieldCharacterData>(
+      `/api/worlds/${worldId}/channels/${channelId}/maps/${mapId}/instances/${instanceId}/characters?${params.toString()}`,
+    );
   }
 }
 

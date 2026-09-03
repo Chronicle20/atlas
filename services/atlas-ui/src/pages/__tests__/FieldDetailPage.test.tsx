@@ -2,14 +2,20 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FieldDetailPage } from "@/pages/FieldDetailPage";
 import type { Tenant } from "@/types/models/tenant";
 import type { MapData } from "@/services/api/maps.service";
 import type { WorldData } from "@/services/api/worlds.service";
-import type { FieldData } from "@/services/api/fields.service";
+import type { FieldCharacterData } from "@/services/api/fields.service";
 import type { LiveMonsterData } from "@/services/api/live-monsters.service";
 import type { MapObjectData } from "@/services/api/map-entities.service";
 import * as toast from "@/lib/utils/toast";
@@ -46,13 +52,10 @@ vi.mock("@/lib/hooks/api/useWorlds", () => ({
   useWorlds: () => useWorldsMock(),
 }));
 
-const useFieldsMock = vi.fn();
-vi.mock("@/lib/hooks/api/useFields", () => ({
-  useFields: (...args: unknown[]) => useFieldsMock(...args),
-}));
-
+const useFieldCharactersMock = vi.fn();
 const useLiveMonstersMock = vi.fn();
 vi.mock("@/lib/hooks/api/useFieldRuntime", () => ({
+  useFieldCharacters: (...args: unknown[]) => useFieldCharactersMock(...args),
   useLiveMonsters: (...args: unknown[]) => useLiveMonstersMock(...args),
 }));
 
@@ -64,6 +67,22 @@ vi.mock("@/lib/hooks/api/useMapEntities", () => ({
 vi.mock("@/lib/utils/toast", () => ({
   success: vi.fn(),
   error: vi.fn(),
+}));
+
+// FieldCharactersTab (rendered by FieldTabs' `characters` slot) enriches
+// each id via useCharacter/useJobNameLookup; stub both so this page's tests
+// stay focused on the page shell, not the tab's own row rendering (that's
+// FieldCharactersTab.test.tsx's job).
+vi.mock("@/lib/hooks/api/useCharacters", () => ({
+  useCharacter: () => ({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
+vi.mock("@/lib/hooks/api/useJobGraph", () => ({
+  useJobNameLookup: () => (id: number) => `Job ${id}`,
 }));
 
 function queryResult(data: unknown, overrides: Record<string, unknown> = {}) {
@@ -108,18 +127,11 @@ function makeWorld(id: string, name: string): WorldData {
 
 const INSTANCE_ID = "00000000-0000-0000-0000-000000000000";
 
-function makeField(characterCount: number): FieldData {
-  return {
-    id: `0:1:910340000:${INSTANCE_ID}`,
-    type: "fields",
-    attributes: {
-      worldId: 0,
-      channelId: 1,
-      mapId: 910340000,
-      instanceId: INSTANCE_ID,
-      characterCount,
-    },
-  };
+function makeFieldCharacters(count: number): FieldCharacterData[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `${100 + i}`,
+    type: "characters",
+  }));
 }
 
 function makeLiveMonster(id: string, monsterId: number): LiveMonsterData {
@@ -159,6 +171,14 @@ function LocationSpy() {
   return <div data-testid="location-search">{location.search}</div>;
 }
 
+// Navigates externally (not via a tab-trigger click) so a test can verify
+// FieldTabs stays in sync with an incoming `tab` prop change — the one thing
+// a `defaultValue={tab}` regression would silently break (findings, task 18).
+function NavigateButton({ to }: { to: string }) {
+  const navigate = useNavigate();
+  return <button onClick={() => navigate(to)}>External tab navigation</button>;
+}
+
 function renderPage(initialPath = `/fields/0/1/910340000/${INSTANCE_ID}`) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -175,6 +195,9 @@ function renderPage(initialPath = `/fields/0/1/910340000/${INSTANCE_ID}`) {
         />
       </Routes>
       <LocationSpy />
+      <NavigateButton
+        to={`/fields/0/1/910340000/${INSTANCE_ID}?tab=monsters`}
+      />
     </>,
     { wrapper },
   );
@@ -184,7 +207,7 @@ describe("FieldDetailPage", () => {
   beforeEach(() => {
     useMapMock.mockReset();
     useWorldsMock.mockReset();
-    useFieldsMock.mockReset();
+    useFieldCharactersMock.mockReset();
     useLiveMonstersMock.mockReset();
     useMapObjectsMock.mockReset();
     vi.mocked(toast.error).mockReset();
@@ -194,7 +217,7 @@ describe("FieldDetailPage", () => {
     useWorldsMock.mockReturnValue(
       queryResult([makeWorld("1", "Bera"), makeWorld("2", "Kradia")]),
     );
-    useFieldsMock.mockReturnValue(queryResult([makeField(2)]));
+    useFieldCharactersMock.mockReturnValue(queryResult(makeFieldCharacters(2)));
     useLiveMonstersMock.mockReturnValue(
       queryResult([
         makeLiveMonster("m1", 100100),
@@ -244,7 +267,7 @@ describe("FieldDetailPage", () => {
   });
 
   it("live summary shows character count", () => {
-    useFieldsMock.mockReturnValue(queryResult([makeField(3)]));
+    useFieldCharactersMock.mockReturnValue(queryResult(makeFieldCharacters(3)));
     renderPage();
 
     expect(screen.getByTestId("field-character-count")).toHaveTextContent("3");
@@ -268,7 +291,7 @@ describe("FieldDetailPage", () => {
   });
 
   it("tabs render with counts", () => {
-    useFieldsMock.mockReturnValue(queryResult([makeField(3)]));
+    useFieldCharactersMock.mockReturnValue(queryResult(makeFieldCharacters(3)));
     renderPage();
 
     expect(screen.getByText("Characters (3)")).toBeInTheDocument();
@@ -296,8 +319,34 @@ describe("FieldDetailPage", () => {
     );
   });
 
+  it("tab stays in sync with an externally-changed ?tab= (controlled, not defaultValue)", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByRole("tab", { name: /characters/i })).toHaveAttribute(
+      "data-state",
+      "active",
+    );
+
+    // Navigates via a plain link, not by clicking the tab trigger — only a
+    // `value={tab}` binding reacts to this; `defaultValue={tab}` would leave
+    // the previously-active tab showing.
+    await user.click(
+      screen.getByRole("button", { name: /external tab navigation/i }),
+    );
+
+    expect(screen.getByRole("tab", { name: /monsters/i })).toHaveAttribute(
+      "data-state",
+      "active",
+    );
+    expect(screen.getByRole("tab", { name: /characters/i })).toHaveAttribute(
+      "data-state",
+      "inactive",
+    );
+  });
+
   it("torn-down field", () => {
-    useFieldsMock.mockReturnValue(queryResult([]));
+    useFieldCharactersMock.mockReturnValue(queryResult([]));
     renderPage();
 
     expect(screen.getByText(/may have been torn down/i)).toBeInTheDocument();

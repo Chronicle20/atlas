@@ -9,10 +9,13 @@ import { MapImagePanel } from "@/components/features/maps/MapImagePanel";
 import { FieldHeader } from "@/components/features/fields/FieldHeader";
 import { FieldSummaryPanels } from "@/components/features/fields/FieldSummaryPanels";
 import { FieldTabs } from "@/components/features/fields/FieldTabs";
+import { FieldCharactersTab } from "@/components/features/fields/FieldCharactersTab";
 import { useMap } from "@/lib/hooks/api/useMaps";
 import { useWorlds } from "@/lib/hooks/api/useWorlds";
-import { useFields } from "@/lib/hooks/api/useFields";
-import { useLiveMonsters } from "@/lib/hooks/api/useFieldRuntime";
+import {
+  useFieldCharacters,
+  useLiveMonsters,
+} from "@/lib/hooks/api/useFieldRuntime";
 import { useMapObjects } from "@/lib/hooks/api/useMapEntities";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { cn } from "@/lib/utils";
@@ -21,7 +24,7 @@ const DEFAULT_TAB = "characters";
 
 // FR-18..FR-22, FR-40: the field-detail page. There is no
 // `GET /api/fields/{id}` — liveness is "holds at least one character", so an
-// empty (or non-matching) row from `useFields` is the torn-down signal
+// empty (resolved) result from `useFieldCharacters` is the torn-down signal
 // (FR-22), not an error.
 export function FieldDetailPage() {
   const {
@@ -44,10 +47,12 @@ export function FieldDetailPage() {
 
   const mapQuery = useMap(mapId ?? "");
   const worldsQuery = useWorlds();
-  const fieldsQuery = useFields(
-    paramsValid
-      ? { worldId, channelId, mapId: numericMapId }
-      : { worldId: -1, channelId: -1, mapId: -1 },
+  const charactersQuery = useFieldCharacters(
+    worldId,
+    channelId,
+    numericMapId,
+    instanceId ?? "",
+    paramsValid,
   );
   const monstersQuery = useLiveMonsters(
     worldId,
@@ -60,7 +65,7 @@ export function FieldDetailPage() {
 
   const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
     mapQuery,
-    fieldsQuery,
+    charactersQuery,
     monstersQuery,
     objectsQuery,
   ]);
@@ -80,7 +85,11 @@ export function FieldDetailPage() {
     );
   }
 
-  if (mapQuery.isLoading || worldsQuery.isLoading || fieldsQuery.isLoading) {
+  if (
+    mapQuery.isLoading ||
+    worldsQuery.isLoading ||
+    charactersQuery.isLoading
+  ) {
     return <PageLoader />;
   }
 
@@ -95,24 +104,22 @@ export function FieldDetailPage() {
     );
   }
 
-  if (fieldsQuery.error) {
+  if (charactersQuery.error) {
     return (
       <div className="p-10">
         <ErrorDisplay
-          error={fieldsQuery.error}
-          retry={() => fieldsQuery.refetch()}
+          error={charactersQuery.error}
+          retry={() => charactersQuery.refetch()}
         />
       </div>
     );
   }
 
-  const fieldRow = fieldsQuery.data?.find(
-    (field) => field.attributes.instanceId === instanceId,
-  );
-  const characterCount = fieldRow?.attributes.characterCount ?? 0;
+  const characterIds = charactersQuery.data?.map((c) => c.id) ?? [];
+  const characterCount = characterIds.length;
 
-  // FR-22: no live characters is the torn-down signal, not an error — a
-  // genuinely live field cannot be empty.
+  // FR-22: the characters query resolved with no rows — the torn-down
+  // signal, not an error. A genuinely live field cannot be empty.
   if (characterCount === 0) {
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-6 p-10 pb-16">
@@ -196,6 +203,7 @@ export function FieldDetailPage() {
           objectCount={objectsQuery.data?.length ?? 0}
           tab={tab}
           onTabChange={handleTabChange}
+          characters={<FieldCharactersTab characterIds={characterIds} />}
         />
       </HoverHighlightProvider>
     </div>

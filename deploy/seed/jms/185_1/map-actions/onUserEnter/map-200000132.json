@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Departure map 200000132 (Cabin route) - warps a late arrival ahead to 200090200 while the vessel is in transit",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "200000132",
+              "type": "transportInTransit",
+              "value": "1"
+            }
+          ],
+          "id": "warp_ahead",
+          "operations": [
+            {
+              "params": {
+                "mapId": "200090200"
+              },
+              "type": "warp_to_map"
+            }
+          ]
+        }
+      ],
+      "scriptName": "200000132"
+    },
+    "id": "200000132",
+    "type": "map-action"
+  }
+}

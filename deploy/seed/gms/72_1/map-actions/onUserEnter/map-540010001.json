@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Departure map 540010001 (AirPlane route) - warps a late arrival ahead to 540010002 while the vessel is in transit",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "540010001",
+              "type": "transportInTransit",
+              "value": "1"
+            }
+          ],
+          "id": "warp_ahead",
+          "operations": [
+            {
+              "params": {
+                "mapId": "540010002"
+              },
+              "type": "warp_to_map"
+            }
+          ]
+        }
+      ],
+      "scriptName": "540010001"
+    },
+    "id": "540010001",
+    "type": "map-action"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Departure map 101000301 (Boats route) - warps a late arrival ahead to 200000112 while the vessel is in transit",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "101000301",
+              "type": "transportInTransit",
+              "value": "1"
+            }
+          ],
+          "id": "warp_ahead",
+          "operations": [
+            {
+              "params": {
+                "mapId": "200000112"
+              },
+              "type": "warp_to_map"
+            }
+          ]
+        }
+      ],
+      "scriptName": "101000301"
+    },
+    "id": "101000301",
+    "type": "map-action"
+  }
+}

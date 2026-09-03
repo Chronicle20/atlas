@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Departure map 200000122 (Trains route) - warps a late arrival ahead to 200090100 while the vessel is in transit",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "200000122",
+              "type": "transportInTransit",
+              "value": "1"
+            }
+          ],
+          "id": "warp_ahead",
+          "operations": [
+            {
+              "params": {
+                "mapId": "200090100"
+              },
+              "type": "warp_to_map"
+            }
+          ]
+        }
+      ],
+      "scriptName": "200000122"
+    },
+    "id": "200000122",
+    "type": "map-action"
+  }
+}

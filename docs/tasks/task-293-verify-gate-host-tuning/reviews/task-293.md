@@ -156,3 +156,119 @@ fixing gate-induced host contention on a 12-core box. Everything else in the
 seven-item change list — timing, `--facts` isolation, `verify_test.sh`
 structural invariants, `--quick`'s `--fmt` path, and the `execute-task.md`
 cadence rule — checks out against the brief and against the code.
+
+## Re-review (9d3ee1cd3)
+
+Range `d2d89a3af..HEAD`, one fix commit: `9d3ee1cd3` ("build(verify): derive K
+and the Go pool width from one slot thread budget"). Files touched:
+`tools/lib/build-slot.sh`, `tools/verify.sh`, `tools/lib/build-slot_test.sh`,
+`docs/verification.md`, `docs/tasks/task-293-verify-gate-host-tuning/notes.md`,
+plus this review artifact. Scope matches the prior finding exactly — no drift.
+
+### 1. Blocking finding resolved for defaults, and for the doc's own "raise it" example
+
+`_build_slot_threads()` (`tools/lib/build-slot.sh:79-85`) introduces
+`ATLAS_SLOT_THREADS` (default 6, sanitized to a positive integer). `K` is now
+`cores / slot_threads` (`tools/lib/build-slot.sh:96`), and `verify.sh` derives
+`GO_JOBS_DEFAULT = slot_threads / GO_P`, floored at 1 (`tools/verify.sh:44-46`).
+
+Measured on this host (`bash tools/lib/build-slot.sh` sourced, `cores=12`):
+
+- Defaults: `threads=6, K=2, GO_JOBS=1, GO_P=6` → demand `= 2*1*6 = 12 = cores`. No oversubscription — the exact defect the prior review blocked on is gone.
+- Doc's own "raise it" example, `ATLAS_SLOT_THREADS=12`: `K=1, GO_JOBS=2` → demand `= 1*2*6 = 12 = cores`. Holds.
+
+I also swept the full range `threads=1..24` to check the general invariant
+(`K = max(1, floor(cores/threads))`, `GO_JOBS = max(1, floor(threads/GO_P))`,
+`GO_P=6` fixed, `cores=12`):
+
+```
+threads=1  K=12 GOJOBS=1 demand=72  OVERSUBSCRIBED
+threads=2  K=6  GOJOBS=1 demand=36  OVERSUBSCRIBED
+threads=3  K=4  GOJOBS=1 demand=24  OVERSUBSCRIBED
+threads=4  K=3  GOJOBS=1 demand=18  OVERSUBSCRIBED
+threads=5..15  ...                  OK (demand<=12)
+threads=18 K=1  GOJOBS=3 demand=18  OVERSUBSCRIBED
+threads=24 K=1  GOJOBS=4 demand=24  OVERSUBSCRIBED
+```
+
+The invariant is NOT universal: it holds for `threads` in roughly `[5, 17]`
+on this 12-core host, but breaks both below `GO_P` (small `ATLAS_SLOT_THREADS`
+combined with the fixed `-p 6` floor forces `GO_JOBS` to stay at 1 while `K`
+grows unbounded) and above the core count (`K` floors at 1 but `GO_JOBS`
+keeps growing with `threads`). This is a real residual gap in the general
+formula, but it is narrower than what the task asked me to re-confirm:
+the task's own phrasing was "holds with defaults, and holds when
+`ATLAS_SLOT_THREADS` is raised" — and `docs/verification.md:216-219`'s only
+worked "raise it" example is `ATLAS_SLOT_THREADS=12`, which I confirmed above
+stays exactly at the core budget. Nothing in the diff or the docs endorses
+raising past the physical core count or dropping below `ATLAS_GO_P`, so I am
+not blocking on the `threads=18`/`threads=24` or `threads<5` cases, but they
+are worth naming as a **non-blocking finding**: `_build_slot_threads()` does
+not validate `ATLAS_SLOT_THREADS` against `nproc`/`ATLAS_GO_P`, so an operator
+who follows the doc's own hint ("raise `ATLAS_SLOT_THREADS`... on a host that
+can afford it") past the actual core count, or who lowers it below `ATLAS_GO_P`
+on a small VM, gets silent oversubscription with no error — the same class of
+bug this task exists to eliminate, just requiring a deliberate value instead
+of the shipped default.
+
+### 2. Sourcing order and arithmetic safety under `set -euo pipefail`
+
+`tools/verify.sh:26-27` sources `tools/lib/build-slot.sh` immediately after
+`set -euo pipefail`, well before `_build_slot_threads` is first called at
+`tools/verify.sh:44`. Confirmed by `grep -n` — only one `. "$ROOT/tools/lib/build-slot.sh"` in the file, at line 27.
+
+`GO_P` is read and validated at `tools/verify.sh:41-42`
+(`case "$GO_P" in ''|*[!0-9]*|0) ... exit 2 ;; esac`) *before* the division at
+`tools/verify.sh:44` (`GO_JOBS_DEFAULT=$(( $(_build_slot_threads) / GO_P ))`),
+so a non-numeric or zero `ATLAS_GO_P` is rejected with a clear message and
+exit 2 rather than reaching arithmetic (which would otherwise be a shell
+syntax/divide-by-zero error under `set -euo pipefail`, since `$(())` is not
+subject to `-e` in the same way but a divide-by-zero is a hard shell error
+regardless). `_build_slot_threads` itself sanitizes `ATLAS_SLOT_THREADS`
+against non-digit input and clamps to a minimum of 1
+(`tools/lib/build-slot.sh:80-83`), so it can never return `0` or an empty
+string to the divisor on the `build-slot.sh` side either. Both guards are in
+place and ordered correctly. PASS.
+
+### 3. Doc table and prose agree with the new defaults
+
+`docs/verification.md:195-207` table: `ATLAS_SLOT_THREADS | 6`,
+`GOMAXPROCS`/`go build -p` (`ATLAS_GO_P`) `| 6`, `Go pool workers per gate
+(ATLAS_VERIFY_GO_JOBS) | slot threads / -p = 1`, `K (ATLAS_BUILD_SLOTS) |
+physical cores / slot threads = 2 on a 12-core host`. All four match the code
+(`_build_slot_threads` default 6, `tools/verify.sh:41` `GO_P` default 6,
+computed `GO_JOBS_DEFAULT=1`, `_build_slot_default` `K=2` on this host, per
+`build-slot_test.sh`'s own `cores=12` assertion). The prose at
+`docs/verification.md:216-219` ("Now 2 slots × 1 worker × 6 threads = 12 = the
+cores... raise `ATLAS_SLOT_THREADS` to 12... and both K and the pool follow")
+matches the arithmetic verified in §1. No mismatch remaining. PASS.
+
+`notes.md:30-38` was also updated to describe the new single-budget model and
+explicitly records "Review round 1 caught the first cut of this" — an honest
+paper trail of the prior blocking finding. Consistent with the diff.
+
+### 4. No regression in the earlier-passing checks
+
+- `bash tools/lib/build-slot_test.sh`: 11/11 assertions pass, including the two new cases (`slot budget above the core count floors K at 1`, `a 1-thread slot budget yields K = physical cores`) and the original 9. `cores=12` reconfirmed on this host.
+- `shellcheck -S error` on all four changed shell files (`tools/verify.sh`, `tools/lib/build-slot.sh`, `tools/lib/build-slot_test.sh`, `tools/verify_test.sh`): clean, exit 0.
+- `tools/verify_test.sh` was not touched by this fix commit (absent from `git diff --stat d2d89a3af..HEAD`); the structural assertions the prior review already checked (`acquire_build_slot` once, `with-build-slot.sh` once, label normaliser) are untouched by this commit and were not re-broken — `go_layer()`'s only change is reading `$GO_P` instead of `${ATLAS_GO_P:-6}` inline (`tools/verify.sh:511`), same value, no behavior change to the build command itself.
+- The `--facts` isolation, `renice`/`ionice` block, `step()` timing, and `.claude/commands/execute-task.md` findings from the prior review are all outside this fix commit's diff (`git diff --stat` above) and unaffected.
+
+### Not evaluable (unchanged from round 1, plus one addition)
+
+- Real-world contention/scheduling behavior on the dev host — still a runtime claim a static review cannot confirm.
+- Whether an operator would ever actually set `ATLAS_SLOT_THREADS` outside the `[GO_P, physical_cores]` range in practice — the arithmetic gap in §1 is verifiable from the code, its practical likelihood is not.
+
+## Re-review verdict
+
+APPROVED_WITH_FINDINGS. The blocking finding from round 1 is resolved: with
+shipped defaults, `K × GO_JOBS × GO_P = 12 = physical cores` on the 12-core
+reference host (previously 24), and the doc's own worked "raise it" example
+(`ATLAS_SLOT_THREADS=12`) also lands exactly at the core budget. Sourcing
+order and arithmetic guards are correct under `set -euo pipefail`; the doc
+table and prose agree with the code; no regression in the previously-passing
+checks. One non-blocking finding remains: `_build_slot_threads()` does not
+validate `ATLAS_SLOT_THREADS` against `ATLAS_GO_P`/`nproc`, so a value chosen
+outside the documented `[GO_P, physical_cores]` window (e.g. below 6 or above
+12 on this host) silently reproduces oversubscription — narrower than, but
+the same class of bug as, the one this task exists to fix.

@@ -161,7 +161,9 @@
             "clear_skill",
             "warp_to_map",
             "spawn_npc",
-            "clear_drops"
+            "clear_drops",
+            "reset_reactors",
+            "shuffle_reactors"
           ]
         },
         "params": {
@@ -687,6 +689,45 @@
               "params": {
                 "type": "object",
                 "description": "clear_drops takes no parameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "reset_reactors"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "properties": {
+                  "minState": {
+                    "type": "string",
+                    "description": "Reset only reactors whose state is at least this value; omit to reset all"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "shuffle_reactors"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "description": "shuffle_reactors takes no parameters"
               }
             }
           }

@@ -884,16 +884,16 @@ func TestGetObjectsOnlyNamedEntries(t *testing.T) {
 	if len(objs) != 2 {
 		t.Fatalf("len(objs) != 2, got %d", len(objs))
 	}
-	if objs[0].Id != "ENVIRONMENT:gate" || objs[0].Kind != "ENVIRONMENT" || objs[0].Name != "gate" {
+	if objs[0].Id() != "ENVIRONMENT:gate" || objs[0].Kind() != "ENVIRONMENT" || objs[0].Name() != "gate" {
 		t.Fatalf("objs[0] = %+v", objs[0])
 	}
-	if objs[0].ObjectSource != "effect" || objs[0].L0 != "quest" || objs[0].L1 != "gate" || objs[0].L2 != "1" {
+	if objs[0].ObjectSource() != "effect" || objs[0].L0() != "quest" || objs[0].L1() != "gate" || objs[0].L2() != "1" {
 		t.Fatalf("objs[0] fields = %+v", objs[0])
 	}
-	if objs[0].X != 640 || objs[0].Y != 120 || objs[0].Z != 0 || objs[0].Layer != 1 {
+	if objs[0].X() != 640 || objs[0].Y() != 120 || objs[0].Z() != 0 || objs[0].Layer() != 1 {
 		t.Fatalf("objs[0] position/layer = %+v", objs[0])
 	}
-	if objs[1].Id != "ENVIRONMENT:rock" || objs[1].Kind != "ENVIRONMENT" || objs[1].Name != "rock" {
+	if objs[1].Id() != "ENVIRONMENT:rock" || objs[1].Kind() != "ENVIRONMENT" || objs[1].Name() != "rock" {
 		t.Fatalf("objs[1] = %+v", objs[1])
 	}
 }
@@ -919,10 +919,10 @@ func TestGetObjectsResolvesObstacle(t *testing.T) {
 	if len(objs) != 2 {
 		t.Fatalf("len(objs) != 2, got %d", len(objs))
 	}
-	if objs[0].Id != "ENVIRONMENT:gate" || objs[0].Kind != "ENVIRONMENT" {
+	if objs[0].Id() != "ENVIRONMENT:gate" || objs[0].Kind() != "ENVIRONMENT" {
 		t.Fatalf("objs[0] = %+v", objs[0])
 	}
-	if objs[1].Id != "OBSTACLE:rock" || objs[1].Kind != "OBSTACLE" {
+	if objs[1].Id() != "OBSTACLE:rock" || objs[1].Kind() != "OBSTACLE" {
 		t.Fatalf("objs[1] = %+v", objs[1])
 	}
 }
@@ -942,11 +942,11 @@ func TestGetObjectsDuplicateIdKeepsFirst(t *testing.T) {
 	if len(objs) != 1 {
 		t.Fatalf("len(objs) != 1, got %d", len(objs))
 	}
-	if objs[0].Id != "ENVIRONMENT:gate" {
-		t.Fatalf("objs[0].Id != ENVIRONMENT:gate, got %s", objs[0].Id)
+	if objs[0].Id() != "ENVIRONMENT:gate" {
+		t.Fatalf("objs[0].Id() != ENVIRONMENT:gate, got %s", objs[0].Id())
 	}
-	if objs[0].X != 1 {
-		t.Fatalf("objs[0].X != 1 (first wins), got %d", objs[0].X)
+	if objs[0].X() != 1 {
+		t.Fatalf("objs[0].X() != 1 (first wins), got %d", objs[0].X())
 	}
 }
 

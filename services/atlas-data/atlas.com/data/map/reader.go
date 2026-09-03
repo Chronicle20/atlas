@@ -104,7 +104,11 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			m.Recovery = i.GetFloatWithDefault("recovery", 1)
 			m.BackgroundTypes = getBackgroundTypes(exml)
 			m.Reactors = getReactors(exml)
-			m.Objects = getObjects(t, exml)
+			objs, err := object.TransformSlice(getObjects(t, exml))
+			if err != nil {
+				return model.ErrorProvider[RestModel](err)
+			}
+			m.Objects = objs
 			monsters, npcs := getLife(t, exml)
 			m.Monsters = monsters
 			m.NPCs = npcs
@@ -347,8 +351,8 @@ func getBackgroundTypes(exml xml.Node) []BackgroundTypeRestModel {
 // descends one level further. Only entries carrying a non-empty "name" are
 // exposed: those are the only objects addressable by SetObjectState /
 // FieldObstacleOnOff.
-func getObjects(t tenant.Model, exml xml.Node) []object.RestModel {
-	results := make([]object.RestModel, 0)
+func getObjects(t tenant.Model, exml xml.Node) []object.Model {
+	results := make([]object.Model, 0)
 	seen := make(map[string]bool)
 	for _, layer := range exml.ChildNodes {
 		layerNum, err := strconv.Atoi(layer.Name)
@@ -376,26 +380,25 @@ func getObjects(t tenant.Model, exml xml.Node) []object.RestModel {
 				continue
 			}
 			seen[id] = true
-			results = append(results, object.RestModel{
-				Id:           id,
-				Kind:         kind,
-				Name:         name,
-				ObjectSource: oS,
-				L0:           l0,
-				L1:           l1,
-				L2:           l2,
-				X:            int16(o.GetIntegerWithDefault("x", 0)),
-				Y:            int16(o.GetIntegerWithDefault("y", 0)),
-				Z:            o.GetIntegerWithDefault("z", 0),
-				Layer:        uint32(layerNum),
-			})
+			results = append(results, object.NewBuilder().
+				SetKind(kind).
+				SetName(name).
+				SetObjectSource(oS).
+				SetL0(l0).
+				SetL1(l1).
+				SetL2(l2).
+				SetX(int16(o.GetIntegerWithDefault("x", 0))).
+				SetY(int16(o.GetIntegerWithDefault("y", 0))).
+				SetZ(o.GetIntegerWithDefault("z", 0)).
+				SetLayer(uint32(layerNum)).
+				Build())
 		}
 	}
 	sort.Slice(results, func(i, j int) bool {
-		if results[i].Kind != results[j].Kind {
-			return results[i].Kind < results[j].Kind
+		if results[i].Kind() != results[j].Kind() {
+			return results[i].Kind() < results[j].Kind()
 		}
-		return results[i].Name < results[j].Name
+		return results[i].Name() < results[j].Name()
 	})
 	return results
 }

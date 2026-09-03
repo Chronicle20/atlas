@@ -56,111 +56,151 @@ func testProcessor(t *testing.T, tctx context.Context, db *gorm.DB) area_info.Pr
 }
 
 func TestUpsertAreaInfoReplacesWholeString(t *testing.T) {
-	db := testDatabase(t)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	p := testProcessor(t, tctx, db)
-
-	m1, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("miss=o;helper=clear").Build()
-	if err != nil {
-		t.Fatalf("Build: %v", err)
-	}
-	if _, err := p.Put(m1); err != nil {
-		t.Fatalf("Put: %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "upsert replaces the whole string"},
 	}
 
-	m2, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("miss=o;arr=o;helper=clear").Build()
-	if err != nil {
-		t.Fatalf("Build: %v", err)
-	}
-	if _, err := p.Put(m2); err != nil {
-		t.Fatalf("Put: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
+			tctx := tenant.WithContext(context.Background(), testTenant())
+			p := testProcessor(t, tctx, db)
 
-	got, err := p.GetByAreaAsString(1, 21019)
-	if err != nil {
-		t.Fatalf("GetByAreaAsString: %v", err)
-	}
-	if got != "miss=o;arr=o;helper=clear" {
-		t.Fatalf("expected a replace, got %q", got)
+			m1, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("miss=o;helper=clear").Build()
+			if err != nil {
+				t.Fatalf("Build: %v", err)
+			}
+			if _, err := p.Put(m1); err != nil {
+				t.Fatalf("Put: %v", err)
+			}
+
+			m2, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("miss=o;arr=o;helper=clear").Build()
+			if err != nil {
+				t.Fatalf("Build: %v", err)
+			}
+			if _, err := p.Put(m2); err != nil {
+				t.Fatalf("Put: %v", err)
+			}
+
+			got, err := p.GetByAreaAsString(1, 21019)
+			if err != nil {
+				t.Fatalf("GetByAreaAsString: %v", err)
+			}
+			if got != "miss=o;arr=o;helper=clear" {
+				t.Fatalf("expected a replace, got %q", got)
+			}
+		})
 	}
 }
 
 func TestGetByAreaMissingReturnsEmpty(t *testing.T) {
-	db := testDatabase(t)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	p := testProcessor(t, tctx, db)
-
-	got, err := p.GetByAreaAsString(1, 21019)
-	if err != nil {
-		t.Fatalf("GetByAreaAsString: %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "missing area returns empty string"},
 	}
-	if got != "" {
-		t.Fatalf("expected empty string for an unset area, got %q", got)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
+			tctx := tenant.WithContext(context.Background(), testTenant())
+			p := testProcessor(t, tctx, db)
+
+			got, err := p.GetByAreaAsString(1, 21019)
+			if err != nil {
+				t.Fatalf("GetByAreaAsString: %v", err)
+			}
+			if got != "" {
+				t.Fatalf("expected empty string for an unset area, got %q", got)
+			}
+		})
 	}
 }
 
 func TestAreaInfoIsPerCharacter(t *testing.T) {
-	db := testDatabase(t)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	p := testProcessor(t, tctx, db)
-
-	m1, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("char1").Build()
-	if err != nil {
-		t.Fatalf("Build: %v", err)
-	}
-	if _, err := p.Put(m1); err != nil {
-		t.Fatalf("Put: %v", err)
-	}
-	m2, err := area_info.NewBuilder().SetCharacterId(2).SetArea(21019).SetInfo("char2").Build()
-	if err != nil {
-		t.Fatalf("Build: %v", err)
-	}
-	if _, err := p.Put(m2); err != nil {
-		t.Fatalf("Put: %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "area info is scoped per character"},
 	}
 
-	got1, err := p.GetByAreaAsString(1, 21019)
-	if err != nil {
-		t.Fatalf("GetByAreaAsString(1): %v", err)
-	}
-	got2, err := p.GetByAreaAsString(2, 21019)
-	if err != nil {
-		t.Fatalf("GetByAreaAsString(2): %v", err)
-	}
-	if got1 != "char1" || got2 != "char2" {
-		t.Fatalf("expected independent per-character values, got %q and %q", got1, got2)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
+			tctx := tenant.WithContext(context.Background(), testTenant())
+			p := testProcessor(t, tctx, db)
+
+			m1, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("char1").Build()
+			if err != nil {
+				t.Fatalf("Build: %v", err)
+			}
+			if _, err := p.Put(m1); err != nil {
+				t.Fatalf("Put: %v", err)
+			}
+			m2, err := area_info.NewBuilder().SetCharacterId(2).SetArea(21019).SetInfo("char2").Build()
+			if err != nil {
+				t.Fatalf("Build: %v", err)
+			}
+			if _, err := p.Put(m2); err != nil {
+				t.Fatalf("Put: %v", err)
+			}
+
+			got1, err := p.GetByAreaAsString(1, 21019)
+			if err != nil {
+				t.Fatalf("GetByAreaAsString(1): %v", err)
+			}
+			got2, err := p.GetByAreaAsString(2, 21019)
+			if err != nil {
+				t.Fatalf("GetByAreaAsString(2): %v", err)
+			}
+			if got1 != "char1" || got2 != "char2" {
+				t.Fatalf("expected independent per-character values, got %q and %q", got1, got2)
+			}
+		})
 	}
 }
 
 func TestAreaInfoIsTenantScoped(t *testing.T) {
-	db := testDatabase(t)
-
-	tctxA := tenant.WithContext(context.Background(), testTenant())
-	pA := testProcessor(t, tctxA, db)
-	mA, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("tenantA").Build()
-	if err != nil {
-		t.Fatalf("Build: %v", err)
-	}
-	if _, err := pA.Put(mA); err != nil {
-		t.Fatalf("Put: %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "area info is scoped per tenant"},
 	}
 
-	tctxB := tenant.WithContext(context.Background(), testTenant())
-	pB := testProcessor(t, tctxB, db)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
 
-	gotB, err := pB.GetByAreaAsString(1, 21019)
-	if err != nil {
-		t.Fatalf("GetByAreaAsString: %v", err)
-	}
-	if gotB != "" {
-		t.Fatalf("expected tenant B to see no value, got %q", gotB)
-	}
+			tctxA := tenant.WithContext(context.Background(), testTenant())
+			pA := testProcessor(t, tctxA, db)
+			mA, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("tenantA").Build()
+			if err != nil {
+				t.Fatalf("Build: %v", err)
+			}
+			if _, err := pA.Put(mA); err != nil {
+				t.Fatalf("Put: %v", err)
+			}
 
-	gotA, err := pA.GetByAreaAsString(1, 21019)
-	if err != nil {
-		t.Fatalf("GetByAreaAsString: %v", err)
-	}
-	if gotA != "tenantA" {
-		t.Fatalf("expected tenant A to still see its own value, got %q", gotA)
+			tctxB := tenant.WithContext(context.Background(), testTenant())
+			pB := testProcessor(t, tctxB, db)
+
+			gotB, err := pB.GetByAreaAsString(1, 21019)
+			if err != nil {
+				t.Fatalf("GetByAreaAsString: %v", err)
+			}
+			if gotB != "" {
+				t.Fatalf("expected tenant B to see no value, got %q", gotB)
+			}
+
+			gotA, err := pA.GetByAreaAsString(1, 21019)
+			if err != nil {
+				t.Fatalf("GetByAreaAsString: %v", err)
+			}
+			if gotA != "tenantA" {
+				t.Fatalf("expected tenant A to still see its own value, got %q", gotA)
+			}
+		})
 	}
 }

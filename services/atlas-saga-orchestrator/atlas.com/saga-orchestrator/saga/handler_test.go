@@ -1840,55 +1840,65 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 // (task-290 G12) -- a client that re-reads the value immediately after the
 // packet must see the stored one.
 func TestHandleUpdateAreaInfo(t *testing.T) {
-	logger, _ := test.NewNullLogger()
-	_, ctx := setupContext()
-
-	var calls []string
-
-	areaInfoP := &areaInfoMock.ProcessorMock{
-		PutFunc: func(characterId uint32, area uint16, info string) error {
-			calls = append(calls, "persist")
-			assert.Equal(t, uint32(12345), characterId)
-			assert.Equal(t, uint16(21019), area)
-			assert.Equal(t, "miss=o;helper=clear", info)
-			return nil
-		},
-	}
-	systemMessageP := &systemMessageMock.ProcessorMock{
-		UpdateAreaInfoFunc: func(transactionId uuid.UUID, ch channel.Model, characterId uint32, area uint16, info string) error {
-			calls = append(calls, "announce")
-			assert.Equal(t, uint32(12345), characterId)
-			assert.Equal(t, uint16(21019), area)
-			assert.Equal(t, "miss=o;helper=clear", info)
-			return nil
-		},
+	tests := []struct {
+		name string
+	}{
+		{name: "handle update area info persists then announces"},
 	}
 
-	s, err := NewBuilder().
-		SetTransactionId(uuid.New()).
-		SetSagaType(QuestReward).
-		SetInitiatedBy("test").
-		Build()
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			_, ctx := setupContext()
 
-	step := NewStep[any]("update-area-info", Pending, UpdateAreaInfo, UpdateAreaInfoPayload{
-		CharacterId: 12345,
-		WorldId:     0,
-		ChannelId:   0,
-		Area:        21019,
-		Info:        "miss=o;helper=clear",
-	})
+			var calls []string
 
-	// WithAreaInfoProcessor is applied last: it uses the shallow-copy form
-	// (see its doc comment), which preserves every field already set, unlike
-	// the field-by-field With* siblings.
-	err = NewHandler(logger, ctx).
-		WithSystemMessageProcessor(systemMessageP).
-		WithAreaInfoProcessor(areaInfoP).
-		handleUpdateAreaInfo(s, step)
-	require.NoError(t, err)
+			areaInfoP := &areaInfoMock.ProcessorMock{
+				PutFunc: func(characterId uint32, area uint16, info string) error {
+					calls = append(calls, "persist")
+					assert.Equal(t, uint32(12345), characterId)
+					assert.Equal(t, uint16(21019), area)
+					assert.Equal(t, "miss=o;helper=clear", info)
+					return nil
+				},
+			}
+			systemMessageP := &systemMessageMock.ProcessorMock{
+				UpdateAreaInfoFunc: func(transactionId uuid.UUID, ch channel.Model, characterId uint32, area uint16, info string) error {
+					calls = append(calls, "announce")
+					assert.Equal(t, uint32(12345), characterId)
+					assert.Equal(t, uint16(21019), area)
+					assert.Equal(t, "miss=o;helper=clear", info)
+					return nil
+				},
+			}
 
-	require.Equal(t, []string{"persist", "announce"}, calls)
+			s, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
+
+			step := NewStep[any]("update-area-info", Pending, UpdateAreaInfo, UpdateAreaInfoPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   0,
+				Area:        21019,
+				Info:        "miss=o;helper=clear",
+			})
+
+			// WithAreaInfoProcessor is applied last: it uses the shallow-copy form
+			// (see its doc comment), which preserves every field already set, unlike
+			// the field-by-field With* siblings.
+			err = NewHandler(logger, ctx).
+				WithSystemMessageProcessor(systemMessageP).
+				WithAreaInfoProcessor(areaInfoP).
+				handleUpdateAreaInfo(s, step)
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"persist", "announce"}, calls)
+		})
+	}
 }
 
 // TestHandleExplorerQuest_Routing verifies ExplorerQuest is registered in
@@ -1898,46 +1908,56 @@ func TestHandleUpdateAreaInfo(t *testing.T) {
 // G14). This is the C20 defect class check: a routing-table omission builds
 // and unit-tests clean while being unreachable in production.
 func TestHandleExplorerQuest_Routing(t *testing.T) {
-	logger, _ := test.NewNullLogger()
-	_, ctx := setupContext()
-
-	var calls []string
-	questP := &questmock.ProcessorMock{
-		RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
-			calls = append(calls, "explorer")
-			assert.Equal(t, world.Id(1), worldId)
-			assert.Equal(t, uint32(12345), characterId)
-			assert.Equal(t, uint32(29700), questId)
-			assert.Equal(t, uint32(101000000), mapId)
-			return questp.ExplorerQuestResult{}, nil
-		},
+	tests := []struct {
+		name string
+	}{
+		{name: "explorer quest is routed through GetHandler"},
 	}
 
-	s, err := NewBuilder().
-		SetTransactionId(uuid.New()).
-		SetSagaType(QuestReward).
-		SetInitiatedBy("test").
-		Build()
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			_, ctx := setupContext()
 
-	step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
-		CharacterId: 12345,
-		WorldId:     1,
-		ChannelId:   0,
-		QuestId:     29700,
-		MapId:       _map.Id(101000000),
-		AreaName:    "Ellinia",
-	})
+			var calls []string
+			questP := &questmock.ProcessorMock{
+				RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
+					calls = append(calls, "explorer")
+					assert.Equal(t, world.Id(1), worldId)
+					assert.Equal(t, uint32(12345), characterId)
+					assert.Equal(t, uint32(29700), questId)
+					assert.Equal(t, uint32(101000000), mapId)
+					return questp.ExplorerQuestResult{}, nil
+				},
+			}
 
-	h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+			s, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
 
-	actionHandler, ok := h.GetHandler(ExplorerQuest)
-	require.True(t, ok, "ExplorerQuest handler not registered")
+			step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+				CharacterId: 12345,
+				WorldId:     1,
+				ChannelId:   0,
+				QuestId:     29700,
+				MapId:       _map.Id(101000000),
+				AreaName:    "Ellinia",
+			})
 
-	err = actionHandler(s, step)
-	require.NoError(t, err)
+			h := NewHandler(logger, ctx).WithQuestProcessor(questP)
 
-	require.Equal(t, []string{"explorer"}, calls)
+			actionHandler, ok := h.GetHandler(ExplorerQuest)
+			require.True(t, ok, "ExplorerQuest handler not registered")
+
+			err = actionHandler(s, step)
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"explorer"}, calls)
+		})
+	}
 }
 
 // TestHandleExplorerQuest_WritesProgressWhenNewlyRecorded verifies that when
@@ -1947,51 +1967,61 @@ func TestHandleExplorerQuest_Routing(t *testing.T) {
 // `getPlayer().setQuestProgress(quest.getId(), (int)quest.getInfoNumber(qs.getStatus()), status)`,
 // MapScriptMethods.java:124).
 func TestHandleExplorerQuest_WritesProgressWhenNewlyRecorded(t *testing.T) {
-	logger, _ := test.NewNullLogger()
-	_, ctx := setupContext()
-
-	var calls []string
-	questP := &questmock.ProcessorMock{
-		RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
-			calls = append(calls, "explorer")
-			return questp.ExplorerQuestResult{Count: 3, NewlyRecorded: true, InfoNumber: 10024, Threshold: 5}, nil
-		},
-		RequestUpdateProgressFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error {
-			calls = append(calls, "progress")
-			assert.Equal(t, world.Id(1), worldId)
-			assert.Equal(t, uint32(12345), characterId)
-			assert.Equal(t, uint32(29700), questId)
-			assert.Equal(t, uint32(10024), infoNumber)
-			assert.Equal(t, "3", progress)
-			return nil
-		},
+	tests := []struct {
+		name string
+	}{
+		{name: "writes progress when newly recorded"},
 	}
 
-	s, err := NewBuilder().
-		SetTransactionId(uuid.New()).
-		SetSagaType(QuestReward).
-		SetInitiatedBy("test").
-		Build()
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			_, ctx := setupContext()
 
-	step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
-		CharacterId: 12345,
-		WorldId:     1,
-		ChannelId:   0,
-		QuestId:     29700,
-		MapId:       _map.Id(101000000),
-		AreaName:    "Ellinia",
-	})
+			var calls []string
+			questP := &questmock.ProcessorMock{
+				RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
+					calls = append(calls, "explorer")
+					return questp.ExplorerQuestResult{Count: 3, NewlyRecorded: true, InfoNumber: 10024, Threshold: 5}, nil
+				},
+				RequestUpdateProgressFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error {
+					calls = append(calls, "progress")
+					assert.Equal(t, world.Id(1), worldId)
+					assert.Equal(t, uint32(12345), characterId)
+					assert.Equal(t, uint32(29700), questId)
+					assert.Equal(t, uint32(10024), infoNumber)
+					assert.Equal(t, "3", progress)
+					return nil
+				},
+			}
 
-	h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+			s, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
 
-	actionHandler, ok := h.GetHandler(ExplorerQuest)
-	require.True(t, ok, "ExplorerQuest handler not registered")
+			step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+				CharacterId: 12345,
+				WorldId:     1,
+				ChannelId:   0,
+				QuestId:     29700,
+				MapId:       _map.Id(101000000),
+				AreaName:    "Ellinia",
+			})
 
-	err = actionHandler(s, step)
-	require.NoError(t, err)
+			h := NewHandler(logger, ctx).WithQuestProcessor(questP)
 
-	require.Equal(t, []string{"explorer", "progress"}, calls)
+			actionHandler, ok := h.GetHandler(ExplorerQuest)
+			require.True(t, ok, "ExplorerQuest handler not registered")
+
+			err = actionHandler(s, step)
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"explorer", "progress"}, calls)
+		})
+	}
 }
 
 // TestHandleExplorerQuest_SkipsProgressWhenNotNewlyRecorded verifies that
@@ -2000,46 +2030,56 @@ func TestHandleExplorerQuest_WritesProgressWhenNewlyRecorded(t *testing.T) {
 // `if (!qs.addMedalMap(...)) return;` early return (MapScriptMethods.java:
 // 116-118).
 func TestHandleExplorerQuest_SkipsProgressWhenNotNewlyRecorded(t *testing.T) {
-	logger, _ := test.NewNullLogger()
-	_, ctx := setupContext()
-
-	var calls []string
-	questP := &questmock.ProcessorMock{
-		RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
-			calls = append(calls, "explorer")
-			return questp.ExplorerQuestResult{Count: 3, NewlyRecorded: false}, nil
-		},
-		RequestUpdateProgressFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error {
-			calls = append(calls, "progress")
-			return nil
-		},
+	tests := []struct {
+		name string
+	}{
+		{name: "skips progress when not newly recorded"},
 	}
 
-	s, err := NewBuilder().
-		SetTransactionId(uuid.New()).
-		SetSagaType(QuestReward).
-		SetInitiatedBy("test").
-		Build()
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			_, ctx := setupContext()
 
-	step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
-		CharacterId: 12345,
-		WorldId:     1,
-		ChannelId:   0,
-		QuestId:     29700,
-		MapId:       _map.Id(101000000),
-		AreaName:    "Ellinia",
-	})
+			var calls []string
+			questP := &questmock.ProcessorMock{
+				RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
+					calls = append(calls, "explorer")
+					return questp.ExplorerQuestResult{Count: 3, NewlyRecorded: false}, nil
+				},
+				RequestUpdateProgressFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error {
+					calls = append(calls, "progress")
+					return nil
+				},
+			}
 
-	h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+			s, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
 
-	actionHandler, ok := h.GetHandler(ExplorerQuest)
-	require.True(t, ok, "ExplorerQuest handler not registered")
+			step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+				CharacterId: 12345,
+				WorldId:     1,
+				ChannelId:   0,
+				QuestId:     29700,
+				MapId:       _map.Id(101000000),
+				AreaName:    "Ellinia",
+			})
 
-	err = actionHandler(s, step)
-	require.NoError(t, err)
+			h := NewHandler(logger, ctx).WithQuestProcessor(questP)
 
-	require.Equal(t, []string{"explorer"}, calls)
+			actionHandler, ok := h.GetHandler(ExplorerQuest)
+			require.True(t, ok, "ExplorerQuest handler not registered")
+
+			err = actionHandler(s, step)
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"explorer"}, calls)
+		})
+	}
 }
 
 // TestHandlerImpl_WithProcessorMethods_PreserveOtherFields is a regression test

@@ -56,102 +56,142 @@ func testProcessor(tctx context.Context, db *gorm.DB) medal_map.Processor {
 }
 
 func TestRecordMedalMapDeduplicates(t *testing.T) {
-	db := testDatabase(t)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	p := testProcessor(tctx, db)
-
-	first, err := p.Record(1, 29005, _map.Id(100000000))
-	if err != nil {
-		t.Fatalf("Record: %v", err)
-	}
-	if first.Count != 1 || !first.NewlyRecorded {
-		t.Fatalf("first record = %+v, want {Count:1 NewlyRecorded:true}", first)
+	tests := []struct {
+		name string
+	}{
+		{name: "recording the same map twice deduplicates"},
 	}
 
-	second, err := p.Record(1, 29005, _map.Id(100000000))
-	if err != nil {
-		t.Fatalf("Record: %v", err)
-	}
-	if second.Count != 1 || second.NewlyRecorded {
-		t.Fatalf("second record = %+v, want {Count:1 NewlyRecorded:false}", second)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
+			tctx := tenant.WithContext(context.Background(), testTenant())
+			p := testProcessor(tctx, db)
+
+			first, err := p.Record(1, 29005, _map.Id(100000000))
+			if err != nil {
+				t.Fatalf("Record: %v", err)
+			}
+			if first.Count != 1 || !first.NewlyRecorded {
+				t.Fatalf("first record = %+v, want {Count:1 NewlyRecorded:true}", first)
+			}
+
+			second, err := p.Record(1, 29005, _map.Id(100000000))
+			if err != nil {
+				t.Fatalf("Record: %v", err)
+			}
+			if second.Count != 1 || second.NewlyRecorded {
+				t.Fatalf("second record = %+v, want {Count:1 NewlyRecorded:false}", second)
+			}
+		})
 	}
 }
 
 func TestRecordMedalMapCountsDistinctMaps(t *testing.T) {
-	db := testDatabase(t)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	p := testProcessor(tctx, db)
-
-	maps := []_map.Id{100000000, 100000001, 100000000, 100000002}
-	var last medal_map.RecordResult
-	for _, mapId := range maps {
-		result, err := p.Record(1, 29005, mapId)
-		if err != nil {
-			t.Fatalf("Record(%d): %v", mapId, err)
-		}
-		last = result
+	tests := []struct {
+		name string
+	}{
+		{name: "recording counts distinct maps"},
 	}
-	if last.Count != 3 {
-		t.Fatalf("final count = %d, want 3", last.Count)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
+			tctx := tenant.WithContext(context.Background(), testTenant())
+			p := testProcessor(tctx, db)
+
+			maps := []_map.Id{100000000, 100000001, 100000000, 100000002}
+			var last medal_map.RecordResult
+			for _, mapId := range maps {
+				result, err := p.Record(1, 29005, mapId)
+				if err != nil {
+					t.Fatalf("Record(%d): %v", mapId, err)
+				}
+				last = result
+			}
+			if last.Count != 3 {
+				t.Fatalf("final count = %d, want 3", last.Count)
+			}
+		})
 	}
 }
 
 func TestMedalMapsArePerQuest(t *testing.T) {
-	db := testDatabase(t)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	p := testProcessor(tctx, db)
-
-	if _, err := p.Record(1, 29005, _map.Id(100000000)); err != nil {
-		t.Fatalf("Record: %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "medal maps are scoped per quest"},
 	}
 
-	other, err := p.Record(1, 29006, _map.Id(100000001))
-	if err != nil {
-		t.Fatalf("Record: %v", err)
-	}
-	if other.Count != 1 {
-		t.Fatalf("quest 29006 count = %d, want 1 (unaffected by quest 29005's recording)", other.Count)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
+			tctx := tenant.WithContext(context.Background(), testTenant())
+			p := testProcessor(tctx, db)
+
+			if _, err := p.Record(1, 29005, _map.Id(100000000)); err != nil {
+				t.Fatalf("Record: %v", err)
+			}
+
+			other, err := p.Record(1, 29006, _map.Id(100000001))
+			if err != nil {
+				t.Fatalf("Record: %v", err)
+			}
+			if other.Count != 1 {
+				t.Fatalf("quest 29006 count = %d, want 1 (unaffected by quest 29005's recording)", other.Count)
+			}
+		})
 	}
 }
 
 func TestMedalMapsArePerCharacterAndTenant(t *testing.T) {
-	db := testDatabase(t)
-
-	tctxA := tenant.WithContext(context.Background(), testTenant())
-	pA := testProcessor(tctxA, db)
-	if _, err := pA.Record(1, 29005, _map.Id(100000000)); err != nil {
-		t.Fatalf("Record: %v", err)
-	}
-	if _, err := pA.Record(1, 29005, _map.Id(100000001)); err != nil {
-		t.Fatalf("Record: %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "medal maps are scoped per character and tenant"},
 	}
 
-	// Different character, same tenant: independent count.
-	otherChar, err := pA.Record(2, 29005, _map.Id(100000000))
-	if err != nil {
-		t.Fatalf("Record: %v", err)
-	}
-	if otherChar.Count != 1 {
-		t.Fatalf("character 2 count = %d, want 1", otherChar.Count)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testDatabase(t)
 
-	// Different tenant, same character/quest/map: independent count.
-	tctxB := tenant.WithContext(context.Background(), testTenant())
-	pB := testProcessor(tctxB, db)
-	otherTenant, err := pB.Record(1, 29005, _map.Id(100000000))
-	if err != nil {
-		t.Fatalf("Record: %v", err)
-	}
-	if otherTenant.Count != 1 || !otherTenant.NewlyRecorded {
-		t.Fatalf("tenant B record = %+v, want {Count:1 NewlyRecorded:true}", otherTenant)
-	}
+			tctxA := tenant.WithContext(context.Background(), testTenant())
+			pA := testProcessor(tctxA, db)
+			if _, err := pA.Record(1, 29005, _map.Id(100000000)); err != nil {
+				t.Fatalf("Record: %v", err)
+			}
+			if _, err := pA.Record(1, 29005, _map.Id(100000001)); err != nil {
+				t.Fatalf("Record: %v", err)
+			}
 
-	// Tenant A's count is unaffected by tenant B's recording.
-	stillA, err := pA.Record(1, 29005, _map.Id(100000002))
-	if err != nil {
-		t.Fatalf("Record: %v", err)
-	}
-	if stillA.Count != 3 {
-		t.Fatalf("tenant A count after third map = %d, want 3", stillA.Count)
+			// Different character, same tenant: independent count.
+			otherChar, err := pA.Record(2, 29005, _map.Id(100000000))
+			if err != nil {
+				t.Fatalf("Record: %v", err)
+			}
+			if otherChar.Count != 1 {
+				t.Fatalf("character 2 count = %d, want 1", otherChar.Count)
+			}
+
+			// Different tenant, same character/quest/map: independent count.
+			tctxB := tenant.WithContext(context.Background(), testTenant())
+			pB := testProcessor(tctxB, db)
+			otherTenant, err := pB.Record(1, 29005, _map.Id(100000000))
+			if err != nil {
+				t.Fatalf("Record: %v", err)
+			}
+			if otherTenant.Count != 1 || !otherTenant.NewlyRecorded {
+				t.Fatalf("tenant B record = %+v, want {Count:1 NewlyRecorded:true}", otherTenant)
+			}
+
+			// Tenant A's count is unaffected by tenant B's recording.
+			stillA, err := pA.Record(1, 29005, _map.Id(100000002))
+			if err != nil {
+				t.Fatalf("Record: %v", err)
+			}
+			if stillA.Count != 3 {
+				t.Fatalf("tenant A count after third map = %d, want 3", stillA.Count)
+			}
+		})
 	}
 }

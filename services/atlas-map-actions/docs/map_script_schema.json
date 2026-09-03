@@ -454,7 +454,7 @@
                   },
                   "areaName": {
                     "type": "string",
-                    "description": "Human-readable region label (currently unused; atlas-data does not serve the quest's infoEx(0) threshold needed for the completion/progress message)"
+                    "description": "Human-readable region label (currently unused; the getShowQuestCompletion/earnTitleMessage completion packets are not sent)"
                   }
                 }
               }

@@ -15,13 +15,11 @@ import (
 //
 // Cosmic's explorerQuest also compares that count against the quest's
 // infoEx(0) threshold to decide between the completion packet and the
-// "<n>/<m> regions explored" title message. Neither the quest's per-status
-// infoNumber nor infoEx is served by atlas-data (grep of
-// services/atlas-data/atlas.com/data/quest/reader.go found only the
-// Check.img start/end-requirement infoNumber, never infoEx), so that
-// comparison cannot be made faithfully here. Record records the count and
-// nothing else; the completion/threshold decision is out of scope until a
-// data source exists.
+// "<n>/<m> regions explored" title message. atlas-data now serves both the
+// quest's infoNumber and infoEx, but that resolution happens in
+// atlas-saga-orchestrator's quest.Processor (RequestExplorerQuest), not
+// here. Record records the count and nothing else; the
+// completion/threshold decision stays out of scope for this package.
 type Processor interface {
 	Record(characterId uint32, questId uint32, mapId _map.Id) (RecordResult, error)
 }

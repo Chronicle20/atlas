@@ -88,6 +88,7 @@ type RestStateModel struct {
 	CraftAction   *RestCraftActionModel   `json:"craftAction,omitempty"`   // Craft action model
 	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model
 	AskNumber     *RestAskNumberModel     `json:"askNumber,omitempty"`     // Ask number model
+	AskText       *RestAskTextModel       `json:"askText,omitempty"`       // Ask text model
 	AskStyle      *RestAskStyleModel      `json:"askStyle,omitempty"`      // Ask style model
 }
 
@@ -163,6 +164,24 @@ type RestAskNumberModel struct {
 	MaxValue     uint32 `json:"max"`
 	ContextKey   string `json:"contextKey,omitempty"`
 	NextState    string `json:"nextState,omitempty"`
+}
+
+// RestAskTextMatchModel represents the REST model for a single ordered, exact-match branch in an ask text state
+type RestAskTextMatchModel struct {
+	Value            string `json:"value,omitempty"`
+	ValueFromContext string `json:"valueFromContext,omitempty"`
+	NextState        string `json:"nextState"`
+}
+
+// RestAskTextModel represents the REST model for ask text (free-text) states
+type RestAskTextModel struct {
+	Text        string                  `json:"text"`
+	DefaultText string                  `json:"defaultText"`
+	MinLength   uint16                  `json:"minLength"`
+	MaxLength   uint16                  `json:"maxLength"`
+	ContextKey  string                  `json:"contextKey,omitempty"`
+	Matches     []RestAskTextMatchModel `json:"matches,omitempty"`
+	NextState   string                  `json:"nextState,omitempty"`
 }
 
 // RestAskStyleModel represents the REST model for ask style states
@@ -266,6 +285,12 @@ func TransformState(m conversation.StateModel) (RestStateModel, error) {
 		if askNumber != nil {
 			restAskNumber := TransformAskNumber(*askNumber)
 			restState.AskNumber = &restAskNumber
+		}
+	case conversation.AskTextType:
+		askText := m.AskText()
+		if askText != nil {
+			restAskText := TransformAskText(*askText)
+			restState.AskText = &restAskText
 		}
 	case conversation.AskStyleType:
 		askStyle := m.AskStyle()
@@ -385,6 +410,30 @@ func TransformAskNumber(m conversation.AskNumberModel) RestAskNumberModel {
 	}
 }
 
+// TransformAskText converts an AskTextModel to a RestAskTextModel
+func TransformAskText(m conversation.AskTextModel) RestAskTextModel {
+	var restMatches []RestAskTextMatchModel
+	if m.Matches() != nil {
+		restMatches = make([]RestAskTextMatchModel, 0, len(m.Matches()))
+		for _, match := range m.Matches() {
+			restMatches = append(restMatches, RestAskTextMatchModel{
+				Value:            match.Value(),
+				ValueFromContext: match.ValueFromContext(),
+				NextState:        match.NextState(),
+			})
+		}
+	}
+	return RestAskTextModel{
+		Text:        m.Text(),
+		DefaultText: m.DefaultText(),
+		MinLength:   m.MinLength(),
+		MaxLength:   m.MaxLength(),
+		ContextKey:  m.ContextKey(),
+		Matches:     restMatches,
+		NextState:   m.NextState(),
+	}
+}
+
 // TransformAskStyle converts an AskStyleModel to a RestAskStyleModel
 func TransformAskStyle(m conversation.AskStyleModel) RestAskStyleModel {
 	return RestAskStyleModel{
@@ -495,6 +544,15 @@ func ExtractState(r RestStateModel) (conversation.StateModel, error) {
 			return conversation.StateModel{}, err
 		}
 		stateBuilder.SetAskNumber(askNumber)
+	case conversation.AskTextType:
+		if r.AskText == nil {
+			return conversation.StateModel{}, fmt.Errorf("askText is required for askText state")
+		}
+		askText, err := ExtractAskText(*r.AskText)
+		if err != nil {
+			return conversation.StateModel{}, err
+		}
+		stateBuilder.SetAskText(askText)
 	case conversation.AskStyleType:
 		if r.AskStyle == nil {
 			return conversation.StateModel{}, fmt.Errorf("askStyle is required for askStyle state")
@@ -658,6 +716,34 @@ func ExtractAskNumber(r RestAskNumberModel) (*conversation.AskNumberModel, error
 
 	if r.ContextKey != "" {
 		b.SetContextKey(r.ContextKey)
+	}
+
+	return b.Build()
+}
+
+// ExtractAskText converts a RestAskTextModel to an AskTextModel
+func ExtractAskText(r RestAskTextModel) (*conversation.AskTextModel, error) {
+	b := conversation.NewAskTextBuilder().
+		SetText(r.Text).
+		SetDefaultText(r.DefaultText).
+		SetMinLength(r.MinLength).
+		SetMaxLength(r.MaxLength).
+		SetNextState(r.NextState)
+
+	if r.ContextKey != "" {
+		b.SetContextKey(r.ContextKey)
+	}
+
+	for _, m := range r.Matches {
+		match, err := conversation.NewAskTextMatchBuilder().
+			SetValue(m.Value).
+			SetValueFromContext(m.ValueFromContext).
+			SetNextState(m.NextState).
+			Build()
+		if err != nil {
+			return nil, err
+		}
+		b.AddMatch(*match)
 	}
 
 	return b.Build()

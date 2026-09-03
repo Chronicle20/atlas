@@ -103,7 +103,7 @@ func handleContinueConversationCommand(db *gorm.DB) message.Handler[npc2.Command
 		if c.Type != npc2.CommandTypeContinueConversation {
 			return
 		}
-		_ = conversation.NewProcessor(l, ctx, db).Continue(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection)
+		_ = conversation.NewProcessor(l, ctx, db).Continue(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection, c.Body.Text)
 	}
 }
 

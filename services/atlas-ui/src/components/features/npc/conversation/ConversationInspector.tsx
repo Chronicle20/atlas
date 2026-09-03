@@ -38,6 +38,8 @@ import type {
   AskNumberState,
   AskSlideMenuState,
   AskStyleState,
+  AskTextMatch,
+  AskTextState,
   Condition,
   Conversation,
   ConversationState,
@@ -501,6 +503,54 @@ function TypeFields({
         </Section>
       ) : (
         <AskNumberForm
+          state={state}
+          conversation={conversation}
+          onUpdateState={onUpdateState}
+        />
+      );
+    case "askText":
+      return readOnly ? (
+        <Section title="Ask Text">
+          {state.askText ? (
+            <>
+              <KV label="text" value={state.askText.text} />
+              <KV label="default" value={state.askText.defaultText} mono />
+              <KV label="minLength" value={state.askText.minLength} mono />
+              <KV label="maxLength" value={state.askText.maxLength} mono />
+              {state.askText.contextKey && (
+                <KV label="contextKey" value={state.askText.contextKey} mono />
+              )}
+              <KV
+                label="matches"
+                value={
+                  (state.askText.matches ?? []).length === 0 ? (
+                    <em className="text-muted-foreground">(none)</em>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      {(state.askText.matches ?? []).map((m, i) => (
+                        <code key={i} className="font-mono text-[11px]">
+                          {m.valueFromContext !== undefined
+                            ? `context:${m.valueFromContext}`
+                            : JSON.stringify(m.value ?? "")}{" "}
+                          → {m.nextState || "<end>"}
+                        </code>
+                      ))}
+                    </div>
+                  )
+                }
+              />
+              <KV
+                label="fallback"
+                value={state.askText.nextState || "<end>"}
+                mono
+              />
+            </>
+          ) : (
+            <Empty />
+          )}
+        </Section>
+      ) : (
+        <AskTextForm
           state={state}
           conversation={conversation}
           onUpdateState={onUpdateState}
@@ -1331,6 +1381,276 @@ function AskNumberForm({
         />
       </div>
     </Section>
+  );
+}
+
+function AskTextForm({
+  state,
+  conversation,
+  onUpdateState,
+}: {
+  state: ConversationState;
+  conversation: Conversation;
+  onUpdateState: (id: string, next: ConversationState) => void;
+}) {
+  const a: AskTextState = state.askText ?? {
+    text: "",
+    defaultText: "",
+    minLength: 0,
+    maxLength: 32,
+    contextKey: "answer",
+    matches: [],
+    nextState: "",
+  };
+  const update = (patch: Partial<AskTextState>) =>
+    onUpdateState(state.id, { ...state, askText: { ...a, ...patch } });
+  const otherIds = conversation.attributes.states
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
+  return (
+    <Section title="Ask Text">
+      <div className="grid grid-cols-[90px_1fr] gap-2">
+        <Label className="text-xs text-muted-foreground pt-1">text</Label>
+        <Textarea
+          value={a.text}
+          onChange={(e) => update({ text: e.target.value })}
+          className="min-h-[72px] text-xs"
+          placeholder="Prompt text"
+        />
+      </div>
+      <div className="grid grid-cols-[90px_1fr] gap-2 items-center">
+        <Label className="text-xs text-muted-foreground">default</Label>
+        <Input
+          value={a.defaultText}
+          onChange={(e) => update({ defaultText: e.target.value })}
+          className="h-8 text-xs"
+          placeholder="Default text"
+        />
+      </div>
+      <div className="grid grid-cols-[90px_1fr_1fr] gap-2 items-center">
+        <span className="text-xs text-muted-foreground">length</span>
+        <Input
+          type="number"
+          value={a.minLength}
+          onChange={(e) => update({ minLength: Number(e.target.value) })}
+          placeholder="min"
+          className="h-8 text-xs"
+        />
+        <Input
+          type="number"
+          value={a.maxLength}
+          onChange={(e) => update({ maxLength: Number(e.target.value) })}
+          placeholder="max"
+          className="h-8 text-xs"
+        />
+      </div>
+      <OptionalTextField
+        label="contextKey"
+        value={a.contextKey}
+        onChange={(v) => update({ contextKey: v })}
+        onRemove={() => {
+          const next = { ...a };
+          delete next.contextKey;
+          onUpdateState(state.id, { ...state, askText: next });
+        }}
+      />
+      <div className="grid grid-cols-[90px_1fr] gap-2 items-center">
+        <Label className="text-xs text-muted-foreground">fallback →</Label>
+        <StatePicker
+          value={a.nextState ?? ""}
+          onChange={(v) => update({ nextState: v })}
+          otherIds={otherIds}
+        />
+      </div>
+      <MatchesEditor
+        matches={a.matches ?? []}
+        onChange={(matches) => update({ matches })}
+        otherIds={otherIds}
+      />
+    </Section>
+  );
+}
+
+function MatchesEditor({
+  matches,
+  onChange,
+  otherIds,
+}: {
+  matches: AskTextMatch[];
+  onChange: (next: AskTextMatch[]) => void;
+  otherIds: string[];
+}) {
+  const total = matches.length;
+  const updateMatch = (i: number, next: AskTextMatch) => {
+    const copy = [...matches];
+    copy[i] = next;
+    onChange(copy);
+  };
+  const addMatch = () => {
+    onChange([...matches, { value: "", nextState: "" }]);
+  };
+  const removeMatch = (i: number) => {
+    const next = [...matches];
+    next.splice(i, 1);
+    onChange(next);
+  };
+  const moveUp = (i: number) => {
+    if (i <= 0) return;
+    const next = [...matches];
+    const tmp = next[i - 1]!;
+    next[i - 1] = next[i]!;
+    next[i] = tmp;
+    onChange(next);
+  };
+  const moveDown = (i: number) => {
+    if (i >= total - 1) return;
+    const next = [...matches];
+    const tmp = next[i + 1]!;
+    next[i + 1] = next[i]!;
+    next[i] = tmp;
+    onChange(next);
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mt-2">
+        <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+          Matches ({matches.length})
+        </Label>
+        <Button size="sm" variant="outline" onClick={addMatch}>
+          <Plus className="h-3 w-3" />
+          Add
+        </Button>
+      </div>
+      <div className="flex flex-col gap-2">
+        {matches.map((m, i) => (
+          <MatchRow
+            key={i}
+            index={i}
+            match={m}
+            otherIds={otherIds}
+            canMoveUp={i > 0}
+            canMoveDown={i < total - 1}
+            onChange={(next) => updateMatch(i, next)}
+            onRemove={() => removeMatch(i)}
+            onMoveUp={() => moveUp(i)}
+            onMoveDown={() => moveDown(i)}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function MatchRow({
+  index,
+  match,
+  otherIds,
+  canMoveUp,
+  canMoveDown,
+  onChange,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+}: {
+  index: number;
+  match: AskTextMatch;
+  otherIds: string[];
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onChange: (next: AskTextMatch) => void;
+  onRemove: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}) {
+  const source: "value" | "context" =
+    match.valueFromContext !== undefined ? "context" : "value";
+
+  const setSource = (next: "value" | "context") => {
+    if (next === source) return;
+    if (next === "context") {
+      onChange({ nextState: match.nextState, valueFromContext: "" });
+    } else {
+      onChange({ nextState: match.nextState, value: "" });
+    }
+  };
+
+  return (
+    <div className="flex items-start gap-1.5">
+      <div className="flex flex-col gap-0 pt-0.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-4 w-5 p-0"
+          onClick={onMoveUp}
+          disabled={!canMoveUp}
+          title="Move up"
+          aria-label="Move up"
+        >
+          <ChevronUp className="h-3 w-3" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-4 w-5 p-0"
+          onClick={onMoveDown}
+          disabled={!canMoveDown}
+          title="Move down"
+          aria-label="Move down"
+        >
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </div>
+      <div className="grid grid-cols-[90px_1fr_1fr_auto] gap-1.5 items-start flex-1">
+        <Select
+          value={source}
+          onValueChange={(v) => setSource(v as "value" | "context")}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="value">value</SelectItem>
+            <SelectItem value="context">context</SelectItem>
+          </SelectContent>
+        </Select>
+        {source === "context" ? (
+          <Input
+            value={match.valueFromContext ?? ""}
+            onChange={(e) =>
+              onChange({ ...match, valueFromContext: e.target.value })
+            }
+            placeholder="context key"
+            className="h-8 text-xs font-mono"
+          />
+        ) : (
+          <Input
+            value={match.value ?? ""}
+            onChange={(e) => onChange({ ...match, value: e.target.value })}
+            placeholder={`Match ${index + 1}`}
+            className="h-8 text-xs"
+          />
+        )}
+        <StatePicker
+          value={match.nextState}
+          onChange={(v) => onChange({ ...match, nextState: v })}
+          otherIds={otherIds}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          onClick={onRemove}
+          title="Remove match"
+          aria-label="Remove match"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
   );
 }
 

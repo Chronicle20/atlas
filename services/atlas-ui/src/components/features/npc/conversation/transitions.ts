@@ -11,6 +11,8 @@ export interface Transition {
     | "choice"
     | "outcome"
     | "answer"
+    | "match"
+    | "fallback"
     | "selection"
     | "success"
     | "failure"
@@ -105,6 +107,25 @@ export function getTransitions(state: ConversationState): Transition[] {
           target: normalizeTarget(state.askNumber.nextState),
           label: "answer",
           kind: "answer",
+          ordinal: 0,
+        });
+      }
+      break;
+    case "askText":
+      if (state.askText) {
+        const matches = state.askText.matches ?? [];
+        matches.forEach((m, i) => {
+          push({
+            target: normalizeTarget(m.nextState),
+            label: m.value ?? m.valueFromContext ?? `Match ${i + 1}`,
+            kind: "match",
+            ordinal: i,
+          });
+        });
+        push({
+          target: normalizeTarget(state.askText.nextState),
+          label: "fallback",
+          kind: "fallback",
           ordinal: 0,
         });
       }

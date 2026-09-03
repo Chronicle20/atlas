@@ -13,7 +13,7 @@ import (
 
 type Processor interface {
 	StartConversation(f field.Model, npcId uint32, characterId uint32, accountId uint32) error
-	ContinueConversation(characterId uint32, action byte, lastMessageType byte, selection int32) error
+	ContinueConversation(characterId uint32, action byte, lastMessageType byte, selection int32, text string) error
 	DisposeConversation(characterId uint32) error
 }
 
@@ -37,9 +37,9 @@ func (p *ProcessorImpl) StartConversation(f field.Model, npcId uint32, character
 	return producer.ProviderImpl(p.l)(p.ctx)(npc.EnvCommandTopic)(StartConversationCommandProvider(f, npcId, characterId, accountId))
 }
 
-func (p *ProcessorImpl) ContinueConversation(characterId uint32, action byte, lastMessageType byte, selection int32) error {
+func (p *ProcessorImpl) ContinueConversation(characterId uint32, action byte, lastMessageType byte, selection int32, text string) error {
 	p.l.Debugf("Continuing NPC conversation for character [%d]. action [%d], lastMessageType [%d], selection [%d].", characterId, action, lastMessageType, selection)
-	return producer.ProviderImpl(p.l)(p.ctx)(npc.EnvCommandTopic)(ContinueConversationCommandProvider(characterId, action, lastMessageType, selection))
+	return producer.ProviderImpl(p.l)(p.ctx)(npc.EnvCommandTopic)(ContinueConversationCommandProvider(characterId, action, lastMessageType, selection, text))
 }
 
 func (p *ProcessorImpl) DisposeConversation(characterId uint32) error {

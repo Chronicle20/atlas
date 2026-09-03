@@ -48,7 +48,7 @@ type Processor interface {
 	StartItem(f field.Model, itemId uint32, npcId uint32, characterId uint32, accountId uint32, scriptName string, originTransactionId uuid.UUID, stateMachine StateContainer) error
 
 	// Continue continues a conversation with an NPC
-	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
+	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32, text string) error
 
 	// End ends a conversation
 	End(characterId uint32) error
@@ -91,6 +91,25 @@ func SetSagaProcessorFactory(factory SagaProcessorFactory) {
 		return
 	}
 	sagaProcessorFactory = factory
+}
+
+// NpcSenderProcessorFactory is the factory function type for creating an
+// npcSender.Processor.
+type NpcSenderProcessorFactory func(l logrus.FieldLogger, ctx context.Context) npcSender.Processor
+
+// npcSenderProcessorFactory defaults to npcSender.NewProcessor; tests may
+// override via SetNpcSenderProcessorFactory to substitute a recording
+// npcSender.Processor.
+var npcSenderProcessorFactory NpcSenderProcessorFactory = npcSender.NewProcessor
+
+// SetNpcSenderProcessorFactory overrides the npc sender processor factory
+// (for tests). Passing nil restores the default (npcSender.NewProcessor).
+func SetNpcSenderProcessorFactory(factory NpcSenderProcessorFactory) {
+	if factory == nil {
+		npcSenderProcessorFactory = npcSender.NewProcessor
+		return
+	}
+	npcSenderProcessorFactory = factory
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -317,7 +336,7 @@ func (p *ProcessorImpl) StartItem(f field.Model, itemId uint32, npcId uint32, ch
 	return nil
 }
 
-func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error {
+func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32, text string) error {
 	// Get the previous context
 	ctx, err := GetRegistry().GetPreviousContext(p.ctx, characterId)
 	if err != nil {
@@ -406,6 +425,52 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 
 		// Get the next state from the askNumber model
 		nextStateId = askNumber.NextState()
+
+	case AskTextType:
+		// For ask text states, the text contains the free text entered by the player
+		askText := state.AskText()
+		if askText == nil {
+			return errors.New("askText is nil")
+		}
+
+		// Trim once, before anything else
+		trimmed := strings.TrimSpace(text)
+
+		// Validate the trimmed text against min/max length. An out-of-range
+		// answer is re-prompted on the same state rather than treated as a
+		// fatal error: leave choiceContext unset (so the rejected input is
+		// never stored) and set nextStateId to the current state so the
+		// post-switch machinery re-sends the prompt via processAskTextState.
+		if len(trimmed) < int(askText.MinLength()) {
+			p.l.Warnf("Invalid text input for character [%d] in state [%s]: below minimum length [%d]", characterId, state.Id(), askText.MinLength())
+			nextStateId = state.Id()
+		} else if len(trimmed) > int(askText.MaxLength()) {
+			p.l.Warnf("Invalid text input for character [%d] in state [%s]: above maximum length [%d]", characterId, state.Id(), askText.MaxLength())
+			nextStateId = state.Id()
+		} else {
+			// Store the trimmed text in the context using the configured context key
+			choiceContext = make(map[string]string)
+			choiceContext[askText.ContextKey()] = trimmed
+
+			// Walk the matches in order; the first satisfied match wins
+			nextStateId = askText.NextState()
+			for _, m := range askText.Matches() {
+				if m.ValueFromContext() != "" {
+					resolved, _, err := ExtractContextValue(m.ValueFromContext(), ctx.Context())
+					if err != nil {
+						// An unresolvable context reference is a non-match, not an error
+						continue
+					}
+					if trimmed == resolved {
+						nextStateId = m.NextState()
+						break
+					}
+				} else if trimmed == m.Value() {
+					nextStateId = m.NextState()
+					break
+				}
+			}
+		}
 
 	case AskStyleType:
 		// For ask style states, the selection contains the index of the selected style
@@ -607,6 +672,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case AskNumberType:
 		// Process ask number state
 		return p.processAskNumberState(ctx, state)
+	case AskTextType:
+		// Process ask text state
+		return p.processAskTextState(ctx, state)
 	case AskStyleType:
 		// Process ask style state
 		return p.processAskStyleState(ctx, state)
@@ -705,18 +773,27 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 			return outcome.NextState(), nil
 		}
 
-		// Evaluate the condition
-		// TODO
-		passed, err := p.evaluator.EvaluateCondition(ctx.CharacterId(), outcome.Conditions()[0])
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to evaluate condition [%+v] for character [%d]. Cleaning up conversation context.", outcome.Conditions()[0], ctx.CharacterId())
-			// Clean up conversation context before returning error
-			GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
-			return "", err
+		// An outcome's conditions are AND'd together: every condition must pass
+		// for the outcome to be taken. Evaluate in order and short-circuit on
+		// the first false, since EvaluateCondition can perform remote calls.
+		allPassed := true
+		for _, condition := range outcome.Conditions() {
+			passed, err := p.evaluator.EvaluateCondition(ctx.CharacterId(), condition)
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to evaluate condition [%+v] for character [%d]. Cleaning up conversation context.", condition, ctx.CharacterId())
+				// Clean up conversation context before returning error
+				GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
+				return "", err
+			}
+
+			if !passed {
+				allPassed = false
+				break
+			}
 		}
 
-		// If the condition passed, return the next state
-		if passed {
+		// If every condition passed, return the next state
+		if allPassed {
 			return outcome.NextState(), nil
 		}
 	}
@@ -1230,6 +1307,31 @@ func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state Sta
 	err = npcSender.NewProcessor(p.l, p.ctx).SendNumber(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, askNumber.DefaultValue(), askNumber.MinValue(), askNumber.MaxValue())
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send number request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
+		return "", err
+	}
+
+	// Return the current state ID to indicate that we're waiting for input
+	return state.Id(), nil
+}
+
+// processAskTextState processes an ask text state
+func (p *ProcessorImpl) processAskTextState(ctx ConversationContext, state StateModel) (string, error) {
+	askText := state.AskText()
+	if askText == nil {
+		return "", errors.New("askText is nil")
+	}
+
+	// Replace context placeholders in the ask text prompt
+	processedText, err := ReplaceContextPlaceholders(askText.Text(), ctx.Context())
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to replace context placeholders in ask text prompt for state [%s]. Using original text.", state.Id())
+		processedText = askText.Text()
+	}
+
+	// Send the ask text request to the client
+	err = npcSenderProcessorFactory(p.l, p.ctx).SendText(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, askText.DefaultText(), askText.MinLength(), askText.MaxLength())
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to send text request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
 	}
 

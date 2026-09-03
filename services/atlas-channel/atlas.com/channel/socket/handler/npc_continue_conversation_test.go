@@ -1,9 +1,20 @@
 package handler
 
 import (
+	"atlas-channel/npc"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
+	"context"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // gms83MessageType mirrors the "messageType" table the NPCContinueConversation
@@ -77,5 +88,174 @@ func TestContinueConversationBodyKindUnconfigured(t *testing.T) {
 	opts := map[string]interface{}{"messageType": gms83MessageType}
 	if got := bodyKindFor(l, opts, 99); got != bodyNone {
 		t.Errorf("unknown byte 99: got %v, want bodyNone", got)
+	}
+}
+
+// recordingNpcProcessor is the recording npc.Processor test seam
+// (npcProcessorFunc in npc_continue_conversation.go), used to capture what
+// NPCContinueConversationHandleFunc forwards to ContinueConversation without
+// a live Kafka broker.
+type recordingNpcProcessor struct {
+	continueCalls []recordedContinueCall
+	disposeCalls  int
+}
+
+type recordedContinueCall struct {
+	characterId     uint32
+	action          byte
+	lastMessageType byte
+	selection       int32
+	text            string
+}
+
+func (p *recordingNpcProcessor) StartConversation(_ field.Model, _ uint32, _ uint32, _ uint32) error {
+	return nil
+}
+
+func (p *recordingNpcProcessor) ContinueConversation(characterId uint32, action byte, lastMessageType byte, selection int32, text string) error {
+	p.continueCalls = append(p.continueCalls, recordedContinueCall{
+		characterId:     characterId,
+		action:          action,
+		lastMessageType: lastMessageType,
+		selection:       selection,
+		text:            text,
+	})
+	return nil
+}
+
+func (p *recordingNpcProcessor) DisposeConversation(_ uint32) error {
+	p.disposeCalls++
+	return nil
+}
+
+var _ npc.Processor = (*recordingNpcProcessor)(nil)
+
+// newContinueConversationTestSession builds a session.Model for characterId
+// (idiom: newAutoAggroTestSession in auto_aggro_test.go).
+func newContinueConversationTestSession(t *testing.T, characterId uint32) session.Model {
+	t.Helper()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+
+	sessionId := uuid.New()
+	s := session.NewSession(sessionId, ten, 0, nil)
+	session.AddSessionToRegistry(ten.Id(), s)
+	t.Cleanup(func() { session.ClearRegistryForTenant(ten.Id()) })
+
+	ctx := tenant.WithContext(context.Background(), ten)
+	sp := session.NewProcessor(logrus.New(), ctx)
+	return sp.SetCharacterId(sessionId, characterId)
+}
+
+// TestContinueConversationCarriesText pins the fix for the regression named
+// in this task: the handler decoded the player's typed ASK_TEXT/ASK_BOX_TEXT
+// reply and then discarded it, so the engine never received it. It now
+// forwards the decoded text on the ContinueConversation call, leaving the
+// selection/number path and the cancel-disposes path unaffected.
+func TestContinueConversationCarriesText(t *testing.T) {
+	opts := map[string]interface{}{"messageType": gms83MessageType}
+
+	cases := []struct {
+		name            string
+		action          byte
+		lastMessageType byte
+		body            func(w *response.Writer)
+		wantDispose     bool
+		wantText        string
+		wantSelection   int32
+	}{
+		{
+			name:            "text reply carried",
+			action:          1,
+			lastMessageType: 2, // ASK_TEXT
+			body:            func(w *response.Writer) { w.WriteAsciiString("Open Sesame") },
+			wantText:        "Open Sesame",
+			wantSelection:   -1,
+		},
+		{
+			name:            "empty reply carried",
+			action:          1,
+			lastMessageType: 2, // ASK_TEXT
+			body:            func(w *response.Writer) { w.WriteAsciiString("") },
+			wantText:        "",
+			wantSelection:   -1,
+		},
+		{
+			name:            "box text reply carried",
+			action:          1,
+			lastMessageType: 13, // ASK_BOX_TEXT
+			body:            func(w *response.Writer) { w.WriteAsciiString("multi line") },
+			wantText:        "multi line",
+			wantSelection:   -1,
+		},
+		{
+			name:            "cancel disposes",
+			action:          0,
+			lastMessageType: 2, // ASK_TEXT
+			body:            func(w *response.Writer) {},
+			wantDispose:     true,
+		},
+		{
+			name:            "selection path unaffected",
+			action:          1,
+			lastMessageType: 3, // ASK_NUMBER
+			body:            func(w *response.Writer) { w.WriteInt32(7) },
+			wantText:        "",
+			wantSelection:   7,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			l, _ := testlog.NewNullLogger()
+			s := newContinueConversationTestSession(t, 1001)
+
+			w := response.NewWriter(l)
+			w.WriteByte(c.lastMessageType)
+			w.WriteByte(c.action)
+			c.body(w)
+			req := request.Request(w.Bytes())
+			reader := request.NewRequestReader(&req, 0)
+
+			rec := &recordingNpcProcessor{}
+			prior := npcProcessorFunc
+			npcProcessorFunc = func(_ logrus.FieldLogger, _ context.Context) npc.Processor { return rec }
+			t.Cleanup(func() { npcProcessorFunc = prior })
+
+			var wp writer.Producer
+			NPCContinueConversationHandleFunc(l, context.Background(), wp)(s, &reader, opts)
+
+			if c.wantDispose {
+				if rec.disposeCalls != 1 {
+					t.Fatalf("disposeCalls = %d, want 1", rec.disposeCalls)
+				}
+				if len(rec.continueCalls) != 0 {
+					t.Fatalf("continueCalls = %d, want 0", len(rec.continueCalls))
+				}
+				return
+			}
+
+			if len(rec.continueCalls) != 1 {
+				t.Fatalf("continueCalls = %d, want 1", len(rec.continueCalls))
+			}
+			got := rec.continueCalls[0]
+			if got.text != c.wantText {
+				t.Errorf("text = %q, want %q", got.text, c.wantText)
+			}
+			if got.selection != c.wantSelection {
+				t.Errorf("selection = %d, want %d", got.selection, c.wantSelection)
+			}
+			if got.characterId != 1001 {
+				t.Errorf("characterId = %d, want 1001", got.characterId)
+			}
+			if got.action != c.action {
+				t.Errorf("action = %d, want %d", got.action, c.action)
+			}
+			if got.lastMessageType != c.lastMessageType {
+				t.Errorf("lastMessageType = %d, want %d", got.lastMessageType, c.lastMessageType)
+			}
+		})
 	}
 }

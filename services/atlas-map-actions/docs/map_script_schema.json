@@ -160,7 +160,8 @@
             "boat_effect",
             "clear_skill",
             "warp_to_map",
-            "spawn_npc"
+            "spawn_npc",
+            "clear_drops"
           ]
         },
         "params": {
@@ -669,6 +670,23 @@
                     "description": "When \"true\", atlas-maps suppresses the spawn if an NPC of this template is already on the field instance."
                   }
                 }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "clear_drops"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "description": "clear_drops takes no parameters"
               }
             }
           }

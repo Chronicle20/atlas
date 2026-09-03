@@ -1006,133 +1006,153 @@ func TestProcessor_GetForMap_FiltersInstancesCorrectly(t *testing.T) {
 	}
 }
 
-func TestClearForFieldRemovesEveryDrop(t *testing.T) {
-	setupProcessorTestRegistry(t)
-	ctx, ten := createTestContext(t)
-	l := createTestLogger()
+func TestClearForField(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{
+			name: "removes every drop",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
 
-	p := NewProcessor(l, ctx)
-	buf := message.NewBuffer()
+				p := NewProcessor(l, ctx)
+				buf := message.NewBuffer()
 
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
-	mb1 := NewBuilder(ten, f).SetItem(1000001, 10)
-	mb2 := NewBuilder(ten, f).SetItem(1000002, 10)
-	mb3 := NewBuilder(ten, f).SetItem(1000003, 10)
-	_, _ = p.SpawnForCharacter(buf)(mb1)
-	_, _ = p.SpawnForCharacter(buf)(mb2)
-	_, _ = p.SpawnForCharacter(buf)(mb3)
+				f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
+				mb1 := NewBuilder(ten, f).SetItem(1000001, 10)
+				mb2 := NewBuilder(ten, f).SetItem(1000002, 10)
+				mb3 := NewBuilder(ten, f).SetItem(1000003, 10)
+				_, _ = p.SpawnForCharacter(buf)(mb1)
+				_, _ = p.SpawnForCharacter(buf)(mb2)
+				_, _ = p.SpawnForCharacter(buf)(mb3)
 
-	count, err := p.ClearForField(f)
-	if err != nil {
-		t.Fatalf("Failed to clear drops for field: %v", err)
+				count, err := p.ClearForField(f)
+				if err != nil {
+					t.Fatalf("Failed to clear drops for field: %v", err)
+				}
+				if count != 3 {
+					t.Fatalf("Expected 3 drops removed, got %d", count)
+				}
+
+				remaining, err := p.GetForMap(f)
+				if err != nil {
+					t.Fatalf("Failed to get drops for map: %v", err)
+				}
+				if len(remaining) != 0 {
+					t.Fatalf("Expected 0 drops remaining, got %d", len(remaining))
+				}
+			},
+		},
+		{
+			name: "is field scoped",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
+
+				p := NewProcessor(l, ctx)
+				buf := message.NewBuffer()
+
+				instanceA := uuid.New()
+				instanceB := uuid.New()
+				fA := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(instanceA).Build()
+				fB := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(instanceB).Build()
+
+				mbA1 := NewBuilder(ten, fA).SetItem(1000001, 10)
+				mbA2 := NewBuilder(ten, fA).SetItem(1000002, 10)
+				mbB1 := NewBuilder(ten, fB).SetItem(1000003, 10)
+				_, _ = p.SpawnForCharacter(buf)(mbA1)
+				_, _ = p.SpawnForCharacter(buf)(mbA2)
+				_, _ = p.SpawnForCharacter(buf)(mbB1)
+
+				count, err := p.ClearForField(fA)
+				if err != nil {
+					t.Fatalf("Failed to clear drops for field A: %v", err)
+				}
+				if count != 2 {
+					t.Fatalf("Expected 2 drops removed from field A, got %d", count)
+				}
+
+				remainingB, err := p.GetForMap(fB)
+				if err != nil {
+					t.Fatalf("Failed to get drops for field B: %v", err)
+				}
+				if len(remainingB) != 1 {
+					t.Fatalf("Expected 1 drop remaining on field B, got %d", len(remainingB))
+				}
+			},
+		},
+		{
+			name: "on empty field succeeds",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, _ := createTestContext(t)
+				l := createTestLogger()
+
+				p := NewProcessor(l, ctx)
+
+				f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
+				count, err := p.ClearForField(f)
+				if err != nil {
+					t.Fatalf("Unexpected error clearing empty field: %v", err)
+				}
+				if count != 0 {
+					t.Fatalf("Expected 0 drops removed, got %d", count)
+				}
+			},
+		},
+		{
+			name: "emits removal per drop",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
+
+				capture := producertest.InstallCapturing()
+				defer producertest.InstallNoop()
+
+				p := NewProcessor(l, ctx)
+				buf := message.NewBuffer()
+
+				f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
+				mb1 := NewBuilder(ten, f).SetItem(1000001, 10)
+				mb2 := NewBuilder(ten, f).SetItem(1000002, 10)
+				drop1, _ := p.SpawnForCharacter(buf)(mb1)
+				drop2, _ := p.SpawnForCharacter(buf)(mb2)
+
+				count, err := p.ClearForField(f)
+				if err != nil {
+					t.Fatalf("Failed to clear drops for field: %v", err)
+				}
+				if count != 2 {
+					t.Fatalf("Expected 2 drops removed, got %d", count)
+				}
+
+				expiredIds := make(map[uint32]bool)
+				for _, m := range capture.Messages(string(messageDropKafka.EnvEventTopicDropStatus)) {
+					var e messageDropKafka.StatusEvent[messageDropKafka.StatusEventExpiredBody]
+					if err := json.Unmarshal(m.Value, &e); err != nil {
+						continue
+					}
+					if e.Type == messageDropKafka.StatusEventTypeExpired {
+						expiredIds[e.DropId] = true
+					}
+				}
+				if len(expiredIds) != 2 {
+					t.Fatalf("Expected 2 distinct expired events, got %d", len(expiredIds))
+				}
+				if !expiredIds[drop1.Id()] || !expiredIds[drop2.Id()] {
+					t.Fatal("Expected an expired event naming each cleared drop id")
+				}
+			},
+		},
 	}
-	if count != 3 {
-		t.Fatalf("Expected 3 drops removed, got %d", count)
-	}
 
-	remaining, err := p.GetForMap(f)
-	if err != nil {
-		t.Fatalf("Failed to get drops for map: %v", err)
-	}
-	if len(remaining) != 0 {
-		t.Fatalf("Expected 0 drops remaining, got %d", len(remaining))
-	}
-}
-
-func TestClearForFieldIsFieldScoped(t *testing.T) {
-	setupProcessorTestRegistry(t)
-	ctx, ten := createTestContext(t)
-	l := createTestLogger()
-
-	p := NewProcessor(l, ctx)
-	buf := message.NewBuffer()
-
-	instanceA := uuid.New()
-	instanceB := uuid.New()
-	fA := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(instanceA).Build()
-	fB := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(instanceB).Build()
-
-	mbA1 := NewBuilder(ten, fA).SetItem(1000001, 10)
-	mbA2 := NewBuilder(ten, fA).SetItem(1000002, 10)
-	mbB1 := NewBuilder(ten, fB).SetItem(1000003, 10)
-	_, _ = p.SpawnForCharacter(buf)(mbA1)
-	_, _ = p.SpawnForCharacter(buf)(mbA2)
-	_, _ = p.SpawnForCharacter(buf)(mbB1)
-
-	count, err := p.ClearForField(fA)
-	if err != nil {
-		t.Fatalf("Failed to clear drops for field A: %v", err)
-	}
-	if count != 2 {
-		t.Fatalf("Expected 2 drops removed from field A, got %d", count)
-	}
-
-	remainingB, err := p.GetForMap(fB)
-	if err != nil {
-		t.Fatalf("Failed to get drops for field B: %v", err)
-	}
-	if len(remainingB) != 1 {
-		t.Fatalf("Expected 1 drop remaining on field B, got %d", len(remainingB))
-	}
-}
-
-func TestClearForFieldOnEmptyFieldSucceeds(t *testing.T) {
-	setupProcessorTestRegistry(t)
-	ctx, _ := createTestContext(t)
-	l := createTestLogger()
-
-	p := NewProcessor(l, ctx)
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
-	count, err := p.ClearForField(f)
-	if err != nil {
-		t.Fatalf("Unexpected error clearing empty field: %v", err)
-	}
-	if count != 0 {
-		t.Fatalf("Expected 0 drops removed, got %d", count)
-	}
-}
-
-func TestClearForFieldEmitsRemovalPerDrop(t *testing.T) {
-	setupProcessorTestRegistry(t)
-	ctx, ten := createTestContext(t)
-	l := createTestLogger()
-
-	capture := producertest.InstallCapturing()
-	defer producertest.InstallNoop()
-
-	p := NewProcessor(l, ctx)
-	buf := message.NewBuffer()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
-	mb1 := NewBuilder(ten, f).SetItem(1000001, 10)
-	mb2 := NewBuilder(ten, f).SetItem(1000002, 10)
-	drop1, _ := p.SpawnForCharacter(buf)(mb1)
-	drop2, _ := p.SpawnForCharacter(buf)(mb2)
-
-	count, err := p.ClearForField(f)
-	if err != nil {
-		t.Fatalf("Failed to clear drops for field: %v", err)
-	}
-	if count != 2 {
-		t.Fatalf("Expected 2 drops removed, got %d", count)
-	}
-
-	expiredIds := make(map[uint32]bool)
-	for _, m := range capture.Messages(string(messageDropKafka.EnvEventTopicDropStatus)) {
-		var e messageDropKafka.StatusEvent[messageDropKafka.StatusEventExpiredBody]
-		if err := json.Unmarshal(m.Value, &e); err != nil {
-			continue
-		}
-		if e.Type == messageDropKafka.StatusEventTypeExpired {
-			expiredIds[e.DropId] = true
-		}
-	}
-	if len(expiredIds) != 2 {
-		t.Fatalf("Expected 2 distinct expired events, got %d", len(expiredIds))
-	}
-	if !expiredIds[drop1.Id()] || !expiredIds[drop2.Id()] {
-		t.Fatal("Expected an expired event naming each cleared drop id")
+	for _, tc := range tests {
+		t.Run(tc.name, tc.run)
 	}
 }
 

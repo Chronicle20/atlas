@@ -343,44 +343,54 @@ func TestExecuteSpawnMonsterIdParamValidation(t *testing.T) {
 }
 
 func TestExecuteSetQuestProgress(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("set_quest_progress").
-		SetParams(map[string]string{"questId": "20010", "infoNumber": "20022", "progress": "1"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "sets quest progress"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.SetQuestProgress {
-		t.Errorf("Steps[0].Action = %v, want saga.SetQuestProgress", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.SetQuestProgressPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.SetQuestProgressPayload")
-	}
-	want := saga.SetQuestProgressPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		QuestId:     20010,
-		InfoNumber:  20022,
-		Progress:    "1",
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("set_quest_progress").
+				SetParams(map[string]string{"questId": "20010", "infoNumber": "20022", "progress": "1"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.SetQuestProgress {
+				t.Errorf("Steps[0].Action = %v, want saga.SetQuestProgress", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.SetQuestProgressPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.SetQuestProgressPayload")
+			}
+			want := saga.SetQuestProgressPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				QuestId:     20010,
+				InfoNumber:  20022,
+				Progress:    "1",
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
@@ -417,66 +427,50 @@ func TestExecuteSetQuestProgressParamValidation(t *testing.T) {
 }
 
 func TestExecuteStartQuest(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("start_quest").
-		SetParams(map[string]string{"questId": "22015", "npcId": "9010000"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name      string
+		params    map[string]string
+		wantNpcId uint32
+	}{
+		{name: "explicit npcId", params: map[string]string{"questId": "22015", "npcId": "9010000"}, wantNpcId: 9010000},
+		{name: "defaults npcId to zero", params: map[string]string{"questId": "22015"}, wantNpcId: 0},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.StartQuestPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.StartQuestPayload")
-	}
-	want := saga.StartQuestPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		QuestId:     22015,
-		NpcId:       9010000,
-	}
-	if payload.CharacterId != want.CharacterId || payload.WorldId != want.WorldId || payload.QuestId != want.QuestId || payload.NpcId != want.NpcId {
-		t.Errorf("payload = %+v, want %+v", payload, want)
-	}
-	if payload.Rewards != nil {
-		t.Errorf("payload.Rewards = %v, want nil", payload.Rewards)
-	}
-}
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
 
-func TestExecuteStartQuestDefaultsNpcIdToZero(t *testing.T) {
-	e, rec := newTestOperationExecutor()
+			op, err := operation.NewBuilder().SetType("start_quest").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
 
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(130030000)).Build()
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
 
-	op, err := operation.NewBuilder().
-		SetType("start_quest").
-		SetParams(map[string]string{"questId": "22015"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
-
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.StartQuestPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.StartQuestPayload")
-	}
-	if payload.NpcId != 0 {
-		t.Errorf("payload.NpcId = %d, want 0", payload.NpcId)
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.StartQuestPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.StartQuestPayload")
+			}
+			want := saga.StartQuestPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				QuestId:     22015,
+				NpcId:       tt.wantNpcId,
+			}
+			if payload.CharacterId != want.CharacterId || payload.WorldId != want.WorldId || payload.QuestId != want.QuestId || payload.NpcId != want.NpcId {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+			if payload.Rewards != nil {
+				t.Errorf("payload.Rewards = %v, want nil", payload.Rewards)
+			}
+		})
 	}
 }
 
@@ -511,45 +505,55 @@ func TestExecuteStartQuestParamValidation(t *testing.T) {
 }
 
 func TestExecuteExplorerQuest(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(104000000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("explorer_quest").
-		SetParams(map[string]string{"areaName": "Beginner Explorer", "questId": "29005"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "runs explorer quest"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.ExplorerQuest {
-		t.Errorf("Steps[0].Action = %v, want saga.ExplorerQuest", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ExplorerQuestPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ExplorerQuestPayload")
-	}
-	want := saga.ExplorerQuestPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		QuestId:     29005,
-		MapId:       _map.Id(104000000),
-		AreaName:    "Beginner Explorer",
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(104000000)).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("explorer_quest").
+				SetParams(map[string]string{"areaName": "Beginner Explorer", "questId": "29005"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.ExplorerQuest {
+				t.Errorf("Steps[0].Action = %v, want saga.ExplorerQuest", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.ExplorerQuestPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ExplorerQuestPayload")
+			}
+			want := saga.ExplorerQuestPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				QuestId:     29005,
+				MapId:       _map.Id(104000000),
+				AreaName:    "Beginner Explorer",
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
@@ -584,41 +588,51 @@ func TestExecuteExplorerQuestParamValidation(t *testing.T) {
 }
 
 func TestExecuteOpenNpc(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).SetInstance(inst).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("open_npc").
-		SetParams(map[string]string{"npcId": "2159012"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "opens npc conversation"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.StartNpcConversationPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.StartNpcConversationPayload")
-	}
-	want := saga.StartNpcConversationPayload{
-		CharacterId:   1,
-		AccountId:     0,
-		NpcTemplateId: 2159012,
-		WorldId:       world.Id(0),
-		ChannelId:     channel.Id(1),
-		MapId:         _map.Id(931000400),
-		Instance:      inst,
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).SetInstance(inst).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("open_npc").
+				SetParams(map[string]string{"npcId": "2159012"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.StartNpcConversationPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.StartNpcConversationPayload")
+			}
+			want := saga.StartNpcConversationPayload{
+				CharacterId:   1,
+				AccountId:     0,
+				NpcTemplateId: 2159012,
+				WorldId:       world.Id(0),
+				ChannelId:     channel.Id(1),
+				MapId:         _map.Id(931000400),
+				Instance:      inst,
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
@@ -653,85 +667,105 @@ func TestExecuteOpenNpcParamValidation(t *testing.T) {
 }
 
 func TestExecuteUpdateAreaInfo(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("update_area_info").
-		SetParams(map[string]string{"area": "23007", "info": "exp1=1;exp2=1;exp3=1;exp4=1"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "updates area info"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.UpdateAreaInfo {
-		t.Errorf("Steps[0].Action = %v, want saga.UpdateAreaInfo", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.UpdateAreaInfoPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.UpdateAreaInfoPayload")
-	}
-	want := saga.UpdateAreaInfoPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		Area:        23007,
-		Info:        "exp1=1;exp2=1;exp3=1;exp4=1",
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("update_area_info").
+				SetParams(map[string]string{"area": "23007", "info": "exp1=1;exp2=1;exp3=1;exp4=1"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.UpdateAreaInfo {
+				t.Errorf("Steps[0].Action = %v, want saga.UpdateAreaInfo", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.UpdateAreaInfoPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.UpdateAreaInfoPayload")
+			}
+			want := saga.UpdateAreaInfoPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				Area:        23007,
+				Info:        "exp1=1;exp2=1;exp3=1;exp4=1",
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
 func TestExecuteShowInfo(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("show_info").
-		SetParams(map[string]string{"path": "Effect/OnUserEff.img/guideEffect/resistanceTutorial/userTalk"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "shows info"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.ShowInfo {
-		t.Errorf("Steps[0].Action = %v, want saga.ShowInfo", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ShowInfoPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ShowInfoPayload")
-	}
-	want := saga.ShowInfoPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		Path:        "Effect/OnUserEff.img/guideEffect/resistanceTutorial/userTalk",
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(931000400)).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("show_info").
+				SetParams(map[string]string{"path": "Effect/OnUserEff.img/guideEffect/resistanceTutorial/userTalk"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.ShowInfo {
+				t.Errorf("Steps[0].Action = %v, want saga.ShowInfo", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.ShowInfoPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ShowInfoPayload")
+			}
+			want := saga.ShowInfoPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				Path:        "Effect/OnUserEff.img/guideEffect/resistanceTutorial/userTalk",
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
@@ -769,42 +803,52 @@ func TestExecuteAreaInfoParamValidation(t *testing.T) {
 }
 
 func TestExecuteClearSkill(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(914000000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("clear_skill").
-		SetParams(map[string]string{"skillId": "20000014"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "clears skill"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.ClearSkill {
-		t.Errorf("Steps[0].Action = %v, want saga.ClearSkill", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ClearSkillPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ClearSkillPayload")
-	}
-	want := saga.ClearSkillPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		SkillId:     20000014,
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(914000000)).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("clear_skill").
+				SetParams(map[string]string{"skillId": "20000014"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.ClearSkill {
+				t.Errorf("Steps[0].Action = %v, want saga.ClearSkill", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.ClearSkillPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ClearSkillPayload")
+			}
+			want := saga.ClearSkillPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				SkillId:     20000014,
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
@@ -841,204 +885,178 @@ func TestExecuteClearSkillParamValidation(t *testing.T) {
 }
 
 func TestExecutePlaySound(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("play_sound").
-		SetParams(map[string]string{"path": "cannonshooter/flying"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "valid path", params: map[string]string{"path": "cannonshooter/flying"}},
+		{name: "missing path", params: map[string]string{}, wantErrSubstr: "play_sound operation missing path parameter"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.PlaySound {
-		t.Errorf("Steps[0].Action = %v, want saga.PlaySound", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.PlaySoundPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.PlaySoundPayload")
-	}
-	want := saga.PlaySoundPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		Path:        "cannonshooter/flying",
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
-	}
-}
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
 
-func TestExecutePlaySoundRequiresPath(t *testing.T) {
-	e, rec := newTestOperationExecutor()
+			op, err := operation.NewBuilder().SetType("play_sound").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
 
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
+			err = e.ExecuteOperation(f, 1, op)
+			if tt.wantErrSubstr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+					t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+				}
+				if len(rec.created) != 0 {
+					t.Errorf("len(rec.created) = %d, want 0", len(rec.created))
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
 
-	op, err := operation.NewBuilder().
-		SetType("play_sound").
-		SetParams(map[string]string{}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	err = e.ExecuteOperation(f, 1, op)
-	if err == nil || !strings.Contains(err.Error(), "play_sound operation missing path parameter") {
-		t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, "play_sound operation missing path parameter")
-	}
-	if len(rec.created) != 0 {
-		t.Errorf("len(rec.created) = %d, want 0", len(rec.created))
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.PlaySound {
+				t.Errorf("Steps[0].Action = %v, want saga.PlaySound", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.PlaySoundPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.PlaySoundPayload")
+			}
+			want := saga.PlaySoundPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				Path:        "cannonshooter/flying",
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
 func TestExecuteChangeMusic(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("change_music").
-		SetParams(map[string]string{"path": "Bgm04/ArabPirate"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "valid path", params: map[string]string{"path": "Bgm04/ArabPirate"}},
+		{name: "missing path", params: map[string]string{}, wantErrSubstr: "change_music operation missing path parameter"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.ChangeMusic {
-		t.Errorf("Steps[0].Action = %v, want saga.ChangeMusic", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ChangeMusicPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ChangeMusicPayload")
-	}
-	want := saga.ChangeMusicPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		Path:        "Bgm04/ArabPirate",
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
+
+			op, err := operation.NewBuilder().SetType("change_music").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if tt.wantErrSubstr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+					t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+				}
+				if len(rec.created) != 0 {
+					t.Errorf("len(rec.created) = %d, want 0", len(rec.created))
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.ChangeMusic {
+				t.Errorf("Steps[0].Action = %v, want saga.ChangeMusic", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.ChangeMusicPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ChangeMusicPayload")
+			}
+			want := saga.ChangeMusicPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				Path:        "Bgm04/ArabPirate",
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
-func TestExecuteChangeMusicRequiresPath(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("change_music").
-		SetParams(map[string]string{}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+func TestExecuteBoatEffect(t *testing.T) {
+	tests := []struct {
+		name     string
+		show     string
+		wantShow bool
+	}{
+		{name: "show", show: "true", wantShow: true},
+		{name: "hide", show: "false", wantShow: false},
 	}
 
-	err = e.ExecuteOperation(f, 1, op)
-	if err == nil || !strings.Contains(err.Error(), "change_music operation missing path parameter") {
-		t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, "change_music operation missing path parameter")
-	}
-	if len(rec.created) != 0 {
-		t.Errorf("len(rec.created) = %d, want 0", len(rec.created))
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-func TestExecuteBoatEffectShow(t *testing.T) {
-	e, rec := newTestOperationExecutor()
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
 
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
+			op, err := operation.NewBuilder().
+				SetType("boat_effect").
+				SetParams(map[string]string{"show": tt.show}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
 
-	op, err := operation.NewBuilder().
-		SetType("boat_effect").
-		SetParams(map[string]string{"show": "true"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
-
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.BoatEffect {
-		t.Errorf("Steps[0].Action = %v, want saga.BoatEffect", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.BoatEffectPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.BoatEffectPayload")
-	}
-	want := saga.BoatEffectPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		Show:        true,
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
-	}
-}
-
-func TestExecuteBoatEffectHide(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(913070000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("boat_effect").
-		SetParams(map[string]string{"show": "false"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
-
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.BoatEffectPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.BoatEffectPayload")
-	}
-	want := saga.BoatEffectPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		Show:        false,
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.BoatEffect {
+				t.Errorf("Steps[0].Action = %v, want saga.BoatEffect", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.BoatEffectPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.BoatEffectPayload")
+			}
+			want := saga.BoatEffectPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				Show:        tt.wantShow,
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
@@ -1077,48 +1095,58 @@ func TestExecuteBoatEffectParamValidation(t *testing.T) {
 }
 
 func TestExecuteWarpToMap(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(101000301)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("warp_to_map").
-		SetParams(map[string]string{"mapId": "200090010"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "warps to destination map"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.WarpToMap {
-		t.Errorf("Steps[0].Action = %v, want saga.WarpToMap", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.WarpToMapPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.WarpToMapPayload")
-	}
-	// The payload's MapId is the destination (200090010), not f.MapId()
-	// (101000301) — assert both so a future edit cannot silently swap them.
-	want := saga.WarpToMapPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		MapId:       _map.Id(200090010),
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
-	}
-	if payload.MapId == f.MapId() {
-		t.Errorf("payload.MapId = %v, want destination map, not field.MapId() %v", payload.MapId, f.MapId())
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(101000301)).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("warp_to_map").
+				SetParams(map[string]string{"mapId": "200090010"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.WarpToMap {
+				t.Errorf("Steps[0].Action = %v, want saga.WarpToMap", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.WarpToMapPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.WarpToMapPayload")
+			}
+			// The payload's MapId is the destination (200090010), not f.MapId()
+			// (101000301) — assert both so a future edit cannot silently swap them.
+			want := saga.WarpToMapPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				MapId:       _map.Id(200090010),
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+			if payload.MapId == f.MapId() {
+				t.Errorf("payload.MapId = %v, want destination map, not field.MapId() %v", payload.MapId, f.MapId())
+			}
+		})
 	}
 }
 
@@ -1155,322 +1183,293 @@ func TestExecuteWarpToMapParamValidation(t *testing.T) {
 }
 
 func TestExecuteSpawnNpc(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(108010600)).SetInstance(inst).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("spawn_npc").
-		SetParams(map[string]string{"npcId": "1104100", "spawnIfAbsent": "true", "x": "2830", "y": "78"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "spawns npc"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.SpawnNpc {
-		t.Errorf("Steps[0].Action = %v, want saga.SpawnNpc", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnNpcPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.SpawnNpcPayload")
-	}
-	want := saga.SpawnNpcPayload{
-		CharacterId:   1,
-		WorldId:       world.Id(0),
-		ChannelId:     channel.Id(1),
-		MapId:         _map.Id(108010600),
-		Instance:      inst,
-		NpcId:         1104100,
-		X:             2830,
-		Y:             78,
-		SpawnIfAbsent: true,
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(108010600)).SetInstance(inst).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("spawn_npc").
+				SetParams(map[string]string{"npcId": "1104100", "spawnIfAbsent": "true", "x": "2830", "y": "78"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.SpawnNpc {
+				t.Errorf("Steps[0].Action = %v, want saga.SpawnNpc", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnNpcPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.SpawnNpcPayload")
+			}
+			want := saga.SpawnNpcPayload{
+				CharacterId:   1,
+				WorldId:       world.Id(0),
+				ChannelId:     channel.Id(1),
+				MapId:         _map.Id(108010600),
+				Instance:      inst,
+				NpcId:         1104100,
+				X:             2830,
+				Y:             78,
+				SpawnIfAbsent: true,
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
 func TestExecuteClearDrops(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(inst).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("clear_drops").
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "clears drops"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 1 {
-		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
-	}
-	if rec.created[0].Steps[0].Action != saga.ClearDrops {
-		t.Errorf("Steps[0].Action = %v, want saga.ClearDrops", rec.created[0].Steps[0].Action)
-	}
-	clearPayload, ok := rec.created[0].Steps[0].Payload.(saga.ClearDropsPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ClearDropsPayload")
-	}
-	wantClear := saga.ClearDropsPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		MapId:       _map.Id(922000000),
-		Instance:    inst,
-	}
-	if clearPayload != wantClear {
-		t.Errorf("payload = %+v, want %+v", clearPayload, wantClear)
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(inst).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("clear_drops").
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 1 {
+				t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+			}
+			if rec.created[0].Steps[0].Action != saga.ClearDrops {
+				t.Errorf("Steps[0].Action = %v, want saga.ClearDrops", rec.created[0].Steps[0].Action)
+			}
+			clearPayload, ok := rec.created[0].Steps[0].Payload.(saga.ClearDropsPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ClearDropsPayload")
+			}
+			wantClear := saga.ClearDropsPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				MapId:       _map.Id(922000000),
+				Instance:    inst,
+			}
+			if clearPayload != wantClear {
+				t.Errorf("payload = %+v, want %+v", clearPayload, wantClear)
+			}
+		})
 	}
 }
 
-func TestExecuteResetReactorsAll(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(inst).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("reset_reactors").
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+func TestExecuteResetReactors(t *testing.T) {
+	seven := int8(7)
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+		wantMinState  *int8
+	}{
+		{name: "no filter", params: map[string]string{}, wantMinState: nil},
+		{name: "filtered", params: map[string]string{"minState": "7"}, wantMinState: &seven},
+		{name: "bad minState", params: map[string]string{"minState": "x"}, wantErrSubstr: "invalid minState [x]"},
+		{name: "minState overflow", params: map[string]string{"minState": "300"}, wantErrSubstr: "invalid minState [300]"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 || len(rec.created[0].Steps) != 1 {
-		t.Fatalf("unexpected saga shape: %+v", rec.created)
-	}
-	if rec.created[0].Steps[0].Action != saga.ResetReactors {
-		t.Errorf("Steps[0].Action = %v, want saga.ResetReactors", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ResetReactorsPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ResetReactorsPayload")
-	}
-	if payload.MinState != nil {
-		t.Errorf("MinState = %v, want nil", *payload.MinState)
-	}
-	want := saga.ResetReactorsPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		MapId:       _map.Id(922000000),
-		Instance:    inst,
-	}
-	if payload.CharacterId != want.CharacterId || payload.WorldId != want.WorldId || payload.ChannelId != want.ChannelId || payload.MapId != want.MapId || payload.Instance != want.Instance {
-		t.Errorf("payload = %+v, want %+v", payload, want)
-	}
-}
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(inst).Build()
 
-func TestExecuteResetReactorsFiltered(t *testing.T) {
-	e, rec := newTestOperationExecutor()
+			op, err := operation.NewBuilder().SetType("reset_reactors").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
 
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(inst).Build()
+			err = e.ExecuteOperation(f, 1, op)
+			if tt.wantErrSubstr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+					t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
 
-	op, err := operation.NewBuilder().
-		SetType("reset_reactors").
-		SetParams(map[string]string{"minState": "7"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
-
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ResetReactorsPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ResetReactorsPayload")
-	}
-	if payload.MinState == nil || *payload.MinState != 7 {
-		t.Fatalf("MinState = %v, want pointer to 7", payload.MinState)
-	}
-}
-
-func TestExecuteResetReactorsBadMinState(t *testing.T) {
-	e, _ := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("reset_reactors").
-		SetParams(map[string]string{"minState": "x"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	err = e.ExecuteOperation(f, 1, op)
-	if err == nil || !strings.Contains(err.Error(), "invalid minState [x]") {
-		t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, "invalid minState [x]")
-	}
-}
-
-func TestExecuteResetReactorsMinStateOverflow(t *testing.T) {
-	e, _ := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("reset_reactors").
-		SetParams(map[string]string{"minState": "300"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	err = e.ExecuteOperation(f, 1, op)
-	if err == nil || !strings.Contains(err.Error(), "invalid minState [300]") {
-		t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, "invalid minState [300]")
+			if len(rec.created) != 1 || len(rec.created[0].Steps) != 1 {
+				t.Fatalf("unexpected saga shape: %+v", rec.created)
+			}
+			if rec.created[0].Steps[0].Action != saga.ResetReactors {
+				t.Errorf("Steps[0].Action = %v, want saga.ResetReactors", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.ResetReactorsPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ResetReactorsPayload")
+			}
+			if tt.wantMinState == nil {
+				if payload.MinState != nil {
+					t.Errorf("MinState = %v, want nil", *payload.MinState)
+				}
+			} else {
+				if payload.MinState == nil || *payload.MinState != *tt.wantMinState {
+					t.Fatalf("MinState = %v, want pointer to %d", payload.MinState, *tt.wantMinState)
+				}
+			}
+			want := saga.ResetReactorsPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				MapId:       _map.Id(922000000),
+				Instance:    inst,
+			}
+			if payload.CharacterId != want.CharacterId || payload.WorldId != want.WorldId || payload.ChannelId != want.ChannelId || payload.MapId != want.MapId || payload.Instance != want.Instance {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
 func TestExecuteShuffleReactors(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(inst).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("shuffle_reactors").
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "shuffles reactors"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 || len(rec.created[0].Steps) != 1 {
-		t.Fatalf("unexpected saga shape: %+v", rec.created)
-	}
-	if rec.created[0].Steps[0].Action != saga.ShuffleReactors {
-		t.Errorf("Steps[0].Action = %v, want saga.ShuffleReactors", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ShuffleReactorsPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ShuffleReactorsPayload")
-	}
-	want := saga.ShuffleReactorsPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		MapId:       _map.Id(922000000),
-		Instance:    inst,
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(inst).Build()
+
+			op, err := operation.NewBuilder().
+				SetType("shuffle_reactors").
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperation(f, 1, op); err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 || len(rec.created[0].Steps) != 1 {
+				t.Fatalf("unexpected saga shape: %+v", rec.created)
+			}
+			if rec.created[0].Steps[0].Action != saga.ShuffleReactors {
+				t.Errorf("Steps[0].Action = %v, want saga.ShuffleReactors", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.ShuffleReactorsPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ShuffleReactorsPayload")
+			}
+			want := saga.ShuffleReactorsPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				MapId:       _map.Id(922000000),
+				Instance:    inst,
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+		})
 	}
 }
 
-func TestExecuteResetFieldDefaultsDifficultyToOne(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("reset_field").
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+func TestExecuteResetField(t *testing.T) {
+	tests := []struct {
+		name           string
+		params         map[string]string
+		wantErrSubstr  string
+		wantDifficulty int
+	}{
+		{name: "defaults difficulty to one", params: map[string]string{}, wantDifficulty: 1},
+		{name: "explicit difficulty", params: map[string]string{"difficulty": "2"}, wantDifficulty: 2},
+		{name: "bad difficulty", params: map[string]string{"difficulty": "x"}, wantErrSubstr: "invalid difficulty [x]"},
 	}
 
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if len(rec.created) != 1 || len(rec.created[0].Steps) != 1 {
-		t.Fatalf("unexpected saga shape: %+v", rec.created)
-	}
-	if rec.created[0].Steps[0].Action != saga.ResetField {
-		t.Errorf("Steps[0].Action = %v, want saga.ResetField", rec.created[0].Steps[0].Action)
-	}
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ResetFieldPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ResetFieldPayload")
-	}
-	want := saga.ResetFieldPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		MapId:       _map.Id(926000000),
-		Instance:    inst,
-		Difficulty:  1,
-	}
-	if payload != want {
-		t.Errorf("payload = %+v, want %+v", payload, want)
-	}
-}
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
 
-func TestExecuteResetFieldExplicitDifficulty(t *testing.T) {
-	e, rec := newTestOperationExecutor()
+			op, err := operation.NewBuilder().SetType("reset_field").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
 
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).Build()
+			err = e.ExecuteOperation(f, 1, op)
+			if tt.wantErrSubstr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+					t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+			}
 
-	op, err := operation.NewBuilder().
-		SetType("reset_field").
-		SetParams(map[string]string{"difficulty": "2"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	if err := e.ExecuteOperation(f, 1, op); err != nil {
-		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
-	}
-
-	payload, ok := rec.created[0].Steps[0].Payload.(saga.ResetFieldPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ResetFieldPayload")
-	}
-	if payload.Difficulty != 2 {
-		t.Errorf("Difficulty = %d, want 2", payload.Difficulty)
-	}
-}
-
-func TestExecuteResetFieldBadDifficulty(t *testing.T) {
-	e, _ := newTestOperationExecutor()
-
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).Build()
-
-	op, err := operation.NewBuilder().
-		SetType("reset_field").
-		SetParams(map[string]string{"difficulty": "x"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-
-	err = e.ExecuteOperation(f, 1, op)
-	if err == nil || !strings.Contains(err.Error(), "invalid difficulty [x]") {
-		t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, "invalid difficulty [x]")
+			if len(rec.created) != 1 || len(rec.created[0].Steps) != 1 {
+				t.Fatalf("unexpected saga shape: %+v", rec.created)
+			}
+			if rec.created[0].Steps[0].Action != saga.ResetField {
+				t.Errorf("Steps[0].Action = %v, want saga.ResetField", rec.created[0].Steps[0].Action)
+			}
+			payload, ok := rec.created[0].Steps[0].Payload.(saga.ResetFieldPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ResetFieldPayload")
+			}
+			want := saga.ResetFieldPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				MapId:       _map.Id(926000000),
+				Instance:    inst,
+				Difficulty:  tt.wantDifficulty,
+			}
+			if payload != want {
+				t.Errorf("payload = %+v, want %+v", payload, want)
+			}
+			if payload.Difficulty != tt.wantDifficulty {
+				t.Errorf("Difficulty = %d, want %d", payload.Difficulty, tt.wantDifficulty)
+			}
+		})
 	}
 }
 
@@ -1479,83 +1478,93 @@ func TestExecuteResetFieldBadDifficulty(t *testing.T) {
 // immediately followed by a spawn_monster must land as one saga with the
 // reset step before the spawn step, not two independently-raceable sagas.
 func TestExecuteOperationsCombinesResetFieldThenSpawnMonster(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-
-	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
-
-	resetOp, err := operation.NewBuilder().
-		SetType("reset_field").
-		SetParams(map[string]string{"difficulty": "1"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "combines reset_field then spawn_monster into one saga"},
 	}
 
-	spawnOp, err := operation.NewBuilder().
-		SetType("spawn_monster").
-		SetParams(map[string]string{
-			"monsterId":     "9100013",
-			"spawnIfAbsent": "true",
-			"x":             "82",
-			"y":             "200",
-		}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
 
-	if err := e.ExecuteOperations(f, 1, []operation.Model{resetOp, spawnOp}); err != nil {
-		t.Fatalf("ExecuteOperations() error = %v, want nil", err)
-	}
+			inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
 
-	if len(rec.created) != 1 {
-		t.Fatalf("len(rec.created) = %d, want 1 (one combined saga, not two independent sagas)", len(rec.created))
-	}
-	if len(rec.created[0].Steps) != 2 {
-		t.Fatalf("len(Steps) = %d, want 2", len(rec.created[0].Steps))
-	}
+			resetOp, err := operation.NewBuilder().
+				SetType("reset_field").
+				SetParams(map[string]string{"difficulty": "1"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
 
-	if rec.created[0].Steps[0].Action != saga.ResetField {
-		t.Errorf("Steps[0].Action = %v, want saga.ResetField", rec.created[0].Steps[0].Action)
-	}
-	resetPayload, ok := rec.created[0].Steps[0].Payload.(saga.ResetFieldPayload)
-	if !ok {
-		t.Fatalf("Steps[0].Payload is not saga.ResetFieldPayload")
-	}
-	wantReset := saga.ResetFieldPayload{
-		CharacterId: 1,
-		WorldId:     world.Id(0),
-		ChannelId:   channel.Id(1),
-		MapId:       _map.Id(926000000),
-		Instance:    inst,
-		Difficulty:  1,
-	}
-	if resetPayload != wantReset {
-		t.Errorf("resetPayload = %+v, want %+v", resetPayload, wantReset)
-	}
+			spawnOp, err := operation.NewBuilder().
+				SetType("spawn_monster").
+				SetParams(map[string]string{
+					"monsterId":     "9100013",
+					"spawnIfAbsent": "true",
+					"x":             "82",
+					"y":             "200",
+				}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
 
-	if rec.created[0].Steps[1].Action != saga.SpawnMonster {
-		t.Errorf("Steps[1].Action = %v, want saga.SpawnMonster", rec.created[0].Steps[1].Action)
-	}
-	spawnPayload, ok := rec.created[0].Steps[1].Payload.(saga.SpawnMonsterPayload)
-	if !ok {
-		t.Fatalf("Steps[1].Payload is not saga.SpawnMonsterPayload")
-	}
-	wantSpawn := saga.SpawnMonsterPayload{
-		CharacterId:   1,
-		WorldId:       world.Id(0),
-		ChannelId:     channel.Id(1),
-		MapId:         _map.Id(926000000),
-		Instance:      inst,
-		MonsterId:     9100013,
-		X:             82,
-		Y:             200,
-		Count:         1,
-		SpawnIfAbsent: true,
-	}
-	if spawnPayload != wantSpawn {
-		t.Errorf("spawnPayload = %+v, want %+v", spawnPayload, wantSpawn)
+			if err := e.ExecuteOperations(f, 1, []operation.Model{resetOp, spawnOp}); err != nil {
+				t.Fatalf("ExecuteOperations() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 1 {
+				t.Fatalf("len(rec.created) = %d, want 1 (one combined saga, not two independent sagas)", len(rec.created))
+			}
+			if len(rec.created[0].Steps) != 2 {
+				t.Fatalf("len(Steps) = %d, want 2", len(rec.created[0].Steps))
+			}
+
+			if rec.created[0].Steps[0].Action != saga.ResetField {
+				t.Errorf("Steps[0].Action = %v, want saga.ResetField", rec.created[0].Steps[0].Action)
+			}
+			resetPayload, ok := rec.created[0].Steps[0].Payload.(saga.ResetFieldPayload)
+			if !ok {
+				t.Fatalf("Steps[0].Payload is not saga.ResetFieldPayload")
+			}
+			wantReset := saga.ResetFieldPayload{
+				CharacterId: 1,
+				WorldId:     world.Id(0),
+				ChannelId:   channel.Id(1),
+				MapId:       _map.Id(926000000),
+				Instance:    inst,
+				Difficulty:  1,
+			}
+			if resetPayload != wantReset {
+				t.Errorf("resetPayload = %+v, want %+v", resetPayload, wantReset)
+			}
+
+			if rec.created[0].Steps[1].Action != saga.SpawnMonster {
+				t.Errorf("Steps[1].Action = %v, want saga.SpawnMonster", rec.created[0].Steps[1].Action)
+			}
+			spawnPayload, ok := rec.created[0].Steps[1].Payload.(saga.SpawnMonsterPayload)
+			if !ok {
+				t.Fatalf("Steps[1].Payload is not saga.SpawnMonsterPayload")
+			}
+			wantSpawn := saga.SpawnMonsterPayload{
+				CharacterId:   1,
+				WorldId:       world.Id(0),
+				ChannelId:     channel.Id(1),
+				MapId:         _map.Id(926000000),
+				Instance:      inst,
+				MonsterId:     9100013,
+				X:             82,
+				Y:             200,
+				Count:         1,
+				SpawnIfAbsent: true,
+			}
+			if spawnPayload != wantSpawn {
+				t.Errorf("spawnPayload = %+v, want %+v", spawnPayload, wantSpawn)
+			}
+		})
 	}
 }
 
@@ -1565,35 +1574,45 @@ func TestExecuteOperationsCombinesResetFieldThenSpawnMonster(t *testing.T) {
 // spawn_monster followed by reset_field (reverse order) all still create one
 // saga per operation.
 func TestExecuteOperationsDoesNotCombineNonAdjacentOrUnpairedOperations(t *testing.T) {
-	e, rec := newTestOperationExecutor()
-	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).Build()
-
-	resetOp, err := operation.NewBuilder().SetType("reset_field").Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-	spawnOp, err := operation.NewBuilder().
-		SetType("spawn_monster").
-		SetParams(map[string]string{"monsterId": "9100013"}).
-		Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
-	}
-	clearDrops, err := operation.NewBuilder().SetType("clear_drops").Build()
-	if err != nil {
-		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	tests := []struct {
+		name string
+	}{
+		{name: "does not combine non-adjacent or unpaired operations"},
 	}
 
-	if err := e.ExecuteOperations(f, 1, []operation.Model{spawnOp, resetOp, clearDrops}); err != nil {
-		t.Fatalf("ExecuteOperations() error = %v, want nil", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, rec := newTestOperationExecutor()
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).Build()
 
-	if len(rec.created) != 3 {
-		t.Fatalf("len(rec.created) = %d, want 3 (no combining across non-adjacent or reversed-order pairs)", len(rec.created))
-	}
-	for i, s := range rec.created {
-		if len(s.Steps) != 1 {
-			t.Errorf("rec.created[%d] has %d steps, want 1", i, len(s.Steps))
-		}
+			resetOp, err := operation.NewBuilder().SetType("reset_field").Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+			spawnOp, err := operation.NewBuilder().
+				SetType("spawn_monster").
+				SetParams(map[string]string{"monsterId": "9100013"}).
+				Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+			clearDrops, err := operation.NewBuilder().SetType("clear_drops").Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			if err := e.ExecuteOperations(f, 1, []operation.Model{spawnOp, resetOp, clearDrops}); err != nil {
+				t.Fatalf("ExecuteOperations() error = %v, want nil", err)
+			}
+
+			if len(rec.created) != 3 {
+				t.Fatalf("len(rec.created) = %d, want 3 (no combining across non-adjacent or reversed-order pairs)", len(rec.created))
+			}
+			for i, s := range rec.created {
+				if len(s.Steps) != 1 {
+					t.Errorf("rec.created[%d] has %d steps, want 1", i, len(s.Steps))
+				}
+			}
+		})
 	}
 }

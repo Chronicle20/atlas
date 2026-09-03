@@ -1,0 +1,97 @@
+{
+  "service": "atlas-data, atlas-maps (task-292 diff)",
+  "path": "services/atlas-data, services/atlas-maps",
+  "date": "2026-09-03",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-maps/field",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "fail", "evidence": "services/atlas-maps/atlas.com/maps/field/rest.go: no func Transform("},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers, no inline loops in resource.go", "status": "fail", "evidence": "services/atlas-maps/atlas.com/maps/field/resource.go:93-113 inline loop builds RestModel"},
+        {"id": "DOM-07", "name": "Handler passes d.Logger() into NewProcessor", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/field/resource.go:91"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "n-a", "evidence": "GET-only route, field/resource.go:28"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks error", "status": "n-a", "evidence": "no Transform call site (see DOM-04)"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "no os import in field/resource.go"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handler", "status": "warn", "evidence": "field/resource.go:91-127 filtering/sorting/construction in handler"},
+        {"id": "DOM-14", "name": "Handler calls processor methods, not providers", "status": "pass", "evidence": "field/resource.go:91 character.NewProcessor(...).GetFieldsWithCharacters(t)"},
+        {"id": "DOM-15", "name": "No db.Create/Save/Delete in handler", "status": "pass", "evidence": "no GORM access in package"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "field/resource.go:73,87 400 on bad page/filter"},
+        {"id": "DOM-18", "name": "REST model implements JSON:API interface", "status": "pass", "evidence": "field/rest.go:22-33"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "n-a", "evidence": "GET-only, no request model"},
+        {"id": "DOM-31", "name": "Tenant travels in context only", "status": "pass", "evidence": "field/rest.go:13-20 no tenant field; field/resource.go:77 tenant.MustFromContext; field/resource_test.go:105-143 TestGetFieldsTenantIsolation"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "field/resource.go:28; services/atlas-maps/atlas.com/maps/rest/handler.go:28 alias to server.RegisterHandler"},
+        {"id": "SUB-01", "name": "Business logic in processor, not handler", "status": "fail", "evidence": "field/resource.go:93-127 filtering/sort/construct in handler, package has no processor.go"},
+        {"id": "SUB-02", "name": "Writes via administrator, no db.Create/Save in resource.go", "status": "pass", "evidence": "no writes present"},
+        {"id": "SUB-03", "name": "POST via RegisterInputHandler[T]", "status": "n-a", "evidence": "no POST route"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "no json.NewDecoder/Unmarshal/io.ReadAll in field/resource.go"}
+      ]
+    },
+    {
+      "name": "atlas-maps/map/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-29", "name": "Cache/registry is application-scoped singleton", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/map/character/registry.go:18-29,116-131"},
+        {"id": "DOM-31", "name": "Tenant travels in context only (internal param exempt)", "status": "pass", "evidence": "GetFieldsWithCharacters(t tenant.Model) is internal Processor method; caller derives t from context at field/resource.go:77"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "map/character/mock/processor.go:46-51; map/monster/processor_test.go:661-663; map/processor_test.go:83-85"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "map/character/registry_test.go:17-119 uses t.Run without tests:=[]struct"}
+      ]
+    },
+    {
+      "name": "atlas-data/map",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-07", "name": "Handler passes d.Logger() into NewProcessor", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/map/rest.go:275"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks error", "status": "n-a", "evidence": "no new Transform call site"},
+        {"id": "DOM-11", "name": "Providers lazy via database.Query/SliceQuery", "status": "n-a", "evidence": "objectProvider (map/processor.go:306-312) mirrors pre-existing sibling npcProvider/reactorProvider pattern, not new deviation"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handler", "status": "pass", "evidence": "map/rest.go:263-288 handleGetMapObjectsRequest delegates to processor"},
+        {"id": "DOM-14", "name": "Handler calls processor methods", "status": "pass", "evidence": "map/rest.go:275"},
+        {"id": "DOM-15", "name": "No db writes in handler", "status": "pass", "evidence": "map/rest.go:263-288"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "map/rest.go:276-280 404 on error, consistent with unmodified sibling handlers"},
+        {"id": "DOM-18", "name": "REST model implements JSON:API interface", "status": "pass", "evidence": "map/object/rest.go:20-31"},
+        {"id": "DOM-21", "name": "No redeclaration of shared atlas-constants type", "status": "pass", "evidence": "grep libs/atlas-constants for obstacle: no hits; map/object_registry.go:17-20; field/resource.go reuses world.Id/channel.Id/_map.Id"},
+        {"id": "DOM-29", "name": "Registry is application-scoped singleton", "status": "pass", "evidence": "map/object_registry.go:34-44; document/registry.go:10-20 per-tenant mutex"},
+        {"id": "DOM-31", "name": "Tenant travels in context only (internal param exempt)", "status": "pass", "evidence": "map/object_registry.go:50,86 InitObj/ResolveObjKind are internal functions"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "map/mock/processor.go:74-79"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "map/object_registry_test.go:32-108; map/reader_test.go:872-980 TestGetObjects* use plain bodies not tests:=[]struct"}
+      ]
+    },
+    {
+      "name": "atlas-data/map/object",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "fail", "evidence": "services/atlas-data/atlas.com/data/map/object/rest.go: no func Transform(; RestModel built directly in map/reader.go:350-401"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handler", "status": "n-a", "evidence": "no inline Transform-loop in map/resource.go's object handler"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods in rest.go", "status": "pass", "evidence": "map/object/rest.go:6-31"},
+        {"id": "FILE-06", "name": "No catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "single file rest.go, single responsibility"}
+      ]
+    },
+    {
+      "name": "cross-package FILE-* sweep",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/constructor/methods in processor.go", "status": "pass", "evidence": "atlas-data/map/processor.go:306-315; atlas-maps/map/character/processor.go:54-56"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "n-a", "evidence": "no requests.RootUrl/GetRequest/PostRequest call added"},
+        {"id": "FILE-04", "name": "Entity struct/Migration/TableName in entity.go", "status": "n-a", "evidence": "no new GORM entity; objects stored as existing JSON document field"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placed per table", "status": "pass", "evidence": "no new Model/Builder/write path introduced"},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "object_registry.go single-purpose utility matching model_registry.go/string_registry.go convention"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-27: whether the pre-existing 404-on-any-error convention shared by all map/resource.go list handlers is itself correct requires auditing the unmodified handlers, out of diff scope",
+    "document.Registry[I,M] mutex/tenant-partitioning test coverage: unchanged library code underpinning DOM-29/DOM-31 for the new registry, not part of this diff"
+  ],
+  "blocking": [
+    "DOM-04/DOM-05/SUB-01: services/atlas-maps/atlas.com/maps/field/resource.go:91-127 - filtering, sorting, and Model->RestModel construction inline in the GET /fields handler; no Transform/TransformSlice in field/rest.go and no processor owns this logic",
+    "DOM-04: services/atlas-data/atlas.com/data/map/object/rest.go - no Transform(Model) (RestModel, error) despite package having rest.go"
+  ],
+  "nonBlocking": [
+    "DOM-20: multiple new test files (map/character/registry_test.go, map/object_registry_test.go, map/reader_test.go TestGetObjects*, field/resource_test.go TestGetFieldsFilters) use t.Run without tests:=[]struct table-driven shape",
+    "DOM-13: services/atlas-maps/atlas.com/maps/field/resource.go:91-127 - handler-level orchestration, same root cause as the blocking DOM-04/05/SUB-01 finding"
+  ]
+}

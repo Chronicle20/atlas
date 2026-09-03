@@ -5,6 +5,7 @@ import (
 	"atlas-saga-orchestrator/character/mock"
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
+	dataportal "atlas-saga-orchestrator/data/portal"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	notemock "atlas-saga-orchestrator/note/mock"
@@ -2039,4 +2040,99 @@ func TestHandleExplorerQuest_SkipsProgressWhenNotNewlyRecorded(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, []string{"explorer"}, calls)
+}
+
+// TestHandlerImpl_WithProcessorMethods_PreserveOtherFields is a regression test
+// for the struct-copy bug fixed in task-290 FIX-BE1A: several With*Processor
+// builder methods constructed a fresh HandlerImpl containing only the field
+// they set, silently dropping every other field of the receiver. Every
+// With*Processor method is exercised here by chaining two builder calls and
+// asserting the field set by the first call is still present after the
+// second call runs.
+func TestHandlerImpl_WithProcessorMethods_PreserveOtherFields(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx1 := setupContext()
+	_, ctx2 := setupContext()
+
+	base := NewHandler(logger, ctx1).(*HandlerImpl)
+	other := NewHandler(logger, ctx2).(*HandlerImpl)
+	// portalP is not populated by NewHandler, so build a distinct value for it directly.
+	portalOther := dataportal.NewProcessor(logger, ctx2)
+
+	type withCase struct {
+		name   string
+		apply  func(h *HandlerImpl) *HandlerImpl
+		get    func(h *HandlerImpl) interface{}
+		want   interface{}
+		anchor string // field preset by a prior builder call, other than the target field
+	}
+
+	cases := []withCase{
+		{"WithCharacterProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithCharacterProcessor(other.charP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.charP }, other.charP, "areaInfoP"},
+		{"WithCompartmentProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithCompartmentProcessor(other.compP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.compP }, other.compP, "areaInfoP"},
+		{"WithSkillProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithSkillProcessor(other.skillP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.skillP }, other.skillP, "areaInfoP"},
+		{"WithValidationProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithValidationProcessor(other.validP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.validP }, other.validP, "areaInfoP"},
+		{"WithGuildProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithGuildProcessor(other.guildP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.guildP }, other.guildP, "areaInfoP"},
+		{"WithInviteProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithInviteProcessor(other.inviteP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.inviteP }, other.inviteP, "areaInfoP"},
+		{"WithBuddyListProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithBuddyListProcessor(other.buddyListP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.buddyListP }, other.buddyListP, "areaInfoP"},
+		{"WithPetProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithPetProcessor(other.petP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.petP }, other.petP, "areaInfoP"},
+		{"WithFootholdProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithFootholdProcessor(other.footholdP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.footholdP }, other.footholdP, "areaInfoP"},
+		{"WithMonsterProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithMonsterProcessor(other.monsterP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.monsterP }, other.monsterP, "areaInfoP"},
+		{"WithConsumableProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithConsumableProcessor(other.consumableP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.consumableP }, other.consumableP, "areaInfoP"},
+		{"WithPortalProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithPortalProcessor(portalOther).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.portalP }, portalOther, "areaInfoP"},
+		{"WithPortalBlockingProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithPortalBlockingProcessor(other.portalBlockingP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.portalBlockingP }, other.portalBlockingP, "areaInfoP"},
+		{"WithCashshopProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithCashshopProcessor(other.cashshopP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.cashshopP }, other.cashshopP, "areaInfoP"},
+		{"WithMtsProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithMtsProcessor(other.mtsP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.mtsP }, other.mtsP, "areaInfoP"},
+		{"WithParcelProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithParcelProcessor(other.parcelP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.parcelP }, other.parcelP, "areaInfoP"},
+		{"WithTradeProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithTradeProcessor(other.tradeP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.tradeP }, other.tradeP, "areaInfoP"},
+		{"WithSystemMessageProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithSystemMessageProcessor(other.systemMessageP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.systemMessageP }, other.systemMessageP, "areaInfoP"},
+		{"WithQuestProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithQuestProcessor(other.questP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.questP }, other.questP, "areaInfoP"},
+		{"WithStorageProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithStorageProcessor(other.storageP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.storageP }, other.storageP, "areaInfoP"},
+		{"WithBuffProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithBuffProcessor(other.buffP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.buffP }, other.buffP, "areaInfoP"},
+		{"WithTransportProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithTransportProcessor(other.transportP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.transportP }, other.transportP, "areaInfoP"},
+		{"WithSavedLocationProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithSavedLocationProcessor(other.savedLocationP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.savedLocationP }, other.savedLocationP, "areaInfoP"},
+		{"WithGachaponProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithGachaponProcessor(other.gachaponP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.gachaponP }, other.gachaponP, "areaInfoP"},
+		{"WithPartyQuestProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithPartyQuestProcessor(other.partyQuestP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.partyQuestP }, other.partyQuestP, "areaInfoP"},
+		{"WithReactorProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithReactorProcessor(other.reactorP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.reactorP }, other.reactorP, "areaInfoP"},
+		{"WithPartyProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithPartyProcessor(other.partyP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.partyP }, other.partyP, "areaInfoP"},
+		{"WithPendingChangeProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithPendingChangeProcessor(other.pendingChangeP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.pendingChangeP }, other.pendingChangeP, "areaInfoP"},
+		{"WithNoteProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithNoteProcessor(other.noteP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.noteP }, other.noteP, "areaInfoP"},
+		{"WithPlayerNpcLocationProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithPlayerNpcLocationProcessor(other.playerNpcLocationP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.playerNpcLocationP }, other.playerNpcLocationP, "areaInfoP"},
+		{"WithNpcSpawnProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithNpcSpawnProcessor(other.npcSpawnP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.npcSpawnP }, other.npcSpawnP, "areaInfoP"},
+		{"WithDropsProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithDropsProcessor(other.dropsP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.dropsP }, other.dropsP, "areaInfoP"},
+		{"WithFieldProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithFieldProcessor(other.fieldP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.fieldP }, other.fieldP, "areaInfoP"},
+		{"WithAreaInfoProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithAreaInfoProcessor(other.areaInfoP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.areaInfoP }, other.areaInfoP, "charP"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var seeded *HandlerImpl
+			var anchorWant interface{}
+			var getAnchor func(h *HandlerImpl) interface{}
+			if c.anchor == "charP" {
+				seeded = base.WithCharacterProcessor(other.charP).(*HandlerImpl)
+				anchorWant = other.charP
+				getAnchor = func(h *HandlerImpl) interface{} { return h.charP }
+			} else {
+				seeded = base.WithAreaInfoProcessor(other.areaInfoP).(*HandlerImpl)
+				anchorWant = other.areaInfoP
+				getAnchor = func(h *HandlerImpl) interface{} { return h.areaInfoP }
+			}
+
+			result := c.apply(seeded)
+
+			assert.Same(t, anchorWant, getAnchor(result), "%s must preserve the %s field set by a prior builder call", c.name, c.anchor)
+			assert.Same(t, c.want, c.get(result), "%s must set its own target field", c.name)
+		})
+	}
 }

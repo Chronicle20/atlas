@@ -335,247 +335,130 @@ func (h *HandlerImpl) WithAreaInfoProcessor(areaInfoP area_info.Processor) Handl
 	return &c
 }
 
+// WithCharacterProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithCharacterProcessor(charP character.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.charP = charP
+	return &c
 }
 
+// WithCompartmentProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithCompartmentProcessor(compP compartment.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.compP = compP
+	return &c
 }
 
+// WithSkillProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithSkillProcessor(skillP skill.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.skillP = skillP
+	return &c
 }
 
+// WithValidationProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithValidationProcessor(validP validation.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  validP,
-		guildP:  h.guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.validP = validP
+	return &c
 }
 
+// WithGuildProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithGuildProcessor(guildP guild.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.guildP = guildP
+	return &c
 }
 
+// WithInviteProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithInviteProcessor(inviteP invite.Processor) Handler {
-	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    inviteP,
-		buddyListP: h.buddyListP,
-	}
+	c := *h
+	c.inviteP = inviteP
+	return &c
 }
 
+// WithBuddyListProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithBuddyListProcessor(buddyListP buddylist.Processor) Handler {
-	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    h.inviteP,
-		buddyListP: buddyListP,
-		petP:       h.petP,
-	}
+	c := *h
+	c.buddyListP = buddyListP
+	return &c
 }
 
+// WithPetProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithPetProcessor(petP pet.Processor) Handler {
-	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    h.inviteP,
-		buddyListP: h.buddyListP,
-		petP:       petP,
-		footholdP:  h.footholdP,
-		monsterP:   h.monsterP,
-	}
+	c := *h
+	c.petP = petP
+	return &c
 }
 
+// WithFootholdProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithFootholdProcessor(footholdP foothold.Processor) Handler {
-	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    h.inviteP,
-		buddyListP: h.buddyListP,
-		petP:       h.petP,
-		footholdP:  footholdP,
-		monsterP:   h.monsterP,
-	}
+	c := *h
+	c.footholdP = footholdP
+	return &c
 }
 
+// WithMonsterProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithMonsterProcessor(monsterP monster.Processor) Handler {
-	return &HandlerImpl{
-		l:           h.l,
-		ctx:         h.ctx,
-		t:           h.t,
-		charP:       h.charP,
-		compP:       h.compP,
-		skillP:      h.skillP,
-		validP:      h.validP,
-		guildP:      h.guildP,
-		inviteP:     h.inviteP,
-		buddyListP:  h.buddyListP,
-		petP:        h.petP,
-		footholdP:   h.footholdP,
-		monsterP:    monsterP,
-		consumableP: h.consumableP,
-		portalP:     h.portalP,
-	}
+	c := *h
+	c.monsterP = monsterP
+	return &c
 }
 
+// WithConsumableProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithConsumableProcessor(consumableP consumable.Processor) Handler {
-	return &HandlerImpl{
-		l:           h.l,
-		ctx:         h.ctx,
-		t:           h.t,
-		charP:       h.charP,
-		compP:       h.compP,
-		skillP:      h.skillP,
-		validP:      h.validP,
-		guildP:      h.guildP,
-		inviteP:     h.inviteP,
-		buddyListP:  h.buddyListP,
-		petP:        h.petP,
-		footholdP:   h.footholdP,
-		monsterP:    h.monsterP,
-		consumableP: consumableP,
-		portalP:     h.portalP,
-	}
+	c := *h
+	c.consumableP = consumableP
+	return &c
 }
 
+// WithPortalProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithPortalProcessor(portalP portal.Processor) Handler {
-	return &HandlerImpl{
-		l:               h.l,
-		ctx:             h.ctx,
-		t:               h.t,
-		charP:           h.charP,
-		compP:           h.compP,
-		skillP:          h.skillP,
-		validP:          h.validP,
-		guildP:          h.guildP,
-		inviteP:         h.inviteP,
-		buddyListP:      h.buddyListP,
-		petP:            h.petP,
-		footholdP:       h.footholdP,
-		monsterP:        h.monsterP,
-		consumableP:     h.consumableP,
-		portalP:         portalP,
-		portalBlockingP: h.portalBlockingP,
-		cashshopP:       h.cashshopP,
-	}
+	c := *h
+	c.portalP = portalP
+	return &c
 }
 
+// WithPortalBlockingProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithPortalBlockingProcessor(portalBlockingP portalBlocking.Processor) Handler {
-	return &HandlerImpl{
-		l:               h.l,
-		ctx:             h.ctx,
-		t:               h.t,
-		charP:           h.charP,
-		compP:           h.compP,
-		skillP:          h.skillP,
-		validP:          h.validP,
-		guildP:          h.guildP,
-		inviteP:         h.inviteP,
-		buddyListP:      h.buddyListP,
-		petP:            h.petP,
-		footholdP:       h.footholdP,
-		monsterP:        h.monsterP,
-		consumableP:     h.consumableP,
-		portalP:         h.portalP,
-		portalBlockingP: portalBlockingP,
-		cashshopP:       h.cashshopP,
-	}
+	c := *h
+	c.portalBlockingP = portalBlockingP
+	return &c
 }
 
+// WithCashshopProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      cashshopP,
-		systemMessageP: h.systemMessageP,
-	}
+	c := *h
+	c.cashshopP = cashshopP
+	return &c
 }
 
 func (h *HandlerImpl) WithMtsProcessor(mtsP mts.Processor) Handler {
@@ -608,245 +491,85 @@ func (h *HandlerImpl) WithTradeProcessor(tradeP tradesvc.Processor) Handler {
 	return &c
 }
 
+// WithSystemMessageProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithSystemMessageProcessor(systemMessageP system_message.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: systemMessageP,
-	}
+	c := *h
+	c.systemMessageP = systemMessageP
+	return &c
 }
 
+// WithQuestProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithQuestProcessor(questP quest.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         questP,
-		storageP:       h.storageP,
-	}
+	c := *h
+	c.questP = questP
+	return &c
 }
 
+// WithStorageProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithStorageProcessor(storageP storage.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       storageP,
-		buffP:          h.buffP,
-	}
+	c := *h
+	c.storageP = storageP
+	return &c
 }
 
+// WithBuffProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithBuffProcessor(buffP buff.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          buffP,
-		transportP:     h.transportP,
-	}
+	c := *h
+	c.buffP = buffP
+	return &c
 }
 
+// WithTransportProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithTransportProcessor(transportP transport.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     transportP,
-		savedLocationP: h.savedLocationP,
-	}
+	c := *h
+	c.transportP = transportP
+	return &c
 }
 
+// WithSavedLocationProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithSavedLocationProcessor(savedLocationP saved_location.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     h.transportP,
-		savedLocationP: savedLocationP,
-		gachaponP:      h.gachaponP,
-	}
+	c := *h
+	c.savedLocationP = savedLocationP
+	return &c
 }
 
+// WithGachaponProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithGachaponProcessor(gachaponP gachapon.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     h.transportP,
-		savedLocationP: h.savedLocationP,
-		gachaponP:      gachaponP,
-		partyQuestP:    h.partyQuestP,
-	}
+	c := *h
+	c.gachaponP = gachaponP
+	return &c
 }
 
+// WithPartyQuestProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithPartyQuestProcessor(partyQuestP party_quest.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     h.transportP,
-		savedLocationP: h.savedLocationP,
-		gachaponP:      h.gachaponP,
-		partyQuestP:    partyQuestP,
-		reactorP:       h.reactorP,
-	}
+	c := *h
+	c.partyQuestP = partyQuestP
+	return &c
 }
 
+// WithReactorProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithReactorProcessor(reactorP reactor.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     h.transportP,
-		savedLocationP: h.savedLocationP,
-		gachaponP:      h.gachaponP,
-		partyQuestP:    h.partyQuestP,
-		reactorP:       reactorP,
-	}
+	c := *h
+	c.reactorP = reactorP
+	return &c
 }
 
 func (h *HandlerImpl) WithPartyProcessor(partyP party.Processor) Handler {
@@ -861,59 +584,46 @@ func (h *HandlerImpl) WithPendingChangeProcessor(pendingChangeP pending_change.P
 	return &c
 }
 
+// WithNoteProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithNoteProcessor(noteP note.Processor) Handler {
-	return &HandlerImpl{
-		l:     h.l,
-		ctx:   h.ctx,
-		t:     h.t,
-		noteP: noteP,
-	}
+	c := *h
+	c.noteP = noteP
+	return &c
 }
 
 // WithPlayerNpcLocationProcessor returns a Handler with the given player-npc
 // location processor substituted; used by tests to fake atlas-maps'
 // GetCurrentLocation lookup without hitting the network.
 func (h *HandlerImpl) WithPlayerNpcLocationProcessor(playerNpcLocationP playernpc.Processor) Handler {
-	return &HandlerImpl{
-		l:                  h.l,
-		ctx:                h.ctx,
-		t:                  h.t,
-		playerNpcLocationP: playerNpcLocationP,
-	}
+	c := *h
+	c.playerNpcLocationP = playerNpcLocationP
+	return &c
 }
 
 // WithNpcSpawnProcessor returns a Handler with the given npc-spawn processor
 // substituted, for use by handleSpawnNpc (task-290 G2).
 func (h *HandlerImpl) WithNpcSpawnProcessor(npcSpawnP npc_spawn.Processor) Handler {
-	return &HandlerImpl{
-		l:         h.l,
-		ctx:       h.ctx,
-		t:         h.t,
-		footholdP: h.footholdP,
-		npcSpawnP: npcSpawnP,
-	}
+	c := *h
+	c.npcSpawnP = npcSpawnP
+	return &c
 }
 
 // WithDropsProcessor returns a Handler with the given drops processor
 // substituted, for use by handleClearDrops (task-290 G5).
 func (h *HandlerImpl) WithDropsProcessor(dropsP drops.Processor) Handler {
-	return &HandlerImpl{
-		l:      h.l,
-		ctx:    h.ctx,
-		t:      h.t,
-		dropsP: dropsP,
-	}
+	c := *h
+	c.dropsP = dropsP
+	return &c
 }
 
 // WithFieldProcessor returns a Handler with the given field processor
 // substituted, for use by handleResetField (task-290 G5).
 func (h *HandlerImpl) WithFieldProcessor(fieldP fieldclient.Processor) Handler {
-	return &HandlerImpl{
-		l:      h.l,
-		ctx:    h.ctx,
-		t:      h.t,
-		fieldP: fieldP,
-	}
+	c := *h
+	c.fieldP = fieldP
+	return &c
 }
 
 // ActionHandler is a function type for handling different saga action types

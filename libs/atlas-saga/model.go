@@ -205,6 +205,10 @@ const (
 	// StartNpcConversation.
 	DeployPlayerNpc Action = "deploy_player_npc"
 
+	// ClearDrops removes every drop from a field. Cosmic's no-arg
+	// MapleMap's no-arg drop clear is whole-map, not owner-filtered (task-290 G5).
+	ClearDrops Action = "clear_drops"
+
 	// Storage actions
 	ShowStorage          Action = "show_storage"
 	DepositToStorage     Action = "deposit_to_storage"

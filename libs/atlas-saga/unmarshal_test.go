@@ -2,9 +2,12 @@ package saga
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -1844,6 +1847,38 @@ func TestUnmarshalSpawnNpcStep(t *testing.T) {
 		t.Fatalf("expected SpawnNpcPayload, got %T", step.Payload)
 	}
 	want := SpawnNpcPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), MapId: _map.Id(108010600), NpcId: 1104100, X: 2830, Y: 78, SpawnIfAbsent: true}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}
+
+func TestUnmarshalClearDropsStep(t *testing.T) {
+	instance := uuid.New()
+	raw := fmt.Sprintf(`{
+		"stepId": "clear-drops-1",
+		"status": "pending",
+		"action": "clear_drops",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 922000000,
+			"instance": %q
+		}
+	}`, instance.String())
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ClearDrops {
+		t.Fatalf("expected action ClearDrops, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ClearDropsPayload)
+	if !ok {
+		t.Fatalf("expected ClearDropsPayload, got %T", step.Payload)
+	}
+	want := ClearDropsPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), MapId: _map.Id(922000000), Instance: instance}
 	if p != want {
 		t.Errorf("payload = %+v, want %+v", p, want)
 	}

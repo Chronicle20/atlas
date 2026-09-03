@@ -353,6 +353,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.UnblockPortal:              {},
 	sharedsaga.SpawnMonster:               {},
 	sharedsaga.SpawnNpc:                   {},
+	sharedsaga.ClearDrops:                 {},
 	sharedsaga.SpawnReactorDrops:          {},
 	sharedsaga.HitReactor:                 {},
 	sharedsaga.BroadcastPqMessage:         {},

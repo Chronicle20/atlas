@@ -579,6 +579,17 @@ type SpawnNpcPayload struct {
 	SpawnIfAbsent bool       `json:"spawnIfAbsent,omitempty"`
 }
 
+// ClearDropsPayload represents the payload required to remove every drop
+// from a field. Cosmic's no-arg MapleMap.clearDrops() is whole-map, not
+// owner-filtered (task-290 G5).
+type ClearDropsPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	Instance    uuid.UUID  `json:"instance"`
+}
+
 // DeployPlayerNpcPayload represents the payload required to deploy a
 // character's own player NPC (FR-6.2). MapId is optional: nil means deploy
 // on the character's current map (design §9.1); a caller supplying it —

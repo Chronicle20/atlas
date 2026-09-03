@@ -54,6 +54,8 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case DeployPlayerNpcPayload:
 		return p.CharacterId
+	case ClearDropsPayload:
+		return p.CharacterId
 	case CompleteQuestPayload:
 		return p.CharacterId
 	case StartQuestPayload:

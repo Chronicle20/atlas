@@ -172,6 +172,10 @@ const (
 	// state, so it dispatches through the saga orchestrator.
 	DeployPlayerNpc = sharedsaga.DeployPlayerNpc
 
+	// ClearDrops removes every drop from a field (task-290 G5). Cosmic's
+	// no-arg MapleMap's no-arg drop clear is whole-map, not owner-filtered.
+	ClearDrops = sharedsaga.ClearDrops
+
 	// Storage actions
 	ShowStorage          = sharedsaga.ShowStorage
 	DepositToStorage     = sharedsaga.DepositToStorage
@@ -354,6 +358,7 @@ type (
 	SpawnMonsterPayload                 = sharedsaga.SpawnMonsterPayload
 	SpawnNpcPayload                     = sharedsaga.SpawnNpcPayload
 	DeployPlayerNpcPayload              = sharedsaga.DeployPlayerNpcPayload
+	ClearDropsPayload                   = sharedsaga.ClearDropsPayload
 	SpawnReactorDropsPayload            = sharedsaga.SpawnReactorDropsPayload
 	ShowStoragePayload                  = sharedsaga.ShowStoragePayload
 	OpenNpcShopPayload                  = sharedsaga.OpenNpcShopPayload
@@ -1289,6 +1294,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case SpawnNpc:
 		var payload SpawnNpcPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ClearDrops:
+		var payload ClearDropsPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

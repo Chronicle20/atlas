@@ -70,6 +70,8 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeWarpToMap(f, characterId, op)
 	case "spawn_npc":
 		return e.executeSpawnNpc(f, characterId, op)
+	case "clear_drops":
+		return e.executeClearDrops(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -364,6 +366,31 @@ func (e *OperationExecutor) executeSpawnNpc(f field.Model, characterId uint32, o
 				X:             x,
 				Y:             y,
 				SpawnIfAbsent: spawnIfAbsent,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeClearDrops removes every drop from the current field, mirroring
+// Cosmic's no-arg MapleMap.clearDrops(): whole-map, not owner-filtered
+// (task-290 G5). It takes no params.
+func (e *OperationExecutor) executeClearDrops(f field.Model, characterId uint32, op operation.Model) error {
+	e.l.Debugf("Clearing drops on field for character [%d].", characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-clear-drops").
+		AddStep(
+			fmt.Sprintf("clear-drops-%d", characterId),
+			saga.Pending,
+			saga.ClearDrops,
+			saga.ClearDropsPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				MapId:       f.MapId(),
+				Instance:    f.Instance(),
 			},
 		).Build()
 

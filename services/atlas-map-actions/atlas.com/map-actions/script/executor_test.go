@@ -1127,3 +1127,45 @@ func TestExecuteSpawnNpc(t *testing.T) {
 		t.Errorf("payload = %+v, want %+v", payload, want)
 	}
 }
+
+func TestExecuteClearDrops(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(inst).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("clear_drops").
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 1 {
+		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+	}
+	if rec.created[0].Steps[0].Action != saga.ClearDrops {
+		t.Errorf("Steps[0].Action = %v, want saga.ClearDrops", rec.created[0].Steps[0].Action)
+	}
+	clearPayload, ok := rec.created[0].Steps[0].Payload.(saga.ClearDropsPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.ClearDropsPayload")
+	}
+	wantClear := saga.ClearDropsPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		MapId:       _map.Id(922000000),
+		Instance:    inst,
+	}
+	if clearPayload != wantClear {
+		t.Errorf("payload = %+v, want %+v", clearPayload, wantClear)
+	}
+}

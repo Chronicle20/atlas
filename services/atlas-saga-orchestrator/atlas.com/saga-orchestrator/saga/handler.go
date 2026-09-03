@@ -9,6 +9,7 @@ import (
 	"atlas-saga-orchestrator/consumable"
 	"atlas-saga-orchestrator/data/foothold"
 	"atlas-saga-orchestrator/data/portal"
+	"atlas-saga-orchestrator/drops"
 	"atlas-saga-orchestrator/gachapon"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
@@ -105,6 +106,9 @@ type Handler interface {
 	// WithNpcSpawnProcessor is the injector seam for handleSpawnNpc's
 	// atlas-maps NPC placement call (task-290 G2).
 	WithNpcSpawnProcessor(npc_spawn.Processor) Handler
+	// WithDropsProcessor is the injector seam for handleClearDrops's
+	// atlas-drops field-clear call (task-290 G5).
+	WithDropsProcessor(drops.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -143,6 +147,7 @@ type Handler interface {
 	handleRenamePet(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
 	handleSpawnNpc(s Saga, st Step[any]) error
+	handleClearDrops(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
@@ -259,6 +264,7 @@ type HandlerImpl struct {
 	pendingChangeP     pending_change.Processor
 	playerNpcLocationP playernpc.Processor
 	npcSpawnP          npc_spawn.Processor
+	dropsP             drops.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -299,6 +305,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		pendingChangeP:     pending_change.NewProcessor(l, ctx),
 		playerNpcLocationP: playernpc.NewProcessor(l, ctx),
 		npcSpawnP:          npc_spawn.NewProcessor(l, ctx),
+		dropsP:             drops.NewProcessor(l, ctx),
 	}
 }
 
@@ -861,6 +868,17 @@ func (h *HandlerImpl) WithNpcSpawnProcessor(npcSpawnP npc_spawn.Processor) Handl
 	}
 }
 
+// WithDropsProcessor returns a Handler with the given drops processor
+// substituted, for use by handleClearDrops (task-290 G5).
+func (h *HandlerImpl) WithDropsProcessor(dropsP drops.Processor) Handler {
+	return &HandlerImpl{
+		l:      h.l,
+		ctx:    h.ctx,
+		t:      h.t,
+		dropsP: dropsP,
+	}
+}
+
 // ActionHandler is a function type for handling different saga action types
 type ActionHandler func(s Saga, st Step[any]) error
 
@@ -948,6 +966,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSpawnMonster, true
 	case SpawnNpc:
 		return h.handleSpawnNpc, true
+	case ClearDrops:
+		return h.handleClearDrops, true
 	case SpawnReactorDrops:
 		return h.handleSpawnReactorDrops, true
 	case CompleteQuest:
@@ -2225,6 +2245,30 @@ func (h *HandlerImpl) handleSpawnNpc(s Saga, st Step[any]) error {
 
 	h.l.Debugf("Successfully spawned npc %d at (%d, %d, fh=%d) in world %d, channel %d, map %d",
 		payload.NpcId, payload.X, payload.Y, fh, payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleClearDrops handles the ClearDrops action, mirroring Cosmic's no-arg
+// MapleMap.clearDrops(): removes every drop from the field, not just the
+// caller's own (task-290 G5).
+func (h *HandlerImpl) handleClearDrops(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ClearDropsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	if err := h.dropsP.ClearDrops(f); err != nil {
+		h.logActionError(s, st, err, "Failed to clear drops")
+		return err
+	}
+
+	h.l.Debugf("Successfully cleared drops in world %d, channel %d, map %d",
+		payload.WorldId, payload.ChannelId, payload.MapId)
 
 	return nil
 }

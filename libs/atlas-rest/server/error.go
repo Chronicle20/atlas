@@ -79,6 +79,21 @@ type badRequestBody struct {
 
 // WriteBadRequest writes a JSON:API error object with HTTP 400.
 func WriteBadRequest(l logrus.FieldLogger, w http.ResponseWriter, detail string) {
+	writeBadRequest(l, w, detail, "application/json")
+}
+
+// writeBadRequestJSONAPI is writeBadRequest's vnd.api+json-negotiated
+// sibling, used by ParseInput's failure paths (context.go), whose endpoints
+// otherwise emit application/vnd.api+json for every response, success or
+// error.
+func writeBadRequestJSONAPI(l logrus.FieldLogger, w http.ResponseWriter, detail string) {
+	writeBadRequest(l, w, detail, "application/vnd.api+json")
+}
+
+// writeBadRequest writes the shared JSON:API error object shape used by
+// WriteBadRequest and writeBadRequestJSONAPI, differing only in the
+// Content-Type header they negotiate.
+func writeBadRequest(l logrus.FieldLogger, w http.ResponseWriter, detail string, contentType string) {
 	body, err := json.Marshal(badRequestBody{Errors: []badRequestError{{
 		Status: "400",
 		Title:  "Bad Request",
@@ -88,7 +103,7 @@ func WriteBadRequest(l logrus.FieldLogger, w http.ResponseWriter, detail string)
 		l.WithError(err).Errorf("Unable to marshal error response.")
 		body = []byte(`{"errors":[{"status":"400","title":"Bad Request","detail":"invalid request"}]}`)
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(http.StatusBadRequest)
 	if _, err := w.Write(body); err != nil {
 		l.WithError(err).Errorf("Unable to write error response.")

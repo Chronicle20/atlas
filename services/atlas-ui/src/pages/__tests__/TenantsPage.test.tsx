@@ -8,6 +8,7 @@ const refreshTenantsMock = vi.fn();
 const useTenantMock = vi.fn();
 const updateTenantMock = vi.fn();
 const deleteTenantMock = vi.fn();
+const useTenantConfigurationsMock = vi.fn();
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
 
@@ -20,6 +21,15 @@ vi.mock("@/services/api", () => ({
     updateTenant: (...args: unknown[]) => updateTenantMock(...args),
     deleteTenant: (...args: unknown[]) => deleteTenantMock(...args),
   },
+}));
+
+// TenantsPage now sources drift badges from useTenantConfigurations. The
+// registry (useTenant) and configuration (useTenantConfigurations) sources
+// are independent per the task-12 design, so this suite - which only
+// exercises the registry-sourced list/rename/delete flows - stubs it to an
+// empty result rather than wiring a QueryClientProvider + service mock.
+vi.mock("@/lib/hooks/api/useTenants", () => ({
+  useTenantConfigurations: () => useTenantConfigurationsMock(),
 }));
 
 vi.mock("sonner", () => ({
@@ -82,6 +92,7 @@ describe("TenantsPage rename flow", () => {
     vi.clearAllMocks();
     refreshTenantsMock.mockResolvedValue({ ok: true });
     useTenantMock.mockReturnValue(defaultUseTenantValue());
+    useTenantConfigurationsMock.mockReturnValue({ data: undefined });
   });
 
   function renderPage() {
@@ -215,6 +226,7 @@ describe("TenantsPage empty-state refresh", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     refreshTenantsMock.mockResolvedValue({ ok: true });
+    useTenantConfigurationsMock.mockReturnValue({ data: undefined });
   });
 
   function renderPage() {

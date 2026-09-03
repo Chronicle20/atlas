@@ -1,0 +1,97 @@
+{
+  "service": "atlas-configurations",
+  "path": "services/atlas-configurations/atlas.com/configurations",
+  "date": "2026-09-02",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "drift",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor code in processor.go", "status": "n-a", "evidence": "No Processor/ProcessorImpl symbol in drift/*.go"},
+        {"id": "FILE-02", "name": "RestModel/Transform in rest.go", "status": "n-a", "evidence": "No RestModel type in drift; drift/doc.go:1-23"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "n-a", "evidence": "No requests.* call in drift"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "n-a", "evidence": "No Entity type in drift"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider placement", "status": "n-a", "evidence": "None of these exist in drift; drift/doc.go:1-23"},
+        {"id": "FILE-06", "name": "No catch-all file bundling >=2 responsibilities", "status": "pass", "evidence": "canonical.go, merge.go, revision.go each single-responsibility; no drift.go catch-all"},
+        {"id": "DOM-21", "name": "No redeclaration of libs/atlas-constants types", "status": "n-a", "evidence": "drift/doc.go:37-69 declares only JSON section-name lists, not domain constants"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "drift/crosstype_test.go has 3 Test* funcs, 0 t.Run (single-scenario regression tests)"},
+        {"id": "DOM-10", "name": "Test DB registers tenant callbacks", "status": "n-a", "evidence": "drift tests build no GORM DB"},
+        {"id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "n-a", "evidence": "drift reaches no emit path"}
+      ]
+    },
+    {
+      "name": "tenants",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor code in processor.go", "status": "fail", "evidence": "tenants/reset.go:36 (ResetById), tenants/reset.go:166 (validateReset) are *ProcessorImpl methods in a bare topic-named file, not processor.go or processor_reset.go"},
+        {"id": "FILE-02", "name": "RestModel/Transform/GetName/GetID/SetID in rest.go", "status": "pass", "evidence": "tenants/rest.go:35-46 (GetName/GetID/SetID); no Transform anywhere (see DOM-04)"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "n-a", "evidence": "No requests.*Request[T] call added"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "pass", "evidence": "tenants/entity.go:12-42"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider placement", "status": "n-a", "evidence": "No model.go/builder.go in package; writes in administrator.go, readers in provider.go"},
+        {"id": "FILE-06", "name": "No catch-all file bundling >=2 responsibilities", "status": "pass", "evidence": "No tenants.go catch-all; resource.go carries only routing/handlers (see DOM-19/32 for leaked responsibilities)"},
+        {"id": "SUB-01", "name": "Business logic not in handler", "status": "pass", "evidence": "tenants/reset.go:36,166; tenants/resource.go:223-289 only wires deps and maps errors"},
+        {"id": "SUB-02", "name": "No db.Create/Save/Delete in resource.go", "status": "pass", "evidence": "grep tenants/resource.go for db.Create|db.Save|db.Delete: zero matches"},
+        {"id": "SUB-03", "name": "POST routes via RegisterInputHandler[T]", "status": "fail", "evidence": "tenants/resource.go:36 registers POST /{tenantId}/reset via rest.RegisterHandler"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "fail", "evidence": "tenants/resource.go:78 json.NewDecoder(r.Body).Decode(&body)"},
+        {"id": "DOM-01", "name": "builder.go + NewBuilder + Build()", "status": "n-a", "evidence": "No model.go in package"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "No model.go in package"},
+        {"id": "DOM-03", "name": "Make(Entity)(Model,error) in entity.go", "status": "n-a", "evidence": "No model.go; Make(Entity)(RestModel,error) exists at processor.go:272 but trigger requires model.go+entity.go"},
+        {"id": "DOM-04", "name": "func Transform(Model)(RestModel,error) in rest.go", "status": "fail", "evidence": "grep '^func Transform' tenants/*.go: zero matches; checklist states DOM-04 applies model.go or not"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "fail", "evidence": "No TransformSlice exists; tenants/resource.go:88-109 builds list directly from AllViewProvider"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "tenants/processor.go:93"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "tenants/resource.go:46,147,171,211,241,250"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "fail", "evidence": "tenants/resource.go:36 POST /{tenantId}/reset uses rest.RegisterHandler"},
+        {"id": "DOM-09", "name": "Every Transform( call checked", "status": "n-a", "evidence": "No Transform( call site in resource.go"},
+        {"id": "DOM-11", "name": "Providers lazy via database.Query/SliceQuery", "status": "fail", "evidence": "tenants/provider.go:23-51 eager .First() wrapped in model.FixedProvider[Entity] at lines 32 and 48"},
+        {"id": "DOM-12", "name": "No os.Getenv in resource.go", "status": "pass", "evidence": "grep tenants/resource.go for os.Getenv: zero matches"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "tenants/resource.go:250-252 mirrors existing PATCH wiring pattern at resource.go:147-148"},
+        {"id": "DOM-14", "name": "Handlers call processor methods only", "status": "pass", "evidence": "tenants/resource.go:241,254 call .GetById(/.ResetById("},
+        {"id": "DOM-15", "name": "No db.Create/Save/Delete in resource.go", "status": "pass", "evidence": "same as SUB-02"},
+        {"id": "DOM-16", "name": "administrator.go holds domain writes", "status": "n-a", "evidence": "Rule requires model.go, absent; writes nonetheless correctly isolated in administrator.go"},
+        {"id": "DOM-17", "name": "Domain errors map to correct HTTP status", "status": "pass", "evidence": "tenants/resource.go:263-281: ErrTenantNotFound->404, ErrNoBaselineTemplate->409, ErrUnknownSection->400; 422/403 arms per prior ruling"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "tenants/rest.go:35-46, 70-77 (ViewRestModel via embedding)"},
+        {"id": "DOM-19", "name": "Request models flat, no nested Data/Attributes", "status": "fail", "evidence": "tenants/resource.go:68-74 resetRequest is Data.Attributes.Sections, hand-decoded, not in rest.go"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "tenants/reset_test.go (11 t.Run), resource_reset_test.go (12 t.Run), view_test.go (8 t.Run)"},
+        {"id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "n-a", "evidence": "grep for AndEmit|message.Emit|producer.Produce|producer.ProviderImpl in tenants/ outbox/: zero matches"},
+        {"id": "DOM-27", "name": "DB-backed handlers use server.WriteErrorResponse for 500s", "status": "pass", "evidence": "tenants/resource.go:284; classifier registered at main.go:56"},
+        {"id": "DOM-28", "name": "Enrichment fallback degrades loudly", "status": "fail", "evidence": "tenants/processor.go:144-160 baselineFor logs Warn only (line 151-155), no model.ErrDecorator/degrade.Observe; service-wide grep for degrade.Observe|model.ErrDecorator returns nothing"},
+        {"id": "DOM-29", "name": "Cache is app-scoped singleton", "status": "n-a", "evidence": "No cache.go; ProcessorImpl fields are per-request collaborators"},
+        {"id": "DOM-30", "name": "DB write emits via AndEmit+message.Buffer", "status": "n-a", "evidence": "No producer.ProviderImpl(/producer.Produce( in tenants; outbox insert verified atomic by inspection (reset.go:124-140)"},
+        {"id": "DOM-31", "name": "Tenant/trace identity travels in context only", "status": "pass", "evidence": "tenants/rest.go:13-33,70-77 no tenant_id JSON field; env scoping via env.MustFromContext at administrator.go:34,65 and provider.go:18,26,40; synthesized tenantlib context uses disjoint keys from atlas-env (libs/atlas-tenant/processor.go:12-16,90-97 vs libs/atlas-env/env.go:36)"},
+        {"id": "DOM-32", "name": "Routes via server.Register(Input)Handler; no hand-rolled error writer", "status": "fail", "evidence": "tenants/resource.go:53-63 writeJSONAPIError is a new local error-response helper"},
+        {"id": "DOM-33", "name": "Mocks updated for interface changes", "status": "pass", "evidence": "tenants/mock/processor.go:15,19-20,26,38-43,45-57,115-120"}
+      ]
+    },
+    {
+      "name": "templates/characters/preset",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "pass", "evidence": "templates/characters/preset/rest.go:27-61"},
+        {"id": "DOM-04", "name": "func Transform( in rest.go", "status": "fail", "evidence": "grep '^func Transform' templates/characters/preset/*.go: zero matches (low practical impact, nested non-top-level model)"},
+        {"id": "DOM-21", "name": "No redeclaration of constants-lib types", "status": "pass", "evidence": "templates/characters/preset/rest.go:50-51 AP/SP fields checked against libs/atlas-constants, no match"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "templates/characters/preset/rest_test.go:9-30 covers two scenarios inline without t.Run/table"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "FILE-01: tenants/reset.go:36,166 - ProcessorImpl methods in bare topic-named file, not processor.go/processor_reset.go",
+    "DOM-04/DOM-05: tenants/rest.go - no Transform/TransformSlice anywhere in the package",
+    "DOM-08/SUB-03: tenants/resource.go:36 - POST /{tenantId}/reset registered via RegisterHandler, not RegisterInputHandler[T]",
+    "SUB-04: tenants/resource.go:78 - manual json.NewDecoder(r.Body).Decode",
+    "DOM-19: tenants/resource.go:68-74 - resetRequest is a nested Data.Attributes request struct outside rest.go",
+    "DOM-32: tenants/resource.go:53-63 - hand-rolled writeJSONAPIError error-response helper",
+    "DOM-11: tenants/provider.go:32,48 - eager .First() read wrapped in FixedProvider",
+    "DOM-28: tenants/processor.go:144-160 - baselineFor degrades with Warn log only, no model.ErrDecorator/degrade.Observe",
+    "DOM-04: templates/characters/preset/rest.go - no Transform function (low impact, nested model)"
+  ],
+  "nonBlocking": [
+    "DOM-20: drift/crosstype_test.go and templates/characters/preset/rest_test.go are multi-scenario tests without table/t.Run shape",
+    "tenants/resource.go:241 - redundant GetById pre-read duplicates ResetById's internal read (functionally correct, extra query only)",
+    "Already-accepted, not relitigated: baselineFor's non-ErrRecordNotFound branch untested; PreservesTheFR44Set Id/Environment assertions non-diagnostic"
+  ]
+}

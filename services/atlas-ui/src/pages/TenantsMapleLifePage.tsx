@@ -6,6 +6,7 @@ import {
   type MapleLifeEditorAdapter,
 } from "@/components/features/characters/maple-life/MapleLifeEditor";
 import { supportsMapleLife } from "@/components/features/characters/maple-life/mapleLifeSupport";
+import { TenantSectionResetBar } from "@/components/features/tenants/TenantSectionResetBar";
 import {
   useTenantConfiguration,
   useUpdateTenantConfiguration,
@@ -66,6 +67,11 @@ export function TenantsMapleLifePage() {
 
   return (
     <TenantDetailLayout>
+      <TenantSectionResetBar
+        id={id}
+        sections={["mapleLife"]}
+        sectionLabel="Maple Life configuration"
+      />
       <MapleLifeEditor adapter={adapter} />
     </TenantDetailLayout>
   );

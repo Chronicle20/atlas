@@ -11,7 +11,7 @@ import {
 } from "../onboarding.service";
 import { tenantsService } from "../tenants.service";
 import { templatesService } from "../templates.service";
-import type { Template } from "@/types/models/template";
+import type { Template, MapleLifeConfig } from "@/types/models/template";
 
 // Mock the tenants service
 vi.mock("../tenants.service", () => ({
@@ -117,6 +117,110 @@ describe("OnboardingService", () => {
 
       expect(result.tenant).toEqual(mockTenant);
       expect(result.config).toEqual(mockTenantConfig);
+    });
+
+    it("copies mapleLife from the template", async () => {
+      const mapleLife: MapleLifeConfig = {
+        looks: [
+          {
+            gender: 0,
+            faces: [20000],
+            hairs: [30000],
+            hairColors: [0],
+            skinColors: [0],
+          },
+        ],
+        classes: [
+          {
+            ordinal: 0,
+            gender: 0,
+            jobId: 0,
+            level: 1,
+            mapId: 0,
+            stats: { str: 4, dex: 4, int: 4, luk: 4, hp: 50, mp: 5 },
+            ap: 0,
+            sp: "0,0,0,0,0,0,0,0,0,0",
+            meso: 0,
+            equipment: [],
+            inventory: [],
+          },
+        ],
+      };
+      const templateWithMapleLife: Template = {
+        ...mockTemplate,
+        attributes: {
+          ...mockTemplate.attributes,
+          mapleLife,
+        },
+      };
+      mockTenantsService.createTenant.mockResolvedValue(mockTenant);
+      mockTenantsService.createTenantConfiguration.mockResolvedValue(
+        mockTenantConfig,
+      );
+
+      await onboardingService.onboardTenant(
+        "Test Tenant",
+        templateWithMapleLife,
+      );
+
+      const [, attributes] =
+        mockTenantsService.createTenantConfiguration.mock.calls[0]!;
+      expect(attributes.mapleLife).toEqual(mapleLife);
+    });
+
+    it("copies every comparable section", async () => {
+      const mapleLife: MapleLifeConfig = {
+        looks: [
+          {
+            gender: 0,
+            faces: [20000],
+            hairs: [30000],
+            hairColors: [0],
+            skinColors: [0],
+          },
+        ],
+        classes: [],
+      };
+      const fullTemplate: Template = {
+        ...mockTemplate,
+        attributes: {
+          ...mockTemplate.attributes,
+          usesPin: true,
+          socket: {
+            handlers: [{ opCode: "0x01", validator: "V", handler: "Handler" }],
+            writers: [],
+          },
+          characters: { templates: [], presets: [] },
+          npcs: [{ npcId: 9000000, impl: "TestNpc" }],
+          cashShop: { commodities: {} },
+          mapleLife,
+          worlds: [
+            {
+              name: "Scania",
+              flag: "",
+              serverMessage: "",
+              eventMessage: "",
+              whyAmIRecommended: "",
+            },
+          ],
+        },
+      };
+      mockTenantsService.createTenant.mockResolvedValue(mockTenant);
+      mockTenantsService.createTenantConfiguration.mockResolvedValue(
+        mockTenantConfig,
+      );
+
+      await onboardingService.onboardTenant("Test Tenant", fullTemplate);
+
+      const [, attributes] =
+        mockTenantsService.createTenantConfiguration.mock.calls[0]!;
+      expect(attributes.usesPin).toEqual(fullTemplate.attributes.usesPin);
+      expect(attributes.socket).toEqual(fullTemplate.attributes.socket);
+      expect(attributes.characters).toEqual(fullTemplate.attributes.characters);
+      expect(attributes.npcs).toEqual(fullTemplate.attributes.npcs);
+      expect(attributes.cashShop).toEqual(fullTemplate.attributes.cashShop);
+      expect(attributes.mapleLife).toEqual(fullTemplate.attributes.mapleLife);
+      expect(attributes.worlds).toEqual(fullTemplate.attributes.worlds);
     });
 
     it("should throw TenantCreationError when tenant creation fails", async () => {

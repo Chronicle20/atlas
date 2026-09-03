@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -87,8 +87,17 @@ export function MapDetailTabs({
     });
   }, [reactors]);
 
+  // FR-30: read-only `?tab=` support so a link from elsewhere (e.g. the
+  // field-detail Monsters tab's spawn cell) can land on this tab directly.
+  // Read once on mount — uncontrolled, no sync-back-to-URL; that's the
+  // fields page's own separate controlled `?tab=` requirement (FR-21).
+  const [searchParams] = useSearchParams();
+
   return (
-    <Tabs defaultValue="portals" className="flex flex-col">
+    <Tabs
+      defaultValue={searchParams.get("tab") ?? "portals"}
+      className="flex flex-col"
+    >
       <TabsList>
         <TabsTrigger value="portals">
           Portals {portals && `(${portals.length})`}

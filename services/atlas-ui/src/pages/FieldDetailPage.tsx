@@ -10,6 +10,7 @@ import { FieldHeader } from "@/components/features/fields/FieldHeader";
 import { FieldSummaryPanels } from "@/components/features/fields/FieldSummaryPanels";
 import { FieldTabs } from "@/components/features/fields/FieldTabs";
 import { FieldCharactersTab } from "@/components/features/fields/FieldCharactersTab";
+import { FieldMonstersTab } from "@/components/features/fields/FieldMonstersTab";
 import { useMap } from "@/lib/hooks/api/useMaps";
 import { useWorlds } from "@/lib/hooks/api/useWorlds";
 import {
@@ -204,6 +205,13 @@ export function FieldDetailPage() {
           tab={tab}
           onTabChange={handleTabChange}
           characters={<FieldCharactersTab characterIds={characterIds} />}
+          monsters={
+            <FieldMonstersTab
+              monsters={monstersQuery.data}
+              error={monstersQuery.error ?? undefined}
+              mapId={numericMapId}
+            />
+          }
         />
       </HoverHighlightProvider>
     </div>

@@ -10,8 +10,8 @@ interface FieldTabsProps {
   onTabChange: (tab: string) => void;
   /** FR-25..27 tab body (task 18). Required — no placeholder left standing. */
   characters: ReactNode;
-  /** Task 19 fills this; falls back to the placeholder until then. */
-  monsters?: ReactNode;
+  /** FR-28..31 tab body (task 19). Required — no placeholder left standing. */
+  monsters: ReactNode;
   /** Task 20 fills this; falls back to the placeholder until then. */
   objects?: ReactNode;
 }
@@ -20,7 +20,7 @@ interface FieldTabsProps {
  * FR-21: the field-detail tab shell. Controlled by `?tab=` (owned by the
  * page, D-carried from Task 16's rules-of-hooks fix — no `key` remount).
  * Each panel body is a slot the page fills; `characters` landed in Task 18,
- * `monsters`/`objects` arrive in Tasks 19/20 the same way.
+ * `monsters` in Task 19, `objects` arrives in Task 20 the same way.
  */
 export function FieldTabs({
   characterCount,
@@ -48,17 +48,7 @@ export function FieldTabs({
 
       <TabsContent value="characters">{characters}</TabsContent>
 
-      <TabsContent value="monsters">
-        {monsters ?? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground">
-                Live monster table arrives in a follow-up task.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </TabsContent>
+      <TabsContent value="monsters">{monsters}</TabsContent>
 
       <TabsContent value="objects">
         {objects ?? (

@@ -17,7 +17,12 @@ import type { MapData } from "@/services/api/maps.service";
 import type { WorldData } from "@/services/api/worlds.service";
 import type { FieldCharacterData } from "@/services/api/fields.service";
 import type { LiveMonsterData } from "@/services/api/live-monsters.service";
-import type { MapObjectData } from "@/services/api/map-entities.service";
+import type {
+  MapNpcData,
+  MapObjectData,
+  MapPortalData,
+  MapReactorData,
+} from "@/services/api/map-entities.service";
 import * as toast from "@/lib/utils/toast";
 
 const mockTenant: Tenant = {
@@ -60,13 +65,30 @@ vi.mock("@/lib/hooks/api/useFieldRuntime", () => ({
 }));
 
 const useMapObjectsMock = vi.fn();
+const useMapPortalsMock = vi.fn();
+const useMapNpcsMock = vi.fn();
+const useMapReactorsMock = vi.fn();
 vi.mock("@/lib/hooks/api/useMapEntities", () => ({
   useMapObjects: (...args: unknown[]) => useMapObjectsMock(...args),
+  useMapPortals: (...args: unknown[]) => useMapPortalsMock(...args),
+  useMapNpcs: (...args: unknown[]) => useMapNpcsMock(...args),
+  useMapReactors: (...args: unknown[]) => useMapReactorsMock(...args),
 }));
 
 vi.mock("@/lib/utils/toast", () => ({
   success: vi.fn(),
   error: vi.fn(),
+}));
+
+// FR-19: capture the props MapImagePanel receives so B1's pin-passthrough
+// (definition entities via hooks, live monsters via the adapter) can be
+// asserted without re-testing MapImagePanel's own rendering.
+const mapImagePanelPropsSpy = vi.fn();
+vi.mock("@/components/features/maps/MapImagePanel", () => ({
+  MapImagePanel: (props: Record<string, unknown>) => {
+    mapImagePanelPropsSpy(props);
+    return <div data-testid="map-image-panel" />;
+  },
 }));
 
 // FieldCharactersTab (rendered by FieldTabs' `characters` slot) enriches
@@ -162,6 +184,56 @@ function makeLiveMonster(id: string, monsterId: number): LiveMonsterData {
   };
 }
 
+function makePortal(id: string): MapPortalData {
+  return {
+    id,
+    type: "portals",
+    attributes: {
+      name: id,
+      target: "",
+      type: 0,
+      x: 0,
+      y: 0,
+      targetMapId: 999999999,
+      scriptName: "",
+    },
+  };
+}
+
+function makeNpc(id: string): MapNpcData {
+  return {
+    id,
+    type: "npcs",
+    attributes: {
+      template: 9000000,
+      name: id,
+      cy: 0,
+      x: 0,
+      y: 0,
+      f: 0,
+      fh: 0,
+      rx0: 0,
+      rx1: 0,
+      hide: false,
+    },
+  };
+}
+
+function makeReactor(id: string): MapReactorData {
+  return {
+    id,
+    type: "reactors",
+    attributes: {
+      classification: 1,
+      name: id,
+      x: 0,
+      y: 0,
+      delay: 0,
+      direction: 0,
+    },
+  };
+}
+
 function makeMapObject(id: string): MapObjectData {
   return {
     id,
@@ -225,6 +297,10 @@ describe("FieldDetailPage", () => {
     useFieldCharactersMock.mockReset();
     useLiveMonstersMock.mockReset();
     useMapObjectsMock.mockReset();
+    useMapPortalsMock.mockReset();
+    useMapNpcsMock.mockReset();
+    useMapReactorsMock.mockReset();
+    mapImagePanelPropsSpy.mockReset();
     vi.mocked(toast.error).mockReset();
     vi.mocked(toast.success).mockReset();
 
@@ -243,6 +319,9 @@ describe("FieldDetailPage", () => {
     useMapObjectsMock.mockReturnValue(
       queryResult([makeMapObject("o1"), makeMapObject("o2")]),
     );
+    useMapPortalsMock.mockReturnValue(queryResult([makePortal("p1")]));
+    useMapNpcsMock.mockReturnValue(queryResult([makeNpc("n1")]));
+    useMapReactorsMock.mockReturnValue(queryResult([makeReactor("r1")]));
   });
 
   it("map name is the primary title", () => {
@@ -370,6 +449,29 @@ describe("FieldDetailPage", () => {
       "/fields",
     );
     expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("FR-19: passes definition entity pins and live-monster pins to MapImagePanel", () => {
+    renderPage();
+
+    expect(mapImagePanelPropsSpy).toHaveBeenCalled();
+    const props = mapImagePanelPropsSpy.mock.calls[0]?.[0] as {
+      portals?: MapPortalData[];
+      npcs?: MapNpcData[];
+      reactors?: MapReactorData[];
+      monsters?: { id: string; attributes: { template: number } }[];
+    };
+
+    expect(props.portals).toEqual([makePortal("p1")]);
+    expect(props.npcs).toEqual([makeNpc("n1")]);
+    expect(props.reactors).toEqual([makeReactor("r1")]);
+    // Monster pins come from LIVE monsters (monstersQuery.data), not
+    // declared spawn points, adapted to { id, attributes: { template, x, y } }.
+    expect(props.monsters).toEqual([
+      { id: "m1", attributes: { template: 100100, x: 0, y: 0 } },
+      { id: "m2", attributes: { template: 100100, x: 0, y: 0 } },
+      { id: "m3", attributes: { template: 100101, x: 0, y: 0 } },
+    ]);
   });
 
   it("exposes refresh and last updated", () => {

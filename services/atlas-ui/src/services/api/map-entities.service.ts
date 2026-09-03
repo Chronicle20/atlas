@@ -79,6 +79,20 @@ export interface MapMonsterData {
   };
 }
 
+// The structural minimum a map-pin overlay needs to place and label a
+// monster marker (see MapImageOverlay's MonsterMarker/computeMarkers).
+// `MapMonsterData` satisfies this shape already; `FieldDetailPage` adapts
+// live monsters (`LiveMonsterData`, whose template lives at
+// `attributes.monsterId`) to it without fabricating any other field.
+export interface PositionedMonster {
+  id: string;
+  attributes: {
+    template: number;
+    x: number;
+    y: number;
+  };
+}
+
 class MapEntitiesService {
   async getPortals(mapId: string): Promise<MapPortalData[]> {
     return api.getList<MapPortalData>(`/api/data/maps/${mapId}/portals`);

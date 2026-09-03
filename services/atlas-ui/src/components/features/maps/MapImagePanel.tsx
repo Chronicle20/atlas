@@ -13,10 +13,10 @@ import { useTenant } from "@/context/tenant-context";
 import { getMapImageUrl } from "@/lib/utils/asset-url";
 import type { MapArea } from "@/services/api/maps.service";
 import type {
-  MapMonsterData,
   MapNpcData,
   MapPortalData,
   MapReactorData,
+  PositionedMonster,
 } from "@/services/api/map-entities.service";
 import { MapImageOverlay } from "./MapImageOverlay";
 import { useHoverHighlight } from "./HoverHighlightContext";
@@ -34,7 +34,7 @@ interface MapImagePanelProps {
   mapArea?: MapArea | null;
   portals?: MapPortalData[] | undefined;
   npcs?: MapNpcData[] | undefined;
-  monsters?: MapMonsterData[] | undefined;
+  monsters?: PositionedMonster[] | undefined;
   reactors?: MapReactorData[] | undefined;
 }
 

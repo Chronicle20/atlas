@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 import { useMobData } from "@/lib/hooks/useMobData";
 import { worldToOverlayPercent, type MapBounds } from "@/lib/utils/map-overlay";
 import type {
-  MapMonsterData,
   MapNpcData,
   MapPortalData,
   MapReactorData,
+  PositionedMonster,
 } from "@/services/api/map-entities.service";
 import { useHoverHighlight, type HoverTarget } from "./HoverHighlightContext";
 
@@ -22,7 +22,7 @@ interface MapImageOverlayProps {
   bounds: MapBounds;
   portals?: MapPortalData[] | undefined;
   npcs?: MapNpcData[] | undefined;
-  monsters?: MapMonsterData[] | undefined;
+  monsters?: PositionedMonster[] | undefined;
   reactors?: MapReactorData[] | undefined;
   size?: MarkerSize;
 }
@@ -271,7 +271,7 @@ function MonsterMarker({
   pos,
   sizing,
 }: {
-  monster: MapMonsterData;
+  monster: PositionedMonster;
   spawnIndex: number;
   pos: { left: string; top: string };
   sizing: MarkerSizing;

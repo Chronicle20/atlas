@@ -18,9 +18,35 @@ import {
   useFieldCharacters,
   useLiveMonsters,
 } from "@/lib/hooks/api/useFieldRuntime";
-import { useMapObjects } from "@/lib/hooks/api/useMapEntities";
+import {
+  useMapNpcs,
+  useMapObjects,
+  useMapPortals,
+  useMapReactors,
+} from "@/lib/hooks/api/useMapEntities";
+import type { PositionedMonster } from "@/services/api/map-entities.service";
+import type { LiveMonsterData } from "@/services/api/live-monsters.service";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { cn } from "@/lib/utils";
+
+// FR-19: the field overview reuses MapImagePanel/MapImageOverlay, whose
+// monster pins only need id/template/x/y (see MapImageOverlay's
+// MonsterMarker + computeMarkers). Live monsters carry their template at
+// `attributes.monsterId`, not `attributes.template` — adapt without
+// fabricating any of MapMonsterData's other declared-spawn-only fields.
+function toPositionedMonsters(
+  monsters: LiveMonsterData[] | undefined,
+): PositionedMonster[] {
+  if (!monsters) return [];
+  return monsters.map((m) => ({
+    id: m.id,
+    attributes: {
+      template: m.attributes.monsterId,
+      x: m.attributes.x,
+      y: m.attributes.y,
+    },
+  }));
+}
 
 const DEFAULT_TAB = "characters";
 
@@ -64,6 +90,9 @@ export function FieldDetailPage() {
     paramsValid,
   );
   const objectsQuery = useMapObjects(mapId ?? "");
+  const portalsQuery = useMapPortals(mapId ?? "");
+  const npcsQuery = useMapNpcs(mapId ?? "");
+  const reactorsQuery = useMapReactors(mapId ?? "");
 
   const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
     mapQuery,
@@ -192,6 +221,10 @@ export function FieldDetailPage() {
             mapId={mapId ?? ""}
             mapName={attrs.name}
             mapArea={attrs.mapArea ?? null}
+            portals={portalsQuery.data}
+            npcs={npcsQuery.data}
+            monsters={toPositionedMonsters(monstersQuery.data)}
+            reactors={reactorsQuery.data}
           />
           <FieldSummaryPanels
             characterCount={characterCount}

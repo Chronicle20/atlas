@@ -35,12 +35,17 @@ NO_UI=0
 QUICK=0
 FACTS=0
 
-# Bounded parallelism for the Go layer. Two workers at `go build -p 6` is 12
-# threads — one slot's worth on the 12-physical-core host this is tuned for
-# (tools/lib/build-slot.sh derives K from physical cores; docs/verification.md
-# "Build slots"). The previous default of 4 workers put 24 threads inside a
-# slot that was budgeted for 6.
-GO_JOBS="${ATLAS_VERIFY_GO_JOBS:-2}"
+# Bounded parallelism for the Go layer. The pool runs inside ONE build slot,
+# so its width is the slot's thread budget divided by each worker's
+# `go build -p`: workers x -p == slot threads, never more. With the defaults
+# (6 / 6) that is one worker; ATLAS_SLOT_THREADS=12 gives two. The previous
+# fixed default of 4 workers put 24 threads inside a slot budgeted for 6
+# (tools/lib/build-slot.sh; docs/verification.md "Build slots").
+GO_P="${ATLAS_GO_P:-6}"
+case "$GO_P" in ''|*[!0-9]*|0) echo "verify.sh: ATLAS_GO_P must be a positive integer (got '$GO_P')" >&2; exit 2 ;; esac
+GO_JOBS_DEFAULT=$(( $(_build_slot_threads) / GO_P ))
+[ "$GO_JOBS_DEFAULT" -lt 1 ] && GO_JOBS_DEFAULT=1
+GO_JOBS="${ATLAS_VERIFY_GO_JOBS:-$GO_JOBS_DEFAULT}"
 case "$GO_JOBS" in
     ''|*[!0-9]*|0) echo "verify.sh: ATLAS_VERIFY_GO_JOBS must be a positive integer (got '$GO_JOBS')" >&2; exit 2 ;;
 esac
@@ -501,7 +506,7 @@ go_layer() {
         # docs/verification.md "Build slots"): GOMAXPROCS=6, go build -p 6,
         # go test -p 2. GO_JOBS workers share one slot.
         export GOMAXPROCS="${ATLAS_GOMAXPROCS:-6}"
-        go build -p "${ATLAS_GO_P:-6}" ./... && go vet ./... || exit 1
+        go build -p "$GO_P" ./... && go vet ./... || exit 1
         if [ "$QUICK" -eq 0 ]; then
             go test -p "${ATLAS_GO_TEST_P:-2}" -race ./... || exit 1
         fi

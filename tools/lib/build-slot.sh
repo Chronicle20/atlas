@@ -28,9 +28,11 @@
 #
 # Env:
 #   ATLAS_SLOT_DIR          slot directory (default: /var/tmp/atlas/slots)
-#   ATLAS_BUILD_SLOTS       number of slots, positive integer (default: derived
-#                           from the host's PHYSICAL core count — see
-#                           _build_slot_default below)
+#   ATLAS_SLOT_THREADS      thread budget of one slot (default: 6); K and the
+#                           verify.sh Go pool width both derive from it
+#   ATLAS_BUILD_SLOTS       number of slots, positive integer (default:
+#                           physical_cores / ATLAS_SLOT_THREADS, floored at 1
+#                           — see _build_slot_default below)
 #   ATLAS_BUILD_SLOT_TIMEOUT  seconds to wait before giving up; unset/empty
 #                             means block forever
 
@@ -70,15 +72,29 @@ _build_slot_physical_cores() {
     printf '%s\n' "$cores"
 }
 
+# _build_slot_threads — the thread budget ONE slot is allowed to consume.
+#
+# This is the single number everything else derives from: K below, and
+# tools/verify.sh's Go pool width (workers = slot threads / `go build -p`).
+# Keeping it in one place is what stops K and the pool from being sized on
+# different assumptions — the original K=4 assumed 6 threads per slot while
+# the pool inside a slot ran 4 workers x 6 threads.
+_build_slot_threads() {
+    local t="${ATLAS_SLOT_THREADS:-6}"
+    case "$t" in *[!0-9]* | '') t=6 ;; esac
+    [ "$t" -lt 1 ] && t=1
+    printf '%s\n' "$t"
+}
+
 # _build_slot_default — K when ATLAS_BUILD_SLOTS is unset.
 #
-# One slot is budgeted at 6 threads (GOMAXPROCS / go build -p, see
-# docs/verification.md "Build slots"), so K = physical_cores / 6, floored at
-# 1. 12 cores -> 2 slots; 24 cores -> 4; a 4-core laptop -> 1.
+# K = physical_cores / slot_threads, floored at 1, so K slots each consuming
+# their full budget add up to the physical cores and no more. 12 cores at 6
+# threads -> 2 slots; 24 cores -> 4; a 4-core laptop -> 1.
 _build_slot_default() {
     local cores k
     cores="$(_build_slot_physical_cores)"
-    k=$((cores / 6))
+    k=$((cores / $(_build_slot_threads)))
     [ "$k" -lt 1 ] && k=1
     printf '%s\n' "$k"
 }

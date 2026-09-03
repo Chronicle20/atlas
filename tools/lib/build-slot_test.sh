@@ -68,6 +68,26 @@ assert_eq "default K is physical_cores/6 floored at 1 (cores=$cores)" "$want_k" 
 assert_true_k=$([ "${k:-0}" -ge 1 ] && echo yes || echo no)
 assert_eq "default K is at least 1" "yes" "$assert_true_k"
 
+# -- K follows the slot thread budget: doubling it halves K, floored at 1 ----
+(
+    export ATLAS_SLOT_DIR="$tmp/case1c"
+    unset ATLAS_BUILD_SLOTS
+    export ATLAS_SLOT_THREADS=$(( ${cores:-6} * 2 ))
+    . "$HERE/build-slot.sh"
+    echo "k=$(_build_slot_count) threads=$(_build_slot_threads)"
+) >"$tmp/case1c.out" 2>&1
+assert_eq "slot budget above the core count floors K at 1" "1" \
+  "$(grep -o 'k=[0-9]*' "$tmp/case1c.out" | cut -d= -f2)"
+(
+    export ATLAS_SLOT_DIR="$tmp/case1d"
+    unset ATLAS_BUILD_SLOTS
+    export ATLAS_SLOT_THREADS=1
+    . "$HERE/build-slot.sh"
+    echo "k=$(_build_slot_count)"
+) >"$tmp/case1d.out" 2>&1
+assert_eq "a 1-thread slot budget yields K = physical cores" "${cores:-unset}" \
+  "$(grep -o 'k=[0-9]*' "$tmp/case1d.out" | cut -d= -f2)"
+
 # -- release frees the slot ---------------------------------------------------
 (
     export ATLAS_SLOT_DIR="$tmp/case2"

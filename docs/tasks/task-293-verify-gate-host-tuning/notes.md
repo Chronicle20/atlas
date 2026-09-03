@@ -30,10 +30,14 @@ two or three sessions running, the box bogged down. Reading the gate:
    per-module build time and its own wall time; the summary prints
    `✓ label  (Ns)`, the pool total, the worker/slot counts, and the run total.
    `verify_test.sh`'s label normaliser strips the suffix.
-2. **Slots derived from physical cores.** `tools/lib/build-slot.sh` defaults
-   K to `physical_cores / 6` floored at 1 (via `lscpu`, fallback `nproc/2`).
-   12 cores → 2. `ATLAS_BUILD_SLOTS` still overrides. `ATLAS_VERIFY_GO_JOBS`
-   default drops from 4 to 2 so one gate is one slot's worth of threads.
+2. **Slots and pool width derived from one budget.** `ATLAS_SLOT_THREADS`
+   (default 6) is the thread budget of one slot. `tools/lib/build-slot.sh`
+   defaults K to `physical_cores / slot_threads` floored at 1 (via `lscpu`,
+   fallback `nproc/2`): 12 cores → 2. `tools/verify.sh` defaults its Go pool
+   width to `slot_threads / go build -p` = 1, so a gate never exceeds its
+   slot. Review round 1 caught the first cut of this, which set K from a
+   6-thread slot while the pool inside it ran 2 × 6 threads.
+   `ATLAS_BUILD_SLOTS` and `ATLAS_VERIFY_GO_JOBS` still override.
 3. **`--quick` takes a slot.** The Go pool acquires a slot on every run; only
    the label differs.
 4. **Nice.** `verify.sh` renices itself to `ATLAS_VERIFY_NICE` (default 10)

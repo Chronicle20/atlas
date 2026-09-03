@@ -34,40 +34,72 @@ type storedSpawnPoint struct {
 	NextSpawnAt int64  `json:"nextSpawnAt"`
 }
 
-// SpawnPointRegistry manages spawn point cooldowns backed by Redis hashes.
-// Each map's spawn points are stored as a Redis hash keyed by MapKey.
-// Hash field: spawn point ID (string)
-// Hash value: JSON-encoded storedSpawnPoint with NextSpawnAt as Unix milliseconds
-// SpawnPointRegistry manages spawn point cooldowns backed by Redis hashes,
-// scoped per tenant via TenantKeyedHash (D7): the rendered key embeds
-// TenantKey(mk.Tenant), which starts with the bare tenant UUID.
+// SpawnPointRegistry holds three tenant-scoped hashes per field, all under the
+// shared "maps:spawn" namespace so ClearForTenantId's namespace-wide SCAN
+// sweeps every one of them (design D1/D10):
+//
+//	recurring — storedSpawnPoint per MobTime >= 0, non-hidden point. Shape and
+//	            behavior identical to the single hash this replaces.
+//	oneTime   — storedSpawnPoint per MobTime < 0, non-hidden point. Static;
+//	            NextSpawnAt is written but never read.
+//	meta      — "seeded" = "1"; "onetimeFired" = fire timestamp, present iff
+//	            the field is disarmed.
 type SpawnPointRegistry struct {
-	client *goredis.Client
-	hashes *atlasredis.TenantKeyedHash[character.MapKey]
+	client  *goredis.Client
+	hashes  *atlasredis.TenantKeyedHash[character.MapKey]
+	oneTime *atlasredis.TenantKeyedHash[character.MapKey]
+	meta    *atlasredis.TenantKeyedHash[character.MapKey]
 }
+
+// Meta-hash field names.
+const (
+	metaFieldSeeded       = "seeded"
+	metaFieldOneTimeFired = "onetimeFired"
+)
 
 var (
 	registryInstance *SpawnPointRegistry
 	registryOnce     sync.Once
 )
 
+// fieldSuffix renders the field-scoped portion of a spawn key. Tenant scoping
+// is applied by TenantKeyedHash itself.
+func fieldSuffix(mk character.MapKey) string {
+	return fmt.Sprintf("%d:%d:%d:%s",
+		mk.Field.WorldId(),
+		mk.Field.ChannelId(),
+		mk.Field.MapId(),
+		mk.Field.Instance().String(),
+	)
+}
+
+// newRegistry builds a fully-wired registry. The "v2:" token in every keyFn is
+// a key-schema break, not a value-schema break: storedSpawnPoint's JSON is
+// unchanged, but a field seeded by the pre-task-294 code holds only the
+// recurring subset and InitializeForMap's "already seeded" guard would never
+// re-seed it. Changing the key shape makes every field re-seed exactly once
+// after deploy. The orphaned v1 keys are inert (no reader), bounded (one per
+// field per tenant ever visited), and are reaped by the next DATA_UPDATED
+// flush, whose SCAN pattern is namespace-wide (design D2).
+func newRegistry(rc *goredis.Client) *SpawnPointRegistry {
+	return &SpawnPointRegistry{
+		client: rc,
+		hashes: atlasredis.NewTenantKeyedHash[character.MapKey](rc, "maps:spawn", func(mk character.MapKey) string {
+			return "v2:" + fieldSuffix(mk)
+		}),
+		oneTime: atlasredis.NewTenantKeyedHash[character.MapKey](rc, "maps:spawn", func(mk character.MapKey) string {
+			return "v2:onetime:" + fieldSuffix(mk)
+		}),
+		meta: atlasredis.NewTenantKeyedHash[character.MapKey](rc, "maps:spawn", func(mk character.MapKey) string {
+			return "v2:meta:" + fieldSuffix(mk)
+		}),
+	}
+}
+
 // InitRegistry initializes the singleton SpawnPointRegistry with a Redis client.
 func InitRegistry(rc *goredis.Client) {
 	registryOnce.Do(func() {
-		registryInstance = &SpawnPointRegistry{
-			client: rc,
-			hashes: atlasredis.NewTenantKeyedHash[character.MapKey](rc, "maps:spawn", func(mk character.MapKey) string {
-				// Tenant scoping is applied by TenantKeyedHash itself (mk.Tenant is
-				// passed explicitly on every call below); the key fn only encodes
-				// the field-scoped portion.
-				return fmt.Sprintf("%d:%d:%d:%s",
-					mk.Field.WorldId(),
-					mk.Field.ChannelId(),
-					mk.Field.MapId(),
-					mk.Field.Instance().String(),
-				)
-			}),
-		}
+		registryInstance = newRegistry(rc)
 	})
 }
 
@@ -76,8 +108,16 @@ func GetRegistry() *SpawnPointRegistry {
 	return registryInstance
 }
 
-func spawnHashKey(mapKey character.MapKey) string {
-	return registryInstance.hashes.Key(mapKey.Tenant, mapKey)
+func (r *SpawnPointRegistry) recurringKey(mapKey character.MapKey) string {
+	return r.hashes.Key(mapKey.Tenant, mapKey)
+}
+
+func (r *SpawnPointRegistry) oneTimeKey(mapKey character.MapKey) string {
+	return r.oneTime.Key(mapKey.Tenant, mapKey)
+}
+
+func (r *SpawnPointRegistry) metaKey(mapKey character.MapKey) string {
+	return r.meta.Key(mapKey.Tenant, mapKey)
 }
 
 func toStored(sp monster2.SpawnPoint, nextSpawnAt time.Time) storedSpawnPoint {
@@ -98,14 +138,35 @@ func fromStored(s storedSpawnPoint) *CooldownSpawnPoint {
 	}
 }
 
-// initializeScript atomically initializes spawn points for a map if not already present.
+// initializeScript atomically seeds the recurring and one-time hashes for a
+// field and stamps the meta "seeded" marker, if and only if the field has not
+// been seeded before. Atomic across all three keys: the client is a single-node
+// goredis.Client, not a cluster client, so multi-key Lua is safe.
+//
+// A field with zero points of any kind still gets "seeded", so it costs one
+// HEXISTS per pass thereafter instead of a fresh paginated HTTP drain.
+//
+// KEYS[1] = recurring hash, KEYS[2] = one-time hash, KEYS[3] = meta hash
+// ARGV[1] = number of recurring points; ARGV[2..] = field/value pairs,
+//
+//	recurring first, then one-time.
+//
+// Returns: 1 if seeded by this call, 0 if already seeded.
 var initializeScript = goredis.NewScript(`
-if redis.call('EXISTS', KEYS[1]) == 1 then
+if redis.call('HEXISTS', KEYS[3], 'seeded') == 1 then
     return 0
 end
-for i = 1, #ARGV, 2 do
+local nRec = tonumber(ARGV[1])
+local i = 2
+for k = 1, nRec do
     redis.call('HSET', KEYS[1], ARGV[i], ARGV[i+1])
+    i = i + 2
 end
+while i <= #ARGV do
+    redis.call('HSET', KEYS[2], ARGV[i], ARGV[i+1])
+    i = i + 2
+end
+redis.call('HSET', KEYS[3], 'seeded', '1')
 return 1
 `)
 
@@ -189,55 +250,81 @@ end
 return 1
 `)
 
-// InitializeForMap initializes spawn points for a map if not already present in Redis.
-// Uses a Lua script for atomic check-and-initialize to prevent duplicate initialization.
+// InitializeForMap seeds a field's spawn points if it has not been seeded yet.
+// The classification happens once, in memory, off a single paginated drain of
+// atlas-data's /maps/{id}/monsters — two filtered providers would mean two
+// fetches per field initialization (design D3).
 func (r *SpawnPointRegistry) InitializeForMap(ctx context.Context, mapKey character.MapKey, dp monster2.Processor, l logrus.FieldLogger) error {
-	key := spawnHashKey(mapKey)
-
-	n, err := r.hashes.Len(ctx, mapKey.Tenant, mapKey)
+	seeded, err := r.meta.Exists(ctx, mapKey.Tenant, mapKey, metaFieldSeeded)
 	if err != nil {
 		return err
 	}
-	if n > 0 {
+	if !seeded {
+		// Back-compat: a recurring hash written directly (e.g. via
+		// SetSpawnPointsForMap, or a field seeded before the meta-seeded
+		// marker existed) without the atomic seed script must not be
+		// silently overwritten just because the marker itself is absent.
+		n, herr := r.hashes.Len(ctx, mapKey.Tenant, mapKey)
+		if herr != nil {
+			return herr
+		}
+		if n > 0 {
+			seeded = true
+		}
+	}
+	if seeded {
 		return nil
 	}
 
-	spawnPoints, err := dp.GetSpawnableSpawnPoints(mapKey.Field.MapId())
+	spawnPoints, err := dp.GetSpawnPoints(mapKey.Field.MapId())
 	if err != nil {
 		return err
 	}
-
-	if len(spawnPoints) == 0 {
-		return nil
-	}
+	classified := monster2.Classify(spawnPoints)
 
 	now := time.Now()
-	args := make([]interface{}, 0, len(spawnPoints)*2)
-	for _, sp := range spawnPoints {
-		stored := toStored(sp, now)
-		data, err := json.Marshal(stored)
-		if err != nil {
-			return err
+	args := make([]interface{}, 0, 1+(len(classified.Recurring)+len(classified.OneTime))*2)
+	args = append(args, strconv.Itoa(len(classified.Recurring)))
+	for _, sp := range append(append([]monster2.SpawnPoint{}, classified.Recurring...), classified.OneTime...) {
+		data, merr := json.Marshal(toStored(sp, now))
+		if merr != nil {
+			return merr
 		}
 		args = append(args, strconv.FormatUint(uint64(sp.Id), 10), string(data))
 	}
 
-	_, err = initializeScript.Run(ctx, r.client, []string{key}, args...).Result()
+	_, err = initializeScript.Run(ctx, r.client,
+		[]string{r.recurringKey(mapKey), r.oneTimeKey(mapKey), r.metaKey(mapKey)},
+		args...).Result()
 	if err != nil {
 		return err
 	}
 
-	l.Debugf("Initialized spawn point registry for map key: Tenant [%s] World [%d] Channel [%d] Map [%d] with %d spawn points",
-		mapKey.Tenant.String(), mapKey.Field.WorldId(), mapKey.Field.ChannelId(), mapKey.Field.MapId(), len(spawnPoints))
+	l.Debugf("Initialized spawn point registry for map key: Tenant [%s] World [%d] Channel [%d] Map [%d] with %d recurring, %d one-time, %d hidden spawn points",
+		mapKey.Tenant.String(), mapKey.Field.WorldId(), mapKey.Field.ChannelId(), mapKey.Field.MapId(),
+		len(classified.Recurring), len(classified.OneTime), len(classified.Hidden))
 
 	return nil
 }
 
-// Count returns the number of spawn points registered for a map. The spawn
-// point set is fixed after initialization, so this count is stable and is not
-// subject to the spawn-time eligibility race.
+// Count returns the number of RECURRING spawn points registered for a field.
+// One-time points are deliberately excluded: this count is the denominator of
+// getMonsterMax, and a one-time batch must not inflate the recurring
+// population target (FR-2.5).
 func (r *SpawnPointRegistry) Count(ctx context.Context, mapKey character.MapKey) (int, error) {
 	n, err := r.hashes.Len(ctx, mapKey.Tenant, mapKey)
+	if err != nil {
+		return 0, err
+	}
+	return int(n), nil
+}
+
+// CountOneTime returns the number of one-time spawn points registered for a
+// field. Used only on the zero-recurring branch of SpawnMonsters, to keep the
+// "no spawn points" log from lying about an already-disarmed one-time field
+// (FR-4.1).
+func (r *SpawnPointRegistry) CountOneTime(ctx context.Context, mapKey character.MapKey) (int, error) {
+	n, err := r.oneTime.Len(ctx, mapKey.Tenant, mapKey)
 	if err != nil {
 		return 0, err
 	}
@@ -253,7 +340,7 @@ func (r *SpawnPointRegistry) ReserveEligibleSpawnPoints(ctx context.Context, map
 	if limit <= 0 {
 		return nil, nil
 	}
-	key := spawnHashKey(mapKey)
+	key := r.recurringKey(mapKey)
 	nowMilli := time.Now().UnixMilli()
 
 	result, err := reserveEligibleScript.Run(ctx, r.client, []string{key},
@@ -286,7 +373,7 @@ func (r *SpawnPointRegistry) ReserveEligibleSpawnPoints(ctx context.Context, map
 // ResetCooldown resets the cooldown for all spawn points matching the given template ID with MobTime > 0.
 // This is called when a boss monster is killed to enforce the full MobTime delay from the kill time.
 func (r *SpawnPointRegistry) ResetCooldown(ctx context.Context, mapKey character.MapKey, templateId uint32) {
-	key := spawnHashKey(mapKey)
+	key := r.recurringKey(mapKey)
 	nowMilli := time.Now().UnixMilli()
 	resetCooldownScript.Run(ctx, r.client, []string{key}, templateId, nowMilli)
 }

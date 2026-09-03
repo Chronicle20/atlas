@@ -1,0 +1,37 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Dock-arrival map 200090000 - on a docked vessel, sets the ArabPirate BGM and shows the boat",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "200090000",
+              "type": "transportInTransit",
+              "value": "0"
+            }
+          ],
+          "id": "docked_arrival",
+          "operations": [
+            {
+              "params": {
+                "path": "Bgm04/ArabPirate"
+              },
+              "type": "change_music"
+            },
+            {
+              "params": {
+                "show": "true"
+              },
+              "type": "boat_effect"
+            }
+          ]
+        }
+      ],
+      "scriptName": "200090000"
+    },
+    "id": "200090000",
+    "type": "map-action"
+  }
+}

@@ -20,3 +20,25 @@ type entity struct {
 func (e entity) TableName() string {
 	return "area_infos"
 }
+
+// Make converts a persisted entity into its domain Model.
+func Make(e entity) (Model, error) {
+	return NewBuilder().
+		SetId(e.ID).
+		SetCharacterId(e.CharacterId).
+		SetArea(e.Area).
+		SetInfo(e.Info).
+		Build()
+}
+
+// ToEntity is the inverse of Make for the fields Model owns. TenantId is not
+// carried on Model -- upsert (administrator.go) sets it directly from the
+// tenant in context when persisting, so it is not part of this round-trip.
+func (m Model) ToEntity() entity {
+	return entity{
+		ID:          m.id,
+		CharacterId: m.characterId,
+		Area:        m.area,
+		Info:        m.info,
+	}
+}

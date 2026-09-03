@@ -60,12 +60,18 @@ func TestUpsertAreaInfoReplacesWholeString(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	p := testProcessor(t, tctx, db)
 
-	m1 := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("miss=o;helper=clear").Build()
+	m1, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("miss=o;helper=clear").Build()
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
 	if _, err := p.Put(m1); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 
-	m2 := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("miss=o;arr=o;helper=clear").Build()
+	m2, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("miss=o;arr=o;helper=clear").Build()
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
 	if _, err := p.Put(m2); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -98,10 +104,18 @@ func TestAreaInfoIsPerCharacter(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	p := testProcessor(t, tctx, db)
 
-	if _, err := p.Put(area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("char1").Build()); err != nil {
+	m1, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("char1").Build()
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if _, err := p.Put(m1); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
-	if _, err := p.Put(area_info.NewBuilder().SetCharacterId(2).SetArea(21019).SetInfo("char2").Build()); err != nil {
+	m2, err := area_info.NewBuilder().SetCharacterId(2).SetArea(21019).SetInfo("char2").Build()
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if _, err := p.Put(m2); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 
@@ -123,7 +137,11 @@ func TestAreaInfoIsTenantScoped(t *testing.T) {
 
 	tctxA := tenant.WithContext(context.Background(), testTenant())
 	pA := testProcessor(t, tctxA, db)
-	if _, err := pA.Put(area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("tenantA").Build()); err != nil {
+	mA, err := area_info.NewBuilder().SetCharacterId(1).SetArea(21019).SetInfo("tenantA").Build()
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if _, err := pA.Put(mA); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 

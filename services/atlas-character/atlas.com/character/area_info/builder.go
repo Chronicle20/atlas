@@ -1,6 +1,8 @@
 package area_info
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 )
 
@@ -35,11 +37,14 @@ func (b *builder) SetInfo(info string) *builder {
 	return b
 }
 
-func (b *builder) Build() Model {
+func (b *builder) Build() (Model, error) {
+	if b.characterId == 0 {
+		return Model{}, errors.New("characterId is required")
+	}
 	return Model{
 		id:          b.id,
 		characterId: b.characterId,
 		area:        b.area,
 		info:        b.info,
-	}
+	}, nil
 }

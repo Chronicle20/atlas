@@ -34,7 +34,7 @@ func Extract(rm RestModel) (Model, error) {
 		SetCharacterId(rm.CharacterId).
 		SetArea(rm.Area).
 		SetInfo(rm.Info).
-		Build(), nil
+		Build()
 }
 
 // TransformSlice maps a slice of domain Models to their REST projections.

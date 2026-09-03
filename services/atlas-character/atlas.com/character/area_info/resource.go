@@ -101,11 +101,15 @@ func handlePutAreaInfo(d *rest.HandlerDependency, c *rest.HandlerContext, input 
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return parseArea(d.Logger(), func(area uint16) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m := NewBuilder().
+				m, err := NewBuilder().
 					SetCharacterId(characterId).
 					SetArea(area).
 					SetInfo(input.Info).
 					Build()
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
 				result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Put(m)
 				if err != nil {

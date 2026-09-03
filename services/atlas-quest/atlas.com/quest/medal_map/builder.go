@@ -1,6 +1,8 @@
 package medal_map
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -45,3 +47,22 @@ func (b *builder) Build() Model {
 		mapId:       b.mapId,
 	}
 }
+
+// BuildWithValidation returns the built Model with validation, returning an
+// error if required fields are missing. This is the recommended method for
+// new code (matches quest.builder's own remediation for this rule).
+func (b *builder) BuildWithValidation() (Model, error) {
+	if b.characterId == 0 {
+		return Model{}, ErrMissingCharacterId
+	}
+	if b.questId == 0 {
+		return Model{}, ErrMissingQuestId
+	}
+	return b.Build(), nil
+}
+
+// Validation errors for builder
+var (
+	ErrMissingCharacterId = errors.New("character ID is required")
+	ErrMissingQuestId     = errors.New("quest ID is required")
+)

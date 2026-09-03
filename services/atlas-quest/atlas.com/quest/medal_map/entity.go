@@ -3,6 +3,8 @@ package medal_map
 import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func Migration(db *gorm.DB) error {
@@ -23,4 +25,27 @@ type entity struct {
 
 func (e entity) TableName() string {
 	return "quest_medal_map_visits"
+}
+
+// Make converts a persisted entity into its domain Model.
+func Make(e entity) (Model, error) {
+	return NewBuilder().
+		SetId(e.ID).
+		SetCharacterId(e.CharacterId).
+		SetQuestId(e.QuestId).
+		SetMapId(_map.Id(e.MapId)).
+		BuildWithValidation()
+}
+
+// ToEntity is the inverse of Make for the fields Model owns. TenantId is not
+// carried on Model -- recordIfAbsent (administrator.go) sets it directly
+// from the tenant in context when persisting, so it is not part of this
+// round-trip.
+func (m Model) ToEntity() entity {
+	return entity{
+		ID:          m.id,
+		CharacterId: m.characterId,
+		QuestId:     m.questId,
+		MapId:       uint32(m.mapId),
+	}
 }

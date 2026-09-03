@@ -482,4 +482,41 @@ describe("FieldDetailPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/last updated/i)).toBeInTheDocument();
   });
+
+  it("refresh also refetches the FR-19 pin queries (portals, npcs, reactors), not just map/characters/monsters/objects", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: /refresh/i }));
+
+    const mapResult = useMapMock.mock.results[0]?.value as {
+      refetch: () => Promise<unknown>;
+    };
+    const charactersResult = useFieldCharactersMock.mock.results[0]?.value as {
+      refetch: () => Promise<unknown>;
+    };
+    const monstersResult = useLiveMonstersMock.mock.results[0]?.value as {
+      refetch: () => Promise<unknown>;
+    };
+    const objectsResult = useMapObjectsMock.mock.results[0]?.value as {
+      refetch: () => Promise<unknown>;
+    };
+    const portalsResult = useMapPortalsMock.mock.results[0]?.value as {
+      refetch: () => Promise<unknown>;
+    };
+    const npcsResult = useMapNpcsMock.mock.results[0]?.value as {
+      refetch: () => Promise<unknown>;
+    };
+    const reactorsResult = useMapReactorsMock.mock.results[0]?.value as {
+      refetch: () => Promise<unknown>;
+    };
+
+    expect(mapResult.refetch).toHaveBeenCalled();
+    expect(charactersResult.refetch).toHaveBeenCalled();
+    expect(monstersResult.refetch).toHaveBeenCalled();
+    expect(objectsResult.refetch).toHaveBeenCalled();
+    expect(portalsResult.refetch).toHaveBeenCalled();
+    expect(npcsResult.refetch).toHaveBeenCalled();
+    expect(reactorsResult.refetch).toHaveBeenCalled();
+  });
 });

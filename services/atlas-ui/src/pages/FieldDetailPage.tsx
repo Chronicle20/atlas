@@ -99,6 +99,9 @@ export function FieldDetailPage() {
     charactersQuery,
     monstersQuery,
     objectsQuery,
+    portalsQuery,
+    npcsQuery,
+    reactorsQuery,
   ]);
 
   const tab = searchParams.get("tab") ?? DEFAULT_TAB;

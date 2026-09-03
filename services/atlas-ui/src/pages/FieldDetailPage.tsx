@@ -11,6 +11,7 @@ import { FieldSummaryPanels } from "@/components/features/fields/FieldSummaryPan
 import { FieldTabs } from "@/components/features/fields/FieldTabs";
 import { FieldCharactersTab } from "@/components/features/fields/FieldCharactersTab";
 import { FieldMonstersTab } from "@/components/features/fields/FieldMonstersTab";
+import { FieldObjectsTab } from "@/components/features/fields/FieldObjectsTab";
 import { useMap } from "@/lib/hooks/api/useMaps";
 import { useWorlds } from "@/lib/hooks/api/useWorlds";
 import {
@@ -210,6 +211,12 @@ export function FieldDetailPage() {
               monsters={monstersQuery.data}
               error={monstersQuery.error ?? undefined}
               mapId={numericMapId}
+            />
+          }
+          objects={
+            <FieldObjectsTab
+              defined={objectsQuery.data}
+              definedError={objectsQuery.error ?? undefined}
             />
           }
         />

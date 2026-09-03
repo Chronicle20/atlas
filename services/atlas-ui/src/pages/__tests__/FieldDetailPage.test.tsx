@@ -163,7 +163,22 @@ function makeLiveMonster(id: string, monsterId: number): LiveMonsterData {
 }
 
 function makeMapObject(id: string): MapObjectData {
-  return { id, type: "map-objects" } as MapObjectData;
+  return {
+    id,
+    type: "map-objects",
+    attributes: {
+      kind: "ENVIRONMENT",
+      name: id,
+      objectSource: "effect",
+      l0: "quest",
+      l1: "gate",
+      l2: "1",
+      x: 0,
+      y: 0,
+      z: 0,
+      layer: 0,
+    },
+  };
 }
 
 function LocationSpy() {

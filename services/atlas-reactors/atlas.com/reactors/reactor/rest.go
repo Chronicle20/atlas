@@ -65,6 +65,26 @@ func (r *ResetInputRestModel) SetID(strId string) error {
 	return nil
 }
 
+// ShuffleInputRestModel is the (empty) body of POST .../reactors/shuffle.
+// The caller (atlas-saga-orchestrator) still posts an empty JSON:API
+// document; RegisterInputHandler requires a typed body per DOM-08.
+type ShuffleInputRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r ShuffleInputRestModel) GetName() string {
+	return "reactors"
+}
+
+func (r ShuffleInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *ShuffleInputRestModel) SetID(strId string) error {
+	r.Id = strId
+	return nil
+}
+
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:             m.Id(),

@@ -24,7 +24,6 @@ import (
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		registerGet := rest.RegisterHandler(l)(si)
-		registerPost := rest.RegisterHandler(l)(si)
 		r := router.PathPrefix("/reactors").Subrouter()
 		r.HandleFunc("/{reactorId}", registerGet("get_by_id", handleGetById)).Methods(http.MethodGet)
 
@@ -33,7 +32,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		r.HandleFunc("", registerGet("get_in_map", handleGetInMap)).Methods(http.MethodGet)
 		r.HandleFunc("/{reactorId}", registerGet("get_by_id", handleGetByIdInMap)).Methods(http.MethodGet)
 		r.HandleFunc("/reset", rest.RegisterInputHandler[ResetInputRestModel](l)(si)("reset_reactors_in_map", handleResetReactorsInMap)).Methods(http.MethodPost)
-		r.HandleFunc("/shuffle", registerPost("shuffle_reactors_in_map", handleShuffleReactorsInMap)).Methods(http.MethodPost)
+		r.HandleFunc("/shuffle", rest.RegisterInputHandler[ShuffleInputRestModel](l)(si)("shuffle_reactors_in_map", handleShuffleReactorsInMap)).Methods(http.MethodPost)
 	}
 }
 
@@ -184,7 +183,7 @@ func handleResetReactorsInMap(d *rest.HandlerDependency, _ *rest.HandlerContext,
 	})
 }
 
-func handleShuffleReactorsInMap(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
+func handleShuffleReactorsInMap(d *rest.HandlerDependency, _ *rest.HandlerContext, _ ShuffleInputRestModel) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {

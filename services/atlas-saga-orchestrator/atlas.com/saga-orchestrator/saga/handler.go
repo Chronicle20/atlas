@@ -10,6 +10,7 @@ import (
 	"atlas-saga-orchestrator/data/foothold"
 	"atlas-saga-orchestrator/data/portal"
 	"atlas-saga-orchestrator/drops"
+	fieldclient "atlas-saga-orchestrator/field"
 	"atlas-saga-orchestrator/gachapon"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
@@ -109,6 +110,9 @@ type Handler interface {
 	// WithDropsProcessor is the injector seam for handleClearDrops's
 	// atlas-drops field-clear call (task-290 G5).
 	WithDropsProcessor(drops.Processor) Handler
+	// WithFieldProcessor is the injector seam for handleResetField's
+	// atlas-maps field-reset call (task-290 G5).
+	WithFieldProcessor(fieldclient.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -150,6 +154,7 @@ type Handler interface {
 	handleClearDrops(s Saga, st Step[any]) error
 	handleResetReactors(s Saga, st Step[any]) error
 	handleShuffleReactors(s Saga, st Step[any]) error
+	handleResetField(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
@@ -267,6 +272,7 @@ type HandlerImpl struct {
 	playerNpcLocationP playernpc.Processor
 	npcSpawnP          npc_spawn.Processor
 	dropsP             drops.Processor
+	fieldP             fieldclient.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -308,6 +314,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		playerNpcLocationP: playernpc.NewProcessor(l, ctx),
 		npcSpawnP:          npc_spawn.NewProcessor(l, ctx),
 		dropsP:             drops.NewProcessor(l, ctx),
+		fieldP:             fieldclient.NewProcessor(l, ctx),
 	}
 }
 
@@ -881,6 +888,17 @@ func (h *HandlerImpl) WithDropsProcessor(dropsP drops.Processor) Handler {
 	}
 }
 
+// WithFieldProcessor returns a Handler with the given field processor
+// substituted, for use by handleResetField (task-290 G5).
+func (h *HandlerImpl) WithFieldProcessor(fieldP fieldclient.Processor) Handler {
+	return &HandlerImpl{
+		l:      h.l,
+		ctx:    h.ctx,
+		t:      h.t,
+		fieldP: fieldP,
+	}
+}
+
 // ActionHandler is a function type for handling different saga action types
 type ActionHandler func(s Saga, st Step[any]) error
 
@@ -974,6 +992,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleResetReactors, true
 	case ShuffleReactors:
 		return h.handleShuffleReactors, true
+	case ResetField:
+		return h.handleResetField, true
 	case SpawnReactorDrops:
 		return h.handleSpawnReactorDrops, true
 	case CompleteQuest:
@@ -2325,6 +2345,30 @@ func (h *HandlerImpl) handleShuffleReactors(s Saga, st Step[any]) error {
 	}
 
 	h.l.Debugf("Successfully shuffled reactors in world %d, channel %d, map %d",
+		payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleResetField handles the ResetField action, mirroring Cosmic's
+// MapleMap.resetPQ(difficulty): clears the field's monsters and restores
+// its spawn points (task-290 G5).
+func (h *HandlerImpl) handleResetField(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ResetFieldPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	if err := h.fieldP.ResetField(f, payload.Difficulty); err != nil {
+		h.logActionError(s, st, err, "Failed to reset field")
+		return err
+	}
+
+	h.l.Debugf("Successfully reset field in world %d, channel %d, map %d",
 		payload.WorldId, payload.ChannelId, payload.MapId)
 
 	return nil

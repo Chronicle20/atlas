@@ -76,6 +76,8 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeResetReactors(f, characterId, op)
 	case "shuffle_reactors":
 		return e.executeShuffleReactors(f, characterId, op)
+	case "reset_field":
+		return e.executeResetField(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -460,6 +462,43 @@ func (e *OperationExecutor) executeShuffleReactors(f field.Model, characterId ui
 				ChannelId:   f.ChannelId(),
 				MapId:       f.MapId(),
 				Instance:    f.Instance(),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeResetField clears the current field's monsters and restores its
+// spawn points, mirroring Cosmic's MapleMap.resetPQ(difficulty)
+// (MapleMap.java:3962-3975). The optional difficulty param defaults to 1
+// (every G5 script passes 1 today).
+func (e *OperationExecutor) executeResetField(f field.Model, characterId uint32, op operation.Model) error {
+	e.l.Debugf("Resetting field for character [%d].", characterId)
+
+	difficulty := 1
+	params := op.Params()
+	if s, has := params["difficulty"]; has {
+		parsed, err := strconv.Atoi(s)
+		if err != nil {
+			return fmt.Errorf("invalid difficulty [%s]: %w", s, err)
+		}
+		difficulty = parsed
+	}
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-reset-field").
+		AddStep(
+			fmt.Sprintf("reset-field-%d", characterId),
+			saga.Pending,
+			saga.ResetField,
+			saga.ResetFieldPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				MapId:       f.MapId(),
+				Instance:    f.Instance(),
+				Difficulty:  difficulty,
 			},
 		).Build()
 

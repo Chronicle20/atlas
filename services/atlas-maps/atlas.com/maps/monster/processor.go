@@ -2,6 +2,7 @@ package monster
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -15,6 +16,7 @@ type Processor interface {
 	CountInMap(transactionId uuid.UUID, field field.Model) (int, error)
 	CreateMonster(transactionId uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh int16, team int8)
 	GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit uint32, configurators ...requests.Configurator) ([]RestModel, error)
+	DeleteInMap(f field.Model) error
 }
 
 type ProcessorImpl struct {
@@ -67,4 +69,17 @@ func (p *ProcessorImpl) GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit 
 		return nil, err
 	}
 	return requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(url, 250, Extract, model.Filters[RestModel](), configurators...)()
+}
+
+// DeleteInMap removes every monster currently alive in field f, via
+// atlas-monsters' `DELETE .../monsters` route -- the whole-field monster
+// clear that field.ResetField composes with (Cosmic's clearMapObjects()
+// monster half).
+func (p *ProcessorImpl) DeleteInMap(f field.Model) error {
+	root, err := getBaseRequest(p.ctx)
+	if err != nil {
+		return err
+	}
+	url := fmt.Sprintf(root+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance())
+	return requests.DeleteRequest(url)(p.l, p.ctx)
 }

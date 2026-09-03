@@ -163,7 +163,8 @@
             "spawn_npc",
             "clear_drops",
             "reset_reactors",
-            "shuffle_reactors"
+            "shuffle_reactors",
+            "reset_field"
           ]
         },
         "params": {
@@ -728,6 +729,28 @@
               "params": {
                 "type": "object",
                 "description": "shuffle_reactors takes no parameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "reset_field"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "properties": {
+                  "difficulty": {
+                    "type": "string",
+                    "description": "Spawn difficulty bucket for the post-reset first spawn (default 1)"
+                  }
+                }
               }
             }
           }

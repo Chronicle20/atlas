@@ -1315,3 +1315,88 @@ func TestExecuteShuffleReactors(t *testing.T) {
 		t.Errorf("payload = %+v, want %+v", payload, want)
 	}
 }
+
+func TestExecuteResetFieldDefaultsDifficultyToOne(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("reset_field").
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 || len(rec.created[0].Steps) != 1 {
+		t.Fatalf("unexpected saga shape: %+v", rec.created)
+	}
+	if rec.created[0].Steps[0].Action != saga.ResetField {
+		t.Errorf("Steps[0].Action = %v, want saga.ResetField", rec.created[0].Steps[0].Action)
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.ResetFieldPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.ResetFieldPayload")
+	}
+	want := saga.ResetFieldPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		MapId:       _map.Id(926000000),
+		Instance:    inst,
+		Difficulty:  1,
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}
+
+func TestExecuteResetFieldExplicitDifficulty(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("reset_field").
+		SetParams(map[string]string{"difficulty": "2"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.ResetFieldPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.ResetFieldPayload")
+	}
+	if payload.Difficulty != 2 {
+		t.Errorf("Difficulty = %d, want 2", payload.Difficulty)
+	}
+}
+
+func TestExecuteResetFieldBadDifficulty(t *testing.T) {
+	e, _ := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("reset_field").
+		SetParams(map[string]string{"difficulty": "x"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	err = e.ExecuteOperation(f, 1, op)
+	if err == nil || !strings.Contains(err.Error(), "invalid difficulty [x]") {
+		t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, "invalid difficulty [x]")
+	}
+}

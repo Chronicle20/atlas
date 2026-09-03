@@ -1991,3 +1991,38 @@ func TestUnmarshalShuffleReactorsStep(t *testing.T) {
 		t.Errorf("payload = %+v, want %+v", p, want)
 	}
 }
+
+// TestUnmarshalResetFieldStep proves a reset_field step decodes into
+// ResetFieldPayload.
+func TestUnmarshalResetFieldStep(t *testing.T) {
+	instance := uuid.New()
+	raw := fmt.Sprintf(`{
+		"stepId": "reset-field-1",
+		"status": "pending",
+		"action": "reset_field",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 926000000,
+			"instance": %q,
+			"difficulty": 1
+		}
+	}`, instance.String())
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ResetField {
+		t.Fatalf("expected action ResetField, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ResetFieldPayload)
+	if !ok {
+		t.Fatalf("expected ResetFieldPayload, got %T", step.Payload)
+	}
+	want := ResetFieldPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), MapId: _map.Id(926000000), Instance: instance, Difficulty: 1}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}

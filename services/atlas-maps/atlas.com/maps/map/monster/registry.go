@@ -189,6 +189,20 @@ end
 return 1
 `)
 
+// restoreSpawnPointsScript unreserves every spawn point in the hash by
+// setting NextSpawnAt to now, regardless of template or current cooldown.
+var restoreSpawnPointsScript = goredis.NewScript(`
+local entries = redis.call('HGETALL', KEYS[1])
+local nowMilli = tonumber(ARGV[1])
+for i = 1, #entries, 2 do
+    local field = entries[i]
+    local data = cjson.decode(entries[i+1])
+    data.nextSpawnAt = nowMilli
+    redis.call('HSET', KEYS[1], field, cjson.encode(data))
+end
+return math.floor(#entries / 2)
+`)
+
 // InitializeForMap initializes spawn points for a map if not already present in Redis.
 // Uses a Lua script for atomic check-and-initialize to prevent duplicate initialization.
 func (r *SpawnPointRegistry) InitializeForMap(ctx context.Context, mapKey character.MapKey, dp monster2.Processor, l logrus.FieldLogger) error {
@@ -295,6 +309,34 @@ func (r *SpawnPointRegistry) ResetCooldown(ctx context.Context, mapKey character
 // used for testing.
 func (r *SpawnPointRegistry) Reset(ctx context.Context) {
 	_, _ = r.hashes.ClearAllAcrossTenants(ctx)
+}
+
+// RestoreSpawnPoints unreserves every spawn point registered for mapKey --
+// the Redis-backed analogue of Cosmic's MapleMap.restoreMapSpawnPoints(),
+// making every point immediately eligible for the next spawn pass. Unlike
+// Reset, this is field-scoped: it never touches any other map, instance, or
+// tenant.
+//
+// Returns an error if the map has no spawn-point data registered at all
+// (never initialized via InitializeForMap), so a reset against an unknown
+// map fails loudly instead of silently reporting success on an empty hash.
+func (r *SpawnPointRegistry) RestoreSpawnPoints(ctx context.Context, mapKey character.MapKey) (int, error) {
+	n, err := r.hashes.Len(ctx, mapKey.Tenant, mapKey)
+	if err != nil {
+		return 0, err
+	}
+	if n == 0 {
+		return 0, fmt.Errorf("no spawn point data registered for map key")
+	}
+
+	key := spawnHashKey(mapKey)
+	nowMilli := time.Now().UnixMilli()
+	res, err := restoreSpawnPointsScript.Run(ctx, r.client, []string{key}, nowMilli).Result()
+	if err != nil {
+		return 0, err
+	}
+	count, _ := res.(int64)
+	return int(count), nil
 }
 
 // GetSpawnPointsForMap returns the spawn points for a specific map key.

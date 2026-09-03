@@ -224,6 +224,11 @@ const (
 	// (task-290 G5).
 	ShuffleReactors Action = "shuffle_reactors"
 
+	// ResetField clears a field's objects and restores its spawn points --
+	// Cosmic's MapleMap resetPQ, which despite the name is a field
+	// reset and not a party-quest state reset (task-290 G5).
+	ResetField Action = "reset_field"
+
 	// Storage actions
 	ShowStorage          Action = "show_storage"
 	DepositToStorage     Action = "deposit_to_storage"

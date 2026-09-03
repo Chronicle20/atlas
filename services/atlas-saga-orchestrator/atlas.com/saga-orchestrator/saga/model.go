@@ -184,6 +184,10 @@ const (
 	// field (task-290 G5). See sharedsaga.ShuffleReactors.
 	ShuffleReactors = sharedsaga.ShuffleReactors
 
+	// ResetField clears a field's objects and restores its spawn points --
+	// Cosmic's MapleMap resetPQ (task-290 G5). See sharedsaga.ResetField.
+	ResetField = sharedsaga.ResetField
+
 	// Storage actions
 	ShowStorage          = sharedsaga.ShowStorage
 	DepositToStorage     = sharedsaga.DepositToStorage
@@ -369,6 +373,7 @@ type (
 	ClearDropsPayload                   = sharedsaga.ClearDropsPayload
 	ResetReactorsPayload                = sharedsaga.ResetReactorsPayload
 	ShuffleReactorsPayload              = sharedsaga.ShuffleReactorsPayload
+	ResetFieldPayload                   = sharedsaga.ResetFieldPayload
 	SpawnReactorDropsPayload            = sharedsaga.SpawnReactorDropsPayload
 	ShowStoragePayload                  = sharedsaga.ShowStoragePayload
 	OpenNpcShopPayload                  = sharedsaga.OpenNpcShopPayload
@@ -1322,6 +1327,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ShuffleReactors:
 		var payload ShuffleReactorsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ResetField:
+		var payload ResetFieldPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

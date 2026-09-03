@@ -3,6 +3,7 @@ package _map
 import (
 	npcKafka "atlas-channel/kafka/message/npc"
 	_map "atlas-channel/map"
+	scriptednpc "atlas-channel/map/npc"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -66,4 +68,35 @@ func handleStatusEventNpcCreated(sc server.Model, wp writer.Producer) message.Ha
 			l.WithError(err).Errorf("Unable to spawn scripted npc [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
 	}
+}
+
+// spawnScriptedNpcsForSession sends SPAWN_NPC for every scripted NPC
+// already placed on f (by the spawn_npc saga action, task-290 C14) to the
+// entering session s. This is the other half of the gap
+// handleStatusEventNpcCreated closes: that handler reaches every session
+// already in the field at the moment of the spawn, but a character who
+// enters the field afterwards never receives the atlas-maps
+// SpawnIfAbsent-suppressed re-emit (map/npc/processor.go:34-42), so without
+// this every scripted NPC is invisible to the second and every later
+// character -- the exact failure mode that leaves the C15/G2 seeds
+// non-functional for most players (task-BC's non-blocking finding 2).
+//
+// Both this path and handleStatusEventNpcCreated build the packet through
+// the same ScriptedNpcSpawn, so the bytes on the wire are identical
+// regardless of which path delivered them.
+func spawnScriptedNpcsForSession(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, f field.Model) error {
+	ns, err := scriptednpc.NewProcessor(l, ctx).InMapModelProvider(f)()
+	if err != nil {
+		return err
+	}
+	if len(ns) == 0 {
+		return nil
+	}
+	for _, n := range ns {
+		spawn := ScriptedNpcSpawn(n.UniqueId(), n.NpcId(), n.X(), n.Y(), n.Fh())
+		if err := scriptedNpcAnnounce(l, ctx, wp, npcpkt.NpcSpawnWriter, spawn.Encode, s); err != nil {
+			return err
+		}
+	}
+	return nil
 }

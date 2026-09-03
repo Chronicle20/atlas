@@ -2,10 +2,13 @@ package _map
 
 import (
 	npcKafka "atlas-channel/kafka/message/npc"
+	scriptednpc "atlas-channel/map/npc"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"encoding/binary"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -197,5 +200,145 @@ func TestHandleStatusEventNpcCreated_IgnoresOtherWorldChannel(t *testing.T) {
 
 	if calls := rec.snapshot(); len(calls) != 0 {
 		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}
+
+// TestSpawnScriptedNpcsForSession_SpawnsExistingScriptedNpc is the
+// regression this task exists to prevent: a character entering a field
+// that already has a scripted NPC (placed by an earlier spawn_npc, or by an
+// onUserEnter action that already ran for an earlier character) receives a
+// SPAWN_NPC packet for it.
+func TestSpawnScriptedNpcsForSession_SpawnsExistingScriptedNpc(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{
+					"type": "npcs",
+					"id": "7",
+					"attributes": {
+						"npcId": 1104100,
+						"x": 2830,
+						"y": 78,
+						"fh": 5
+					}
+				}
+			]
+		}`))
+	}))
+	defer srv.Close()
+	defer scriptednpc.SetBaseURLForTest(srv.URL)()
+
+	restore, rec := stubScriptedNpcAnnounce(t)
+	defer restore()
+
+	s := session.NewSession(uuid.New(), ten, 0, nil)
+
+	if err := spawnScriptedNpcsForSession(l, ctx, nil, s, f); err != nil {
+		t.Fatalf("spawnScriptedNpcsForSession: %v", err)
+	}
+
+	calls := rec.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("announce count = %d, want 1", len(calls))
+	}
+	if calls[0].Writer != npcpkt.NpcSpawnWriter {
+		t.Fatalf("writer = %s, want %s", calls[0].Writer, npcpkt.NpcSpawnWriter)
+	}
+	gotUniqueId := binary.LittleEndian.Uint32(calls[0].Body[0:4])
+	gotNpcId := binary.LittleEndian.Uint32(calls[0].Body[4:8])
+	if gotUniqueId != 7 {
+		t.Errorf("uniqueId = %d, want 7", gotUniqueId)
+	}
+	if gotNpcId != 1104100 {
+		t.Errorf("npcId = %d, want 1104100", gotNpcId)
+	}
+}
+
+// TestSpawnScriptedNpcsForSession_EmptyFieldIsSilent asserts a field with
+// no scripted NPCs (the overwhelmingly common case) announces nothing and
+// returns nil -- not an error.
+func TestSpawnScriptedNpcsForSession_EmptyFieldIsSilent(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data": []}`))
+	}))
+	defer srv.Close()
+	defer scriptednpc.SetBaseURLForTest(srv.URL)()
+
+	restore, rec := stubScriptedNpcAnnounce(t)
+	defer restore()
+
+	s := session.NewSession(uuid.New(), ten, 0, nil)
+
+	if err := spawnScriptedNpcsForSession(l, ctx, nil, s, f); err != nil {
+		t.Fatalf("spawnScriptedNpcsForSession: %v", err)
+	}
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}
+
+// TestSpawnScriptedNpcsForSession_BytesMatchBroadcastPath asserts the
+// resync path (spawnScriptedNpcsForSession, via this test) and the broadcast
+// path (handleStatusEventNpcCreated) put identical bytes on the wire for the
+// same scripted NPC, since both build the packet through the one exported
+// ScriptedNpcSpawn -- neither re-derives the rx0/rx1/facing/cy substitution.
+func TestSpawnScriptedNpcsForSession_BytesMatchBroadcastPath(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{
+					"type": "npcs",
+					"id": "7",
+					"attributes": {
+						"npcId": 1104100,
+						"x": 2830,
+						"y": 78,
+						"fh": 5
+					}
+				}
+			]
+		}`))
+	}))
+	defer srv.Close()
+	defer scriptednpc.SetBaseURLForTest(srv.URL)()
+
+	restore, rec := stubScriptedNpcAnnounce(t)
+	defer restore()
+
+	s := session.NewSession(uuid.New(), ten, 0, nil)
+	if err := spawnScriptedNpcsForSession(l, ctx, nil, s, f); err != nil {
+		t.Fatalf("spawnScriptedNpcsForSession: %v", err)
+	}
+	resyncCalls := rec.snapshot()
+	if len(resyncCalls) != 1 {
+		t.Fatalf("resync announce count = %d, want 1", len(resyncCalls))
+	}
+
+	broadcastSpawn := ScriptedNpcSpawn(7, 1104100, 2830, 78, 5)
+	wantBody := broadcastSpawn.Encode(l, ctx)(nil)
+
+	if string(resyncCalls[0].Body) != string(wantBody) {
+		t.Fatalf("resync bytes = %v, want %v (broadcast path)", resyncCalls[0].Body, wantBody)
 	}
 }

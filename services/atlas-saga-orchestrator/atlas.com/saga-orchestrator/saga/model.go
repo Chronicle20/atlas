@@ -149,6 +149,8 @@ const (
 	UpdateAreaInfo  = sharedsaga.UpdateAreaInfo
 	ShowInfo        = sharedsaga.ShowInfo
 	PlaySound       = sharedsaga.PlaySound
+	ChangeMusic     = sharedsaga.ChangeMusic
+	BoatEffect      = sharedsaga.BoatEffect
 	ShowInfoText    = sharedsaga.ShowInfoText
 	ShowIntro       = sharedsaga.ShowIntro
 	ShowHint        = sharedsaga.ShowHint
@@ -334,6 +336,8 @@ type (
 	PlayPortalSoundPayload              = sharedsaga.PlayPortalSoundPayload
 	ShowInfoPayload                     = sharedsaga.ShowInfoPayload
 	PlaySoundPayload                    = sharedsaga.PlaySoundPayload
+	ChangeMusicPayload                  = sharedsaga.ChangeMusicPayload
+	BoatEffectPayload                   = sharedsaga.BoatEffectPayload
 	ShowInfoTextPayload                 = sharedsaga.ShowInfoTextPayload
 	UpdateAreaInfoPayload               = sharedsaga.UpdateAreaInfoPayload
 	ShowHintPayload                     = sharedsaga.ShowHintPayload
@@ -1326,6 +1330,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case PlaySound:
 		var payload PlaySoundPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ChangeMusic:
+		var payload ChangeMusicPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case BoatEffect:
+		var payload BoatEffectPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

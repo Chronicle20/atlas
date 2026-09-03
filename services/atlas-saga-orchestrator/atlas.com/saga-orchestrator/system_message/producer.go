@@ -205,3 +205,35 @@ func PlaySoundCommandProvider(transactionId uuid.UUID, ch channel.Model, charact
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// ChangeMusicCommandProvider creates a Kafka message for changing the background music
+func ChangeMusicCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.ChangeMusicBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandChangeMusic,
+		Body: system_message.ChangeMusicBody{
+			Path: path,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// BoatEffectCommandProvider creates a Kafka message for showing or hiding the boat-arrival visual
+func BoatEffectCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, show bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.BoatEffectBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandBoatEffect,
+		Body: system_message.BoatEffectBody{
+			Show: show,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

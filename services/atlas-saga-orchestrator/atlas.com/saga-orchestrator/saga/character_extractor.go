@@ -120,6 +120,10 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case PlaySoundPayload:
 		return p.CharacterId
+	case ChangeMusicPayload:
+		return p.CharacterId
+	case BoatEffectPayload:
+		return p.CharacterId
 	default:
 		return 0
 	}

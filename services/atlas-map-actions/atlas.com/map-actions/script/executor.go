@@ -60,6 +60,10 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeShowInfo(f, characterId, op)
 	case "play_sound":
 		return e.executePlaySound(f, characterId, op)
+	case "change_music":
+		return e.executeChangeMusic(f, characterId, op)
+	case "boat_effect":
+		return e.executeBoatEffect(f, characterId, op)
 	case "clear_skill":
 		return e.executeClearSkill(f, characterId, op)
 	default:
@@ -565,6 +569,67 @@ func (e *OperationExecutor) executePlaySound(f field.Model, characterId uint32, 
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),
 				Path:        path,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executeChangeMusic(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	path, ok := params["path"]
+	if !ok {
+		return fmt.Errorf("change_music operation missing path parameter")
+	}
+
+	e.l.Debugf("Changing music to [%s] for character [%d].", path, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-change-music").
+		AddStep(
+			fmt.Sprintf("change-music-%d", characterId),
+			saga.Pending,
+			saga.ChangeMusic,
+			saga.ChangeMusicPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				Path:        path,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executeBoatEffect(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	showStr, ok := params["show"]
+	if !ok {
+		return fmt.Errorf("boat_effect operation missing show parameter")
+	}
+
+	show, err := strconv.ParseBool(showStr)
+	if err != nil {
+		return fmt.Errorf("invalid show [%s]: %w", showStr, err)
+	}
+
+	e.l.Debugf("Setting boat effect show [%t] for character [%d].", show, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-boat-effect").
+		AddStep(
+			fmt.Sprintf("boat-effect-%d", characterId),
+			saga.Pending,
+			saga.BoatEffect,
+			saga.BoatEffectPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				Show:        show,
 			},
 		).Build()
 

@@ -476,6 +476,22 @@ type PlaySoundPayload struct {
 	Path        string     `json:"path"`        // Path to the sound (e.g., "cannonshooter/flying")
 }
 
+// ChangeMusicPayload represents the payload required to change the background music for a character.
+type ChangeMusicPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to change the music for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the music (e.g., "Bgm04/ArabPirate")
+}
+
+// BoatEffectPayload represents the payload required to show or hide the boat-arrival visual for a character.
+type BoatEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show/hide the boat effect for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Show        bool       `json:"show"`        // true to show the boat visual, false to hide it
+}
+
 // ShowInfoTextPayload represents the payload for showing a text message to a player.
 type ShowInfoTextPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId to show text to

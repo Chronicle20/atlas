@@ -166,6 +166,8 @@ type Handler interface {
 	handlePlayPortalSound(s Saga, st Step[any]) error
 	handleShowInfo(s Saga, st Step[any]) error
 	handlePlaySound(s Saga, st Step[any]) error
+	handleChangeMusic(s Saga, st Step[any]) error
+	handleBoatEffect(s Saga, st Step[any]) error
 	handleShowInfoText(s Saga, st Step[any]) error
 	handleUpdateAreaInfo(s Saga, st Step[any]) error
 	handleShowHint(s Saga, st Step[any]) error
@@ -994,6 +996,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleShowInfo, true
 	case PlaySound:
 		return h.handlePlaySound, true
+	case ChangeMusic:
+		return h.handleChangeMusic, true
+	case BoatEffect:
+		return h.handleBoatEffect, true
 	case ShowInfoText:
 		return h.handleShowInfoText, true
 	case UpdateAreaInfo:
@@ -2904,6 +2910,54 @@ func (h *HandlerImpl) handlePlaySound(s Saga, st Step[any]) error {
 	}
 
 	// PlaySound is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleChangeMusic handles the ChangeMusic action. Fire-and-forget: the
+// previous track cannot be un-played, so this action registers no
+// compensator. This is a synchronous action - we send the command and
+// immediately mark complete.
+func (h *HandlerImpl) handleChangeMusic(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ChangeMusicPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.ChangeMusic(s.TransactionId(), ch, payload.CharacterId, payload.Path)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change music.")
+		return err
+	}
+
+	// ChangeMusic is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleBoatEffect handles the BoatEffect action. Fire-and-forget: the
+// visual cannot be un-shown by a compensator without a corresponding hide
+// step of its own, so this action registers no compensator. This is a
+// synchronous action - we send the command and immediately mark complete.
+func (h *HandlerImpl) handleBoatEffect(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(BoatEffectPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.BoatEffect(s.TransactionId(), ch, payload.CharacterId, payload.Show)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show boat effect.")
+		return err
+	}
+
+	// BoatEffect is a synchronous command with no async response event
 	// Mark the step as completed immediately after successfully sending the command
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 

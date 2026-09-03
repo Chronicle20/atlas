@@ -155,6 +155,8 @@
             "update_area_info",
             "show_info",
             "play_sound",
+            "change_music",
+            "boat_effect",
             "clear_skill"
           ]
         },
@@ -515,6 +517,60 @@
                   "path": {
                     "type": "string",
                     "description": "WZ sound path (e.g. cannonshooter/flying)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "change_music"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "WZ background music path (e.g. Bgm04/ArabPirate)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "boat_effect"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "show"
+                ],
+                "properties": {
+                  "show": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false"
+                    ],
+                    "description": "Whether to show or hide the boat-arrival visual"
                   }
                 }
               }

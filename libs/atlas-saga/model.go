@@ -175,6 +175,16 @@ const (
 	ShowGuideHint Action = "show_guide_hint"
 	BlockPortal   Action = "block_portal"
 	UnblockPortal Action = "unblock_portal"
+	// ChangeMusic changes the background music for one character. Cosmic's
+	// PacketCreator.musicChange(song) is environmentChange(song, 6) --
+	// FIELD_EFFECT mode 6; the mode byte is resolved per tenant by
+	// FieldEffectBackgroundMusicBody, never carried here.
+	ChangeMusic Action = "change_music"
+	// BoatEffect shows or hides the boat-arrival visual for one character.
+	// Cosmic's PacketCreator.crogBoatPacket(show) is CONTI_MOVE; state and
+	// subState are resolved per tenant by writer.ContiMoveBody, never
+	// carried here.
+	BoatEffect Action = "boat_effect"
 
 	// Spawn actions
 	SpawnMonster      Action = "spawn_monster"

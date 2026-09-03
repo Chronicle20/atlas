@@ -1723,3 +1723,63 @@ func TestUnmarshalPlaySoundStep(t *testing.T) {
 		t.Errorf("payload = %+v, want %+v", p, want)
 	}
 }
+
+func TestUnmarshalChangeMusicStep(t *testing.T) {
+	raw := `{
+		"stepId": "music-1",
+		"status": "pending",
+		"action": "change_music",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"path": "Bgm04/ArabPirate"
+		}
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ChangeMusic {
+		t.Fatalf("expected action ChangeMusic, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ChangeMusicPayload)
+	if !ok {
+		t.Fatalf("expected ChangeMusicPayload, got %T", step.Payload)
+	}
+	want := ChangeMusicPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), Path: "Bgm04/ArabPirate"}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}
+
+func TestUnmarshalBoatEffectStep(t *testing.T) {
+	raw := `{
+		"stepId": "boat-1",
+		"status": "pending",
+		"action": "boat_effect",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"show": true
+		}
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != BoatEffect {
+		t.Fatalf("expected action BoatEffect, got %q", step.Action)
+	}
+	p, ok := step.Payload.(BoatEffectPayload)
+	if !ok {
+		t.Fatalf("expected BoatEffectPayload, got %T", step.Payload)
+	}
+	want := BoatEffectPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), Show: true}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}

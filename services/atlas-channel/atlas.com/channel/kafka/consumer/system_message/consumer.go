@@ -97,6 +97,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMusic(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleBoatEffect(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleUiLock(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -361,6 +371,56 @@ func handlePlaySound(sc server.Model, wp writer.Producer) message.Handler[system
 			session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectSoundBody(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to play sound for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+func handleChangeMusic(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.ChangeMusicBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.ChangeMusicBody]) {
+		if cmd.Type != system_message2.CommandChangeMusic {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
+			session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(cmd.Body.Path)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to change music for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+func handleBoatEffect(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.BoatEffectBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.BoatEffectBody]) {
+		if cmd.Type != system_message2.CommandBoatEffect {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		key := writer.ContiMoveHide
+		if cmd.Body.Show {
+			key = writer.ContiMoveShow
+		}
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
+			session.Announce(l)(ctx)(wp)(fieldcb.ContiMoveWriter)(writer.ContiMoveBody(key)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to show boat effect for character [%d].", cmd.CharacterId)
 		}
 	}
 }

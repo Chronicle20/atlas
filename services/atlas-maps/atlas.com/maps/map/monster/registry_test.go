@@ -333,35 +333,46 @@ func TestRegistryKeys_AreV2AndDistinct(t *testing.T) {
 	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(920010920)).Build()
 	mapKey := character.MapKey{Tenant: te, Field: f}
 
-	recurring := r.recurringKey(mapKey)
-	oneTime := r.oneTimeKey(mapKey)
-	meta := r.metaKey(mapKey)
-
-	wantRecSuffix := ":v2:1:2:920010920:00000000-0000-0000-0000-000000000000"
-	wantOneSuffix := ":v2:onetime:1:2:920010920:00000000-0000-0000-0000-000000000000"
-	wantMetaSuffix := ":v2:meta:1:2:920010920:00000000-0000-0000-0000-000000000000"
-
-	if !strings.HasSuffix(recurring, wantRecSuffix) {
-		t.Errorf("recurringKey = %q, want suffix %q", recurring, wantRecSuffix)
-	}
-	if !strings.HasSuffix(oneTime, wantOneSuffix) {
-		t.Errorf("oneTimeKey = %q, want suffix %q", oneTime, wantOneSuffix)
-	}
-	if !strings.HasSuffix(meta, wantMetaSuffix) {
-		t.Errorf("metaKey = %q, want suffix %q", meta, wantMetaSuffix)
-	}
-
-	for _, k := range []string{recurring, oneTime, meta} {
-		if !strings.Contains(k, ":maps:spawn:") {
-			t.Errorf("key %q does not contain :maps:spawn:", k)
-		}
-		if !strings.Contains(k, tid.String()) {
-			t.Errorf("key %q does not contain tenant id %s", k, tid.String())
-		}
+	tests := []struct {
+		name       string
+		got        string
+		wantSuffix string
+	}{
+		{
+			name:       "recurringKey",
+			got:        r.recurringKey(mapKey),
+			wantSuffix: ":v2:1:2:920010920:00000000-0000-0000-0000-000000000000",
+		},
+		{
+			name:       "oneTimeKey",
+			got:        r.oneTimeKey(mapKey),
+			wantSuffix: ":v2:onetime:1:2:920010920:00000000-0000-0000-0000-000000000000",
+		},
+		{
+			name:       "metaKey",
+			got:        r.metaKey(mapKey),
+			wantSuffix: ":v2:meta:1:2:920010920:00000000-0000-0000-0000-000000000000",
+		},
 	}
 
-	if recurring == oneTime || recurring == meta || oneTime == meta {
-		t.Errorf("keys are not pairwise distinct: recurring=%q oneTime=%q meta=%q", recurring, oneTime, meta)
+	seen := map[string]string{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !strings.HasSuffix(tt.got, tt.wantSuffix) {
+				t.Errorf("%s = %q, want suffix %q", tt.name, tt.got, tt.wantSuffix)
+			}
+			if !strings.Contains(tt.got, ":maps:spawn:") {
+				t.Errorf("%s %q does not contain :maps:spawn:", tt.name, tt.got)
+			}
+			if !strings.Contains(tt.got, tid.String()) {
+				t.Errorf("%s %q does not contain tenant id %s", tt.name, tt.got, tid.String())
+			}
+		})
+		seen[tt.name] = tt.got
+	}
+
+	if seen["recurringKey"] == seen["oneTimeKey"] || seen["recurringKey"] == seen["metaKey"] || seen["oneTimeKey"] == seen["metaKey"] {
+		t.Errorf("keys are not pairwise distinct: recurring=%q oneTime=%q meta=%q", seen["recurringKey"], seen["oneTimeKey"], seen["metaKey"])
 	}
 }
 
@@ -430,188 +441,167 @@ func newClaimTestMapKey(t *testing.T) character.MapKey {
 }
 
 func TestClaimOneTimeSpawnPoints(t *testing.T) {
-	t.Run("armed field fires the full batch", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		mapKey := newClaimTestMapKey(t)
+	tests := []struct {
+		name    string
+		points  []monster2.SpawnPoint
+		wantLen int
+		// checkNextSpawnAtPreserved additionally snapshots each recurring
+		// point's NextSpawnAt before the claim and asserts it is unchanged
+		// after, since only the recurring-only case exercises that guarantee.
+		checkNextSpawnAtPreserved bool
+		// assert runs after InitializeForMap and the first claim, with the
+		// first claim's result. It carries each case's assertions that don't
+		// fit the shared before/after-claim skeleton.
+		assert func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey, claimBefore time.Time, claimed []*CooldownSpawnPoint)
+	}{
+		{
+			name: "armed field fires the full batch",
+			points: func() []monster2.SpawnPoint {
+				var pts []monster2.SpawnPoint
+				for i := uint32(1); i <= 10; i++ {
+					pts = append(pts, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
+				}
+				return pts
+			}(),
+			wantLen: 10,
+			assert: func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey, before time.Time, claimed []*CooldownSpawnPoint) {
+				gotIds := map[uint32]bool{}
+				for _, cp := range claimed {
+					gotIds[cp.Id] = true
+					if cp.Template != 9300044 {
+						t.Errorf("claimed point %d Template = %d, want 9300044", cp.Id, cp.Template)
+					}
+				}
+				for i := uint32(1); i <= 10; i++ {
+					if !gotIds[i] {
+						t.Errorf("claimed set missing id %d", i)
+					}
+				}
 
-		var points []monster2.SpawnPoint
-		for i := uint32(1); i <= 10; i++ {
-			points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
-		}
-		mockDP := &mockSpawnDataProcessor{spawnPoints: points}
-		if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap: %v", err)
-		}
+				firedStr, err := r.meta.Get(ctx, mapKey.Tenant, mapKey, metaFieldOneTimeFired)
+				if err != nil {
+					t.Fatalf("HGet onetimeFired: %v", err)
+				}
+				firedMillis, err := strconv.ParseInt(firedStr, 10, 64)
+				if err != nil {
+					t.Fatalf("onetimeFired %q not parseable as int64: %v", firedStr, err)
+				}
+				firedAt := time.UnixMilli(firedMillis)
+				if firedAt.Before(before.Add(-60*time.Second)) || firedAt.After(time.Now().Add(60*time.Second)) {
+					t.Errorf("onetimeFired timestamp %v not within 60s of now", firedAt)
+				}
 
-		before := time.Now()
-		claimed, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (first): %v", err)
-		}
-		if len(claimed) != 10 {
-			t.Fatalf("first claim len = %d, want 10", len(claimed))
-		}
-		gotIds := map[uint32]bool{}
-		for _, cp := range claimed {
-			gotIds[cp.Id] = true
-			if cp.Template != 9300044 {
-				t.Errorf("claimed point %d Template = %d, want 9300044", cp.Id, cp.Template)
+				hlen, err := r.oneTime.Len(ctx, mapKey.Tenant, mapKey)
+				if err != nil {
+					t.Fatalf("HLen one-time hash: %v", err)
+				}
+				if hlen != 10 {
+					t.Errorf("one-time hash HLEN = %d, want 10 (claim must not consume the points)", hlen)
+				}
+			},
+		},
+		{
+			name: "recurring-only field claims nothing",
+			points: func() []monster2.SpawnPoint {
+				var pts []monster2.SpawnPoint
+				for i := uint32(1); i <= 4; i++ {
+					pts = append(pts, monster2.SpawnPoint{Id: i, MobTime: 0, Hide: false})
+				}
+				return pts
+			}(),
+			wantLen:                   0,
+			checkNextSpawnAtPreserved: true,
+			assert: func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey, before time.Time, claimed []*CooldownSpawnPoint) {
+				count, err := r.Count(ctx, mapKey)
+				if err != nil {
+					t.Fatalf("Count: %v", err)
+				}
+				if count != 4 {
+					t.Errorf("Count() = %d, want 4", count)
+				}
+			},
+		},
+		{
+			name: "mixed field fires only the one-time subset",
+			points: []monster2.SpawnPoint{
+				{Id: 1, MobTime: 0, Hide: false},
+				{Id: 2, MobTime: -1, Hide: false},
+				{Id: 3, MobTime: 30, Hide: false},
+			},
+			wantLen: 1,
+			assert: func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey, before time.Time, claimed []*CooldownSpawnPoint) {
+				if claimed[0].Id != 2 {
+					t.Errorf("claimed point Id = %d, want 2", claimed[0].Id)
+				}
+			},
+		},
+		{
+			name:    "unseeded field returns nothing",
+			points:  nil,
+			wantLen: 0,
+			assert: func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey, before time.Time, claimed []*CooldownSpawnPoint) {
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := setupSpawnTestRedis(t)
+			r := newTestRegistry(client)
+			ctx := context.Background()
+			mapKey := newClaimTestMapKey(t)
+
+			if tc.points != nil {
+				mockDP := &mockSpawnDataProcessor{spawnPoints: tc.points}
+				if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
+					t.Fatalf("InitializeForMap: %v", err)
+				}
 			}
-		}
-		for i := uint32(1); i <= 10; i++ {
-			if !gotIds[i] {
-				t.Errorf("claimed set missing id %d", i)
+
+			var beforeNextSpawnAt map[uint32]time.Time
+			if tc.checkNextSpawnAtPreserved {
+				before, ok := r.GetSpawnPointsForMap(ctx, mapKey)
+				if !ok {
+					t.Fatalf("GetSpawnPointsForMap before claim returned not-ok")
+				}
+				beforeNextSpawnAt = map[uint32]time.Time{}
+				for _, sp := range before {
+					beforeNextSpawnAt[sp.Id] = sp.NextSpawnAt
+				}
 			}
-		}
 
-		firedStr, err := r.meta.Get(ctx, mapKey.Tenant, mapKey, metaFieldOneTimeFired)
-		if err != nil {
-			t.Fatalf("HGet onetimeFired: %v", err)
-		}
-		firedMillis, err := strconv.ParseInt(firedStr, 10, 64)
-		if err != nil {
-			t.Fatalf("onetimeFired %q not parseable as int64: %v", firedStr, err)
-		}
-		firedAt := time.UnixMilli(firedMillis)
-		if firedAt.Before(before.Add(-60*time.Second)) || firedAt.After(time.Now().Add(60*time.Second)) {
-			t.Errorf("onetimeFired timestamp %v not within 60s of now", firedAt)
-		}
-
-		hlen, err := r.oneTime.Len(ctx, mapKey.Tenant, mapKey)
-		if err != nil {
-			t.Fatalf("HLen one-time hash: %v", err)
-		}
-		if hlen != 10 {
-			t.Errorf("one-time hash HLEN = %d, want 10 (claim must not consume the points)", hlen)
-		}
-
-		claimed2, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (second): %v", err)
-		}
-		if len(claimed2) != 0 {
-			t.Errorf("second claim len = %d, want 0", len(claimed2))
-		}
-	})
-
-	t.Run("recurring-only field claims nothing", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		mapKey := newClaimTestMapKey(t)
-
-		var points []monster2.SpawnPoint
-		for i := uint32(1); i <= 4; i++ {
-			points = append(points, monster2.SpawnPoint{Id: i, MobTime: 0, Hide: false})
-		}
-		mockDP := &mockSpawnDataProcessor{spawnPoints: points}
-		if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap: %v", err)
-		}
-
-		before, ok := r.GetSpawnPointsForMap(ctx, mapKey)
-		if !ok {
-			t.Fatalf("GetSpawnPointsForMap before claim returned not-ok")
-		}
-		beforeNextSpawnAt := map[uint32]time.Time{}
-		for _, sp := range before {
-			beforeNextSpawnAt[sp.Id] = sp.NextSpawnAt
-		}
-
-		claimed, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (first): %v", err)
-		}
-		if len(claimed) != 0 {
-			t.Errorf("first claim len = %d, want 0", len(claimed))
-		}
-
-		count, err := r.Count(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("Count: %v", err)
-		}
-		if count != 4 {
-			t.Errorf("Count() = %d, want 4", count)
-		}
-
-		after, ok := r.GetSpawnPointsForMap(ctx, mapKey)
-		if !ok {
-			t.Fatalf("GetSpawnPointsForMap after claim returned not-ok")
-		}
-		for _, sp := range after {
-			if !sp.NextSpawnAt.Equal(beforeNextSpawnAt[sp.Id]) {
-				t.Errorf("recurring point %d NextSpawnAt changed: before %v, after %v", sp.Id, beforeNextSpawnAt[sp.Id], sp.NextSpawnAt)
+			before := time.Now()
+			claimed, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
+			if err != nil {
+				t.Fatalf("ClaimOneTimeSpawnPoints (first): %v", err)
 			}
-		}
+			if len(claimed) != tc.wantLen {
+				t.Fatalf("first claim len = %d, want %d", len(claimed), tc.wantLen)
+			}
 
-		claimed2, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (second): %v", err)
-		}
-		if len(claimed2) != 0 {
-			t.Errorf("second claim len = %d, want 0", len(claimed2))
-		}
-	})
+			tc.assert(t, r, ctx, mapKey, before, claimed)
 
-	t.Run("mixed field fires only the one-time subset", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		mapKey := newClaimTestMapKey(t)
+			if beforeNextSpawnAt != nil {
+				after, ok := r.GetSpawnPointsForMap(ctx, mapKey)
+				if !ok {
+					t.Fatalf("GetSpawnPointsForMap after claim returned not-ok")
+				}
+				for _, sp := range after {
+					if !sp.NextSpawnAt.Equal(beforeNextSpawnAt[sp.Id]) {
+						t.Errorf("recurring point %d NextSpawnAt changed: before %v, after %v", sp.Id, beforeNextSpawnAt[sp.Id], sp.NextSpawnAt)
+					}
+				}
+			}
 
-		mockDP := &mockSpawnDataProcessor{spawnPoints: []monster2.SpawnPoint{
-			{Id: 1, MobTime: 0, Hide: false},
-			{Id: 2, MobTime: -1, Hide: false},
-			{Id: 3, MobTime: 30, Hide: false},
-		}}
-		if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap: %v", err)
-		}
-
-		claimed, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (first): %v", err)
-		}
-		if len(claimed) != 1 {
-			t.Fatalf("first claim len = %d, want 1", len(claimed))
-		}
-		if claimed[0].Id != 2 {
-			t.Errorf("claimed point Id = %d, want 2", claimed[0].Id)
-		}
-
-		claimed2, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (second): %v", err)
-		}
-		if len(claimed2) != 0 {
-			t.Errorf("second claim len = %d, want 0", len(claimed2))
-		}
-	})
-
-	t.Run("unseeded field returns nothing", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		mapKey := newClaimTestMapKey(t)
-
-		claimed, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (first): %v", err)
-		}
-		if len(claimed) != 0 {
-			t.Errorf("first claim len = %d, want 0", len(claimed))
-		}
-
-		claimed2, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (second): %v", err)
-		}
-		if len(claimed2) != 0 {
-			t.Errorf("second claim len = %d, want 0", len(claimed2))
-		}
-	})
+			claimed2, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
+			if err != nil {
+				t.Fatalf("ClaimOneTimeSpawnPoints (second): %v", err)
+			}
+			if len(claimed2) != 0 {
+				t.Errorf("second claim len = %d, want 0", len(claimed2))
+			}
+		})
+	}
 }
 
 // TestClaimOneTimeSpawnPoints_ConcurrentFiresExactlyOnce is the FR-2.3
@@ -674,157 +664,165 @@ func TestClaimOneTimeSpawnPoints_ConcurrentFiresExactlyOnce(t *testing.T) {
 }
 
 func TestRearmOneTime(t *testing.T) {
-	t.Run("fired field re-arms once", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		mapKey := newClaimTestMapKey(t)
+	// Each scenario needs a distinct sequence of registry calls and
+	// assertions (fire-then-rearm-twice, never-fired, rearm-then-reclaim,
+	// rearm-leaves-recurring-untouched), so the shared skeleton is only the
+	// fresh redis+registry+mapKey fixture; the rest is per-case wiring.
+	tests := []struct {
+		name string
+		run  func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey)
+	}{
+		{
+			name: "fired field re-arms once",
+			run: func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey) {
+				var points []monster2.SpawnPoint
+				for i := uint32(1); i <= 10; i++ {
+					points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
+				}
+				mockDP := &mockSpawnDataProcessor{spawnPoints: points}
+				if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
+					t.Fatalf("InitializeForMap: %v", err)
+				}
+				if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
+					t.Fatalf("ClaimOneTimeSpawnPoints: %v", err)
+				}
 
-		var points []monster2.SpawnPoint
-		for i := uint32(1); i <= 10; i++ {
-			points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
-		}
-		mockDP := &mockSpawnDataProcessor{spawnPoints: points}
-		if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap: %v", err)
-		}
-		if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints: %v", err)
-		}
+				rearmed, err := r.RearmOneTime(ctx, mapKey)
+				if err != nil {
+					t.Fatalf("RearmOneTime (first): %v", err)
+				}
+				if !rearmed {
+					t.Errorf("first RearmOneTime = false, want true")
+				}
 
-		rearmed, err := r.RearmOneTime(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("RearmOneTime (first): %v", err)
-		}
-		if !rearmed {
-			t.Errorf("first RearmOneTime = false, want true")
-		}
+				rearmed2, err := r.RearmOneTime(ctx, mapKey)
+				if err != nil {
+					t.Fatalf("RearmOneTime (second): %v", err)
+				}
+				if rearmed2 {
+					t.Errorf("second RearmOneTime = true, want false")
+				}
+			},
+		},
+		{
+			name: "never-fired field returns false",
+			run: func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey) {
+				var points []monster2.SpawnPoint
+				for i := uint32(1); i <= 10; i++ {
+					points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
+				}
+				mockDP := &mockSpawnDataProcessor{spawnPoints: points}
+				if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
+					t.Fatalf("InitializeForMap: %v", err)
+				}
 
-		rearmed2, err := r.RearmOneTime(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("RearmOneTime (second): %v", err)
-		}
-		if rearmed2 {
-			t.Errorf("second RearmOneTime = true, want false")
-		}
-	})
+				rearmed, err := r.RearmOneTime(ctx, mapKey)
+				if err != nil {
+					t.Fatalf("RearmOneTime: %v", err)
+				}
+				if rearmed {
+					t.Errorf("RearmOneTime = true, want false")
+				}
+			},
+		},
+		{
+			name: "re-armed field fires a fresh full batch",
+			run: func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey) {
+				var points []monster2.SpawnPoint
+				for i := uint32(1); i <= 10; i++ {
+					points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
+				}
+				mockDP := &mockSpawnDataProcessor{spawnPoints: points}
+				if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
+					t.Fatalf("InitializeForMap: %v", err)
+				}
 
-	t.Run("never-fired field returns false", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		mapKey := newClaimTestMapKey(t)
+				claimed, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
+				if err != nil {
+					t.Fatalf("ClaimOneTimeSpawnPoints (first): %v", err)
+				}
+				if len(claimed) != 10 {
+					t.Fatalf("first claim len = %d, want 10", len(claimed))
+				}
 
-		var points []monster2.SpawnPoint
-		for i := uint32(1); i <= 10; i++ {
-			points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
-		}
-		mockDP := &mockSpawnDataProcessor{spawnPoints: points}
-		if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap: %v", err)
-		}
+				rearmed, err := r.RearmOneTime(ctx, mapKey)
+				if err != nil {
+					t.Fatalf("RearmOneTime: %v", err)
+				}
+				if !rearmed {
+					t.Fatalf("RearmOneTime = false, want true")
+				}
 
-		rearmed, err := r.RearmOneTime(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("RearmOneTime: %v", err)
-		}
-		if rearmed {
-			t.Errorf("RearmOneTime = true, want false")
-		}
-	})
+				claimed2, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
+				if err != nil {
+					t.Fatalf("ClaimOneTimeSpawnPoints (second): %v", err)
+				}
+				if len(claimed2) != 10 {
+					t.Errorf("second claim len = %d, want 10", len(claimed2))
+				}
+			},
+		},
+		{
+			name: "re-arm leaves the recurring hash untouched",
+			run: func(t *testing.T, r *SpawnPointRegistry, ctx context.Context, mapKey character.MapKey) {
+				mockDP := &mockSpawnDataProcessor{spawnPoints: []monster2.SpawnPoint{
+					{Id: 1, MobTime: 30, Hide: false},
+					{Id: 2, MobTime: 30, Hide: false},
+					{Id: 3, MobTime: -1, Hide: false},
+				}}
+				if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
+					t.Fatalf("InitializeForMap: %v", err)
+				}
 
-	t.Run("re-armed field fires a fresh full batch", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		mapKey := newClaimTestMapKey(t)
+				before, ok := r.GetSpawnPointsForMap(ctx, mapKey)
+				if !ok {
+					t.Fatalf("GetSpawnPointsForMap before claim returned not-ok")
+				}
+				beforeNextSpawnAt := map[uint32]time.Time{}
+				for _, sp := range before {
+					beforeNextSpawnAt[sp.Id] = sp.NextSpawnAt
+				}
 
-		var points []monster2.SpawnPoint
-		for i := uint32(1); i <= 10; i++ {
-			points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
-		}
-		mockDP := &mockSpawnDataProcessor{spawnPoints: points}
-		if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap: %v", err)
-		}
+				if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
+					t.Fatalf("ClaimOneTimeSpawnPoints: %v", err)
+				}
+				if _, err := r.RearmOneTime(ctx, mapKey); err != nil {
+					t.Fatalf("RearmOneTime: %v", err)
+				}
 
-		claimed, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (first): %v", err)
-		}
-		if len(claimed) != 10 {
-			t.Fatalf("first claim len = %d, want 10", len(claimed))
-		}
+				hlen, err := r.hashes.Len(ctx, mapKey.Tenant, mapKey)
+				if err != nil {
+					t.Fatalf("HLen recurring hash: %v", err)
+				}
+				if hlen != 2 {
+					t.Errorf("recurring hash HLEN = %d, want 2", hlen)
+				}
 
-		rearmed, err := r.RearmOneTime(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("RearmOneTime: %v", err)
-		}
-		if !rearmed {
-			t.Fatalf("RearmOneTime = false, want true")
-		}
+				after, ok := r.GetSpawnPointsForMap(ctx, mapKey)
+				if !ok {
+					t.Fatalf("GetSpawnPointsForMap after re-arm returned not-ok")
+				}
+				if len(after) != 2 {
+					t.Fatalf("recurring points after re-arm = %d, want 2", len(after))
+				}
+				for _, sp := range after {
+					if !sp.NextSpawnAt.Equal(beforeNextSpawnAt[sp.Id]) {
+						t.Errorf("recurring point %d NextSpawnAt changed: before %v, after %v", sp.Id, beforeNextSpawnAt[sp.Id], sp.NextSpawnAt)
+					}
+				}
+			},
+		},
+	}
 
-		claimed2, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (second): %v", err)
-		}
-		if len(claimed2) != 10 {
-			t.Errorf("second claim len = %d, want 10", len(claimed2))
-		}
-	})
-
-	t.Run("re-arm leaves the recurring hash untouched", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		mapKey := newClaimTestMapKey(t)
-
-		mockDP := &mockSpawnDataProcessor{spawnPoints: []monster2.SpawnPoint{
-			{Id: 1, MobTime: 30, Hide: false},
-			{Id: 2, MobTime: 30, Hide: false},
-			{Id: 3, MobTime: -1, Hide: false},
-		}}
-		if err := r.InitializeForMap(ctx, mapKey, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap: %v", err)
-		}
-
-		before, ok := r.GetSpawnPointsForMap(ctx, mapKey)
-		if !ok {
-			t.Fatalf("GetSpawnPointsForMap before claim returned not-ok")
-		}
-		beforeNextSpawnAt := map[uint32]time.Time{}
-		for _, sp := range before {
-			beforeNextSpawnAt[sp.Id] = sp.NextSpawnAt
-		}
-
-		if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints: %v", err)
-		}
-		if _, err := r.RearmOneTime(ctx, mapKey); err != nil {
-			t.Fatalf("RearmOneTime: %v", err)
-		}
-
-		hlen, err := r.hashes.Len(ctx, mapKey.Tenant, mapKey)
-		if err != nil {
-			t.Fatalf("HLen recurring hash: %v", err)
-		}
-		if hlen != 2 {
-			t.Errorf("recurring hash HLEN = %d, want 2", hlen)
-		}
-
-		after, ok := r.GetSpawnPointsForMap(ctx, mapKey)
-		if !ok {
-			t.Fatalf("GetSpawnPointsForMap after re-arm returned not-ok")
-		}
-		if len(after) != 2 {
-			t.Fatalf("recurring points after re-arm = %d, want 2", len(after))
-		}
-		for _, sp := range after {
-			if !sp.NextSpawnAt.Equal(beforeNextSpawnAt[sp.Id]) {
-				t.Errorf("recurring point %d NextSpawnAt changed: before %v, after %v", sp.Id, beforeNextSpawnAt[sp.Id], sp.NextSpawnAt)
-			}
-		}
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := setupSpawnTestRedis(t)
+			r := newTestRegistry(client)
+			ctx := context.Background()
+			mapKey := newClaimTestMapKey(t)
+			tc.run(t, r, ctx, mapKey)
+		})
+	}
 }
 
 // TestRearmOneTime_ConcurrentTrueExactlyOnce pins RearmOneTime's atomicity: no
@@ -887,115 +885,83 @@ func TestRearmOneTime_ConcurrentTrueExactlyOnce(t *testing.T) {
 // is fully scoped by the field key: channel and instance are both part of the
 // key, so re-arming one field must never affect another.
 func TestRearmOneTime_IsPerFieldKey(t *testing.T) {
-	t.Run("per channel", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		te, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-		if err != nil {
-			t.Fatalf("tenant.Create: %v", err)
-		}
+	tests := []struct {
+		name   string
+		fieldA field.Model
+		fieldB field.Model
+		labelA string
+		labelB string
+	}{
+		{
+			name:   "per channel",
+			fieldA: field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(920010920)).Build(),
+			fieldB: field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(920010920)).Build(),
+			labelA: "ch0",
+			labelB: "ch1",
+		},
+		{
+			name:   "per instance",
+			fieldA: field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(920010920)).SetInstance(uuid.New()).Build(),
+			fieldB: field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(920010920)).SetInstance(uuid.New()).Build(),
+			labelA: "inst1",
+			labelB: "inst2",
+		},
+	}
 
-		var points []monster2.SpawnPoint
-		for i := uint32(1); i <= 10; i++ {
-			points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
-		}
-		mockDP := &mockSpawnDataProcessor{spawnPoints: points}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := setupSpawnTestRedis(t)
+			r := newTestRegistry(client)
+			ctx := context.Background()
+			te, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+			if err != nil {
+				t.Fatalf("tenant.Create: %v", err)
+			}
 
-		fCh0 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(920010920)).Build()
-		fCh1 := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(920010920)).Build()
-		mapKeyCh0 := character.MapKey{Tenant: te, Field: fCh0}
-		mapKeyCh1 := character.MapKey{Tenant: te, Field: fCh1}
+			var points []monster2.SpawnPoint
+			for i := uint32(1); i <= 10; i++ {
+				points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
+			}
+			mockDP := &mockSpawnDataProcessor{spawnPoints: points}
 
-		if err := r.InitializeForMap(ctx, mapKeyCh0, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap ch0: %v", err)
-		}
-		if err := r.InitializeForMap(ctx, mapKeyCh1, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap ch1: %v", err)
-		}
+			mapKeyA := character.MapKey{Tenant: te, Field: tc.fieldA}
+			mapKeyB := character.MapKey{Tenant: te, Field: tc.fieldB}
 
-		if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyCh0); err != nil {
-			t.Fatalf("claim ch0: %v", err)
-		}
-		if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyCh1); err != nil {
-			t.Fatalf("claim ch1: %v", err)
-		}
+			if err := r.InitializeForMap(ctx, mapKeyA, mockDP, logrus.New()); err != nil {
+				t.Fatalf("InitializeForMap %s: %v", tc.labelA, err)
+			}
+			if err := r.InitializeForMap(ctx, mapKeyB, mockDP, logrus.New()); err != nil {
+				t.Fatalf("InitializeForMap %s: %v", tc.labelB, err)
+			}
 
-		if _, err := r.RearmOneTime(ctx, mapKeyCh0); err != nil {
-			t.Fatalf("RearmOneTime ch0: %v", err)
-		}
+			if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyA); err != nil {
+				t.Fatalf("claim %s: %v", tc.labelA, err)
+			}
+			if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyB); err != nil {
+				t.Fatalf("claim %s: %v", tc.labelB, err)
+			}
 
-		claimedCh0, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyCh0)
-		if err != nil {
-			t.Fatalf("claim ch0 after rearm: %v", err)
-		}
-		if len(claimedCh0) != 10 {
-			t.Errorf("ch0 claim after rearm = %d, want 10", len(claimedCh0))
-		}
+			if _, err := r.RearmOneTime(ctx, mapKeyA); err != nil {
+				t.Fatalf("RearmOneTime %s: %v", tc.labelA, err)
+			}
 
-		claimedCh1, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyCh1)
-		if err != nil {
-			t.Fatalf("claim ch1 after ch0 rearm: %v", err)
-		}
-		if len(claimedCh1) != 0 {
-			t.Errorf("ch1 claim after ch0 rearm = %d, want 0", len(claimedCh1))
-		}
-	})
+			claimedA, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyA)
+			if err != nil {
+				t.Fatalf("claim %s after rearm: %v", tc.labelA, err)
+			}
+			if len(claimedA) != 10 {
+				t.Errorf("%s claim after rearm = %d, want 10", tc.labelA, len(claimedA))
+			}
 
-	t.Run("per instance", func(t *testing.T) {
-		client, _ := setupSpawnTestRedis(t)
-		r := newTestRegistry(client)
-		ctx := context.Background()
-		te, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-		if err != nil {
-			t.Fatalf("tenant.Create: %v", err)
-		}
-
-		var points []monster2.SpawnPoint
-		for i := uint32(1); i <= 10; i++ {
-			points = append(points, monster2.SpawnPoint{Id: i, Template: 9300044, MobTime: -1, Hide: false})
-		}
-		mockDP := &mockSpawnDataProcessor{spawnPoints: points}
-
-		fInst1 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(920010920)).SetInstance(uuid.New()).Build()
-		fInst2 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(920010920)).SetInstance(uuid.New()).Build()
-		mapKeyInst1 := character.MapKey{Tenant: te, Field: fInst1}
-		mapKeyInst2 := character.MapKey{Tenant: te, Field: fInst2}
-
-		if err := r.InitializeForMap(ctx, mapKeyInst1, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap inst1: %v", err)
-		}
-		if err := r.InitializeForMap(ctx, mapKeyInst2, mockDP, logrus.New()); err != nil {
-			t.Fatalf("InitializeForMap inst2: %v", err)
-		}
-
-		if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyInst1); err != nil {
-			t.Fatalf("claim inst1: %v", err)
-		}
-		if _, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyInst2); err != nil {
-			t.Fatalf("claim inst2: %v", err)
-		}
-
-		if _, err := r.RearmOneTime(ctx, mapKeyInst1); err != nil {
-			t.Fatalf("RearmOneTime inst1: %v", err)
-		}
-
-		claimedInst1, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyInst1)
-		if err != nil {
-			t.Fatalf("claim inst1 after rearm: %v", err)
-		}
-		if len(claimedInst1) != 10 {
-			t.Errorf("inst1 claim after rearm = %d, want 10", len(claimedInst1))
-		}
-
-		claimedInst2, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyInst2)
-		if err != nil {
-			t.Fatalf("claim inst2 after inst1 rearm: %v", err)
-		}
-		if len(claimedInst2) != 0 {
-			t.Errorf("inst2 claim after inst1 rearm = %d, want 0", len(claimedInst2))
-		}
-	})
+			claimedB, err := r.ClaimOneTimeSpawnPoints(ctx, mapKeyB)
+			if err != nil {
+				t.Fatalf("claim %s after %s rearm: %v", tc.labelB, tc.labelA, err)
+			}
+			if len(claimedB) != 0 {
+				t.Errorf("%s claim after %s rearm = %d, want 0", tc.labelB, tc.labelA, len(claimedB))
+			}
+		})
+	}
 }
 
 // TestFlushTenant_ReArmsDisarmedField confirms FlushTenant's namespace-wide

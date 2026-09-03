@@ -1176,125 +1176,126 @@ func newOneTimeTestFixture(t *testing.T, mapId _map.Id, spawnPoints []monster2.S
 // exactly once for a field, uncapped by the character-rate formula, and does
 // not re-fire on subsequent passes or for additional entrants.
 func TestSpawnMonsters_OneTimeBatch(t *testing.T) {
-	t.Run("solo entrant fires all ten", func(t *testing.T) {
-		registry := GetRegistry()
-		registry.Reset(context.Background())
-
-		sps := oneTimeSpawnPoints(10, 9300044)
-		processor, mockCharProc, mockMonsterProc, f, mapKey := newOneTimeTestFixture(t, _map.Id(920010920), sps)
-
-		mockCharProc.charactersInMap[mapKey] = []uint32{1001}
-		mockMonsterProc.monstersInMap[mapKey] = 0
-
-		if err := processor.SpawnMonsters(uuid.New(), f); err != nil {
-			t.Fatalf("SpawnMonsters returned error: %v", err)
+	tests := []struct {
+		name             string
+		mapId            _map.Id
+		spawnCount       int
+		wantFirstCreated int
+		checkXPositions  bool
+		// secondPass, when non-nil, runs a second SpawnMonsters call after
+		// resetting the created-monster log and applying the given
+		// character/monster-count state, then asserts wantSecondCreated.
+		secondPass *struct {
+			chars             []uint32
+			monstersInMap     int
+			sleep             time.Duration
+			wantSecondCreated int
 		}
-		time.Sleep(500 * time.Millisecond)
+	}{
+		{
+			name:             "solo entrant fires all ten",
+			mapId:            _map.Id(920010920),
+			spawnCount:       10,
+			wantFirstCreated: 10,
+			checkXPositions:  true,
+		},
+		{
+			name:             "eight-point map fires all eight",
+			mapId:            _map.Id(920010910),
+			spawnCount:       8,
+			wantFirstCreated: 8,
+		},
+		{
+			name:             "second pass fires nothing more",
+			mapId:            _map.Id(920010921),
+			spawnCount:       10,
+			wantFirstCreated: 10,
+			secondPass: &struct {
+				chars             []uint32
+				monstersInMap     int
+				sleep             time.Duration
+				wantSecondCreated int
+			}{
+				chars:             []uint32{1001},
+				monstersInMap:     10,
+				sleep:             200 * time.Millisecond,
+				wantSecondCreated: 0,
+			},
+		},
+		{
+			name:             "second character does not re-fire",
+			mapId:            _map.Id(920010922),
+			spawnCount:       10,
+			wantFirstCreated: 10,
+			secondPass: &struct {
+				chars             []uint32
+				monstersInMap     int
+				sleep             time.Duration
+				wantSecondCreated int
+			}{
+				chars:             []uint32{1001, 1002},
+				monstersInMap:     10,
+				sleep:             200 * time.Millisecond,
+				wantSecondCreated: 0,
+			},
+		},
+	}
 
-		created := mockMonsterProc.GetCreatedMonsters()
-		if len(created) != 10 {
-			t.Fatalf("expected 10 created monsters, got %d", len(created))
-		}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			registry := GetRegistry()
+			registry.Reset(context.Background())
 
-		xSet := make(map[int16]bool)
-		for _, m := range created {
-			if m.MonsterId != 9300044 {
-				t.Errorf("expected MonsterId 9300044, got %d", m.MonsterId)
+			sps := oneTimeSpawnPoints(tc.spawnCount, 9300044)
+			processor, mockCharProc, mockMonsterProc, f, mapKey := newOneTimeTestFixture(t, tc.mapId, sps)
+
+			mockCharProc.charactersInMap[mapKey] = []uint32{1001}
+			mockMonsterProc.monstersInMap[mapKey] = 0
+
+			if err := processor.SpawnMonsters(uuid.New(), f); err != nil {
+				t.Fatalf("SpawnMonsters returned error: %v", err)
 			}
-			xSet[m.X] = true
-		}
-		for i := 1; i <= 10; i++ {
-			want := int16(100 * i)
-			if !xSet[want] {
-				t.Errorf("expected a created monster at X=%d, none found", want)
+			time.Sleep(500 * time.Millisecond)
+
+			created := mockMonsterProc.GetCreatedMonsters()
+			if len(created) != tc.wantFirstCreated {
+				t.Fatalf("expected %d created monsters, got %d", tc.wantFirstCreated, len(created))
 			}
-		}
-	})
 
-	t.Run("eight-point map fires all eight", func(t *testing.T) {
-		registry := GetRegistry()
-		registry.Reset(context.Background())
+			if tc.checkXPositions {
+				xSet := make(map[int16]bool)
+				for _, m := range created {
+					if m.MonsterId != 9300044 {
+						t.Errorf("expected MonsterId 9300044, got %d", m.MonsterId)
+					}
+					xSet[m.X] = true
+				}
+				for i := 1; i <= tc.spawnCount; i++ {
+					want := int16(100 * i)
+					if !xSet[want] {
+						t.Errorf("expected a created monster at X=%d, none found", want)
+					}
+				}
+			}
 
-		sps := oneTimeSpawnPoints(8, 9300044)
-		processor, mockCharProc, mockMonsterProc, f, mapKey := newOneTimeTestFixture(t, _map.Id(920010910), sps)
+			if tc.secondPass == nil {
+				return
+			}
 
-		mockCharProc.charactersInMap[mapKey] = []uint32{1001}
-		mockMonsterProc.monstersInMap[mapKey] = 0
+			mockMonsterProc.Reset()
+			mockCharProc.charactersInMap[mapKey] = tc.secondPass.chars
+			mockMonsterProc.monstersInMap[mapKey] = tc.secondPass.monstersInMap
 
-		if err := processor.SpawnMonsters(uuid.New(), f); err != nil {
-			t.Fatalf("SpawnMonsters returned error: %v", err)
-		}
-		time.Sleep(500 * time.Millisecond)
+			if err := processor.SpawnMonsters(uuid.New(), f); err != nil {
+				t.Fatalf("SpawnMonsters returned error: %v", err)
+			}
+			time.Sleep(tc.secondPass.sleep)
 
-		if created := len(mockMonsterProc.GetCreatedMonsters()); created != 8 {
-			t.Errorf("expected 8 created monsters, got %d", created)
-		}
-	})
-
-	t.Run("second pass fires nothing more", func(t *testing.T) {
-		registry := GetRegistry()
-		registry.Reset(context.Background())
-
-		sps := oneTimeSpawnPoints(10, 9300044)
-		processor, mockCharProc, mockMonsterProc, f, mapKey := newOneTimeTestFixture(t, _map.Id(920010921), sps)
-
-		mockCharProc.charactersInMap[mapKey] = []uint32{1001}
-		mockMonsterProc.monstersInMap[mapKey] = 0
-
-		if err := processor.SpawnMonsters(uuid.New(), f); err != nil {
-			t.Fatalf("SpawnMonsters returned error: %v", err)
-		}
-		time.Sleep(500 * time.Millisecond)
-
-		if created := len(mockMonsterProc.GetCreatedMonsters()); created != 10 {
-			t.Fatalf("expected 10 created monsters on first pass, got %d", created)
-		}
-
-		mockMonsterProc.Reset()
-		mockMonsterProc.monstersInMap[mapKey] = 10
-
-		if err := processor.SpawnMonsters(uuid.New(), f); err != nil {
-			t.Fatalf("SpawnMonsters returned error: %v", err)
-		}
-		time.Sleep(200 * time.Millisecond)
-
-		if created := len(mockMonsterProc.GetCreatedMonsters()); created != 0 {
-			t.Errorf("expected 0 created monsters on second pass, got %d", created)
-		}
-	})
-
-	t.Run("second character does not re-fire", func(t *testing.T) {
-		registry := GetRegistry()
-		registry.Reset(context.Background())
-
-		sps := oneTimeSpawnPoints(10, 9300044)
-		processor, mockCharProc, mockMonsterProc, f, mapKey := newOneTimeTestFixture(t, _map.Id(920010922), sps)
-
-		mockCharProc.charactersInMap[mapKey] = []uint32{1001}
-		mockMonsterProc.monstersInMap[mapKey] = 0
-
-		if err := processor.SpawnMonsters(uuid.New(), f); err != nil {
-			t.Fatalf("SpawnMonsters returned error: %v", err)
-		}
-		time.Sleep(500 * time.Millisecond)
-
-		if created := len(mockMonsterProc.GetCreatedMonsters()); created != 10 {
-			t.Fatalf("expected 10 created monsters on first pass, got %d", created)
-		}
-
-		mockMonsterProc.Reset()
-		mockCharProc.charactersInMap[mapKey] = []uint32{1001, 1002}
-		mockMonsterProc.monstersInMap[mapKey] = 10
-
-		if err := processor.SpawnMonsters(uuid.New(), f); err != nil {
-			t.Fatalf("SpawnMonsters returned error: %v", err)
-		}
-		time.Sleep(200 * time.Millisecond)
-
-		if created := len(mockMonsterProc.GetCreatedMonsters()); created != 0 {
-			t.Errorf("expected 0 created monsters when a second character enters, got %d", created)
-		}
-	})
+			if created := len(mockMonsterProc.GetCreatedMonsters()); created != tc.secondPass.wantSecondCreated {
+				t.Errorf("expected %d created monsters on second pass, got %d", tc.secondPass.wantSecondCreated, created)
+			}
+		})
+	}
 }
 
 // TestSpawnMonsters_OneTimeIgnoresCharacterCount asserts FR-2.2: the one-time

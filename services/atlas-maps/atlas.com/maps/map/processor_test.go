@@ -850,142 +850,116 @@ func TestProcessorImpl_Exit_RearmsAndDestroysOnEmpty(t *testing.T) {
 	transactionId := uuid.New()
 	characterId := uint32(12345)
 
-	t.Run("last character leaves a fired field", func(t *testing.T) {
-		logger, _ := test.NewNullLogger()
-		ctx := createTestContext()
-		f := field.NewBuilder(worldId, channelId, mapId).Build()
-		mapKey := seedSpawnPoints(t, ctx, f, oneTimeSpawnPoints(10))
-		if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (seed fire): %v", err)
-		}
+	tests := []struct {
+		name string
+		// seed builds the field's spawn points and, for the fired cases,
+		// claims the one-time batch before Exit runs. seededOneTime tracks
+		// whether the field was one-time-seeded, for the post-Exit re-arm
+		// check.
+		seed             func(t *testing.T, ctx context.Context, f field.Model) character.MapKey
+		seededOneTime    bool
+		remainingChars   []uint32
+		wantDestroyMsgs  int
+		wantClaimedAfter int
+	}{
+		{
+			name: "last character leaves a fired field",
+			seed: func(t *testing.T, ctx context.Context, f field.Model) character.MapKey {
+				mapKey := seedSpawnPoints(t, ctx, f, oneTimeSpawnPoints(10))
+				if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
+					t.Fatalf("ClaimOneTimeSpawnPoints (seed fire): %v", err)
+				}
+				return mapKey
+			},
+			seededOneTime:    true,
+			remainingChars:   nil,
+			wantDestroyMsgs:  1,
+			wantClaimedAfter: 10,
+		},
+		{
+			name: "characters remain",
+			seed: func(t *testing.T, ctx context.Context, f field.Model) character.MapKey {
+				mapKey := seedSpawnPoints(t, ctx, f, oneTimeSpawnPoints(10))
+				if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
+					t.Fatalf("ClaimOneTimeSpawnPoints (seed fire): %v", err)
+				}
+				return mapKey
+			},
+			seededOneTime:    true,
+			remainingChars:   []uint32{2222},
+			wantDestroyMsgs:  0,
+			wantClaimedAfter: 0,
+		},
+		{
+			name: "never-fired field empties",
+			seed: func(t *testing.T, ctx context.Context, f field.Model) character.MapKey {
+				return seedSpawnPoints(t, ctx, f, recurringSpawnPoints(4))
+			},
+			remainingChars:  nil,
+			wantDestroyMsgs: 0,
+		},
+		{
+			name: "unseeded field empties",
+			seed: func(t *testing.T, ctx context.Context, f field.Model) character.MapKey {
+				return character.MapKey{}
+			},
+			remainingChars:  nil,
+			wantDestroyMsgs: 0,
+		},
+	}
 
-		mockCp := &mockCharacterProcessor{
-			getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return nil, nil },
-		}
-		mockPp := newMockProducerProvider()
-		p := createTestProcessor(logger, ctx, mockCp, mockPp)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			ctx := createTestContext()
+			f := field.NewBuilder(worldId, channelId, mapId).Build()
+			mapKey := tc.seed(t, ctx, f)
 
-		buf := message.NewBuffer()
-		if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
-			t.Fatalf("Exit returned error: %v", err)
-		}
+			remainingChars := tc.remainingChars
+			mockCp := &mockCharacterProcessor{
+				getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return remainingChars, nil },
+			}
+			mockPp := newMockProducerProvider()
+			p := createTestProcessor(logger, ctx, mockCp, mockPp)
 
-		messages := buf.GetAll()
-		if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
-			t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
-		}
-		destroyMsgs := messages[monsterKafka.EnvCommandTopic]
-		if len(destroyMsgs) != 1 {
-			t.Fatalf("Expected 1 DESTROY_FIELD message, got %d", len(destroyMsgs))
-		}
+			buf := message.NewBuffer()
+			if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
+				t.Fatalf("Exit returned error: %v", err)
+			}
 
-		var cmd monsterKafka.FieldCommand[monsterKafka.DestroyFieldBody]
-		if err := json.Unmarshal(destroyMsgs[0].Value, &cmd); err != nil {
-			t.Fatalf("Failed to unmarshal destroy message: %v", err)
-		}
-		if cmd.Type != monsterKafka.CommandTypeDestroyField {
-			t.Errorf("Expected type %q, got %q", monsterKafka.CommandTypeDestroyField, cmd.Type)
-		}
-		if cmd.MapId != f.MapId() {
-			t.Errorf("Expected mapId %v, got %v", f.MapId(), cmd.MapId)
-		}
+			messages := buf.GetAll()
+			if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
+				t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
+			}
+			destroyMsgs := messages[monsterKafka.EnvCommandTopic]
+			if len(destroyMsgs) != tc.wantDestroyMsgs {
+				t.Fatalf("Expected %d DESTROY_FIELD message(s), got %d", tc.wantDestroyMsgs, len(destroyMsgs))
+			}
 
-		claimed, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("post-Exit ClaimOneTimeSpawnPoints: %v", err)
-		}
-		if len(claimed) != 10 {
-			t.Errorf("Expected re-armed field to yield 10 claimed points, got %d", len(claimed))
-		}
-	})
+			if tc.wantDestroyMsgs > 0 {
+				var cmd monsterKafka.FieldCommand[monsterKafka.DestroyFieldBody]
+				if err := json.Unmarshal(destroyMsgs[0].Value, &cmd); err != nil {
+					t.Fatalf("Failed to unmarshal destroy message: %v", err)
+				}
+				if cmd.Type != monsterKafka.CommandTypeDestroyField {
+					t.Errorf("Expected type %q, got %q", monsterKafka.CommandTypeDestroyField, cmd.Type)
+				}
+				if cmd.MapId != f.MapId() {
+					t.Errorf("Expected mapId %v, got %v", f.MapId(), cmd.MapId)
+				}
+			}
 
-	t.Run("characters remain", func(t *testing.T) {
-		logger, _ := test.NewNullLogger()
-		ctx := createTestContext()
-		f := field.NewBuilder(worldId, channelId, mapId).Build()
-		mapKey := seedSpawnPoints(t, ctx, f, oneTimeSpawnPoints(10))
-		if _, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey); err != nil {
-			t.Fatalf("ClaimOneTimeSpawnPoints (seed fire): %v", err)
-		}
-
-		mockCp := &mockCharacterProcessor{
-			getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return []uint32{2222}, nil },
-		}
-		mockPp := newMockProducerProvider()
-		p := createTestProcessor(logger, ctx, mockCp, mockPp)
-
-		buf := message.NewBuffer()
-		if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
-			t.Fatalf("Exit returned error: %v", err)
-		}
-
-		messages := buf.GetAll()
-		if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
-			t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
-		}
-		if len(messages[monsterKafka.EnvCommandTopic]) != 0 {
-			t.Fatalf("Expected 0 DESTROY_FIELD messages, got %d", len(messages[monsterKafka.EnvCommandTopic]))
-		}
-
-		claimed, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey)
-		if err != nil {
-			t.Fatalf("post-Exit ClaimOneTimeSpawnPoints: %v", err)
-		}
-		if len(claimed) != 0 {
-			t.Errorf("Expected still-disarmed field to yield 0 claimed points, got %d", len(claimed))
-		}
-	})
-
-	t.Run("never-fired field empties", func(t *testing.T) {
-		logger, _ := test.NewNullLogger()
-		ctx := createTestContext()
-		f := field.NewBuilder(worldId, channelId, mapId).Build()
-		seedSpawnPoints(t, ctx, f, recurringSpawnPoints(4))
-
-		mockCp := &mockCharacterProcessor{
-			getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return nil, nil },
-		}
-		mockPp := newMockProducerProvider()
-		p := createTestProcessor(logger, ctx, mockCp, mockPp)
-
-		buf := message.NewBuffer()
-		if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
-			t.Fatalf("Exit returned error: %v", err)
-		}
-
-		messages := buf.GetAll()
-		if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
-			t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
-		}
-		if len(messages[monsterKafka.EnvCommandTopic]) != 0 {
-			t.Fatalf("Expected 0 DESTROY_FIELD messages, got %d", len(messages[monsterKafka.EnvCommandTopic]))
-		}
-	})
-
-	t.Run("unseeded field empties", func(t *testing.T) {
-		logger, _ := test.NewNullLogger()
-		ctx := createTestContext()
-		f := field.NewBuilder(worldId, channelId, mapId).Build()
-
-		mockCp := &mockCharacterProcessor{
-			getCharactersInMapFunc: func(uuid.UUID, field.Model) ([]uint32, error) { return nil, nil },
-		}
-		mockPp := newMockProducerProvider()
-		p := createTestProcessor(logger, ctx, mockCp, mockPp)
-
-		buf := message.NewBuffer()
-		if err := p.Exit(buf)(transactionId, f, characterId); err != nil {
-			t.Fatalf("Exit returned error: %v", err)
-		}
-
-		messages := buf.GetAll()
-		if len(messages[mapKafka.EnvEventTopicMapStatus]) != 1 {
-			t.Fatalf("Expected 1 CHARACTER_EXIT message, got %d", len(messages[mapKafka.EnvEventTopicMapStatus]))
-		}
-		if len(messages[monsterKafka.EnvCommandTopic]) != 0 {
-			t.Fatalf("Expected 0 DESTROY_FIELD messages, got %d", len(messages[monsterKafka.EnvCommandTopic]))
-		}
-	})
+			if tc.seededOneTime {
+				claimed, err := monster2.GetRegistry().ClaimOneTimeSpawnPoints(ctx, mapKey)
+				if err != nil {
+					t.Fatalf("post-Exit ClaimOneTimeSpawnPoints: %v", err)
+				}
+				if len(claimed) != tc.wantClaimedAfter {
+					t.Errorf("Expected post-Exit claim to yield %d claimed points, got %d", tc.wantClaimedAfter, len(claimed))
+				}
+			}
+		})
+	}
 }
 
 // TestProcessorImpl_Exit_RearmIsPerFieldKey is the FR-3.4 regression: re-arming

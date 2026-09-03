@@ -1289,22 +1289,24 @@ func handleStatusEventEnvironmentReset(sc server.Model, wp writer.Producer) func
 			if _, werr := wp(fieldcb.FieldObstacleAllResetWriter); werr == nil {
 				_ = doorAnnounce(l, ctx, wp, fieldcb.FieldObstacleAllResetWriter, writer.FieldObstacleAllResetBody(), s)
 			}
-			// Restore every tracked object to the state the event carries:
-			// this is the only thing that restores non-obstacle named objects
-			// -- see design.md section 1.2. An obstacle is restored by
-			// FieldObstacleAllReset, whose semantics are "all off", so it is
-			// zeroed regardless of what the event carries.
+			// Obstacles are restored twice: FieldObstacleAllReset above, and an
+			// explicit SetObjectState(name, 0) here for clients that route no
+			// obstacle-all-reset writer. Non-obstacle (named) objects announce
+			// nothing: no state hides a named object client-side (every state
+			// layer is created at alpha 0, and SetObjectState(name, -1)
+			// re-shows the current state rather than clearing it), so clearing
+			// tracking is already the correct reset -- see the "Fix" section of
+			// docs/tasks/task-278-map-environment-object-state/diagnosis-l2-is-not-a-state.md.
 			for _, o := range e.Body.Cleared {
 				kind, kerr := field.ParseObjectKind(o.Kind)
 				if kerr != nil {
 					l.WithError(kerr).Errorf("Skipping cleared object [%s] in map [%d] instance [%s].", o.Name, e.MapId, e.Instance)
 					continue
 				}
-				state := o.State
-				if kind == field.ObjectKindObstacle {
-					state = 0
+				if kind != field.ObjectKindObstacle {
+					continue
 				}
-				_ = announceObjectState(l, ctx, wp, kind, o.Name, state, s)
+				_ = announceObjectState(l, ctx, wp, kind, o.Name, 0, s)
 			}
 			return nil
 		})

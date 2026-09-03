@@ -1,5 +1,35 @@
 # task-278 — progress / handoff
 
+## 2026-09-03 — `l2`-as-default-state reverted
+
+Live testing on pr-1566 (see `diagnosis-l2-is-not-a-state.md`) disproved the
+premise behind `da20524d3` + `b3706768d`: a map `obj` entry's `l2` property is
+the WZ resource path's graphic component, not a declared default state, and
+`CMapLoadable::SetObjectState`'s bounds check makes any state above a named
+object's own state count a silent client no-op regardless. The live gate
+(`l2=1`, only state 0 declared) stayed visible whether the reset restored
+`state 0`, `state 1` (the `l2` value), or `state 2` — proving the reset handler
+was never the defect; the value and the concept behind it were.
+
+**Decision (user-approved):** a reset announces nothing for named
+(non-obstacle) objects; obstacles keep their existing `SetObjectState(name, 0)`
+fallback behind `FieldObstacleAllReset`. The `l2`-as-default-state plumbing —
+`atlas-data`'s `getObjects`/`objectState` and the `/data/maps/{mapId}/objects`
+endpoint, `EnvironmentObject.State` on the wire, `ObjectEntry.DefaultState` and
+`Registry.DefaultState` in atlas-maps, and the `defaultStateOf` resolution in
+`environment/processor.go` — was deleted end to end. This reverts `da20524d3`
+in full, plus the parts of `6c9acd433`/`5efddd01b`/`0054591a5` that touched the
+same surface. Not reverted: `e050686d4` (the ingress route fix), the
+`ENVIRONMENT_STATE_CHANGED` path, reset-on-empty, and replay-on-enter — all
+independently verified and unaffected.
+
+This supersedes "Remaining work" item 3 below (live re-test of the `l2`-based
+reset): that test is no longer meaningful, since the behaviour it exercised no
+longer exists. The new contract — a cleared ENVIRONMENT object announces
+nothing, a cleared OBSTACLE still gets `SetObjectState(name, 0)` — was
+live-verified directly (see the table in the diagnosis) rather than needing a
+follow-up round.
+
 ## Where things stand
 
 The feature is implemented and was verified end-to-end against a live client on
@@ -87,6 +117,16 @@ Do not "fix" this in a later pass without revisiting that ruling.
    predates `da20524d3`/`b3706768d`. Procedure: set `gate` to a non-default state,
    confirm visually, `DELETE`, confirm the gate returns to the map's initial
    appearance instead of staying set.
+
+## `autoActive` follow-up (documented, not built)
+
+An object whose `Obj` node carries `autoActive` *is* visible at load, and its
+correct reset would be `SetObjectState(name, 0)`. Reading that flag means
+resolving into the `Obj` resource tree (`Obj/<file>.img/<l0>/<l1>/<l2>`), not
+the map's `obj` entry — a different, heavier lookup than the one this task
+reverted. No object currently in play needs it, so it is not built; a future
+task that hits an `autoActive` object in practice should implement this then,
+grounded in the real object.
 
 ## Unrelated latent hazard
 

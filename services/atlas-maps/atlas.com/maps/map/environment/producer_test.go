@@ -47,7 +47,7 @@ func TestEnvironmentResetEventProvider(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910010000)).SetInstance(uuid.Nil).Build()
 	cleared := []ObjectEntry{
 		{Kind: field.ObjectKindObstacle, Name: "a", State: 1},
-		{Kind: field.ObjectKindEnvironment, Name: "b", State: 2, DefaultState: 1},
+		{Kind: field.ObjectKindEnvironment, Name: "b", State: 2},
 	}
 
 	msgs, err := EnvironmentResetEventProvider(transactionId, f, cleared)()
@@ -59,10 +59,8 @@ func TestEnvironmentResetEventProvider(t *testing.T) {
 
 	assert.Equal(t, mapKafka.EventTopicMapStatusTypeEnvironmentReset, e.Type)
 	require.Len(t, e.Body.Cleared, 2)
-	// The event carries each object's DECLARED DEFAULT, not the state it was
-	// cleared from: that is the value the channel restores.
-	assert.Equal(t, mapKafka.EnvironmentObject{Kind: "OBSTACLE", Name: "a", State: 0}, e.Body.Cleared[0])
-	assert.Equal(t, mapKafka.EnvironmentObject{Kind: "ENVIRONMENT", Name: "b", State: 1}, e.Body.Cleared[1])
+	assert.Equal(t, mapKafka.EnvironmentObject{Kind: "OBSTACLE", Name: "a"}, e.Body.Cleared[0])
+	assert.Equal(t, mapKafka.EnvironmentObject{Kind: "ENVIRONMENT", Name: "b"}, e.Body.Cleared[1])
 }
 
 func TestEnvironmentResetEventProvider_EmptyCleared(t *testing.T) {

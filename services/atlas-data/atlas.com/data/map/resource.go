@@ -3,7 +3,6 @@ package _map
 import (
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
-	"atlas-data/map/object"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	monstertpl "atlas-data/monster"
@@ -37,7 +36,6 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 			r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals", handleGetMapPortalsRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/portals/{portalId}", registerGet("get_map_portal", handleGetMapPortalRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/reactors", registerGet("get_map_reactors", handleGetMapReactorsRequest(db))).Methods(http.MethodGet)
-			r.HandleFunc("/{mapId}/objects", registerGet("get_map_objects", handleGetMapObjectsRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs_by_object_id", handleGetMapNPCsByObjectIdRequest(db))).Queries("objectId", "{objectId}").Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs", handleGetMapNPCsRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/npcs/{npcId}", registerGet("get_map_npc", handleGetMapNPCRequest(db))).Methods(http.MethodGet)
@@ -255,33 +253,6 @@ func handleGetMapReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				paged := paginate.Slice(res, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalPaginatedResponse[[]reactor.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
-			}
-		})
-	}
-}
-
-func handleGetMapObjectsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				query := r.URL.Query()
-				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
-				if err != nil {
-					server.WriteBadRequest(d.Logger(), w, err.Error())
-					return
-				}
-
-				s := NewStorage(d.Logger(), db)
-				res, err := NewProcessor(d.Logger(), d.Context(), db).GetObjects(s, mapId)
-				if err != nil {
-					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
-					w.WriteHeader(http.StatusNotFound)
-					return
-				}
-
-				paged := paginate.Slice(res, page)
-				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalPaginatedResponse[[]object.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

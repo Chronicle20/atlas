@@ -3,7 +3,6 @@ package _map
 import (
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
-	"atlas-data/map/object"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	monstertpl "atlas-data/monster"
@@ -33,7 +32,6 @@ type Processor interface {
 	GetPortalsByName(s *Storage, mapId _map.Id, name string) ([]portal.RestModel, error)
 	GetPortalById(s *Storage, mapId _map.Id, portalId uint32) (portal.RestModel, error)
 	GetReactors(s *Storage, mapId _map.Id) ([]reactor.RestModel, error)
-	GetObjects(s *Storage, mapId _map.Id) ([]object.RestModel, error)
 	GetNpcs(s *Storage, mapId _map.Id) ([]npc.RestModel, error)
 	GetNpcsByObjectId(s *Storage, mapId _map.Id, objectId uint32) ([]npc.RestModel, error)
 	GetNpc(s *Storage, mapId _map.Id, npcId uint32) (npc.RestModel, error)
@@ -301,18 +299,6 @@ func (p *ProcessorImpl) reactorProvider(s *Storage, mapId _map.Id) model.Provide
 
 func (p *ProcessorImpl) GetReactors(s *Storage, mapId _map.Id) ([]reactor.RestModel, error) {
 	return p.reactorProvider(s, mapId)()
-}
-
-func (p *ProcessorImpl) objectProvider(s *Storage, mapId _map.Id) model.Provider[[]object.RestModel] {
-	m, err := s.ByIdProvider(p.ctx)(strconv.Itoa(int(mapId)))()
-	if err != nil {
-		return model.ErrorProvider[[]object.RestModel](err)
-	}
-	return model.FixedProvider(m.Objects)
-}
-
-func (p *ProcessorImpl) GetObjects(s *Storage, mapId _map.Id) ([]object.RestModel, error) {
-	return p.objectProvider(s, mapId)()
 }
 
 func (p *ProcessorImpl) npcProvider(s *Storage, mapId _map.Id) model.Provider[[]npc.RestModel] {

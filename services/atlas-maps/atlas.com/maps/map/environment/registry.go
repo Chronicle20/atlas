@@ -13,15 +13,13 @@ type FieldKey struct {
 	Field  field.Model
 }
 
-// ObjectEntry tracks an object's current State and the DefaultState the map
-// declares for it. atlas-maps only learns an object exists once something sets
-// it, so it never observes the pre-change value -- DefaultState is resolved
-// from atlas-data on first track and is what a reset restores.
+// ObjectEntry tracks an object's current State. atlas-maps only learns an
+// object exists once something sets it, so it never observes the pre-change
+// value.
 type ObjectEntry struct {
-	Kind         field.ObjectKind
-	Name         string
-	State        uint32
-	DefaultState uint32
+	Kind  field.ObjectKind
+	Name  string
+	State uint32
 }
 
 type Registry struct {
@@ -57,19 +55,6 @@ func (r *Registry) Set(key FieldKey, entry ObjectEntry) {
 		}
 	}
 	r.entries[key] = append(existing, entry)
-}
-
-// DefaultState returns the declared default already retained for a tracked
-// object, so a re-set does not re-resolve it from atlas-data.
-func (r *Registry) DefaultState(key FieldKey, kind field.ObjectKind, name string) (uint32, bool) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	for _, e := range r.entries[key] {
-		if e.Kind == kind && e.Name == name {
-			return e.DefaultState, true
-		}
-	}
-	return 0, false
 }
 
 // Get returns a copy of the field's entries. ObjectEntry is a value type with

@@ -106,11 +106,19 @@ But the same decompilation shows a second thing the PRD did not anticipate:
 is **not** restored by `FieldObstacleAllReset`. Reset therefore cannot be a single
 payload-free packet.
 
-**Reset design (§4.5):** send `FieldObstacleAllReset` when the tenant routes it, *and*
-send `SetObjectState(name, 0)` for every entry this server tracked. The two overlap
-harmlessly on obstacles (setting an already-0 object to 0 re-runs the animation path but
-changes no state), and the explicit sweep is the only thing that restores tracked
-environment objects.
+**Reset design (§4.5), corrected by task-278's diagnosis
+(`diagnosis-l2-is-not-a-state.md`):** send `FieldObstacleAllReset` when the tenant routes
+it, plus an explicit `SetObjectState(name, 0)` per tracked **obstacle** as a fallback for
+templates that route no `FieldObstacleAllReset` writer at all. The claim this paragraph
+originally made — that a non-obstacle named object must also be swept with an explicit
+`SetObjectState` restore — is **false**. `CMapLoadable::SetObjectState`'s bounds check
+(`if (stateCount <= state) return 0;`) makes any state above a named object's declared
+state count a silent no-op, and every named object's load-time state is already hidden
+(all state layers are created at alpha 0); no packet returns a named object to hidden.
+Restoring a non-obstacle object's "declared default" is therefore not expressible through
+`SetObjectState` and is not attempted: a reset clears the object from tracking and
+announces nothing for it. See the diagnosis's "Fix" section for the full rationale and the
+live client evidence.
 
 ### 1.3 FR-15 is wrong — the real constraint is writer routing, not a version gate
 

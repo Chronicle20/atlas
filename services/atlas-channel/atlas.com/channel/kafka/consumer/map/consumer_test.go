@@ -982,7 +982,9 @@ func TestHandleStatusEventEnvironmentReset_AllResetRouted(t *testing.T) {
 	}
 	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
 
-	want := []string{fieldcb.FieldObstacleAllResetWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.SetObjectStateWriter}
+	// "b" is ENVIRONMENT and announces nothing: no state hides a named object
+	// client-side, so clearing tracking is already the correct reset.
+	want := []string{fieldcb.FieldObstacleAllResetWriter, fieldcb.FieldObstacleOnOffWriter}
 	if len(*captured) != len(want) {
 		t.Fatalf("captured writer names = %v, want %v", *captured, want)
 	}
@@ -1020,7 +1022,8 @@ func TestHandleStatusEventEnvironmentReset_AllResetUnrouted(t *testing.T) {
 	}
 	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
 
-	want := []string{fieldcb.SetObjectStateWriter, fieldcb.SetObjectStateWriter}
+	// "b" is ENVIRONMENT and announces nothing regardless of routing.
+	want := []string{fieldcb.SetObjectStateWriter}
 	if len(*captured) != len(want) {
 		t.Fatalf("captured writer names = %v, want %v", *captured, want)
 	}
@@ -1224,13 +1227,13 @@ func stubDoorAnnounceForObjectState(t *testing.T) (restore func(), captured *[]o
 	return func() { doorAnnounce = orig }, &seen
 }
 
-// TestHandleStatusEventEnvironmentReset_RestoresCarriedDefaultState pins the
-// NEW cross-service contract: EnvironmentReset.Cleared[] carries each object's
-// declared default state and a non-obstacle object is restored to it, not to
-// a hardcoded 0 -- the Kerning PQ `gate` (declared default 1) must not stay in
-// its cleared appearance. An obstacle is still zeroed, because
-// FieldObstacleAllReset means "all off".
-func TestHandleStatusEventEnvironmentReset_RestoresCarriedDefaultState(t *testing.T) {
+// TestHandleStatusEventEnvironmentReset_ObstacleOnlyRestore pins the
+// contract established by the "Fix" section of
+// docs/tasks/task-278-map-environment-object-state/diagnosis-l2-is-not-a-state.md:
+// a reset announces nothing for a cleared named (non-obstacle) object -- no
+// state hides it client-side, so clearing tracking is already the correct
+// reset -- while an obstacle still gets its explicit SetObjectState(name, 0).
+func TestHandleStatusEventEnvironmentReset_ObstacleOnlyRestore(t *testing.T) {
 	l := logrus.New()
 	ctx := newTestCtx(t)
 	ten := tenant.MustFromContext(ctx)
@@ -1253,14 +1256,13 @@ func TestHandleStatusEventEnvironmentReset_RestoresCarriedDefaultState(t *testin
 		MapId:     _map.Id(100000000),
 		Instance:  uuid.Nil,
 		Body: _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{
-			{Kind: "ENVIRONMENT", Name: "gate", State: 1},
-			{Kind: "OBSTACLE", Name: "obs3", State: 7},
+			{Kind: "ENVIRONMENT", Name: "gate"},
+			{Kind: "OBSTACLE", Name: "obs3"},
 		}},
 	}
 	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
 
 	want := []objectStateAnnounce{
-		{Writer: fieldcb.SetObjectStateWriter, Name: "gate", State: 1},
 		{Writer: fieldcb.SetObjectStateWriter, Name: "obs3", State: 0},
 	}
 	if len(*captured) != len(want) {

@@ -48,6 +48,7 @@ const (
 	MapCapacityCondition            ConditionType = ConditionType(sharedsaga.MapCapacityCondition)
 	InventorySpaceCondition         ConditionType = ConditionType(sharedsaga.InventorySpaceCondition)
 	TransportAvailableCondition     ConditionType = ConditionType(sharedsaga.TransportAvailableCondition)
+	TransportInTransitCondition     ConditionType = ConditionType(sharedsaga.TransportInTransitCondition)
 	SkillLevelCondition             ConditionType = ConditionType(sharedsaga.SkillLevelCondition)
 	HpCondition                     ConditionType = ConditionType(sharedsaga.HpCondition)
 	MaxHpCondition                  ConditionType = ConditionType(sharedsaga.MaxHpCondition)
@@ -538,6 +539,24 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 				return "available"
 			}
 			return "not available"
+		}(), state)
+
+	case TransportInTransitCondition:
+		// Get transport state for the specified start map
+		state := ctx.GetTransportState(_map.Id(c.referenceId))
+
+		// Map state to numeric value (in_transit=1, other=0)
+		if state == "in_transit" {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+
+		description = fmt.Sprintf("Transport for map %d is %s (state: %s)", c.referenceId, func() string {
+			if actualValue == 1 {
+				return "in transit"
+			}
+			return "not in transit"
 		}(), state)
 
 	case CanSpawnPlayerNpcCondition:

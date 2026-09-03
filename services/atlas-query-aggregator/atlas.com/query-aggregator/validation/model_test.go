@@ -12,6 +12,7 @@ import (
 	"atlas-query-aggregator/monsterbook"
 	"atlas-query-aggregator/playernpc"
 	"atlas-query-aggregator/quest"
+	"atlas-query-aggregator/transport"
 	"context"
 	"errors"
 	"fmt"
@@ -101,6 +102,26 @@ func (f *fakePlayerNpcProcessor) GetEligibility(characterId uint32, mapId _map.I
 		return playernpc.EligibilityModel{}, f.err
 	}
 	return playernpc.NewEligibilityModel(f.eligible, f.reason), nil
+}
+
+// fakeTransportProcessor satisfies the transport.Processor interface for
+// tests. Tests set state to simulate the route state atlas-transports would
+// report for the given start map.
+type fakeTransportProcessor struct {
+	state string
+	err   error
+}
+
+func (f *fakeTransportProcessor) GetRouteByStartMap(mapId _map.Id) (transport.Model, error) {
+	if f.err != nil {
+		return transport.Model{}, f.err
+	}
+	return transport.Extract(transport.RestModel{
+		Id:         "00000000-0000-0000-0000-000000000001",
+		Name:       "test-route",
+		State:      f.state,
+		StartMapId: mapId,
+	})
 }
 
 func TestCondition_Evaluate(t *testing.T) {
@@ -2382,4 +2403,118 @@ func TestCanSpawnPlayerNpcCondition(t *testing.T) {
 			t.Errorf("err = %q, want the referenceId-required message", err.Error())
 		}
 	})
+}
+
+// TestTransportInTransitCondition exercises the transportInTransit condition
+// (G1b) against all five route states. It is true only for in_transit — the
+// takeoff..arrived window — and deliberately not the negation of
+// transportAvailable, which is also false for out_of_service and
+// awaiting_return (task-290 design F2).
+func TestTransportInTransitCondition(t *testing.T) {
+	char, err := character.NewBuilder().SetId(123).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
+
+	states := []struct {
+		name  string
+		state string
+	}{
+		{"out_of_service", "out_of_service"},
+		{"awaiting_return", "awaiting_return"},
+		{"open_entry", "open_entry"},
+		{"locked_entry", "locked_entry"},
+		{"in_transit", "in_transit"},
+		{"unknown", "unknown"},
+	}
+
+	t.Run("value=1 (in transit)", func(t *testing.T) {
+		expectPassed := map[string]bool{
+			"out_of_service":  false,
+			"awaiting_return": false,
+			"open_entry":      false,
+			"locked_entry":    false,
+			"in_transit":      true,
+			"unknown":         false,
+		}
+
+		for _, tc := range states {
+			t.Run(tc.name, func(t *testing.T) {
+				ctx := ValidationContext{
+					character:  char,
+					transportP: &fakeTransportProcessor{state: tc.state},
+				}
+
+				cond := Condition{
+					conditionType: TransportInTransitCondition,
+					operator:      Equals,
+					value:         1,
+					referenceId:   200090000,
+				}
+
+				result := cond.EvaluateWithContext(ctx)
+				if result.Passed != expectPassed[tc.name] {
+					t.Errorf("state %q: Passed = %v, want %v (%s)", tc.state, result.Passed, expectPassed[tc.name], result.Description)
+				}
+			})
+		}
+	})
+
+	t.Run("value=0 (not in transit, i.e. Cosmic's docked==false predicate)", func(t *testing.T) {
+		expectPassed := map[string]bool{
+			"out_of_service":  true,
+			"awaiting_return": true,
+			"open_entry":      true,
+			"locked_entry":    true,
+			"in_transit":      false,
+			"unknown":         true,
+		}
+
+		for _, tc := range states {
+			t.Run(tc.name, func(t *testing.T) {
+				ctx := ValidationContext{
+					character:  char,
+					transportP: &fakeTransportProcessor{state: tc.state},
+				}
+
+				cond := Condition{
+					conditionType: TransportInTransitCondition,
+					operator:      Equals,
+					value:         0,
+					referenceId:   200090000,
+				}
+
+				result := cond.EvaluateWithContext(ctx)
+				if result.Passed != expectPassed[tc.name] {
+					t.Errorf("state %q: Passed = %v, want %v (%s)", tc.state, result.Passed, expectPassed[tc.name], result.Description)
+				}
+			})
+		}
+	})
+}
+
+// TestTransportInTransitRequiresReferenceId ensures the builder rejects a
+// transportInTransit condition with no referenceId, mirroring
+// transportAvailable's validation.
+func TestTransportInTransitRequiresReferenceId(t *testing.T) {
+	_, err := NewConditionBuilder().FromInput(ConditionInput{
+		Type:     string(TransportInTransitCondition),
+		Operator: "=",
+		Value:    1,
+	}).Build()
+	if err == nil {
+		t.Fatal("expected an error when referenceId is missing")
+	}
+	if err.Error() != "referenceId is required for transportInTransit conditions" {
+		t.Errorf("err = %q, want the referenceId-required message", err.Error())
+	}
+}
+
+// TestTransportInTransitAcceptedBySetType catches the builder.go:210
+// accepted-type omission design §3.6 warns about.
+func TestTransportInTransitAcceptedBySetType(t *testing.T) {
+	b := NewConditionBuilder().SetType("transportInTransit")
+	if err := b.err; err != nil {
+		t.Errorf("SetType(\"transportInTransit\") returned an error: %v", err)
+	}
 }

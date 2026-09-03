@@ -272,6 +272,10 @@ func validateConditionInput(input ConditionInput) error {
 		if input.ReferenceId == 0 {
 			return fmt.Errorf("referenceId is required for transportAvailable conditions")
 		}
+	case TransportInTransitCondition:
+		if input.ReferenceId == 0 {
+			return fmt.Errorf("referenceId is required for transportInTransit conditions")
+		}
 	case CanSpawnPlayerNpcCondition:
 		if input.ReferenceId == 0 {
 			return fmt.Errorf("referenceId (mapId) is required for canSpawnPlayerNpc conditions")

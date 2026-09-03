@@ -33,17 +33,22 @@ const (
 	MapCapacityCondition            = "mapCapacity"
 	InventorySpaceCondition         = "inventorySpace"
 	TransportAvailableCondition     = "transportAvailable"
-	SkillLevelCondition             = "skillLevel"
-	HpCondition                     = "hp"
-	MaxHpCondition                  = "maxHp"
-	BuffCondition                   = "buff"
-	ExcessSPCondition               = "excessSp"
-	PartyIdCondition                = "partyId"
-	PartyLeaderCondition            = "partyLeader"
-	PartySizeCondition              = "partySize"
-	PqCustomDataCondition           = "pqCustomData"
-	MonsterBookCountCondition       = "monsterBookCount"
-	PetTamenessCondition            = "petTameness"
+	// TransportInTransitCondition is true only while the route is sailing
+	// (state == in_transit) — the takeoff..arrived window. It is deliberately
+	// NOT the negation of transportAvailable, which is also false for
+	// out_of_service and awaiting_return (task-290 design F2).
+	TransportInTransitCondition = "transportInTransit"
+	SkillLevelCondition         = "skillLevel"
+	HpCondition                 = "hp"
+	MaxHpCondition              = "maxHp"
+	BuffCondition               = "buff"
+	ExcessSPCondition           = "excessSp"
+	PartyIdCondition            = "partyId"
+	PartyLeaderCondition        = "partyLeader"
+	PartySizeCondition          = "partySize"
+	PqCustomDataCondition       = "pqCustomData"
+	MonsterBookCountCondition   = "monsterBookCount"
+	PetTamenessCondition        = "petTameness"
 	// CanSpawnPlayerNpcCondition asks whether the character's own player-NPC
 	// could be spawned right now — the same eligibility predicate FR-1.1's
 	// automatic check uses, exposed to a conversation script (FR-6.1).

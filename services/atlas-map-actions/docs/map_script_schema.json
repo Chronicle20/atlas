@@ -105,6 +105,7 @@
             "skillLevel",
             "strength",
             "transportAvailable",
+            "transportInTransit",
             "vanquisherKills"
           ]
         },

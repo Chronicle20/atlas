@@ -1,11 +1,9 @@
 package field
 
 import (
-	"atlas-maps/map/character"
 	"atlas-maps/rest"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -88,42 +86,14 @@ func handleGetFields(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 			return
 		}
 
-		occ := character.NewProcessor(d.Logger(), d.Context()).GetFieldsWithCharacters(t)
+		occ := NewProcessor(d.Logger(), d.Context()).GetFields(t, worldId, channelId, mapId)
 
-		models := make([]RestModel, 0, len(occ))
-		for _, o := range occ {
-			if worldId != nil && o.Field.WorldId() != *worldId {
-				continue
-			}
-			if channelId != nil && o.Field.ChannelId() != *channelId {
-				continue
-			}
-			if mapId != nil && o.Field.MapId() != *mapId {
-				continue
-			}
-
-			models = append(models, RestModel{
-				Id:             string(o.Field.Id()),
-				WorldId:        o.Field.WorldId(),
-				ChannelId:      o.Field.ChannelId(),
-				MapId:          o.Field.MapId(),
-				InstanceId:     o.Field.Instance(),
-				CharacterCount: o.CharacterCount,
-			})
+		models, err := TransformSlice(occ)
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Failed to enumerate fields: unable to build REST models.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
 		}
-
-		sort.Slice(models, func(i, j int) bool {
-			if models[i].WorldId != models[j].WorldId {
-				return models[i].WorldId < models[j].WorldId
-			}
-			if models[i].ChannelId != models[j].ChannelId {
-				return models[i].ChannelId < models[j].ChannelId
-			}
-			if models[i].MapId != models[j].MapId {
-				return models[i].MapId < models[j].MapId
-			}
-			return models[i].InstanceId.String() < models[j].InstanceId.String()
-		})
 
 		paged := paginate.Slice(models, page)
 

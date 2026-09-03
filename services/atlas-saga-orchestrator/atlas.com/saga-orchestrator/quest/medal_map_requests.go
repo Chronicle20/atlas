@@ -10,10 +10,10 @@ import (
 )
 
 // medalMapBaseUrl names the atlas-quest domain for RootUrlFor's per-environment
-// routing, following the CHARACTER_URL/GACHAPONS_URL/RPS_URL convention
-// (services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/*/requests.go).
-// atlas-quest has no other REST-client caller in this service yet.
-const medalMapBaseUrl = "QUEST_URL"
+// routing. It matches every other atlas-quest caller in the repo (e.g.
+// quest/state/requests.go in this module), which use "QUESTS" and are
+// overridable via QUESTS_SERVICE_URL.
+const medalMapBaseUrl = "QUESTS"
 
 func postMedalMap(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, questId uint32, mapId uint32) (medalMapRestModel, error) {
 	return func(characterId uint32, questId uint32, mapId uint32) (medalMapRestModel, error) {

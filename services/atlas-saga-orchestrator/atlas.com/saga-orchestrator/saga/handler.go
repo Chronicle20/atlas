@@ -164,6 +164,7 @@ type Handler interface {
 	handleStartQuest(s Saga, st Step[any]) error
 	handleSetQuestProgress(s Saga, st Step[any]) error
 	handleForfeitQuest(s Saga, st Step[any]) error
+	handleExplorerQuest(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
 	handleSendMessage(s Saga, st Step[any]) error
 	handleDepositToStorage(s Saga, st Step[any]) error
@@ -1019,6 +1020,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetQuestProgress, true
 	case ForfeitQuest:
 		return h.handleForfeitQuest, true
+	case ExplorerQuest:
+		return h.handleExplorerQuest, true
 	case ApplyConsumableEffect:
 		return h.handleApplyConsumableEffect, true
 	case SendMessage:
@@ -2478,6 +2481,24 @@ func (h *HandlerImpl) handleForfeitQuest(s Saga, st Step[any]) error {
 	err := h.questP.RequestForfeitQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to forfeit quest.")
+		return err
+	}
+
+	return nil
+}
+
+// handleExplorerQuest handles the ExplorerQuest action (task-290 G14),
+// mirroring Cosmic's MapScriptMethods.explorerQuest: force-start the quest,
+// then synchronously record the current map on atlas-quest's medal-map set.
+func (h *HandlerImpl) handleExplorerQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ExplorerQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.questP.RequestExplorerQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, uint32(payload.MapId))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to credit explorer quest.")
 		return err
 	}
 

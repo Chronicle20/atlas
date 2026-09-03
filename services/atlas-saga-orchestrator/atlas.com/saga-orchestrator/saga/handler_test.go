@@ -9,6 +9,7 @@ import (
 	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	notemock "atlas-saga-orchestrator/note/mock"
 	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
+	questmock "atlas-saga-orchestrator/quest/mock"
 	systemMessageMock "atlas-saga-orchestrator/system_message/mock"
 	"atlas-saga-orchestrator/validation"
 	mock3 "atlas-saga-orchestrator/validation/mock"
@@ -1886,4 +1887,53 @@ func TestHandleUpdateAreaInfo(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, []string{"persist", "announce"}, calls)
+}
+
+// TestHandleExplorerQuest_Routing verifies ExplorerQuest is registered in
+// GetHandler's routing table and, entering through that table (not by
+// calling handleExplorerQuest directly), that it invokes
+// quest.Processor.RequestExplorerQuest with the payload's fields (task-290
+// G14). This is the C20 defect class check: a routing-table omission builds
+// and unit-tests clean while being unreachable in production.
+func TestHandleExplorerQuest_Routing(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	var calls []string
+	questP := &questmock.ProcessorMock{
+		RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) error {
+			calls = append(calls, "explorer")
+			assert.Equal(t, world.Id(1), worldId)
+			assert.Equal(t, uint32(12345), characterId)
+			assert.Equal(t, uint32(29700), questId)
+			assert.Equal(t, uint32(101000000), mapId)
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("test").
+		Build()
+	require.NoError(t, err)
+
+	step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+		CharacterId: 12345,
+		WorldId:     1,
+		ChannelId:   0,
+		QuestId:     29700,
+		MapId:       _map.Id(101000000),
+		AreaName:    "Ellinia",
+	})
+
+	h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+
+	actionHandler, ok := h.GetHandler(ExplorerQuest)
+	require.True(t, ok, "ExplorerQuest handler not registered")
+
+	err = actionHandler(s, step)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"explorer"}, calls)
 }

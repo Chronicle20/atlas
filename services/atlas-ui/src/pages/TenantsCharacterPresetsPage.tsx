@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLayout";
+import { TenantSectionResetBar } from "@/components/features/tenants/TenantSectionResetBar";
 import {
   CharacterPresetsEditor,
   type PresetsEditorAdapter,
@@ -61,6 +62,11 @@ export function TenantsCharacterPresetsPage() {
 
   return (
     <TenantDetailLayout>
+      <TenantSectionResetBar
+        id={id}
+        sections={["characters"]}
+        sectionLabel="character templates and presets"
+      />
       <CharacterPresetsEditor adapter={adapter} />
     </TenantDetailLayout>
   );

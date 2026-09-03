@@ -22,6 +22,7 @@ type RestStateModel struct {
 	PartyQuestBonusAction *RestPartyQuestBonusActionModel `json:"partyQuestBonusAction,omitempty"` // Party quest bonus action model (if type is partyQuestBonusAction)
 	ListSelection         *RestListSelectionModel         `json:"listSelection,omitempty"`         // List selection model (if type is listSelection)
 	AskNumber             *RestAskNumberModel             `json:"askNumber,omitempty"`             // Ask number model (if type is askNumber)
+	AskText               *RestAskTextModel               `json:"askText,omitempty"`               // Ask text model (if type is askText)
 	AskStyle              *RestAskStyleModel              `json:"askStyle,omitempty"`              // Ask style model (if type is askStyle)
 	AskSlideMenu          *RestAskSlideMenuModel          `json:"askSlideMenu,omitempty"`          // Ask slide menu model (if type is askSlideMenu)
 }
@@ -183,6 +184,24 @@ type RestAskNumberModel struct {
 	NextState    string `json:"nextState,omitempty"`  // Next state ID
 }
 
+// RestAskTextMatchModel represents the REST model for a single ordered, exact-match branch in an ask text state
+type RestAskTextMatchModel struct {
+	Value            string `json:"value,omitempty"`            // Literal value to match against
+	ValueFromContext string `json:"valueFromContext,omitempty"` // Context key whose value is matched against
+	NextState        string `json:"nextState"`                  // Next state ID for this match
+}
+
+// RestAskTextModel represents the REST model for ask text (free-text) states
+type RestAskTextModel struct {
+	Text        string                  `json:"text"`                 // Ask text prompt
+	DefaultText string                  `json:"defaultText"`          // Default text
+	MinLength   uint16                  `json:"minLength"`            // Minimum accepted text length
+	MaxLength   uint16                  `json:"maxLength"`            // Maximum accepted text length
+	ContextKey  string                  `json:"contextKey,omitempty"` // Context key (defaults to "answer")
+	Matches     []RestAskTextMatchModel `json:"matches,omitempty"`    // Ordered, first-match-wins branch table
+	NextState   string                  `json:"nextState,omitempty"`  // Next state ID
+}
+
 // RestAskStyleModel represents the REST model for ask style states
 type RestAskStyleModel struct {
 	Text             string   `json:"text"`                       // Ask style text
@@ -340,6 +359,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 		if askNumber != nil {
 			restAskNumber := TransformAskNumber(*askNumber)
 			restState.AskNumber = &restAskNumber
+		}
+	case AskTextType:
+		askText := m.AskText()
+		if askText != nil {
+			restAskText := TransformAskText(*askText)
+			restState.AskText = &restAskText
 		}
 	case AskStyleType:
 		askStyle := m.AskStyle()
@@ -504,6 +529,30 @@ func TransformAskNumber(m AskNumberModel) RestAskNumberModel {
 	}
 }
 
+// TransformAskText converts an AskTextModel to a RestAskTextModel
+func TransformAskText(m AskTextModel) RestAskTextModel {
+	var restMatches []RestAskTextMatchModel
+	if m.Matches() != nil {
+		restMatches = make([]RestAskTextMatchModel, 0, len(m.Matches()))
+		for _, match := range m.Matches() {
+			restMatches = append(restMatches, RestAskTextMatchModel{
+				Value:            match.Value(),
+				ValueFromContext: match.ValueFromContext(),
+				NextState:        match.NextState(),
+			})
+		}
+	}
+	return RestAskTextModel{
+		Text:        m.Text(),
+		DefaultText: m.DefaultText(),
+		MinLength:   m.MinLength(),
+		MaxLength:   m.MaxLength(),
+		ContextKey:  m.ContextKey(),
+		Matches:     restMatches,
+		NextState:   m.NextState(),
+	}
+}
+
 // TransformAskStyle converts an AskStyleModel to a RestAskStyleModel
 func TransformAskStyle(m AskStyleModel) RestAskStyleModel {
 	return RestAskStyleModel{
@@ -657,6 +706,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetAskNumber(askNumber)
+	case AskTextType:
+		if r.AskText == nil {
+			return StateModel{}, fmt.Errorf("askText is required for askText state")
+		}
+		askText, err := ExtractAskText(*r.AskText)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetAskText(askText)
 	case AskStyleType:
 		if r.AskStyle == nil {
 			return StateModel{}, fmt.Errorf("askStyle is required for askStyle state")
@@ -905,6 +963,34 @@ func ExtractAskNumber(r RestAskNumberModel) (*AskNumberModel, error) {
 
 	if r.ContextKey != "" {
 		b.SetContextKey(r.ContextKey)
+	}
+
+	return b.Build()
+}
+
+// ExtractAskText converts a RestAskTextModel to an AskTextModel
+func ExtractAskText(r RestAskTextModel) (*AskTextModel, error) {
+	b := NewAskTextBuilder().
+		SetText(r.Text).
+		SetDefaultText(r.DefaultText).
+		SetMinLength(r.MinLength).
+		SetMaxLength(r.MaxLength).
+		SetNextState(r.NextState)
+
+	if r.ContextKey != "" {
+		b.SetContextKey(r.ContextKey)
+	}
+
+	for _, m := range r.Matches {
+		match, err := NewAskTextMatchBuilder().
+			SetValue(m.Value).
+			SetValueFromContext(m.ValueFromContext).
+			SetNextState(m.NextState).
+			Build()
+		if err != nil {
+			return nil, err
+		}
+		b.AddMatch(*match)
 	}
 
 	return b.Build()

@@ -13,7 +13,7 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 - export gms_v83: `6fcb33295092df32d17d5795b444d9c08419491de956e63b0a3ad03f83b9da31`
 - export gms_v84: `a05b8b562d80afa80073dc427f660364559a955847509a01ad6df734d34df5d5`
 - export gms_v87: `d9f57fef03c001656de14eed72c7696f977d7825892031f70fe0c90fa2e69cce`
-- export gms_v92: `9e8816c84d97a482303d67cb64c1be21acc48ac477702e538450f499d7749034`
+- export gms_v92: `8917182f873dbd7b2268394d10b7aa12f0fb17a13a2f2093b42a74c3d12e4f8b`
 - export gms_v95: `f1c0a6be17e594821d12a38543f4b5a2d863342bd4fc6217d107a74427ba4ca9`
 - export jms_v185: `3de6d6e589eb7ee3d8b5aaf0f58a679494a67efb3bd40c7a5bc466e33ec35b6e`
 
@@ -1019,7 +1019,7 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | npc/clientbound/NpcAskQuizConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskSlideMenuConversationDetail (T1) |  |  | ⬜ |  | ❌ |  | ❌ |  | ⬜ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | npc/clientbound/NpcAskSpeedQuizConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskTextConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| npc/clientbound/NpcAskTextConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskYesNoConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcNpcConversation (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcSayConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1068,9 +1068,9 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | v72 | 309 | 0 | 69 | 240 | 409 | 0 | 50.0% |
 | v79 | 355 | 0 | 68 | 236 | 368 | 0 | 53.9% |
 | v83 | 484 | 0 | 0 | 315 | 228 | 0 | 60.6% |
-| v84 | 458 | 0 | 0 | 322 | 247 | 0 | 58.7% |
+| v84 | 459 | 0 | 0 | 321 | 247 | 0 | 58.8% |
 | v87 | 492 | 0 | 0 | 344 | 191 | 0 | 58.9% |
-| v92 | 71 | 0 | 147 | 668 | 141 | 0 | 8.0% |
+| v92 | 72 | 0 | 147 | 667 | 141 | 0 | 8.1% |
 | v95 | 528 | 0 | 0 | 391 | 108 | 0 | 57.5% |
 | JMS185 | 455 | 0 | 0 | 374 | 198 | 0 | 54.9% |
 

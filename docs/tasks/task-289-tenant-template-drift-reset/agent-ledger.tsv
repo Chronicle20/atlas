@@ -1,0 +1,70 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-02T13:31:25Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	fe0ecefe	-	-	-	-
+2026-09-02T13:31:26Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	fe0ecefe	APPROVED	no	-	-
+2026-09-02T13:32:39Z	agent	Task 1	task-verifier	-	-	-	-	-	PASS	fe0ecefe	-	-	-	-
+2026-09-02T13:32:39Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	4bc8c7e4	-	-	-	-
+2026-09-02T13:33:36Z	agent	Task 2	task-verifier	-	-	-	-	-	PASS	4bc8c7e4	-	-	-	-
+2026-09-02T13:34:16Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	4bc8c7e4	APPROVED	no	-	-
+2026-09-02T13:35:57Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	a944a51f	-	-	-	-
+2026-09-02T13:35:58Z	agent	Task 3	task-verifier	-	-	-	-	-	PASS	a944a51f	-	-	-	-
+2026-09-02T13:37:51Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	a944a51f	APPROVED	no	-	-
+2026-09-02T13:37:51Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	e02af141	-	-	-	-
+2026-09-02T13:38:14Z	agent	Task 4	task-verifier	-	-	-	-	-	PASS	e02af141	-	-	-	-
+2026-09-02T13:39:48Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	e02af141	APPROVED	no	-	-
+2026-09-02T13:39:49Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	60000
+2026-09-02T13:55:53Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	1328efc3	-	-	-	-
+2026-09-02T13:56:34Z	agent	Task 5	task-verifier	-	-	-	-	-	PASS	1328efc3	-	-	-	-
+2026-09-02T13:57:38Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	1328efc3	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T14:03:56Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	63664ef9	-	-	-	-
+2026-09-02T14:05:25Z	agent	Task 6	task-verifier	-	-	-	-	-	PASS	63664ef9	-	-	-	-
+2026-09-02T14:07:21Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	63664ef9	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T14:08:59Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE	cbf34d5	-	-	-	-
+2026-09-02T14:09:55Z	agent	Task 7	task-verifier	-	-	-	-	-	PASS	cbf34d5	-	-	-	-
+2026-09-02T14:10:53Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	cbf34d5	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T14:11:34Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE	eeec372	-	-	-	-
+2026-09-02T14:11:34Z	agent	Task 8	task-verifier	-	-	-	-	-	PASS	eeec372	-	-	-	-
+2026-09-02T14:13:45Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	eeec372	APPROVED	no	-	-
+2026-09-02T14:13:45Z	handoff	after Task 8	-	-	-	-	-	-	-	-	-	-	-	75000
+2026-09-02T14:22:26Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DONE	99353d5e7	-	-	-	-
+2026-09-02T14:22:38Z	agent	Task 9	task-verifier	-	-	-	-	-	PASS	99353d5e7	-	-	-	-
+2026-09-02T14:27:21Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	99353d5e7	CHANGES_REQUIRED	yes	-	-
+2026-09-02T14:27:22Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE	58f57713e	-	-	-	-
+2026-09-02T14:27:30Z	agent	Task 10	task-verifier	-	-	-	-	-	PASS	58f57713e	-	-	-	-
+2026-09-02T14:29:46Z	agent	Task 9 fix 1	task-implementer	sonnet	-	-	-	-	DONE	be544d91b	-	-	-	-
+2026-09-02T14:29:46Z	agent	Task 9 fix 1	task-reviewer	haiku	-	-	-	-	DONE	be544d91b	APPROVED	no	-	-
+2026-09-02T14:30:31Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	58f57713e	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T14:31:51Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DONE	6ff82b9	-	-	-	-
+2026-09-02T14:31:52Z	agent	Task 11	task-verifier	-	-	-	-	-	PASS	6ff82b9	-	-	-	-
+2026-09-02T14:35:07Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	DONE	6ff82b9	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T14:37:55Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	DONE	b7da4c417	-	-	-	-
+2026-09-02T14:38:14Z	agent	Task 12	task-verifier	-	-	-	-	-	PASS	b7da4c417	-	-	-	-
+2026-09-02T14:40:20Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	DONE	b7da4c417	APPROVED	no	-	-
+2026-09-02T14:40:20Z	handoff	after Task 12	-	-	-	-	-	-	-	-	-	-	-	120000
+2026-09-02T14:52:08Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	b2bf837b3	-	-	-	-
+2026-09-02T14:53:15Z	agent	Task 13	task-verifier	haiku	-	-	-	-	PASS	b2bf837b3	-	-	-	-
+2026-09-02T14:57:50Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	DONE	b2bf837b3	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-02T15:01:23Z	agent	Task 13 fix 1	task-implementer	sonnet	-	-	-	-	DONE	add55139d	-	-	-	-
+2026-09-02T15:05:01Z	agent	Task 14	task-verifier	haiku	-	-	-	-	PASS	add55139d	-	-	-	-
+2026-09-02T15:05:02Z	agent	Task 13 fix 1	task-reviewer	sonnet	-	-	-	-	DONE	add55139d	CHANGES_REQUIRED	yes	-	-
+2026-09-02T15:08:02Z	agent	Task 13 fix 2	task-implementer	sonnet	-	-	-	-	DONE	40cbbcae9	-	-	-	-
+2026-09-02T15:14:14Z	agent	Task 13 fix 2	task-reviewer	sonnet	-	-	-	-	DONE	40cbbcae9	APPROVED	no	-	-
+2026-09-02T15:14:14Z	agent	Task 14	task-verifier	haiku	-	-	-	-	PASS	40cbbcae9	-	-	-	-
+2026-09-02T15:20:08Z	agent	Pre-PR B (422 test)	task-implementer	sonnet	-	-	-	-	DONE	ccc9656d9	-	-	-	-
+2026-09-02T15:23:24Z	agent	Pre-PR A (button hardening)	task-implementer	sonnet	-	-	-	-	DONE	0f1b3c75e	-	-	-	-
+2026-09-02T15:26:55Z	agent	Pre-PR plan-adherence 1-7	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	0f1b3c75e	APPROVED	no	-	-
+2026-09-02T15:27:08Z	agent	Pre-PR plan-adherence 8-14	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	0f1b3c75e	APPROVED	no	-	-
+2026-09-02T15:30:59Z	agent	Pre-PR frontend guidelines	frontend-guidelines-reviewer	sonnet	-	-	-	-	DONE	0f1b3c75e	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T16:03:56Z	agent	Pre-PR backend part 1	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	9950fd065	-	-	-	-
+2026-09-02T16:05:04Z	agent	Pre-PR backend part 1	gate	-	-	-	-	-	PASS	9950fd065	-	-	-	-
+2026-09-02T16:14:41Z	agent	Pre-PR backend part 1	task-reviewer	sonnet	-	-	-	-	DONE	9950fd065	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-02T16:20:29Z	agent	Pre-PR backend part 2	task-implementer	sonnet	-	-	-	-	DONE	95b4e98f0	-	-	-	-
+2026-09-02T16:20:59Z	agent	Pre-PR backend part 2	gate	-	-	-	-	-	PASS	95b4e98f0	-	-	-	-
+2026-09-02T16:22:32Z	agent	Pre-PR backend part 2	task-reviewer	sonnet	-	-	-	-	DONE	95b4e98f0	APPROVED	no	-	-
+2026-09-02T16:25:34Z	agent	Pre-PR flagless gate	gate	-	-	-	-	-	PASS	95b4e98f0	-	-	-	-
+2026-09-02T17:21:02Z	agent	Pre-PR backend confirm audit	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	95b4e98f0	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-02T17:21:02Z	handoff	after Pre-PR backend part 2	-	-	-	-	-	-	-	-	-	-	-	130000
+2026-09-02T17:31:32Z	agent	Pre-PR Part 3	task-implementer	sonnet	-	-	-	-	dispatched	95b4e98f0	-	-	-	-
+2026-09-02T17:36:20Z	agent	Pre-PR Part 3	task-implementer	sonnet	-	-	-	-	DONE	111b9d4a7	-	-	-	-
+2026-09-02T17:38:55Z	agent	Pre-PR Part 3	task-reviewer	sonnet	-	-	-	-	DONE	407b55305	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-02T18:19:01Z	agent	Pre-PR Part 3 lint fix	task-implementer	sonnet	-	-	-	-	DONE	3f67a6752	-	-	-	-
+2026-09-03T11:24:03Z	agent	bug-reset-and-badge-placement	task-implementer	sonnet	-	-	-	-	DONE	32723e0d7	-	-	-	-

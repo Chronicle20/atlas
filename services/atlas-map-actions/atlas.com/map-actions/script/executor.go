@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	mapactionsaga "atlas-map-actions/saga"
 
@@ -42,6 +43,10 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeSpawnMonster(f, characterId, op)
 	case "drop_message":
 		return e.executeDropMessage(f, characterId, op)
+	case "move_environment":
+		return e.executeMoveEnvironment(f, characterId, op)
+	case "reset_environment":
+		return e.executeResetEnvironment(f, characterId, op)
 	case "lock_ui":
 		return e.executeUiLock(f, characterId, true)
 	case "unlock_ui":
@@ -240,6 +245,77 @@ func (e *OperationExecutor) executeDropMessage(f field.Model, characterId uint32
 				ChannelId:   f.ChannelId(),
 				MessageType: messageType,
 				Message:     msg,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeMoveEnvironment sets the state of one named field object via a saga.
+// Parameters: name (required, non-blank), value (required, uint32), kind
+// (optional, ENVIRONMENT or OBSTACLE; blank defaults to ENVIRONMENT).
+func (e *OperationExecutor) executeMoveEnvironment(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	name, ok := params["name"]
+	if !ok || strings.TrimSpace(name) == "" {
+		return fmt.Errorf("move_environment operation missing name parameter")
+	}
+
+	valueStr, ok := params["value"]
+	if !ok || strings.TrimSpace(valueStr) == "" {
+		return fmt.Errorf("move_environment operation missing value parameter")
+	}
+	value, err := strconv.ParseUint(strings.TrimSpace(valueStr), 10, 32)
+	if err != nil {
+		return fmt.Errorf("move_environment operation has non-numeric value parameter [%s]: %w", valueStr, err)
+	}
+
+	kind, err := field.ParseObjectKind(params["kind"])
+	if err != nil {
+		return err
+	}
+
+	e.l.Debugf("Moving environment object [%s] kind [%s] to state [%d] in map [%d].", name, kind, value, f.MapId())
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-move-environment").
+		AddStep(
+			fmt.Sprintf("move-environment-%s", name),
+			saga.Pending,
+			saga.MoveEnvironment,
+			saga.MoveEnvironmentPayload{
+				WorldId:   f.WorldId(),
+				ChannelId: f.ChannelId(),
+				MapId:     f.MapId(),
+				Instance:  f.Instance(),
+				Kind:      kind,
+				Name:      name,
+				State:     uint32(value),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeResetEnvironment clears every tracked field object and restores the
+// field's objects to their default state. Takes no parameters.
+func (e *OperationExecutor) executeResetEnvironment(f field.Model, characterId uint32, op operation.Model) error {
+	e.l.Debugf("Resetting environment objects in map [%d].", f.MapId())
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-reset-environment").
+		AddStep(
+			fmt.Sprintf("reset-environment-%d", f.MapId()),
+			saga.Pending,
+			saga.ResetEnvironment,
+			saga.ResetEnvironmentPayload{
+				WorldId:   f.WorldId(),
+				ChannelId: f.ChannelId(),
+				MapId:     f.MapId(),
+				Instance:  f.Instance(),
 			},
 		).Build()
 

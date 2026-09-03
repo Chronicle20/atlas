@@ -213,7 +213,7 @@ The legacy `limit` query parameter is rejected.
 
 **Response Model**
 
-Paginated array of `tenants` resources, with a `meta` block (`total`, `page.number`, `page.size`, `page.last`) and `self`/`first`/`last`/`prev`/`next` links
+Paginated array of `tenants` resources, with a `meta` block (`total`, `page.number`, `page.size`, `page.last`) and `self`/`first`/`last`/`prev`/`next` links. Each resource's attributes include `baselineTemplateId`, `baselineRevision`, `storedRevision`, `templateDrift`, and `sectionDrift` in addition to the tenant's own fields.
 
 **Error Conditions**
 
@@ -236,7 +236,7 @@ Retrieves a configuration tenant by ID.
 
 **Response Model**
 
-Single `tenants` resource
+Single `tenants` resource. Each resource's attributes include `baselineTemplateId`, `baselineRevision`, `storedRevision`, `templateDrift`, and `sectionDrift` in addition to the tenant's own fields.
 
 **Error Conditions**
 
@@ -273,7 +273,7 @@ JSON:API `tenants` resource with attributes:
 
 **Response Model**
 
-Created `tenants` resource
+Created `tenants` resource, in its view shape (carrying the same five computed attributes as the GET endpoints: `baselineTemplateId`, `baselineRevision`, `storedRevision`, `templateDrift`, `sectionDrift`)
 
 **Error Conditions**
 
@@ -297,7 +297,7 @@ Updates an existing configuration tenant. Creates a history record before updati
 
 **Request Model**
 
-JSON:API `tenants` resource with attributes to update
+JSON:API `tenants` resource with attributes to update. A body carrying the five computed attributes (`baselineTemplateId`, `baselineRevision`, `storedRevision`, `templateDrift`, `sectionDrift`) succeeds and does not persist them; the write model has no fields for them.
 
 **Response Model**
 
@@ -335,6 +335,43 @@ None (empty body on success)
 | 400 | Invalid UUID format |
 | 403 | Delete targets a tenant owned by another environment |
 | 500 | Database error or record not found |
+
+---
+
+### POST /api/configurations/tenants/{tenantId}/reset
+
+Replaces the tenant's stored content, for the requested scope, with its baseline template's.
+
+**Parameters**
+
+| Name | Type | Location | Required |
+|------|------|----------|----------|
+| tenantId | UUID | path | yes |
+
+**Request Model**
+
+Optional. An absent body, `{}`, an absent `sections` key, and an empty `sections` array are all equivalent and mean "every comparable section".
+
+```json
+{ "data": { "type": "tenants", "attributes": { "sections": ["socket"] } } }
+```
+
+Valid section names: `properties`, `socket`, `characters`, `npcs`, `cashShop`, `mapleLife`.
+
+**Response Model**
+
+Single `tenants` resource in its view shape (200 OK), including the five computed attributes.
+
+**Error Conditions**
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid UUID format, a malformed request body, or a `sections` entry that is not a comparable section (JSON:API `errors` array) |
+| 403 | The caller's environment does not match the tenant row's environment (JSON:API `errors` array). Defensive: the lookup that resolves the tenant is already scoped to the caller's environment, so a cross-environment tenant surfaces as 404 before this check is reached |
+| 404 | No configuration tenant exists with the given ID, or it is not visible to the caller (JSON:API `errors` array) |
+| 409 | No baseline template resolves for the tenant's region and version (JSON:API `errors` array) |
+| 422 | The baseline content fails tenant validation (JSON:API `errors` array; each entry has `status`, `title`, `detail`, and `meta.path`) |
+| 500 | Database error |
 
 ---
 

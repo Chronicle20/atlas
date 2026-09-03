@@ -19,7 +19,7 @@ type Processor struct {
 	GetFieldsWithCharactersFunc        func(t tenant.Model) []character.FieldOccupancy
 	EnterFunc                          func(transactionId uuid.UUID, f field.Model, characterId uint32)
 	ExitFunc                           func(transactionId uuid.UUID, f field.Model, characterId uint32)
-	ExitAllFunc                        func(characterId uint32)
+	ExitAllFunc                        func(characterId uint32) []character.MapKey
 }
 
 func (m *Processor) GetCharactersInMap(transactionId uuid.UUID, f field.Model) ([]uint32, error) {
@@ -62,8 +62,9 @@ func (m *Processor) Exit(transactionId uuid.UUID, f field.Model, characterId uin
 	}
 }
 
-func (m *Processor) ExitAll(characterId uint32) {
+func (m *Processor) ExitAll(characterId uint32) []character.MapKey {
 	if m.ExitAllFunc != nil {
-		m.ExitAllFunc(characterId)
+		return m.ExitAllFunc(characterId)
 	}
+	return nil
 }

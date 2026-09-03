@@ -34,6 +34,13 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterSimpleInputHandler[M](l)
 }
 
+// RegisterOptionalInputHandler is RegisterInputHandler's sibling for a
+// handler whose request body is OPTIONAL: an absent or `{}` body decodes to
+// the zero value of M. See server.RegisterSimpleOptionalInputHandler.
+func RegisterOptionalInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
+	return server.RegisterSimpleOptionalInputHandler[M](l)
+}
+
 // WriteErrorResponse wraps server.WriteErrorResponse to surface
 // scope.ErrCrossEnvironmentWrite as 403 Forbidden (task-232 FR-7.8) instead
 // of the generic 500 server.WriteErrorResponse would otherwise produce.

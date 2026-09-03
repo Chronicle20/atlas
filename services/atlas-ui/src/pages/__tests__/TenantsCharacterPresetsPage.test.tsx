@@ -12,6 +12,10 @@ vi.mock("@/components/features/tenants/TenantDetailLayout", () => ({
   ),
 }));
 
+vi.mock("@/components/features/tenants/TenantResetButton", () => ({
+  TenantResetButton: () => <button type="button">Reset</button>,
+}));
+
 // Capture the adapter handed to the shared editor.
 const editorMock = vi.fn();
 vi.mock(
@@ -97,6 +101,9 @@ describe("TenantsCharacterPresetsPage", () => {
     );
     expect(screen.getByTestId("tenant-layout")).toBeInTheDocument();
     expect(screen.getByTestId("shared-editor")).toBeInTheDocument();
+    // Routed through TenantSectionResetBar, which still renders the (mocked)
+    // TenantResetButton - this is the scoped reset for this sub-section.
+    expect(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
     const { adapter } = editorMock.mock.calls[0]![0] as {
       adapter: { presets: unknown };
     };

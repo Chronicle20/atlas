@@ -381,6 +381,68 @@ func (a *AskNumberModel) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// --- AskTextMatchModel ---
+
+func (m AskTextMatchModel) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Value            string `json:"value,omitempty"`
+		ValueFromContext string `json:"valueFromContext,omitempty"`
+		NextState        string `json:"nextState"`
+	}{m.value, m.valueFromContext, m.nextState})
+}
+
+func (m *AskTextMatchModel) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Value            string `json:"value,omitempty"`
+		ValueFromContext string `json:"valueFromContext,omitempty"`
+		NextState        string `json:"nextState"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	m.value = aux.Value
+	m.valueFromContext = aux.ValueFromContext
+	m.nextState = aux.NextState
+	return nil
+}
+
+// --- AskTextModel ---
+
+func (a AskTextModel) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Text        string              `json:"text"`
+		DefaultText string              `json:"defaultText"`
+		MinLength   uint16              `json:"minLength"`
+		MaxLength   uint16              `json:"maxLength"`
+		ContextKey  string              `json:"contextKey"`
+		Matches     []AskTextMatchModel `json:"matches,omitempty"`
+		NextState   string              `json:"nextState"`
+	}{a.text, a.defaultText, a.minLength, a.maxLength, a.contextKey, a.matches, a.nextState})
+}
+
+func (a *AskTextModel) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Text        string              `json:"text"`
+		DefaultText string              `json:"defaultText"`
+		MinLength   uint16              `json:"minLength"`
+		MaxLength   uint16              `json:"maxLength"`
+		ContextKey  string              `json:"contextKey"`
+		Matches     []AskTextMatchModel `json:"matches,omitempty"`
+		NextState   string              `json:"nextState"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	a.text = aux.Text
+	a.defaultText = aux.DefaultText
+	a.minLength = aux.MinLength
+	a.maxLength = aux.MaxLength
+	a.contextKey = aux.ContextKey
+	a.matches = aux.Matches
+	a.nextState = aux.NextState
+	return nil
+}
+
 // --- AskStyleModel ---
 
 func (a AskStyleModel) MarshalJSON() ([]byte, error) {
@@ -454,9 +516,10 @@ func (s StateModel) MarshalJSON() ([]byte, error) {
 		RPSAction       *RPSActionModel       `json:"rpsAction,omitempty"`
 		ListSelection   *ListSelectionModel   `json:"listSelection,omitempty"`
 		AskNumber       *AskNumberModel       `json:"askNumber,omitempty"`
+		AskText         *AskTextModel         `json:"askText,omitempty"`
 		AskStyle        *AskStyleModel        `json:"askStyle,omitempty"`
 		AskSlideMenu    *AskSlideMenuModel    `json:"askSlideMenu,omitempty"`
-	}{s.id, s.stateType, s.dialogue, s.genericAction, s.craftAction, s.transportAction, s.gachaponAction, s.rpsAction, s.listSelection, s.askNumber, s.askStyle, s.askSlideMenu})
+	}{s.id, s.stateType, s.dialogue, s.genericAction, s.craftAction, s.transportAction, s.gachaponAction, s.rpsAction, s.listSelection, s.askNumber, s.askText, s.askStyle, s.askSlideMenu})
 }
 
 func (s *StateModel) UnmarshalJSON(data []byte) error {
@@ -471,6 +534,7 @@ func (s *StateModel) UnmarshalJSON(data []byte) error {
 		RPSAction       *RPSActionModel       `json:"rpsAction,omitempty"`
 		ListSelection   *ListSelectionModel   `json:"listSelection,omitempty"`
 		AskNumber       *AskNumberModel       `json:"askNumber,omitempty"`
+		AskText         *AskTextModel         `json:"askText,omitempty"`
 		AskStyle        *AskStyleModel        `json:"askStyle,omitempty"`
 		AskSlideMenu    *AskSlideMenuModel    `json:"askSlideMenu,omitempty"`
 	}
@@ -487,6 +551,7 @@ func (s *StateModel) UnmarshalJSON(data []byte) error {
 	s.rpsAction = aux.RPSAction
 	s.listSelection = aux.ListSelection
 	s.askNumber = aux.AskNumber
+	s.askText = aux.AskText
 	s.askStyle = aux.AskStyle
 	s.askSlideMenu = aux.AskSlideMenu
 	return nil

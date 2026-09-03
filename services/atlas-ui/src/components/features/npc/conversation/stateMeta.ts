@@ -33,6 +33,11 @@ export const STATE_TYPE_META: Record<ConversationStateType, StateTypeMeta> = {
     accent:
       "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30",
   },
+  askText: {
+    label: "Ask Text",
+    accent:
+      "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
+  },
   askStyle: {
     label: "Style",
     accent:
@@ -113,6 +118,14 @@ export function describeState(state: ConversationState): string {
           ? `[${a.minValue}–${a.maxValue}]`
           : "";
       return [truncate(a.text ?? "", 100), range].filter(Boolean).join(" ");
+    }
+    case "askText": {
+      const a = state.askText;
+      if (!a) return "";
+      const n = a.matches?.length ?? 0;
+      return [truncate(a.text ?? "", 100), `${n} match${n === 1 ? "" : "es"}`]
+        .filter(Boolean)
+        .join(" · ");
     }
     case "askStyle": {
       const a = state.askStyle;

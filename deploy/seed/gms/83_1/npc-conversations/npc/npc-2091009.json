@@ -1,0 +1,163 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2091009,
+      "startState": "askPassword",
+      "states": [
+        {
+          "askText": {
+            "contextKey": "answer",
+            "defaultText": "",
+            "matches": [
+              {
+                "nextState": "checkOccupancy",
+                "value": "Actions speak louder than words"
+              }
+            ],
+            "maxLength": 40,
+            "minLength": 1,
+            "nextState": "wrongPassword",
+            "text": "The entrance of the Sealed Shrine... #bPassword#k!"
+          },
+          "id": "askPassword",
+          "type": "askText"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">",
+                    "referenceId": "925040100",
+                    "type": "mapCapacity",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "occupied"
+              },
+              {
+                "conditions": [],
+                "nextState": "checkQuest"
+              }
+            ]
+          },
+          "id": "checkOccupancy",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Someone is already attending the Sealed Shrine."
+          },
+          "id": "occupied",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "21747",
+                    "type": "questStatus",
+                    "value": "2"
+                  },
+                  {
+                    "operator": "=",
+                    "referenceId": "21747",
+                    "step": "9300351",
+                    "type": "questProgress",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "warpIn"
+              },
+              {
+                "conditions": [],
+                "nextState": "blockedMessage"
+              }
+            ]
+          },
+          "id": "checkQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "925040100",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpIn",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "message": "Although you said the right answer, some mysterious forces are blocking the way in.",
+                  "messageType": "PINK_TEXT"
+                },
+                "type": "send_message"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "blockedMessage",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "#rWrong!"
+          },
+          "id": "wrongPassword",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2091009",
+    "type": "npc-conversation"
+  }
+}

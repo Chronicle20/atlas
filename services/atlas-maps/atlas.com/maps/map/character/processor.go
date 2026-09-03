@@ -20,7 +20,7 @@ type Processor interface {
 	GetFieldsWithCharacters(t tenant.Model) []FieldOccupancy
 	Enter(transactionId uuid.UUID, f field.Model, characterId uint32)
 	Exit(transactionId uuid.UUID, f field.Model, characterId uint32)
-	ExitAll(characterId uint32)
+	ExitAll(characterId uint32) []MapKey
 }
 
 type ProcessorImpl struct {
@@ -66,9 +66,10 @@ func (p *ProcessorImpl) Exit(_ uuid.UUID, f field.Model, characterId uint32) {
 }
 
 // ExitAll removes characterId from every map in the in-memory registry for
-// the current tenant. Used during character deletion to clean up phantom
+// the current tenant, and returns the keys the character was actually
+// removed from. Used during character deletion to clean up phantom
 // registry entries when the exact map key is no longer known.
-func (p *ProcessorImpl) ExitAll(characterId uint32) {
+func (p *ProcessorImpl) ExitAll(characterId uint32) []MapKey {
 	t := tenant.MustFromContext(p.ctx)
-	getRegistry().RemoveCharacterFromAllMaps(t, characterId)
+	return getRegistry().RemoveCharacterFromAllMaps(t, characterId)
 }

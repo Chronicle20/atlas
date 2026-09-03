@@ -1,0 +1,44 @@
+{
+  "service": "atlas-configurations",
+  "path": "services/atlas-configurations/atlas.com/configurations",
+  "date": "2026-09-02",
+  "baselineArtifact": "docs/tasks/task-289-tenant-template-drift-reset/audit-backend.md",
+  "rangeReaudited": "9613e7259..95b4e98f0",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "outOfScopeByRuling": [
+    "DOM-04 (tenants): grep '^func Transform' tenants/*.go still zero matches, unchanged, not counted",
+    "DOM-05 (tenants): no TransformSlice, unchanged, not counted",
+    "DOM-04 (templates/characters/preset): grep '^func Transform' templates/characters/preset/*.go still zero matches, unchanged, not counted"
+  ],
+  "findingsDisposition": [
+    {"id": "FILE-01", "baselineStatus": "fail", "nowStatus": "pass", "evidence": "tenants/reset.go renamed to tenants/processor_reset.go (commit 9950fd065); ResetById is *ProcessorImpl method there, tenants/processor_reset.go:36"},
+    {"id": "DOM-08/SUB-03", "baselineStatus": "fail", "nowStatus": "pass", "evidence": "tenants/resource.go:37 POST /{tenantId}/reset resolves through rest.RegisterInputHandler[ResetRestModel], wrapped by delegating normalizeResetBody middleware"},
+    {"id": "SUB-04", "baselineStatus": "fail", "nowStatus": "fail", "evidence": "tenants/resource.go:76 io.ReadAll(r.Body) and resource.go:131 json.Unmarshal(raw, &doc) in normalizeResetBody/hasResetEnvelope; manual parsing relocated from parseResetSections, not eliminated"},
+    {"id": "DOM-19", "baselineStatus": "fail", "nowStatus": "pass", "evidence": "ResetRestModel (tenants/rest.go:54-57) is flat Id/Sections, no nested Data/Attributes, implements GetName/GetID/SetID at rest.go:59-70"},
+    {"id": "DOM-32", "baselineStatus": "fail", "nowStatus": "pass", "evidence": "writeJSONAPIError helper deleted (grep zero matches); error branches write status inline per pattern doc's explicit allowance; 500 default arm uses server.WriteErrorResponse at resource.go:351"},
+    {"id": "DOM-11", "baselineStatus": "fail", "nowStatus": "pass", "evidence": "tenants/provider.go:23-43 both providers now return database.Query[Entity](...) lazily; no .First()/FixedProvider remain (commit 95b4e98f0)"},
+    {"id": "DOM-28", "baselineStatus": "fail", "nowStatus": "pass", "evidence": "tenants/processor.go:161 degrade.Observe(p.l, \"configurations.tenants.templates\", 0, err) added to baselineFor's non-ErrRecordNotFound branch; tested by tenants/processor_test.go:891,926"}
+  ],
+  "closedCount": 6,
+  "openCount": 1,
+  "newFindingsIntroduced": [],
+  "checkedForRegressionNoIssue": [
+    "DOM-27: grep StatusInternalServerError tenants/resource.go -> zero matches",
+    "FILE-06: normalizeResetBody/hasResetEnvelope are resource.go's own HTTP-layer responsibility, not a second catch-all",
+    "DOM-33: no Processor interface signature changed; build+tests pass, which would fail on a stale mock",
+    "DOM-14: new GetById pre-read at resource.go:284 calls a processor method, not a provider directly",
+    "SUB-02/DOM-15: grep db.Create|db.Save|db.Delete tenants/resource.go -> zero matches"
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "SUB-04: tenants/resource.go:76,131 - io.ReadAll and json.Unmarshal remain in resource.go (relocated from parseResetSections into normalizeResetBody/hasResetEnvelope, not eliminated)"
+  ],
+  "nonBlocking": [
+    "Out-of-scope by ruling, unrelitigated: DOM-04/DOM-05 (tenants), DOM-04 (templates/characters/preset) - no Transform/TransformSlice",
+    "Carried forward from baseline: DOM-20 WARN on drift/crosstype_test.go and templates/characters/preset/rest_test.go (no t.Run/table shape)",
+    "Carried forward from baseline: redundant GetById pre-read at tenants/resource.go:284 duplicates ResetById's internal read"
+  ]
+}

@@ -47,11 +47,11 @@
               "choices": [
                 {
                   "nextState": "start_3_actions",
-                  "text": "Yes"
+                  "text": "Accept"
                 },
                 {
                   "nextState": null,
-                  "text": "No"
+                  "text": "Decline"
                 },
                 {
                   "nextState": null,

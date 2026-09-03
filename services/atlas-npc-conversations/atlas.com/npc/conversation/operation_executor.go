@@ -1,6 +1,7 @@
 package conversation
 
 import (
+	"atlas-npc-conversations/conversation/quest/progress"
 	"atlas-npc-conversations/cosmetic"
 	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
@@ -47,6 +48,7 @@ type OperationExecutorImpl struct {
 	mapP           npcMap.Processor
 	validationP    validation.Processor
 	savedLocationP savedlocation.Processor
+	questProgressP progress.Processor
 }
 
 // NewOperationExecutor creates a new operation executor
@@ -64,6 +66,7 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 		mapP:           npcMap.NewProcessor(l, ctx),
 		validationP:    validation.NewProcessor(l, ctx),
 		savedLocationP: savedlocation.NewProcessor(l, ctx),
+		questProgressP: progress.NewProcessor(l, ctx),
 	}
 }
 
@@ -798,6 +801,88 @@ func (e *OperationExecutorImpl) executeLocalOperation(field field.Model, charact
 
 		e.l.Infof("Fetched saved location '%s' for character [%d]: mapId=%d, portalId=%d, stored in context keys [%s, %s]",
 			locationType, characterId, savedLoc.MapId(), savedLoc.PortalId(), mapIdContextKey, portalIdContextKey)
+		return nil
+
+	case "get_quest_progress":
+		// Format: local:get_quest_progress
+		// Params: questId (string, required), infoNumber (string, optional, default "0",
+		//         "step" accepted as an alias), contextKey (string, required)
+		// Fetches the character's progress entries for a quest and stores the
+		// progress value for the requested infoNumber in context. If the
+		// character has no progress record for the quest (an unstarted quest is
+		// a content condition, not a fault), or the requested infoNumber is
+		// absent from the returned collection, stores an empty string.
+		questIdValue, exists := operation.Params()["questId"]
+		if !exists {
+			return errors.New("missing questId parameter for get_quest_progress operation")
+		}
+
+		questIdStr, err := e.evaluateContextValue(characterId, "questId", questIdValue)
+		if err != nil {
+			return err
+		}
+
+		questId64, err := strconv.ParseUint(questIdStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid questId '%s' for get_quest_progress operation: %w", questIdStr, err)
+		}
+
+		contextKey, exists := operation.Params()["contextKey"]
+		if !exists {
+			return errors.New("missing contextKey parameter for get_quest_progress operation")
+		}
+
+		// infoNumber is canonical; step is accepted as an alias for author
+		// familiarity with the questProgress condition. infoNumber wins if
+		// both are present.
+		infoNumberValue := operation.Params()["infoNumber"]
+		if infoNumberValue == "" {
+			infoNumberValue = operation.Params()["step"]
+		}
+		if infoNumberValue == "" {
+			infoNumberValue = "0"
+		}
+
+		infoNumberStr, err := e.evaluateContextValue(characterId, "infoNumber", infoNumberValue)
+		if err != nil {
+			return err
+		}
+
+		infoNumber64, err := strconv.ParseUint(infoNumberStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid infoNumber '%s' for get_quest_progress operation: %w", infoNumberStr, err)
+		}
+
+		entries, err := e.questProgressP.GetByCharacterAndQuest(characterId, uint32(questId64))()
+		if err != nil {
+			if errors.Is(err, progress.ErrNotFound) {
+				err = e.setContextValue(characterId, contextKey, "")
+				if err != nil {
+					return fmt.Errorf("failed to store empty quest progress in context: %w", err)
+				}
+
+				e.l.Infof("No quest progress found for character [%d] quest [%d], stored empty string in context key [%s]",
+					characterId, questId64, contextKey)
+				return nil
+			}
+			return fmt.Errorf("failed to get quest progress for character %d quest %d: %w", characterId, questId64, err)
+		}
+
+		progressValue := ""
+		for _, entry := range entries {
+			if entry.InfoNumber() == uint32(infoNumber64) {
+				progressValue = entry.Progress()
+				break
+			}
+		}
+
+		err = e.setContextValue(characterId, contextKey, progressValue)
+		if err != nil {
+			return fmt.Errorf("failed to store quest progress in context: %w", err)
+		}
+
+		e.l.Infof("Fetched quest progress for character [%d] quest [%d] infoNumber [%d], stored in context key [%s]",
+			characterId, questId64, infoNumber64, contextKey)
 		return nil
 
 	case "enumerate_evolvable_pets":

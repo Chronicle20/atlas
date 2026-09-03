@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns } from "@/pages/tenants-columns";
 import { tenantsService } from "@/services/api";
 import type { Tenant } from "@/types/models/tenant";
+import { useTenantConfigurations } from "@/lib/hooks/api/useTenants";
 import { TenantPageSkeleton } from "@/components/common/skeletons/TenantPageSkeleton";
 import {
   useGridRefresh,
@@ -143,9 +144,20 @@ export function TenantsPage() {
     }
   };
 
+  // The registry tenants this page lists carry no configuration
+  // attributes, so drift needs a second source. useTenantConfigurations
+  // is already cached elsewhere in the app; a tenant with no
+  // configuration row simply renders no badge.
+  const { data: configs } = useTenantConfigurations();
+  const configsById = useMemo(
+    () => new Map((configs ?? []).map((c) => [c.id, c])),
+    [configs],
+  );
+
   const columns = getColumns({
     onDelete: openDeleteDialog,
     onRename: openRenameDialog,
+    configs: configsById,
   });
 
   if (loading && !isRefreshingTenants) {

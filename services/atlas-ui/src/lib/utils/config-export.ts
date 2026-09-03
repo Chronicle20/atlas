@@ -81,6 +81,14 @@ export function toConfigExportPayload<T extends ExportableConfigAttributes>(
   delete out.shippedRevision;
   delete out.storedRevision;
   delete out.seedDrift;
+  // task-289's tenant-side equivalents. Deleted unconditionally: `out` is
+  // an untyped record, and deleting a key the template path never had is
+  // a no-op, so this needs no branch on `kind`. `storedRevision` is
+  // deliberately shared — one delete covers both sides.
+  delete out.baselineTemplateId;
+  delete out.baselineRevision;
+  delete out.templateDrift;
+  delete out.sectionDrift;
 
   out.npcs = attributes.npcs ?? [];
   out.worlds = attributes.worlds ?? [];

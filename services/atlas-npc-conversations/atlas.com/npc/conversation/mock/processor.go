@@ -20,7 +20,7 @@ type ProcessorMock struct {
 	StartItemFunc func(f field.Model, itemId uint32, npcId uint32, characterId uint32, accountId uint32, scriptName string, originTransactionId uuid.UUID, stateMachine conversation.StateContainer) error
 
 	// ContinueFunc is a function field for the Continue method
-	ContinueFunc func(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
+	ContinueFunc func(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32, text string) error
 
 	// EndFunc is a function field for the End method
 	EndFunc func(characterId uint32) error
@@ -54,9 +54,9 @@ func (m *ProcessorMock) StartItem(f field.Model, itemId uint32, npcId uint32, ch
 }
 
 // Continue is a mock implementation of the conversation.Processor.Continue method
-func (m *ProcessorMock) Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error {
+func (m *ProcessorMock) Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32, text string) error {
 	if m.ContinueFunc != nil {
-		return m.ContinueFunc(npcId, characterId, action, lastMessageType, selection)
+		return m.ContinueFunc(npcId, characterId, action, lastMessageType, selection, text)
 	}
 	// Default implementation returns nil (success)
 	return nil

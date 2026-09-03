@@ -810,15 +810,7 @@ func (m *mockMonsterDataProcessor) SpawnPointProvider(_ _map.Id) model.Provider[
 	return func() ([]monsterData.SpawnPoint, error) { return m.spawnPoints, nil }
 }
 
-func (m *mockMonsterDataProcessor) SpawnableSpawnPointProvider(_ _map.Id) model.Provider[[]monsterData.SpawnPoint] {
-	return func() ([]monsterData.SpawnPoint, error) { return m.spawnPoints, nil }
-}
-
 func (m *mockMonsterDataProcessor) GetSpawnPoints(_ _map.Id) ([]monsterData.SpawnPoint, error) {
-	return m.spawnPoints, nil
-}
-
-func (m *mockMonsterDataProcessor) GetSpawnableSpawnPoints(_ _map.Id) ([]monsterData.SpawnPoint, error) {
 	return m.spawnPoints, nil
 }
 

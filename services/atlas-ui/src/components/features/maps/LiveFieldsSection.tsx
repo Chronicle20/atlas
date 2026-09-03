@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -9,6 +10,8 @@ import {
 } from "@/components/ui/table";
 import { useFieldsForMap } from "@/lib/hooks/api/useFields";
 import { useLiveMonsters } from "@/lib/hooks/api/useFieldRuntime";
+import { useWorlds } from "@/lib/hooks/api/useWorlds";
+import type { WorldData } from "@/services/api/worlds.service";
 import type { FieldData } from "@/services/api/fields.service";
 
 // Beyond this many rows, per-row monster fan-out stops (D12): one request
@@ -18,9 +21,10 @@ const MONSTER_FANOUT_CAP = 12;
 interface LiveFieldRowProps {
   field: FieldData;
   enabled: boolean;
+  worlds: WorldData[] | undefined;
 }
 
-function LiveFieldRow({ field, enabled }: LiveFieldRowProps) {
+function LiveFieldRow({ field, enabled, worlds }: LiveFieldRowProps) {
   const { worldId, channelId, mapId, instanceId, characterCount } =
     field.attributes;
   const { data: monsters, error: monstersError } = useLiveMonsters(
@@ -32,11 +36,14 @@ function LiveFieldRow({ field, enabled }: LiveFieldRowProps) {
   );
   const monsterCount =
     enabled && !monstersError && monsters ? monsters.length : "—";
+  const worldName =
+    worlds?.find((world) => world.id === String(worldId))?.attributes.name ??
+    String(worldId);
 
   return (
     <TableRow>
-      <TableCell>{worldId}</TableCell>
-      <TableCell>{channelId}</TableCell>
+      <TableCell>{worldName}</TableCell>
+      <TableCell>{channelId + 1}</TableCell>
       <TableCell>
         <Link
           to={`/fields?world=${worldId}&channel=${channelId}&map=${mapId}&instance=${instanceId}`}
@@ -57,6 +64,7 @@ interface LiveFieldsSectionProps {
 
 export function LiveFieldsSection({ mapId }: LiveFieldsSectionProps) {
   const { data: fields, error } = useFieldsForMap(mapId);
+  const { data: worlds } = useWorlds();
 
   const rows = fields ?? [];
   const overCap = rows.length > MONSTER_FANOUT_CAP;
@@ -84,33 +92,37 @@ export function LiveFieldsSection({ mapId }: LiveFieldsSectionProps) {
       )}
 
       {!error && rows.length > 0 && (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>World</TableHead>
-                <TableHead>Channel</TableHead>
-                <TableHead>Instance</TableHead>
-                <TableHead>Characters</TableHead>
-                <TableHead>Live Monsters</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((field, index) => (
-                <LiveFieldRow
-                  key={field.id}
-                  field={field}
-                  enabled={index < MONSTER_FANOUT_CAP}
-                />
-              ))}
-            </TableBody>
-          </Table>
-          {overCap && (
-            <p className="text-sm text-muted-foreground">
-              Showing monster counts for the first {MONSTER_FANOUT_CAP} fields.
-            </p>
-          )}
-        </>
+        <Card>
+          <CardContent className="pt-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>World</TableHead>
+                  <TableHead>Channel</TableHead>
+                  <TableHead>Instance</TableHead>
+                  <TableHead>Characters</TableHead>
+                  <TableHead>Live Monsters</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((field, index) => (
+                  <LiveFieldRow
+                    key={field.id}
+                    field={field}
+                    enabled={index < MONSTER_FANOUT_CAP}
+                    worlds={worlds}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+            {overCap && (
+              <p className="text-sm text-muted-foreground pt-2">
+                Showing monster counts for the first {MONSTER_FANOUT_CAP}{" "}
+                fields.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
     </section>
   );

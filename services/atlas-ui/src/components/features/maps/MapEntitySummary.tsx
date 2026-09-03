@@ -113,9 +113,7 @@ function MonstersSection({
   if (error) {
     return (
       <section>
-        <h3 className="text-sm font-semibold mb-2">
-          Configured Monster Spawns
-        </h3>
+        <h3 className="text-sm font-semibold mb-2">Monster Spawns</h3>
         <p className="text-sm text-destructive">Failed to load monsters</p>
       </section>
     );
@@ -124,9 +122,7 @@ function MonstersSection({
   if (monsters === undefined) {
     return (
       <section>
-        <h3 className="text-sm font-semibold mb-2">
-          Configured Monster Spawns
-        </h3>
+        <h3 className="text-sm font-semibold mb-2">Monster Spawns</h3>
         <div className="space-y-2">
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-full" />
@@ -151,7 +147,7 @@ function MonstersSection({
   return (
     <section>
       <h3 className="text-sm font-semibold mb-2">
-        Configured Monster Spawns ({order.length})
+        Monster Spawns ({order.length})
       </h3>
       {order.length === 0 ? (
         <p className="text-sm italic text-muted-foreground">No monsters</p>

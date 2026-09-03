@@ -23,17 +23,22 @@ vi.mock("@/lib/hooks/api/useFieldRuntime", () => ({
   },
 }));
 
+const useWorldsMock = vi.fn();
+vi.mock("@/lib/hooks/api/useWorlds", () => ({
+  useWorlds: () => useWorldsMock(),
+}));
+
 import { LiveFieldsSection } from "../LiveFieldsSection";
 
 const MAP_ID = "910340000";
 
 function makeFields(n: number): FieldData[] {
   return Array.from({ length: n }, (_, i) => ({
-    id: `0:${i + 1}:${MAP_ID}:00000000-0000-0000-0000-00000000000${i}`,
+    id: `0:${i}:${MAP_ID}:00000000-0000-0000-0000-00000000000${i}`,
     type: "fields",
     attributes: {
       worldId: 0,
-      channelId: i + 1,
+      channelId: i,
       mapId: Number(MAP_ID),
       instanceId: `00000000-0000-0000-0000-00000000000${i}`,
       characterCount: i + 1,
@@ -57,6 +62,11 @@ describe("LiveFieldsSection", () => {
       isLoading: false,
       error: null,
     });
+    useWorldsMock.mockReturnValue({
+      data: [{ id: "0", type: "worlds", attributes: { name: "Scania" } }],
+      isLoading: false,
+      error: null,
+    });
   });
 
   it("renders one row per live field", () => {
@@ -70,6 +80,59 @@ describe("LiveFieldsSection", () => {
     expect(rows).toHaveLength(4); // header + 3
     const cells = within(rows[1]!).getAllByRole("cell");
     expect(cells[3]).toHaveTextContent("1"); // characterCount
+  });
+
+  it("renders the grid inside a Card", () => {
+    useFieldsForMapMock.mockReturnValue({
+      data: makeFields(1),
+      isLoading: false,
+      error: null,
+    });
+    renderSection();
+    const table = screen.getByRole("table");
+    expect(table.closest('[data-slot="card"]')).not.toBeNull();
+  });
+
+  it("resolves the world id to its name", () => {
+    useFieldsForMapMock.mockReturnValue({
+      data: makeFields(1),
+      isLoading: false,
+      error: null,
+    });
+    renderSection();
+    const rows = screen.getAllByRole("row");
+    const cells = within(rows[1]!).getAllByRole("cell");
+    expect(cells[0]).toHaveTextContent("Scania");
+  });
+
+  it("falls back to the raw world id when the lookup has not resolved", () => {
+    useWorldsMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
+    useFieldsForMapMock.mockReturnValue({
+      data: makeFields(1),
+      isLoading: false,
+      error: null,
+    });
+    renderSection();
+    const rows = screen.getAllByRole("row");
+    const cells = within(rows[1]!).getAllByRole("cell");
+    expect(cells[0]).toHaveTextContent("0");
+  });
+
+  it("displays the channel as 1-indexed", () => {
+    useFieldsForMapMock.mockReturnValue({
+      data: makeFields(1),
+      isLoading: false,
+      error: null,
+    });
+    renderSection();
+    const rows = screen.getAllByRole("row");
+    const cells = within(rows[1]!).getAllByRole("cell");
+    // makeFields(1) produces channelId 0 (0-indexed) — display is +1
+    expect(cells[1]).toHaveTextContent("1");
   });
 
   it("empty state is explicit and never hidden", () => {
@@ -97,7 +160,7 @@ describe("LiveFieldsSection", () => {
     });
     expect(link).toHaveAttribute(
       "href",
-      `/fields?world=0&channel=1&map=${MAP_ID}&instance=00000000-0000-0000-0000-000000000000`,
+      `/fields?world=0&channel=0&map=${MAP_ID}&instance=00000000-0000-0000-0000-000000000000`,
     );
   });
 
@@ -134,7 +197,7 @@ describe("LiveFieldsSection", () => {
       error: null,
     });
     useLiveMonstersMock.mockImplementation((_w: number, c: number) => {
-      if (c === 1) {
+      if (c === 0) {
         return { data: undefined, isLoading: false, error: new Error("boom") };
       }
       return { data: [1], isLoading: false, error: null };

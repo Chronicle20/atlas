@@ -2,11 +2,13 @@ package _map
 
 import (
 	"atlas-channel/door"
+	"atlas-channel/environment"
 	_map3 "atlas-channel/kafka/message/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -769,5 +771,506 @@ func TestAnnounceActiveJukebox_FailsOpenWhenMapsUnreachable(t *testing.T) {
 
 	if calls := rec.snapshot(); len(calls) != 0 {
 		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}
+
+// routed returns a writer.Producer stub that succeeds only for the given
+// writer names; any other name returns a "writer not found" error, matching
+// the behaviour of a real Producer for an opcode a tenant's version does not
+// route.
+func routed(names ...string) writer.Producer {
+	set := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		set[n] = struct{}{}
+	}
+	return func(name string) (writer.BodyFunc, error) {
+		if _, ok := set[name]; ok {
+			return nil, nil
+		}
+		return nil, errors.New("writer not found")
+	}
+}
+
+// stubDoorAnnounceCapture stubs doorAnnounce to record the writer name of
+// every call, in order, without touching a real socket.
+func stubDoorAnnounceCapture(t *testing.T) (restore func(), captured *[]string) {
+	t.Helper()
+	var names []string
+	orig := doorAnnounce
+	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+		names = append(names, writerName)
+		return nil
+	}
+	return func() { doorAnnounce = orig }, &names
+}
+
+func TestAnnounceObjectState_WriterSelection(t *testing.T) {
+	tests := []struct {
+		name    string
+		kind    field.ObjectKind
+		wp      writer.Producer
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "obstacle with obstacle writer routed",
+			kind: field.ObjectKindObstacle,
+			wp:   routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter),
+			want: []string{fieldcb.FieldObstacleOnOffWriter},
+		},
+		{
+			name: "obstacle with obstacle writer unrouted falls back",
+			kind: field.ObjectKindObstacle,
+			wp:   routed(fieldcb.SetObjectStateWriter),
+			want: []string{fieldcb.SetObjectStateWriter},
+		},
+		{
+			name: "environment always uses set object state",
+			kind: field.ObjectKindEnvironment,
+			wp:   routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter),
+			want: []string{fieldcb.SetObjectStateWriter},
+		},
+		{
+			name:    "environment with only obstacle writer routed still uses set object state",
+			kind:    field.ObjectKindEnvironment,
+			wp:      routed(fieldcb.FieldObstacleOnOffWriter),
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := logrus.New()
+			ctx := newTestCtx(t)
+
+			restore, captured := stubDoorAnnounceCapture(t)
+			defer restore()
+
+			err := announceObjectState(l, ctx, tt.wp, tt.kind, "obj", 1, session.Model{})
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(*captured) != len(tt.want) {
+				t.Fatalf("captured writer names = %v, want %v", *captured, tt.want)
+			}
+			for i, n := range tt.want {
+				if (*captured)[i] != n {
+					t.Fatalf("captured writer names = %v, want %v", *captured, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestHandleStatusEventEnvironmentStateChanged_Broadcasts(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.FieldObstacleOnOffWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentStateChanged]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentStateChanged,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.EnvironmentStateChanged{Kind: "OBSTACLE", Name: "obs3", State: 2},
+	}
+	handleStatusEventEnvironmentStateChanged(sc, wp)(l, ctx, e)
+
+	if len(*captured) != 1 || (*captured)[0] != fieldcb.FieldObstacleOnOffWriter {
+		t.Fatalf("captured writer names = %v, want [%s]", *captured, fieldcb.FieldObstacleOnOffWriter)
+	}
+}
+
+func TestHandleStatusEventEnvironmentStateChanged_WrongTypeIgnored(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.FieldObstacleOnOffWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentStateChanged]{
+		Type:      "WEATHER_START",
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.EnvironmentStateChanged{Kind: "OBSTACLE", Name: "obs3", State: 2},
+	}
+	handleStatusEventEnvironmentStateChanged(sc, wp)(l, ctx, e)
+
+	if len(*captured) != 0 {
+		t.Fatalf("captured writer names = %v, want none", *captured)
+	}
+}
+
+func TestHandleStatusEventEnvironmentStateChanged_BadKindIgnored(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.FieldObstacleOnOffWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentStateChanged]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentStateChanged,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.EnvironmentStateChanged{Kind: "GATE", Name: "obs3", State: 2},
+	}
+	handleStatusEventEnvironmentStateChanged(sc, wp)(l, ctx, e)
+
+	if len(*captured) != 0 {
+		t.Fatalf("captured writer names = %v, want none", *captured)
+	}
+}
+
+func TestHandleStatusEventEnvironmentReset_AllResetRouted(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleAllResetWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body: _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{
+			{Kind: "OBSTACLE", Name: "a"},
+			{Kind: "ENVIRONMENT", Name: "b"},
+		}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	// "b" is ENVIRONMENT and announces nothing: no state hides a named object
+	// client-side, so clearing tracking is already the correct reset.
+	want := []string{fieldcb.FieldObstacleAllResetWriter, fieldcb.FieldObstacleOnOffWriter}
+	if len(*captured) != len(want) {
+		t.Fatalf("captured writer names = %v, want %v", *captured, want)
+	}
+	for i, n := range want {
+		if (*captured)[i] != n {
+			t.Fatalf("captured writer names = %v, want %v", *captured, want)
+		}
+	}
+}
+
+func TestHandleStatusEventEnvironmentReset_AllResetUnrouted(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.SetObjectStateWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body: _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{
+			{Kind: "OBSTACLE", Name: "a"},
+			{Kind: "ENVIRONMENT", Name: "b"},
+		}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	// "b" is ENVIRONMENT and announces nothing regardless of routing.
+	want := []string{fieldcb.SetObjectStateWriter}
+	if len(*captured) != len(want) {
+		t.Fatalf("captured writer names = %v, want %v", *captured, want)
+	}
+	for i, n := range want {
+		if (*captured)[i] != n {
+			t.Fatalf("captured writer names = %v, want %v", *captured, want)
+		}
+	}
+}
+
+func TestHandleStatusEventEnvironmentReset_EmptyCleared(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.FieldObstacleAllResetWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	if len(*captured) != 1 || (*captured)[0] != fieldcb.FieldObstacleAllResetWriter {
+		t.Fatalf("captured writer names = %v, want [%s]", *captured, fieldcb.FieldObstacleAllResetWriter)
+	}
+}
+
+// envModel builds an environment.Model via environment.Extract, since Model's
+// fields are unexported and this package is outside environment.
+func envModel(t *testing.T, kind, name string, state uint32) environment.Model {
+	t.Helper()
+	m, err := environment.Extract(environment.RestModel{Kind: kind, Name: name, State: state})
+	if err != nil {
+		t.Fatalf("environment.Extract: %v", err)
+	}
+	return m
+}
+
+// assertWriterNames fails the test unless got exactly equals want, in order.
+func assertWriterNames(t *testing.T, got, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("captured writer names = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("captured writer names = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestAnnounceEnvironmentState_ObstaclesThenEnvironment(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.FieldObstacleOnOffListWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_ListWriterUnrouted(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_NoObstacleWritersAtAll(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter, fieldcb.SetObjectStateWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_Empty(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, []environment.Model{}, session.Model{})
+
+	if len(*captured) != 0 {
+		t.Fatalf("captured writer names = %v, want none", *captured)
+	}
+}
+
+func TestAnnounceEnvironmentState_OnlyEnvironment(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "ENVIRONMENT", "b", 2),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_BadKindSkipped(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "GATE", "x", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter})
+}
+
+// objectStateAnnounce is one captured announceObjectState call, decoded via
+// the real SetObjectState codec so the assertion sees the wire value the
+// client would.
+type objectStateAnnounce struct {
+	Writer string
+	Name   string
+	State  uint32
+}
+
+// stubDoorAnnounceForObjectState records the name/state of every
+// SetObjectState announcement, so a test can assert the value restored --
+// which the writer-name-only capture cannot see.
+func stubDoorAnnounceForObjectState(t *testing.T) (restore func(), captured *[]objectStateAnnounce) {
+	t.Helper()
+	var seen []objectStateAnnounce
+	orig := doorAnnounce
+	doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
+		a := objectStateAnnounce{Writer: writerName}
+		if writerName == fieldcb.SetObjectStateWriter {
+			body := enc(l, ctx)(nil)
+			req := request.Request(body)
+			reader := request.NewRequestReader(&req, 0)
+			var m fieldcb.SetObjectState
+			m.Decode(l, ctx)(&reader, nil)
+			a.Name, a.State = m.Name(), m.State()
+		}
+		seen = append(seen, a)
+		return nil
+	}
+	return func() { doorAnnounce = orig }, &seen
+}
+
+// TestHandleStatusEventEnvironmentReset_ObstacleOnlyRestore pins the
+// contract established by the "Fix" section of
+// docs/tasks/task-278-map-environment-object-state/diagnosis-l2-is-not-a-state.md:
+// a reset announces nothing for a cleared named (non-obstacle) object -- no
+// state hides it client-side, so clearing tracking is already the correct
+// reset -- while an obstacle still gets its explicit SetObjectState(name, 0).
+func TestHandleStatusEventEnvironmentReset_ObstacleOnlyRestore(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceForObjectState(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	// The obstacle writer is deliberately unrouted so the obstacle also lands
+	// on SetObjectState and its restored state is observable.
+	wp := routed(fieldcb.SetObjectStateWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body: _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{
+			{Kind: "ENVIRONMENT", Name: "gate"},
+			{Kind: "OBSTACLE", Name: "obs3"},
+		}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	want := []objectStateAnnounce{
+		{Writer: fieldcb.SetObjectStateWriter, Name: "obs3", State: 0},
+	}
+	if len(*captured) != len(want) {
+		t.Fatalf("captured announcements = %v, want %v", *captured, want)
+	}
+	for i, w := range want {
+		if (*captured)[i] != w {
+			t.Fatalf("captured announcements = %v, want %v", *captured, want)
+		}
 	}
 }

@@ -21,6 +21,9 @@ const (
 	EventTopicMapStatusTypeMapTimerStarted = "MAP_TIMER_STARTED"
 	EventTopicMapStatusTypeJukeboxStart    = "JUKEBOX_START"
 	EventTopicMapStatusTypeJukeboxEnd      = "JUKEBOX_END"
+
+	EventTopicMapStatusTypeEnvironmentStateChanged = "ENVIRONMENT_STATE_CHANGED"
+	EventTopicMapStatusTypeEnvironmentReset        = "ENVIRONMENT_RESET"
 )
 
 type StatusEvent[E any] struct {
@@ -62,4 +65,25 @@ type JukeboxStart struct {
 
 type JukeboxEnd struct {
 	ItemId uint32 `json:"itemId"`
+}
+
+type EnvironmentStateChanged struct {
+	Kind  string `json:"kind"`
+	Name  string `json:"name"`
+	State uint32 `json:"state"`
+}
+
+// EnvironmentObject is one object that was tracked and cleared by a reset.
+type EnvironmentObject struct {
+	Kind string `json:"kind"`
+	Name string `json:"name"`
+}
+
+// EnvironmentReset carries every entry that was tracked, i.e. which objects
+// were cleared. The channel decides what, if anything, to announce for each:
+// obstacles are restored via FieldObstacleAllReset plus an explicit state-0
+// announce; no state hides a named (non-obstacle) object, so those are simply
+// cleared with no announce -- see design.md section 1.2.
+type EnvironmentReset struct {
+	Cleared []EnvironmentObject `json:"cleared"`
 }

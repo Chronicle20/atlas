@@ -539,3 +539,79 @@ func TestProcessorImpl_InstanceIsolation(t *testing.T) {
 		t.Errorf("Registry instance 2 isolation failed")
 	}
 }
+
+func TestExitAllReturnsAffectedKeys(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	ctx, te := createTestContext()
+
+	p := NewProcessor(logger, ctx)
+
+	transactionId := uuid.New()
+	worldId := world.Id(20)
+	channelId := channel.Id(20)
+	f1 := field.NewBuilder(worldId, channelId, _map.Id(300000000)).Build()
+	f2 := field.NewBuilder(worldId, channelId, _map.Id(300000001)).Build()
+	f3 := field.NewBuilder(worldId, channelId, _map.Id(300000002)).Build()
+
+	targetChar := uint32(7)
+	otherChar := uint32(8)
+
+	p.Enter(transactionId, f1, targetChar)
+	p.Enter(transactionId, f2, targetChar)
+	p.Enter(transactionId, f3, otherChar)
+
+	affected := p.ExitAll(targetChar)
+
+	if len(affected) != 2 {
+		t.Fatalf("Expected 2 affected keys, got %d", len(affected))
+	}
+
+	key1 := MapKey{Tenant: te, Field: f1}
+	key2 := MapKey{Tenant: te, Field: f2}
+	key3 := MapKey{Tenant: te, Field: f3}
+
+	foundKeys := make(map[MapKey]bool)
+	for _, k := range affected {
+		foundKeys[k] = true
+	}
+	if !foundKeys[key1] {
+		t.Errorf("Expected affected keys to contain key1")
+	}
+	if !foundKeys[key2] {
+		t.Errorf("Expected affected keys to contain key2")
+	}
+	if foundKeys[key3] {
+		t.Errorf("Did not expect affected keys to contain key3")
+	}
+}
+
+func TestExitAllIgnoresOtherTenants(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+
+	ctxA, teA := createTestContext()
+	ctxB, _ := createTestContext()
+
+	pA := NewProcessor(logger, ctxA)
+	pB := NewProcessor(logger, ctxB)
+
+	transactionId := uuid.New()
+	worldId := world.Id(21)
+	channelId := channel.Id(21)
+	f1 := field.NewBuilder(worldId, channelId, _map.Id(300000010)).Build()
+
+	sharedChar := uint32(7)
+
+	pA.Enter(transactionId, f1, sharedChar)
+	pB.Enter(transactionId, f1, sharedChar)
+
+	affected := pA.ExitAll(sharedChar)
+
+	if len(affected) != 1 {
+		t.Fatalf("Expected 1 affected key, got %d", len(affected))
+	}
+	for _, k := range affected {
+		if k.Tenant != teA {
+			t.Errorf("Expected affected key tenant %v, got %v", teA, k.Tenant)
+		}
+	}
+}

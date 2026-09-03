@@ -295,6 +295,13 @@ const (
 	// the client resolves it from the item's WZ info/path node itself.
 	PlayJukebox Action = "play_jukebox"
 
+	// Environment object actions. Both are fire-and-forget: the step
+	// completes when the command is produced, and neither has a
+	// compensating action -- reversing a move is the script author's job
+	// (a second move_environment, or reset_environment).
+	MoveEnvironment  Action = "move_environment"
+	ResetEnvironment Action = "reset_environment"
+
 	// Note actions
 	CreateNote Action = "create_note"
 

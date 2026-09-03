@@ -11,6 +11,7 @@ import (
 	"atlas-channel/door"
 	dragoncmd "atlas-channel/dragon"
 	"atlas-channel/drop"
+	"atlas-channel/environment"
 	"atlas-channel/events"
 	"atlas-channel/guild"
 	"atlas-channel/jukebox"
@@ -64,6 +65,7 @@ import (
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	summonpkt "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -120,6 +122,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventJukeboxEnd(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventEnvironmentStateChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventEnvironmentReset(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -390,6 +402,20 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 
 		routine.Go(l, ctx, func(_ context.Context) {
 			announceActiveJukebox(l, ctx, wp, f, s)
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			entries, eerr := environment.NewProcessor(l, ctx).GetAll(f)
+			if eerr != nil {
+				// Fails open: an unreachable atlas-maps costs the replayed
+				// object state, not the map entry.
+				degrade.Observe(l.WithField("instance", f.Instance()), "channel.map.environment_replay", uint32(f.MapId()), eerr)
+				return
+			}
+			if len(entries) == 0 {
+				return
+			}
+			announceEnvironmentState(l, ctx, wp, entries, s)
 		})
 
 		return nil
@@ -1156,6 +1182,136 @@ func handleStatusEventJukeboxEnd(sc server.Model, wp writer.Producer) func(l log
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast jukebox end to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+
+// announceObjectState sends one (name, state) to s using the writer preferred
+// for kind, falling back to SetObjectState when the tenant routes no writer for
+// that opcode. The fallback is behaviourally identical: CField::OnSetObjectState
+// and CField::OnFieldObstacleOnOff are the same client function
+// (CMapLoadable::SetObjectState), differing only in opcode -- see design.md
+// section 1.1. gms_48_1 routes no obstacle writer at all and gms_61_1 routes
+// neither FieldObstacleOnOff nor FieldObstacleAllReset, so this is a branch on a
+// real "writer not found" error rather than a version sniff.
+func announceObjectState(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, kind field.ObjectKind, name string, state uint32, s session.Model) error {
+	if kind == field.ObjectKindObstacle {
+		if _, err := wp(fieldcb.FieldObstacleOnOffWriter); err == nil {
+			return doorAnnounce(l, ctx, wp, fieldcb.FieldObstacleOnOffWriter, writer.FieldObstacleOnOffBody(name, state), s)
+		}
+	}
+	if _, err := wp(fieldcb.SetObjectStateWriter); err != nil {
+		l.WithError(err).Errorf("Tenant routes no [%s] writer; unable to set object [%s] state.", fieldcb.SetObjectStateWriter, name)
+		return err
+	}
+	return doorAnnounce(l, ctx, wp, fieldcb.SetObjectStateWriter, writer.SetObjectStateBody(name, state), s)
+}
+
+// announceEnvironmentState replays the field's tracked object state to a single
+// entering session: obstacles first as one FieldObstacleOnOffList when that
+// writer is routed, then one SetObjectState per environment object, in the
+// insertion order atlas-maps preserved. Replay order is observable to the
+// client. gms_48_1 routes no obstacle list writer, so the obstacle branch falls
+// back to one announceObjectState per obstacle.
+func announceEnvironmentState(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, entries []environment.Model, s session.Model) {
+	obstacles := make([]fieldcb.ObstacleState, 0, len(entries))
+	obstacleNames := make([]environment.Model, 0, len(entries))
+	others := make([]environment.Model, 0, len(entries))
+	for _, e := range entries {
+		kind, err := field.ParseObjectKind(e.Kind())
+		if err != nil {
+			l.WithError(err).Errorf("Skipping environment object [%s] on enter replay.", e.Name())
+			continue
+		}
+		if kind == field.ObjectKindObstacle {
+			obstacles = append(obstacles, fieldcb.NewObstacleState(e.Name(), e.State()))
+			obstacleNames = append(obstacleNames, e)
+			continue
+		}
+		others = append(others, e)
+	}
+
+	if len(obstacles) > 0 {
+		if _, err := wp(fieldcb.FieldObstacleOnOffListWriter); err == nil {
+			_ = doorAnnounce(l, ctx, wp, fieldcb.FieldObstacleOnOffListWriter, writer.FieldObstacleOnOffListBody(obstacles), s)
+		} else {
+			for _, e := range obstacleNames {
+				_ = announceObjectState(l, ctx, wp, field.ObjectKindObstacle, e.Name(), e.State(), s)
+			}
+		}
+	}
+
+	for _, e := range others {
+		_ = announceObjectState(l, ctx, wp, field.ObjectKindEnvironment, e.Name(), e.State(), s)
+	}
+}
+
+func handleStatusEventEnvironmentStateChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.EnvironmentStateChanged]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.EnvironmentStateChanged]) {
+		if e.Type != _map3.EventTopicMapStatusTypeEnvironmentStateChanged {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		kind, err := field.ParseObjectKind(e.Body.Kind)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast environment state change in map [%d] instance [%s].", e.MapId, e.Instance)
+			return
+		}
+
+		l.Debugf("Environment object [%s] kind [%s] set to state [%d] in map [%d] instance [%s].", e.Body.Name, e.Body.Kind, e.Body.State, e.MapId, e.Instance)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			return announceObjectState(l, ctx, wp, kind, e.Body.Name, e.Body.State, s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast environment state change to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+
+func handleStatusEventEnvironmentReset(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.EnvironmentReset]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.EnvironmentReset]) {
+		if e.Type != _map3.EventTopicMapStatusTypeEnvironmentReset {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Environment reset in map [%d] instance [%s]; restoring [%d] tracked object(s).", e.MapId, e.Instance, len(e.Body.Cleared))
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			// FieldObstacleAllReset restores only the client's own obstacle
+			// list, and gms_48_1 / gms_61_1 route no such writer at all.
+			if _, werr := wp(fieldcb.FieldObstacleAllResetWriter); werr == nil {
+				_ = doorAnnounce(l, ctx, wp, fieldcb.FieldObstacleAllResetWriter, writer.FieldObstacleAllResetBody(), s)
+			}
+			// Obstacles are restored twice: FieldObstacleAllReset above, and an
+			// explicit SetObjectState(name, 0) here for clients that route no
+			// obstacle-all-reset writer. Non-obstacle (named) objects announce
+			// nothing: no state hides a named object client-side (every state
+			// layer is created at alpha 0, and SetObjectState(name, -1)
+			// re-shows the current state rather than clearing it), so clearing
+			// tracking is already the correct reset -- see the "Fix" section of
+			// docs/tasks/task-278-map-environment-object-state/diagnosis-l2-is-not-a-state.md.
+			for _, o := range e.Body.Cleared {
+				kind, kerr := field.ParseObjectKind(o.Kind)
+				if kerr != nil {
+					l.WithError(kerr).Errorf("Skipping cleared object [%s] in map [%d] instance [%s].", o.Name, e.MapId, e.Instance)
+					continue
+				}
+				if kind != field.ObjectKindObstacle {
+					continue
+				}
+				_ = announceObjectState(l, ctx, wp, kind, o.Name, 0, s)
+			}
+			return nil
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast environment reset to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
 	}
 }

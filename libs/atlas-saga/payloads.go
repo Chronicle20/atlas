@@ -1318,6 +1318,28 @@ type FieldEffectWeatherPayload struct {
 	Duration  uint32     `json:"duration"`  // Duration in seconds
 }
 
+// MoveEnvironmentPayload represents the payload for setting the state of one
+// named field object. Kind selects the clientbound opcode; see
+// libs/atlas-constants/field.ObjectKind.
+type MoveEnvironmentPayload struct {
+	WorldId   world.Id         `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id       `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id          `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID        `json:"instance"`  // Instance UUID of the field
+	Kind      field.ObjectKind `json:"kind"`      // ENVIRONMENT or OBSTACLE
+	Name      string           `json:"name"`      // Opaque object name, not validated against WZ data
+	State     uint32           `json:"state"`     // New object state
+}
+
+// ResetEnvironmentPayload represents the payload for clearing every tracked
+// field object and restoring the field's objects to their default state.
+type ResetEnvironmentPayload struct {
+	WorldId   world.Id   `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id    `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID  `json:"instance"`  // Instance UUID of the field
+}
+
 // PlayJukeboxPayload represents the payload for starting a jukebox song in a field.
 type PlayJukeboxPayload struct {
 	WorldId    world.Id   `json:"worldId"`    // WorldId of the field

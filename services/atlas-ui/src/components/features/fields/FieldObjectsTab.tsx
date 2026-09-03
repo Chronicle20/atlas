@@ -17,10 +17,10 @@ export interface TrackedObject {
 }
 
 interface FieldObjectsTabProps {
-  defined?: MapObjectData[];
-  definedError?: Error;
-  tracked?: TrackedObject[];
-  trackedError?: Error;
+  defined?: MapObjectData[] | undefined;
+  definedError?: Error | undefined;
+  tracked?: TrackedObject[] | undefined;
+  trackedError?: Error | undefined;
 }
 
 /**

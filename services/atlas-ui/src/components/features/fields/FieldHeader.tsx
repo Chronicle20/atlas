@@ -7,7 +7,7 @@ interface FieldHeaderProps {
   mapId: string;
   instanceId: string;
   mapName: string;
-  worldName?: string;
+  worldName?: string | undefined;
 }
 
 /**

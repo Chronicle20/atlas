@@ -133,7 +133,7 @@ describe("LiveFieldsSection", () => {
       isLoading: false,
       error: null,
     });
-    useLiveMonstersMock.mockImplementation((w: number, c: number) => {
+    useLiveMonstersMock.mockImplementation((_w: number, c: number) => {
       if (c === 1) {
         return { data: undefined, isLoading: false, error: new Error("boom") };
       }

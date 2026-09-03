@@ -9,8 +9,8 @@ import {
 import type { MapObjectData } from "@/services/api/map-entities.service";
 
 interface MapObjectsTableProps {
-  objects?: MapObjectData[];
-  error?: Error;
+  objects?: MapObjectData[] | undefined;
+  error?: Error | undefined;
 }
 
 export function MapObjectsTable({ objects, error }: MapObjectsTableProps) {

@@ -36,8 +36,8 @@ interface MapDetailTabsProps {
   monstersError?: unknown;
   reactors: MapReactorData[] | undefined;
   reactorsError?: unknown;
-  objects?: MapObjectData[];
-  objectsError?: Error;
+  objects?: MapObjectData[] | undefined;
+  objectsError?: Error | null | undefined;
 }
 
 export function MapDetailTabs({
@@ -227,7 +227,10 @@ export function MapDetailTabs({
       <TabsContent value="objects">
         <Card>
           <CardContent className="pt-6">
-            <MapObjectsTable objects={objects} error={objectsError} />
+            <MapObjectsTable
+              objects={objects}
+              error={objectsError ?? undefined}
+            />
           </CardContent>
         </Card>
       </TabsContent>

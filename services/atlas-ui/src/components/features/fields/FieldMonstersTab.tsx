@@ -12,8 +12,8 @@ import { cn } from "@/lib/utils";
 import type { LiveMonsterData } from "@/services/api/live-monsters.service";
 
 export interface FieldMonstersTabProps {
-  monsters?: LiveMonsterData[];
-  error?: Error;
+  monsters?: LiveMonsterData[] | undefined;
+  error?: Error | undefined;
   mapId: number;
 }
 

@@ -41,11 +41,11 @@ func handleGetNpcsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 						ns, err := p.GetInField(f)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to retrieve npcs in field.")
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 
-						res, err := model.SliceMap(Transform)(model.FixedProvider(ns))()()
+						res, err := TransformSlice(ns)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							server.WriteErrorResponse(d.Logger())(w)(err)
@@ -85,7 +85,7 @@ func handleCreateNpcInMap(d *rest.HandlerDependency, c *rest.HandlerContext, inp
 						res, err := model.Map(Transform)(model.FixedProvider(m))()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 

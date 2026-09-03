@@ -2,7 +2,6 @@ package monster
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -76,10 +75,9 @@ func (p *ProcessorImpl) GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit 
 // clear that field.ResetField composes with (Cosmic's clearMapObjects()
 // monster half).
 func (p *ProcessorImpl) DeleteInMap(f field.Model) error {
-	root, err := getBaseRequest(p.ctx)
+	url, err := inMapUrl(p.ctx, f)
 	if err != nil {
 		return err
 	}
-	url := fmt.Sprintf(root+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance())
 	return requests.DeleteRequest(url)(p.l, p.ctx)
 }

@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"atlas-query-aggregator/area_info"
 	"atlas-query-aggregator/buddy"
 	"atlas-query-aggregator/buff"
 	"atlas-query-aggregator/character"
@@ -42,6 +43,7 @@ type ValidationContextBuilder struct {
 	partyQuestP party_quest.Processor
 	mbP         monsterbook.Processor
 	playerNpcP  playernpc.Processor
+	areaInfoP   area_info.Processor
 	l           logrus.FieldLogger
 	ctx         context.Context
 }
@@ -65,6 +67,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		partyQuestP: nil,
 		mbP:         nil,
 		playerNpcP:  nil,
+		areaInfoP:   nil,
 		l:           nil,
 		ctx:         nil,
 	}
@@ -89,6 +92,7 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 		partyQuestP: party_quest.NewProcessor(l, ctx),
 		mbP:         monsterbook.NewProcessor(l, ctx),
 		playerNpcP:  playernpc.NewProcessor(l, ctx),
+		areaInfoP:   area_info.NewProcessor(l, ctx),
 		l:           l,
 		ctx:         ctx,
 	}
@@ -176,6 +180,7 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		partyQuestP: b.partyQuestP,
 		mbP:         b.mbP,
 		playerNpcP:  b.playerNpcP,
+		areaInfoP:   b.areaInfoP,
 		l:           b.l,
 		ctx:         b.ctx,
 	}

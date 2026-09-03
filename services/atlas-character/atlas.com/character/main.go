@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-character/area_info"
 	"atlas-character/character"
 	"atlas-character/equipslot"
 	"atlas-character/kafka/consumer/drop"
@@ -71,7 +72,7 @@ func main() {
 	session.InitRegistry(rc)
 	character.InitTemporalRegistry(rc)
 
-	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, teleport_rock.Migration, pending_change.Migration, equipslot.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, teleport_rock.Migration, pending_change.Migration, equipslot.Migration, area_info.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -129,6 +130,7 @@ func main() {
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
 		AddRouteInitializer(equipslot.InitResource(GetServer())(db)).
+		AddRouteInitializer(area_info.InitResource(GetServer())(db)).
 		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)(func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (world.Id, error) {
 			m, err := character.NewProcessor(l, ctx, db).GetById()(characterId)
 			if err != nil {

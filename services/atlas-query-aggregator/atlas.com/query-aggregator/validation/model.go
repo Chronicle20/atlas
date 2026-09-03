@@ -61,6 +61,7 @@ const (
 	MonsterBookCountCondition       ConditionType = ConditionType(sharedsaga.MonsterBookCountCondition)
 	PetTamenessCondition            ConditionType = ConditionType(sharedsaga.PetTamenessCondition)
 	CanSpawnPlayerNpcCondition      ConditionType = ConditionType(sharedsaga.CanSpawnPlayerNpcCondition)
+	AreaInfoCondition               ConditionType = ConditionType(sharedsaga.AreaInfoCondition)
 )
 
 // Operator represents the comparison operator in a condition

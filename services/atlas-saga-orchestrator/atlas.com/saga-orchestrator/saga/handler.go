@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/area_info"
 	"atlas-saga-orchestrator/buddylist"
 	"atlas-saga-orchestrator/buff"
 	"atlas-saga-orchestrator/cashshop"
@@ -113,6 +114,9 @@ type Handler interface {
 	// WithFieldProcessor is the injector seam for handleResetField's
 	// atlas-maps field-reset call (task-290 G5).
 	WithFieldProcessor(fieldclient.Processor) Handler
+	// WithAreaInfoProcessor is the injector seam for handleUpdateAreaInfo's
+	// atlas-character area-info persist call (task-290 G12).
+	WithAreaInfoProcessor(area_info.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -273,6 +277,7 @@ type HandlerImpl struct {
 	npcSpawnP          npc_spawn.Processor
 	dropsP             drops.Processor
 	fieldP             fieldclient.Processor
+	areaInfoP          area_info.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -315,7 +320,17 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		npcSpawnP:          npc_spawn.NewProcessor(l, ctx),
 		dropsP:             drops.NewProcessor(l, ctx),
 		fieldP:             fieldclient.NewProcessor(l, ctx),
+		areaInfoP:          area_info.NewProcessor(l, ctx),
 	}
+}
+
+// WithAreaInfoProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
+func (h *HandlerImpl) WithAreaInfoProcessor(areaInfoP area_info.Processor) Handler {
+	c := *h
+	c.areaInfoP = areaInfoP
+	return &c
 }
 
 func (h *HandlerImpl) WithCharacterProcessor(charP character.Processor) Handler {
@@ -3222,6 +3237,13 @@ func (h *HandlerImpl) handleUpdateAreaInfo(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(UpdateAreaInfoPayload)
 	if !ok {
 		return errors.New("invalid payload")
+	}
+
+	// Persist before announcing, so a client that re-reads the value
+	// immediately after the packet sees the stored one (task-290 G12).
+	if err := h.areaInfoP.Put(payload.CharacterId, payload.Area, payload.Info); err != nil {
+		h.logActionError(s, st, err, "Unable to persist area info.")
+		return err
 	}
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)

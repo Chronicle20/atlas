@@ -1,6 +1,7 @@
 package saga
 
 import (
+	areaInfoMock "atlas-saga-orchestrator/area_info/mock"
 	"atlas-saga-orchestrator/character/mock"
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
@@ -8,6 +9,7 @@ import (
 	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	notemock "atlas-saga-orchestrator/note/mock"
 	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
+	systemMessageMock "atlas-saga-orchestrator/system_message/mock"
 	"atlas-saga-orchestrator/validation"
 	mock3 "atlas-saga-orchestrator/validation/mock"
 	"encoding/json"
@@ -1828,4 +1830,60 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "atlas-maps unreachable")
 	})
+}
+
+// TestHandleUpdateAreaInfo asserts handleUpdateAreaInfo persists the area
+// info through areaInfoP before announcing it through systemMessageP
+// (task-290 G12) -- a client that re-reads the value immediately after the
+// packet must see the stored one.
+func TestHandleUpdateAreaInfo(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	var calls []string
+
+	areaInfoP := &areaInfoMock.ProcessorMock{
+		PutFunc: func(characterId uint32, area uint16, info string) error {
+			calls = append(calls, "persist")
+			assert.Equal(t, uint32(12345), characterId)
+			assert.Equal(t, uint16(21019), area)
+			assert.Equal(t, "miss=o;helper=clear", info)
+			return nil
+		},
+	}
+	systemMessageP := &systemMessageMock.ProcessorMock{
+		UpdateAreaInfoFunc: func(transactionId uuid.UUID, ch channel.Model, characterId uint32, area uint16, info string) error {
+			calls = append(calls, "announce")
+			assert.Equal(t, uint32(12345), characterId)
+			assert.Equal(t, uint16(21019), area)
+			assert.Equal(t, "miss=o;helper=clear", info)
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("test").
+		Build()
+	require.NoError(t, err)
+
+	step := NewStep[any]("update-area-info", Pending, UpdateAreaInfo, UpdateAreaInfoPayload{
+		CharacterId: 12345,
+		WorldId:     0,
+		ChannelId:   0,
+		Area:        21019,
+		Info:        "miss=o;helper=clear",
+	})
+
+	// WithAreaInfoProcessor is applied last: it uses the shallow-copy form
+	// (see its doc comment), which preserves every field already set, unlike
+	// the field-by-field With* siblings.
+	err = NewHandler(logger, ctx).
+		WithSystemMessageProcessor(systemMessageP).
+		WithAreaInfoProcessor(areaInfoP).
+		handleUpdateAreaInfo(s, step)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"persist", "announce"}, calls)
 }

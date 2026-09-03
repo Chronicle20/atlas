@@ -216,6 +216,9 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.StartQuest:       {EventKindQuestStarted},
 	sharedsaga.SetQuestProgress: {EventKindQuestStarted},
 	sharedsaga.ForfeitQuest:     {EventKindQuestForfeited},
+	// ExplorerQuest composes a StartQuest command with a synchronous
+	// medal-map REST record; it does not itself wait on a downstream event.
+	sharedsaga.ExplorerQuest: {},
 
 	// Consumable.
 	sharedsaga.ApplyConsumableEffect:  {EventKindConsumableEffectApplied},

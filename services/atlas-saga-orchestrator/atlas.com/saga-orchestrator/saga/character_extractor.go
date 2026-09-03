@@ -66,6 +66,8 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case StartQuestPayload:
 		return p.CharacterId
+	case ExplorerQuestPayload:
+		return p.CharacterId
 	case ApplyConsumableEffectPayload:
 		return uint32(p.CharacterId)
 	case CancelConsumableEffectPayload:

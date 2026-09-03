@@ -135,6 +135,7 @@ const (
 	StartQuest       = sharedsaga.StartQuest
 	SetQuestProgress = sharedsaga.SetQuestProgress
 	ForfeitQuest     = sharedsaga.ForfeitQuest
+	ExplorerQuest    = sharedsaga.ExplorerQuest
 
 	// Consumable effect actions
 	ApplyConsumableEffect  = sharedsaga.ApplyConsumableEffect
@@ -352,6 +353,7 @@ type (
 	StartQuestPayload                   = sharedsaga.StartQuestPayload
 	ForfeitQuestPayload                 = sharedsaga.ForfeitQuestPayload
 	SetQuestProgressPayload             = sharedsaga.SetQuestProgressPayload
+	ExplorerQuestPayload                = sharedsaga.ExplorerQuestPayload
 	SendMessagePayload                  = sharedsaga.SendMessagePayload
 	FieldEffectPayload                  = sharedsaga.FieldEffectPayload
 	UiLockPayload                       = sharedsaga.UiLockPayload
@@ -1363,6 +1365,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ForfeitQuest:
 		var payload ForfeitQuestPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ExplorerQuest:
+		var payload ExplorerQuestPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

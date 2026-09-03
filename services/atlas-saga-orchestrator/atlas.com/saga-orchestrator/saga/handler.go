@@ -108,6 +108,7 @@ type Handler interface {
 	handleAwardAsset(s Saga, st Step[any]) error
 	handleWarpToRandomPortal(s Saga, st Step[any]) error
 	handleWarpToPortal(s Saga, st Step[any]) error
+	handleWarpToMap(s Saga, st Step[any]) error
 	handleAwardExperience(s Saga, st Step[any]) error
 	handleAwardLevel(s Saga, st Step[any]) error
 	handleAwardMesos(s Saga, st Step[any]) error
@@ -852,6 +853,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleWarpToRandomPortal, true
 	case WarpToPortal:
 		return h.handleWarpToPortal, true
+	case WarpToMap:
+		return h.handleWarpToMap, true
 	case AwardExperience:
 		return h.handleAwardExperience, true
 	case AwardLevel:
@@ -1154,6 +1157,25 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 	err := h.charP.WarpToPortalAndEmit(s.TransactionId(), payload.CharacterId, f, portalProvider)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to specific portal.")
+		return err
+	}
+
+	return nil
+}
+
+// handleWarpToMap handles the WarpToMap action. Unlike WarpToPortal and
+// WarpToRandomPortal, no portal is named — the destination service picks the
+// character's spawn point, matching Cosmic's warpAhead/getRandomPlayerSpawnpoint
+// (task-290 G1a).
+func (h *HandlerImpl) handleWarpToMap(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(WarpToMapPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.WarpToMapAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, payload.ChannelId, payload.MapId)
+	if err != nil {
+		h.logActionError(s, st, err, fmt.Sprintf("Failed to warp character %d to map %d", payload.CharacterId, payload.MapId))
 		return err
 	}
 

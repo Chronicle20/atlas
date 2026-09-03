@@ -44,6 +44,8 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case WarpToPortalPayload:
 		return p.CharacterId
+	case WarpToMapPayload:
+		return p.CharacterId
 	case WarpToSavedLocationPayload:
 		return p.CharacterId
 	case SpawnMonsterPayload:

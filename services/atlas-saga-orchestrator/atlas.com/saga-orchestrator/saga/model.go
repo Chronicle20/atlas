@@ -96,6 +96,7 @@ const (
 	WarpToPortal        = sharedsaga.WarpToPortal
 	WarpToSavedLocation = sharedsaga.WarpToSavedLocation
 	SaveLocation        = sharedsaga.SaveLocation
+	WarpToMap           = sharedsaga.WarpToMap
 
 	// Character state actions
 	ChangeJob              = sharedsaga.ChangeJob
@@ -292,6 +293,7 @@ type (
 	ItemPayload                         = sharedsaga.ItemPayload
 	WarpToRandomPortalPayload           = sharedsaga.WarpToRandomPortalPayload
 	WarpToPortalPayload                 = sharedsaga.WarpToPortalPayload
+	WarpToMapPayload                    = sharedsaga.WarpToMapPayload
 	AwardExperiencePayload              = sharedsaga.AwardExperiencePayload
 	AwardLevelPayload                   = sharedsaga.AwardLevelPayload
 	AwardMesosPayload                   = sharedsaga.AwardMesosPayload
@@ -1132,6 +1134,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case WarpToPortal:
 		var payload WarpToPortalPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case WarpToMap:
+		var payload WarpToMapPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

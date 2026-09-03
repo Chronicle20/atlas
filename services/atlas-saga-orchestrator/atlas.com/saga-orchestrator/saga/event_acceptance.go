@@ -291,7 +291,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
 	sharedsaga.AwaitInventoryCreated: {EventKindInventoryCreated, EventKindInventoryCreationFailed},
 
-	// All three warp actions advance on character.map_changed, tagged with the
+	// All four warp actions advance on character.map_changed, tagged with the
 	// saga transactionId. atlas-maps warp.ProcessorImpl.ChangeMap
 	// (services/atlas-maps/atlas.com/maps/character/warp/processor.go) emits
 	// MAP_CHANGED *unconditionally* — there is no same-map short-circuit there
@@ -330,6 +330,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.WarpToRandomPortal:  {EventKindCharacterMapChanged},
 	sharedsaga.WarpToPortal:        {EventKindCharacterMapChanged},
 	sharedsaga.WarpToSavedLocation: {EventKindCharacterMapChanged},
+	sharedsaga.WarpToMap:           {EventKindCharacterMapChanged},
 
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
 	sharedsaga.SaveLocation:               {},

@@ -48,6 +48,15 @@ type WarpToPortalPayload struct {
 	PortalName  string     `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided)
 }
 
+// WarpToMapPayload represents the payload required to warp a character to a
+// map without naming a portal. The destination service picks the spawn point.
+type WarpToMapPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       _map.Id    `json:"mapId"`       // MapId specifies the destination map to warp to
+}
+
 // AwardExperiencePayload represents the payload required to award experience to a character.
 type AwardExperiencePayload struct {
 	CharacterId   uint32                    `json:"characterId"`   // CharacterId associated with the action

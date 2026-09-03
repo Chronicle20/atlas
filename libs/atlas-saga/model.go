@@ -118,6 +118,11 @@ const (
 	WarpToPortal        Action = "warp_to_portal"
 	WarpToSavedLocation Action = "warp_to_saved_location"
 	SaveLocation        Action = "save_location"
+	// WarpToMap warps a character to a map, letting the destination service
+	// pick the spawn point. Distinct from WarpToPortal/WarpToRandomPortal,
+	// both of which target a portal — Cosmic's warpAhead resolves
+	// getRandomPlayerSpawnpoint(), which is not a portal (task-290 G1a).
+	WarpToMap Action = "warp_to_map"
 
 	// Character state actions
 	ChangeJob              Action = "change_job"

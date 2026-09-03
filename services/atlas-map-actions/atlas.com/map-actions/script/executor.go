@@ -66,6 +66,8 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeBoatEffect(f, characterId, op)
 	case "clear_skill":
 		return e.executeClearSkill(f, characterId, op)
+	case "warp_to_map":
+		return e.executeWarpToMap(f, characterId, op)
 	default:
 		// FR-3.0 / design D3: an unknown operation is a seed defect, not a
 		// no-op. The schema's operation enum is generated from this switch
@@ -597,6 +599,43 @@ func (e *OperationExecutor) executeChangeMusic(f field.Model, characterId uint32
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),
 				Path:        path,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeWarpToMap warps a character to a map without naming a portal.
+// Cosmic's warpAhead(mapId) resolves getRandomPlayerSpawnpoint() on the
+// destination map — a random player spawn point, not a portal — so this
+// action names only the destination map and lets the saga/character layer
+// pick the spawn point (task-290 G1a).
+func (e *OperationExecutor) executeWarpToMap(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	mapIdStr, ok := params["mapId"]
+	if !ok {
+		return fmt.Errorf("warp_to_map operation missing mapId parameter")
+	}
+	mapId, err := strconv.ParseUint(mapIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid mapId [%s]: %w", mapIdStr, err)
+	}
+
+	e.l.Debugf("Warping character [%d] to map [%d].", characterId, mapId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-warp").
+		AddStep(
+			fmt.Sprintf("warp-%d-%d", characterId, mapId),
+			saga.Pending,
+			saga.WarpToMap,
+			saga.WarpToMapPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				MapId:       _map.Id(mapId),
 			},
 		).Build()
 

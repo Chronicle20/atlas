@@ -158,7 +158,8 @@
             "play_sound",
             "change_music",
             "boat_effect",
-            "clear_skill"
+            "clear_skill",
+            "warp_to_map"
           ]
         },
         "params": {
@@ -597,6 +598,31 @@
                   "skillId": {
                     "type": "string",
                     "description": "Skill ID to remove from the character entirely"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "warp_to_map"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "mapId"
+                ],
+                "properties": {
+                  "mapId": {
+                    "type": "string",
+                    "description": "Destination map ID; the destination service picks the spawn point"
                   }
                 }
               }

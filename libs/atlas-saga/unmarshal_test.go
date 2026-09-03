@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -1689,6 +1690,36 @@ func TestUnmarshalClearSkillStep(t *testing.T) {
 		t.Fatalf("expected ClearSkillPayload, got %T", step.Payload)
 	}
 	want := ClearSkillPayload{CharacterId: 1, WorldId: world.Id(0), SkillId: 20000014}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}
+
+func TestUnmarshalWarpToMapStep(t *testing.T) {
+	raw := `{
+		"stepId": "warp-map-1",
+		"status": "pending",
+		"action": "warp_to_map",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 200090010
+		}
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != WarpToMap {
+		t.Fatalf("expected action WarpToMap, got %q", step.Action)
+	}
+	p, ok := step.Payload.(WarpToMapPayload)
+	if !ok {
+		t.Fatalf("expected WarpToMapPayload, got %T", step.Payload)
+	}
+	want := WarpToMapPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), MapId: _map.Id(200090010)}
 	if p != want {
 		t.Errorf("payload = %+v, want %+v", p, want)
 	}

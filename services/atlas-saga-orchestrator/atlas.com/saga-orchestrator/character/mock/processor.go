@@ -20,6 +20,8 @@ type ProcessorMock struct {
 	WarpRandomFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model) error
 	WarpToPortalAndEmitFunc     func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 	WarpToPortalFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
+	WarpToMapAndEmitFunc        func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error
+	WarpToMapFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error
 	AwardExperienceAndEmitFunc  func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
 	AwardExperienceFunc         func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
 	DeductExperienceAndEmitFunc func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error
@@ -80,6 +82,24 @@ func (m *ProcessorMock) WarpToPortal(mb *message.Buffer) func(transactionId uuid
 		return m.WarpToPortalFunc(mb)
 	}
 	return func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error {
+		return nil
+	}
+}
+
+// WarpToMapAndEmit is a mock implementation of the character.Processor.WarpToMapAndEmit method
+func (m *ProcessorMock) WarpToMapAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+	if m.WarpToMapAndEmitFunc != nil {
+		return m.WarpToMapAndEmitFunc(transactionId, characterId, worldId, channelId, mapId)
+	}
+	return nil
+}
+
+// WarpToMap is a mock implementation of the character.Processor.WarpToMap method
+func (m *ProcessorMock) WarpToMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+	if m.WarpToMapFunc != nil {
+		return m.WarpToMapFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
 		return nil
 	}
 }

@@ -1080,3 +1080,50 @@ func TestExecuteWarpToMapParamValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestExecuteSpawnNpc(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(108010600)).SetInstance(inst).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("spawn_npc").
+		SetParams(map[string]string{"npcId": "1104100", "spawnIfAbsent": "true", "x": "2830", "y": "78"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 1 {
+		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+	}
+	if rec.created[0].Steps[0].Action != saga.SpawnNpc {
+		t.Errorf("Steps[0].Action = %v, want saga.SpawnNpc", rec.created[0].Steps[0].Action)
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.SpawnNpcPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.SpawnNpcPayload")
+	}
+	want := saga.SpawnNpcPayload{
+		CharacterId:   1,
+		WorldId:       world.Id(0),
+		ChannelId:     channel.Id(1),
+		MapId:         _map.Id(108010600),
+		Instance:      inst,
+		NpcId:         1104100,
+		X:             2830,
+		Y:             78,
+		SpawnIfAbsent: true,
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}

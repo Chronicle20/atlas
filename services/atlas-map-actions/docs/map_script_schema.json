@@ -159,7 +159,8 @@
             "change_music",
             "boat_effect",
             "clear_skill",
-            "warp_to_map"
+            "warp_to_map",
+            "spawn_npc"
           ]
         },
         "params": {
@@ -623,6 +624,49 @@
                   "mapId": {
                     "type": "string",
                     "description": "Destination map ID; the destination service picks the spawn point"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "spawn_npc"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "npcId",
+                  "x",
+                  "y"
+                ],
+                "properties": {
+                  "npcId": {
+                    "type": "string",
+                    "description": "NPC template ID to spawn"
+                  },
+                  "x": {
+                    "type": "string",
+                    "description": "X coordinate for spawn position"
+                  },
+                  "y": {
+                    "type": "string",
+                    "description": "Y coordinate for spawn position"
+                  },
+                  "spawnIfAbsent": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false"
+                    ],
+                    "description": "When \"true\", atlas-maps suppresses the spawn if an NPC of this template is already on the field instance."
                   }
                 }
               }

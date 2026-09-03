@@ -450,14 +450,21 @@ func (r *SpawnPointRegistry) ClaimOneTimeSpawnPoints(ctx context.Context, mapKey
 // that really fired a batch, so the 4,207 unaffected maps keep behaving exactly
 // as they do on main (design D7).
 //
-// HDEL is atomic, so no Lua is needed. It touches only the meta hash: the
-// recurring hash and its cooldown state are untouched (FR-3.3).
+// Touches only the meta hash: the recurring hash and its cooldown state are
+// untouched (FR-3.3). Routed through the meta TenantKeyedHash (Exists then
+// Del) rather than a raw client HDEL, per the atlas-redis key-guard.
 func (r *SpawnPointRegistry) RearmOneTime(ctx context.Context, mapKey character.MapKey) (bool, error) {
-	n, err := r.client.HDel(ctx, r.metaKey(mapKey), metaFieldOneTimeFired).Result()
+	existed, err := r.meta.Exists(ctx, mapKey.Tenant, mapKey, metaFieldOneTimeFired)
 	if err != nil {
 		return false, err
 	}
-	return n > 0, nil
+	if !existed {
+		return false, nil
+	}
+	if err := r.meta.Del(ctx, mapKey.Tenant, mapKey, metaFieldOneTimeFired); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Reset clears all spawn point registries, across every tenant. Primarily

@@ -21,6 +21,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -266,7 +267,7 @@ func TestInitializeForMap_PartitionsByMobTimeAndHide(t *testing.T) {
 				t.Errorf("CountOneTime() = %d, want %d", oneTimeCount, tc.wantOneTime)
 			}
 
-			seeded, err := client.HGet(ctx, r.metaKey(mapKey), metaFieldSeeded).Result()
+			seeded, err := r.meta.Get(ctx, mapKey.Tenant, mapKey, metaFieldSeeded)
 			if err != nil {
 				t.Fatalf("HGet seeded: %v", err)
 			}
@@ -396,14 +397,14 @@ func TestFlushTenant_ClearsAllThreeHashes(t *testing.T) {
 		t.Fatalf("InitializeForMap: %v", err)
 	}
 
-	keys := []string{r.recurringKey(mapKey), r.oneTimeKey(mapKey), r.metaKey(mapKey)}
-	for _, k := range keys {
-		n, err := client.Exists(ctx, k).Result()
+	hashesUnderTest := []*atlasredis.TenantKeyedHash[character.MapKey]{r.hashes, r.oneTime, r.meta}
+	for _, h := range hashesUnderTest {
+		entries, err := h.GetAll(ctx, mapKey.Tenant, mapKey)
 		if err != nil {
-			t.Fatalf("Exists(%q): %v", k, err)
+			t.Fatalf("GetAll: %v", err)
 		}
-		if n != 1 {
-			t.Fatalf("key %q should exist before flush", k)
+		if len(entries) == 0 {
+			t.Fatalf("hash should exist before flush")
 		}
 	}
 
@@ -415,13 +416,13 @@ func TestFlushTenant_ClearsAllThreeHashes(t *testing.T) {
 		t.Fatalf("deleted = %d, want 3", deleted)
 	}
 
-	for _, k := range keys {
-		n, err := client.Exists(ctx, k).Result()
+	for _, h := range hashesUnderTest {
+		entries, err := h.GetAll(ctx, mapKey.Tenant, mapKey)
 		if err != nil {
-			t.Fatalf("Exists(%q): %v", k, err)
+			t.Fatalf("GetAll: %v", err)
 		}
-		if n != 0 {
-			t.Fatalf("key %q should not exist after flush", k)
+		if len(entries) != 0 {
+			t.Fatalf("hash should not exist after flush")
 		}
 	}
 }
@@ -473,7 +474,7 @@ func TestClaimOneTimeSpawnPoints(t *testing.T) {
 			}
 		}
 
-		firedStr, err := client.HGet(ctx, r.metaKey(mapKey), metaFieldOneTimeFired).Result()
+		firedStr, err := r.meta.Get(ctx, mapKey.Tenant, mapKey, metaFieldOneTimeFired)
 		if err != nil {
 			t.Fatalf("HGet onetimeFired: %v", err)
 		}
@@ -486,7 +487,7 @@ func TestClaimOneTimeSpawnPoints(t *testing.T) {
 			t.Errorf("onetimeFired timestamp %v not within 60s of now", firedAt)
 		}
 
-		hlen, err := client.HLen(ctx, r.oneTimeKey(mapKey)).Result()
+		hlen, err := r.oneTime.Len(ctx, mapKey.Tenant, mapKey)
 		if err != nil {
 			t.Fatalf("HLen one-time hash: %v", err)
 		}
@@ -811,7 +812,7 @@ func TestRearmOneTime(t *testing.T) {
 			t.Fatalf("RearmOneTime: %v", err)
 		}
 
-		hlen, err := client.HLen(ctx, r.recurringKey(mapKey)).Result()
+		hlen, err := r.hashes.Len(ctx, mapKey.Tenant, mapKey)
 		if err != nil {
 			t.Fatalf("HLen recurring hash: %v", err)
 		}

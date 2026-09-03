@@ -1342,6 +1342,7 @@ func handleStatusEventEnvironmentReset(sc server.Model, wp writer.Producer) func
 		}
 	}
 }
+
 func handleStatusEventBackEffectSet(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.BackEffectSet]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.BackEffectSet]) {
 		if e.Type != _map3.EventTopicMapStatusTypeBackEffectSet {

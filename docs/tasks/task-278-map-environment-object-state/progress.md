@@ -136,3 +136,38 @@ with an empty `environments` table. It is healthy only because it holds a
 snapshot fetched earlier and will likely crash-loop on its next restart, as
 atlas-login did. Repair is DELETE + POST of the config row with the id preserved
 (no `ENVIRONMENT` header). See `manual-test-notes.md` for the full incident.
+
+## Revert of the l2-as-default-state fix (2026-09-03)
+
+Live testing on pr-1566 (`pr-1566-aa9548d`) disproved the premise of
+`da20524d3` + `b3706768d`: the WZ `l2` property is a resource-path component,
+not a declared default state, and the value it produced was silently dropped by
+the client's bounds check. Full evidence, including the IDA read of
+`CMapLoadable::MakeObj` / `SetObjectState` and the four-row live confirmation
+table, is in `diagnosis-l2-is-not-a-state.md`.
+
+| Unit | Agent | Verdict | Artifact |
+|---|---|---|---|
+| Revert → `6396adae4` | `task-implementer` (sonnet) | DONE | inline report; diff +284/-865 over 27 files |
+| Seam review of `6396adae4` | `task-reviewer` (sonnet) | APPROVED (0 blocking) | `reviews/revert-l2-default-state.md` |
+| Flagless `tools/verify.sh` | `task-verifier` (haiku) + controller re-run | PASS, exit 0 | `/tmp/t278/verify-6396adae4.log` (2388 lines, `All checks passed.`) |
+
+The first verifier dispatch returned mid-run with no exit code and was discarded;
+the recorded PASS is from a second, independent flagless run at `6396adae4`.
+
+Reset semantics after the revert: `FieldObstacleAllReset` plus
+`SetObjectState(name, 0)` for obstacles only. Named objects get no announce —
+clearing tracking is the reset, and replay-on-enter gives an entering client the
+map's initial (hidden) appearance. A player standing in the field at reset time
+keeps the stale visual until re-entry; that is a client limitation.
+
+### Remaining work
+
+1. **Live re-test on a new image.** Deployed `pr-1566-aa9548d` predates
+   `6396adae4`. Procedure: set `gate` to 0, confirm visible, `DELETE`, then walk
+   a character out and back in — the gate must be gone on re-entry, while a
+   character who stayed put still sees it.
+2. **`autoActive` follow-up (documented, not built).** An object whose `Obj`
+   node carries `autoActive` is visible at load, so its correct reset would be
+   `SetObjectState(name, 0)`. Reading that flag means resolving into the `Obj`
+   tree rather than the map's `obj` entry. No object in play needs it.

@@ -77,3 +77,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-03T11:00:19Z	agent	Fix round: frontend	task-reviewer	sonnet	-	-	-	-	DONE	dafc01a56	APPROVED_WITH_FINDINGS	yes	-	-
 2026-09-03T11:01:01Z	agent	final gate	gate	-	-	-	-	-	PASS	dafc01a56	-	-	-	-
 2026-09-03T11:02:50Z	agent	Refresh fix	task-implementer	sonnet	-	-	-	-	DONE	ed3ea27	-	-	-	-
+2026-09-03T11:18:37Z	agent	post-rebase gate	gate	-	-	-	-	-	PASS	570d8bd2a	-	-	-	-

@@ -1,31 +1,203 @@
-import { Link, useParams } from "react-router-dom";
-import { SurfaceKindBadge } from "@/components/features/maps/SurfaceKindBadge";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { RefreshCw } from "lucide-react";
 
-// FR-18: the field-detail header. This task renders the header from route
-// params alone; Task 17 adds the resolved world/map names and the tabbed
-// content underneath.
+import { Button } from "@/components/ui/button";
+import { PageLoader } from "@/components/common/PageLoader";
+import { ErrorDisplay } from "@/components/common/ErrorDisplay";
+import { HoverHighlightProvider } from "@/components/features/maps/HoverHighlightContext";
+import { MapImagePanel } from "@/components/features/maps/MapImagePanel";
+import { FieldHeader } from "@/components/features/fields/FieldHeader";
+import { FieldSummaryPanels } from "@/components/features/fields/FieldSummaryPanels";
+import { FieldTabs } from "@/components/features/fields/FieldTabs";
+import { useMap } from "@/lib/hooks/api/useMaps";
+import { useWorlds } from "@/lib/hooks/api/useWorlds";
+import { useFields } from "@/lib/hooks/api/useFields";
+import { useLiveMonsters } from "@/lib/hooks/api/useFieldRuntime";
+import { useMapObjects } from "@/lib/hooks/api/useMapEntities";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
+import { cn } from "@/lib/utils";
+
+const DEFAULT_TAB = "characters";
+
+// FR-18..FR-22, FR-40: the field-detail page. There is no
+// `GET /api/fields/{id}` — liveness is "holds at least one character", so an
+// empty (or non-matching) row from `useFields` is the torn-down signal
+// (FR-22), not an error.
 export function FieldDetailPage() {
-  const { worldId, channelId, mapId, instanceId } = useParams();
+  const {
+    worldId: worldIdParam,
+    channelId: channelIdParam,
+    mapId,
+    instanceId,
+  } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const worldId = Number(worldIdParam);
+  const channelId = Number(channelIdParam);
+  const numericMapId = Number(mapId);
+  const paramsValid =
+    !!mapId &&
+    !!instanceId &&
+    !Number.isNaN(worldId) &&
+    !Number.isNaN(channelId) &&
+    !Number.isNaN(numericMapId);
+
+  const mapQuery = useMap(mapId ?? "");
+  const worldsQuery = useWorlds();
+  const fieldsQuery = useFields(
+    paramsValid
+      ? { worldId, channelId, mapId: numericMapId }
+      : { worldId: -1, channelId: -1, mapId: -1 },
+  );
+  const monstersQuery = useLiveMonsters(
+    worldId,
+    channelId,
+    numericMapId,
+    instanceId ?? "",
+    paramsValid,
+  );
+  const objectsQuery = useMapObjects(mapId ?? "");
+
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    mapQuery,
+    fieldsQuery,
+    monstersQuery,
+    objectsQuery,
+  ]);
+
+  const tab = searchParams.get("tab") ?? DEFAULT_TAB;
+  const handleTabChange = (next: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("tab", next);
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  if (!paramsValid) {
+    return (
+      <div className="p-10">
+        <ErrorDisplay error="This field's route is invalid." />
+      </div>
+    );
+  }
+
+  if (mapQuery.isLoading || worldsQuery.isLoading || fieldsQuery.isLoading) {
+    return <PageLoader />;
+  }
+
+  if (mapQuery.error || !mapQuery.data) {
+    return (
+      <div className="p-10">
+        <ErrorDisplay
+          error={mapQuery.error ?? "Map not found"}
+          retry={() => mapQuery.refetch()}
+        />
+      </div>
+    );
+  }
+
+  if (fieldsQuery.error) {
+    return (
+      <div className="p-10">
+        <ErrorDisplay
+          error={fieldsQuery.error}
+          retry={() => fieldsQuery.refetch()}
+        />
+      </div>
+    );
+  }
+
+  const fieldRow = fieldsQuery.data?.find(
+    (field) => field.attributes.instanceId === instanceId,
+  );
+  const characterCount = fieldRow?.attributes.characterCount ?? 0;
+
+  // FR-22: no live characters is the torn-down signal, not an error — a
+  // genuinely live field cannot be empty.
+  if (characterCount === 0) {
+    return (
+      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-6 p-10 pb-16">
+        <div className="flex flex-col items-center justify-center gap-3 p-16 text-center">
+          <h2 className="text-lg font-semibold">
+            This field may have been torn down
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            No characters remain in this field, so it may have already been torn
+            down.
+          </p>
+          <Link to="/fields" className="text-sm underline">
+            Back to Fields
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const attrs = mapQuery.data.attributes;
+  const worldName = worldsQuery.data?.find(
+    (world) => world.id === String(worldId),
+  )?.attributes.name;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-6 p-10 pb-16">
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">Map {mapId}</h1>
-        <SurfaceKindBadge kind="runtime" />
+      <div className="flex items-start justify-between gap-4">
+        <FieldHeader
+          worldId={worldIdParam ?? ""}
+          channelId={channelIdParam ?? ""}
+          mapId={mapId ?? ""}
+          instanceId={instanceId ?? ""}
+          mapName={attrs.name}
+          worldName={worldName}
+        />
+
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void onRefresh()}
+            disabled={isRefreshing}
+            aria-busy={isRefreshing}
+          >
+            <RefreshCw
+              className={cn("h-4 w-4 mr-1.5", isRefreshing && "animate-spin")}
+            />
+            Refresh
+          </Button>
+          {lastUpdatedAt != null && lastUpdatedAt > 0 && (
+            <span
+              className="text-xs text-muted-foreground"
+              title={new Date(lastUpdatedAt).toISOString()}
+            >
+              Last updated{" "}
+              {new Date(lastUpdatedAt).toLocaleTimeString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+        </div>
       </div>
 
-      <dl className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm max-w-md">
-        <dt className="text-muted-foreground">World</dt>
-        <dd>{worldId}</dd>
-        <dt className="text-muted-foreground">Channel</dt>
-        <dd>{channelId}</dd>
-        <dt className="text-muted-foreground">Instance</dt>
-        <dd className="font-mono text-xs">{instanceId}</dd>
-      </dl>
+      <HoverHighlightProvider>
+        <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
+          <MapImagePanel
+            mapId={mapId ?? ""}
+            mapName={attrs.name}
+            mapArea={attrs.mapArea ?? null}
+          />
+          <FieldSummaryPanels
+            characterCount={characterCount}
+            liveMonsters={monstersQuery.data}
+          />
+        </div>
 
-      <Link to={`/maps/${mapId}`} className="text-sm underline">
-        View Map Definition
-      </Link>
+        <FieldTabs
+          characterCount={characterCount}
+          monsterCount={monstersQuery.data?.length ?? 0}
+          objectCount={objectsQuery.data?.length ?? 0}
+          tab={tab}
+          onTabChange={handleTabChange}
+        />
+      </HoverHighlightProvider>
     </div>
   );
 }

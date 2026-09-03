@@ -74,9 +74,9 @@ func mapActionSchemaPath() (string, bool) {
 
 // checkMapActions runs the three map-action seed invariants (design §6,
 // PRD FR-1.6, FR-2.2): byte-identical replication across every version
-// root, a "spawnIfAbsent": "true" guard on every spawn_monster operation,
-// and schema validity of data.attributes. It returns one message per
-// violation; an empty slice means the tree is clean.
+// root, a "spawnIfAbsent": "true" guard on every spawn_monster and
+// spawn_npc operation, and schema validity of data.attributes. It returns
+// one message per violation; an empty slice means the tree is clean.
 func checkMapActions(root string, docs []mapActionDoc, schemaPath string) []string {
 	var errs []string
 
@@ -222,11 +222,11 @@ func checkMapActionSpawnGuards(docs []mapActionDoc) []string {
 		}
 		for _, rule := range env.Rules {
 			for i, op := range rule.Operations {
-				if op.Type != "spawn_monster" {
+				if op.Type != "spawn_monster" && op.Type != "spawn_npc" {
 					continue
 				}
 				if op.Params["spawnIfAbsent"] != "true" {
-					errs = append(errs, fmt.Sprintf("%s: rule %q operation %d: spawn_monster requires \"spawnIfAbsent\": \"true\"", d.path, rule.ID, i+1))
+					errs = append(errs, fmt.Sprintf("%s: rule %q operation %d: %s requires \"spawnIfAbsent\": \"true\"", d.path, rule.ID, i+1, op.Type))
 				}
 			}
 		}

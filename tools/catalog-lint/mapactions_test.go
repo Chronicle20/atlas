@@ -18,6 +18,7 @@ func TestLint_MapActionExitCode(t *testing.T) {
 		{name: "good tree exits zero", dir: "testdata/good", wantErr: false},
 		{name: "unreplicated exits non-zero", dir: "testdata/bad/map-action-unreplicated", wantErr: true},
 		{name: "unguarded spawn exits non-zero", dir: "testdata/bad/map-action-unguarded-spawn", wantErr: true},
+		{name: "unguarded spawn_npc exits non-zero", dir: "testdata/bad/map-action-unguarded-spawn-npc", wantErr: true},
 		{name: "schema invalid exits non-zero", dir: "testdata/bad/map-action-schema-invalid", wantErr: true},
 		// gms/85_1 is a genuine version root (valid CATALOG_REVISION, name
 		// matches <major>_<minor>) that carries no map-actions/ directory at
@@ -120,6 +121,30 @@ func TestCheckMapActions(t *testing.T) {
 				want := `gms/83_1/map-actions/onUserEnter/map-t.json: rule "r1" operation 1: spawn_monster requires "spawnIfAbsent": "true"`
 				if !containsSubstring(errs, want) {
 					t.Fatalf("expected unguarded-spawn message %q, got %v", want, errs)
+				}
+			},
+		},
+		{
+			name: "unguarded spawn_npc",
+			root: "",
+			docs: []mapActionDoc{
+				{
+					path: "gms/83_1/map-actions/onUserEnter/map-t.json", region: "gms", version: "83_1", hook: "onUserEnter", id: "t",
+					raw: []byte(`{
+						"data": {
+							"attributes": {
+								"rules": [
+									{"id": "r1", "operations": [{"type": "spawn_npc", "params": {"npcId": "1", "x": "0", "y": "0"}}]}
+								]
+							}
+						}
+					}`),
+				},
+			},
+			match: func(t *testing.T, errs []string) {
+				want := `gms/83_1/map-actions/onUserEnter/map-t.json: rule "r1" operation 1: spawn_npc requires "spawnIfAbsent": "true"`
+				if !containsSubstring(errs, want) {
+					t.Fatalf("expected unguarded-spawn_npc message %q, got %v", want, errs)
 				}
 			},
 		},

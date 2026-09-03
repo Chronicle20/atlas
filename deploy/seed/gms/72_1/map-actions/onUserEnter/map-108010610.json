@@ -1,0 +1,27 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Explorer route map 108010610 - places NPC 1104101 at (3395, -322) if absent",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "spawn_route_npc",
+          "operations": [
+            {
+              "params": {
+                "npcId": "1104101",
+                "spawnIfAbsent": "true",
+                "x": "3395",
+                "y": "-322"
+              },
+              "type": "spawn_npc"
+            }
+          ]
+        }
+      ],
+      "scriptName": "108010610"
+    },
+    "id": "108010610",
+    "type": "map-action"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map 926000000 - resets the field and spawns 9100013 at (82, 200) if absent",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "reset_and_spawn",
+          "operations": [
+            {
+              "params": {
+                "difficulty": "1"
+              },
+              "type": "reset_field"
+            },
+            {
+              "params": {
+                "monsterId": "9100013",
+                "spawnIfAbsent": "true",
+                "x": "82",
+                "y": "200"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "scriptName": "926000000"
+    },
+    "id": "926000000",
+    "type": "map-action"
+  }
+}

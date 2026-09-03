@@ -1400,3 +1400,127 @@ func TestExecuteResetFieldBadDifficulty(t *testing.T) {
 		t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, "invalid difficulty [x]")
 	}
 }
+
+// TestExecuteOperationsCombinesResetFieldThenSpawnMonster covers the
+// 926000000.json ordering race (task-290 G5, task-C19): a reset_field
+// immediately followed by a spawn_monster must land as one saga with the
+// reset step before the spawn step, not two independently-raceable sagas.
+func TestExecuteOperationsCombinesResetFieldThenSpawnMonster(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	inst := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
+
+	resetOp, err := operation.NewBuilder().
+		SetType("reset_field").
+		SetParams(map[string]string{"difficulty": "1"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	spawnOp, err := operation.NewBuilder().
+		SetType("spawn_monster").
+		SetParams(map[string]string{
+			"monsterId":     "9100013",
+			"spawnIfAbsent": "true",
+			"x":             "82",
+			"y":             "200",
+		}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperations(f, 1, []operation.Model{resetOp, spawnOp}); err != nil {
+		t.Fatalf("ExecuteOperations() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1 (one combined saga, not two independent sagas)", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 2 {
+		t.Fatalf("len(Steps) = %d, want 2", len(rec.created[0].Steps))
+	}
+
+	if rec.created[0].Steps[0].Action != saga.ResetField {
+		t.Errorf("Steps[0].Action = %v, want saga.ResetField", rec.created[0].Steps[0].Action)
+	}
+	resetPayload, ok := rec.created[0].Steps[0].Payload.(saga.ResetFieldPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.ResetFieldPayload")
+	}
+	wantReset := saga.ResetFieldPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		MapId:       _map.Id(926000000),
+		Instance:    inst,
+		Difficulty:  1,
+	}
+	if resetPayload != wantReset {
+		t.Errorf("resetPayload = %+v, want %+v", resetPayload, wantReset)
+	}
+
+	if rec.created[0].Steps[1].Action != saga.SpawnMonster {
+		t.Errorf("Steps[1].Action = %v, want saga.SpawnMonster", rec.created[0].Steps[1].Action)
+	}
+	spawnPayload, ok := rec.created[0].Steps[1].Payload.(saga.SpawnMonsterPayload)
+	if !ok {
+		t.Fatalf("Steps[1].Payload is not saga.SpawnMonsterPayload")
+	}
+	wantSpawn := saga.SpawnMonsterPayload{
+		CharacterId:   1,
+		WorldId:       world.Id(0),
+		ChannelId:     channel.Id(1),
+		MapId:         _map.Id(926000000),
+		Instance:      inst,
+		MonsterId:     9100013,
+		X:             82,
+		Y:             200,
+		Count:         1,
+		SpawnIfAbsent: true,
+	}
+	if spawnPayload != wantSpawn {
+		t.Errorf("spawnPayload = %+v, want %+v", spawnPayload, wantSpawn)
+	}
+}
+
+// TestExecuteOperationsDoesNotCombineNonAdjacentOrUnpairedOperations confirms
+// the reset_field+spawn_monster combining is scoped to the specific adjacent
+// pair -- a standalone reset_field, a standalone spawn_monster, and a
+// spawn_monster followed by reset_field (reverse order) all still create one
+// saga per operation.
+func TestExecuteOperationsDoesNotCombineNonAdjacentOrUnpairedOperations(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).Build()
+
+	resetOp, err := operation.NewBuilder().SetType("reset_field").Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+	spawnOp, err := operation.NewBuilder().
+		SetType("spawn_monster").
+		SetParams(map[string]string{"monsterId": "9100013"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+	clearDrops, err := operation.NewBuilder().SetType("clear_drops").Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperations(f, 1, []operation.Model{spawnOp, resetOp, clearDrops}); err != nil {
+		t.Fatalf("ExecuteOperations() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 3 {
+		t.Fatalf("len(rec.created) = %d, want 3 (no combining across non-adjacent or reversed-order pairs)", len(rec.created))
+	}
+	for i, s := range rec.created {
+		if len(s.Steps) != 1 {
+			t.Errorf("rec.created[%d] has %d steps, want 1", i, len(s.Steps))
+		}
+	}
+}

@@ -1,0 +1,24 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map 926000010 - resets the field on entry",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "reset_stage",
+          "operations": [
+            {
+              "params": {
+                "difficulty": "1"
+              },
+              "type": "reset_field"
+            }
+          ]
+        }
+      ],
+      "scriptName": "926000010"
+    },
+    "id": "926000010",
+    "type": "map-action"
+  }
+}

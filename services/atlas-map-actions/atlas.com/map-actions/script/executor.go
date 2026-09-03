@@ -91,8 +91,28 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 // first error. An unknown operation therefore suppresses every operation after
 // it in the same rule (design D3). That is deliberate: a half-applied cutscene
 // or a spawn without its announcement is worse than a loud failure at map entry.
+//
+// A reset_field immediately followed by a spawn_monster is a special case:
+// e.sagaP.Create publishes one independent saga command per operation
+// (script/executor.go's per-op AddStep().Build()), and the orchestrator gives
+// no ordering guarantee across independent sagas -- only within one saga's
+// steps (atlas-saga-orchestrator/saga/processor.go's earliest-pending-step
+// semantics). Two independent sagas for reset_field and spawn_monster could
+// therefore have the orchestrator process the spawn before the reset's
+// monster-clear step lands, and reset_field would wipe the just-spawned
+// monster. 926000000.json's reset_field + spawnIfAbsent pair (task-290 G5)
+// needs the spawn to run strictly after the reset, so that pair is emitted as
+// one two-step saga instead of two.
 func (e *OperationExecutor) ExecuteOperations(f field.Model, characterId uint32, ops []operation.Model) error {
-	for _, op := range ops {
+	for i := 0; i < len(ops); i++ {
+		op := ops[i]
+		if op.Type() == "reset_field" && i+1 < len(ops) && ops[i+1].Type() == "spawn_monster" {
+			if err := e.executeResetFieldThenSpawnMonster(f, characterId, op, ops[i+1]); err != nil {
+				return err
+			}
+			i++
+			continue
+		}
 		if err := e.ExecuteOperation(f, characterId, op); err != nil {
 			return err
 		}
@@ -192,6 +212,31 @@ func (e *OperationExecutor) executeClearSkill(f field.Model, characterId uint32,
 }
 
 func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint32, op operation.Model) error {
+	payload, err := e.buildSpawnMonsterPayload(f, characterId, op)
+	if err != nil {
+		return err
+	}
+
+	e.l.Debugf("Spawning monster [%d] at (%d,%d) count [%d] for character [%d].", payload.MonsterId, payload.X, payload.Y, payload.Count, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-spawn").
+		AddStep(
+			fmt.Sprintf("spawn-%d-%d", characterId, payload.MonsterId),
+			saga.Pending,
+			saga.SpawnMonster,
+			payload,
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// buildSpawnMonsterPayload parses a spawn_monster operation's params into a
+// SpawnMonsterPayload without creating a saga, so both the standalone
+// spawn_monster path and the combined reset_field+spawn_monster path
+// (ExecuteOperations) can share the same parsing logic.
+func (e *OperationExecutor) buildSpawnMonsterPayload(f field.Model, characterId uint32, op operation.Model) (saga.SpawnMonsterPayload, error) {
 	params := op.Params()
 
 	monsterIdStr, hasSingle := params["monsterId"]
@@ -200,14 +245,14 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 		hasList = false
 	}
 	if hasSingle == hasList {
-		return fmt.Errorf("spawn_monster operation requires exactly one of monsterId or monsterIds")
+		return saga.SpawnMonsterPayload{}, fmt.Errorf("spawn_monster operation requires exactly one of monsterId or monsterIds")
 	}
 
 	var monsterId uint64
 	if hasSingle {
 		parsed, err := strconv.ParseUint(monsterIdStr, 10, 32)
 		if err != nil {
-			return fmt.Errorf("invalid monsterId [%s]: %w", monsterIdStr, err)
+			return saga.SpawnMonsterPayload{}, fmt.Errorf("invalid monsterId [%s]: %w", monsterIdStr, err)
 		}
 		monsterId = parsed
 	} else {
@@ -221,7 +266,7 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 			c = strings.TrimSpace(c)
 			parsed, err := strconv.ParseUint(c, 10, 32)
 			if err != nil {
-				return fmt.Errorf("invalid monsterIds entry [%s]: %w", c, err)
+				return saga.SpawnMonsterPayload{}, fmt.Errorf("invalid monsterIds entry [%s]: %w", c, err)
 			}
 			ids = append(ids, parsed)
 		}
@@ -232,7 +277,7 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 	if xStr, hasX := params["x"]; hasX {
 		xVal, err := strconv.ParseInt(xStr, 10, 16)
 		if err != nil {
-			return fmt.Errorf("invalid x [%s]: %w", xStr, err)
+			return saga.SpawnMonsterPayload{}, fmt.Errorf("invalid x [%s]: %w", xStr, err)
 		}
 		x = int16(xVal)
 	}
@@ -241,7 +286,7 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 	if yStr, hasY := params["y"]; hasY {
 		yVal, err := strconv.ParseInt(yStr, 10, 16)
 		if err != nil {
-			return fmt.Errorf("invalid y [%s]: %w", yStr, err)
+			return saga.SpawnMonsterPayload{}, fmt.Errorf("invalid y [%s]: %w", yStr, err)
 		}
 		y = int16(yVal)
 	}
@@ -250,7 +295,7 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 	if countStr, hasCount := params["count"]; hasCount {
 		countVal, err := strconv.Atoi(countStr)
 		if err != nil {
-			return fmt.Errorf("invalid count [%s]: %w", countStr, err)
+			return saga.SpawnMonsterPayload{}, fmt.Errorf("invalid count [%s]: %w", countStr, err)
 		}
 		count = countVal
 	}
@@ -263,7 +308,7 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 	if s, has := params["spawnIfAbsent"]; has {
 		parsed, err := strconv.ParseBool(s)
 		if err != nil {
-			return fmt.Errorf("invalid spawnIfAbsent [%s]: %w", s, err)
+			return saga.SpawnMonsterPayload{}, fmt.Errorf("invalid spawnIfAbsent [%s]: %w", s, err)
 		}
 		spawnIfAbsent = parsed
 	}
@@ -274,7 +319,7 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 	if mapIdStr, hasMapId := params["mapId"]; hasMapId {
 		mId, err := strconv.ParseUint(mapIdStr, 10, 32)
 		if err != nil {
-			return fmt.Errorf("invalid mapId [%s]: %w", mapIdStr, err)
+			return saga.SpawnMonsterPayload{}, fmt.Errorf("invalid mapId [%s]: %w", mapIdStr, err)
 		}
 		mapId = _map.Id(mId)
 		// A foreign map id cannot be scoped by this field's instance UUID, so the
@@ -282,30 +327,18 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 		instance = uuid.Nil
 	}
 
-	e.l.Debugf("Spawning monster [%d] at (%d,%d) count [%d] for character [%d].", monsterId, x, y, count, characterId)
-
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("map-action-spawn").
-		AddStep(
-			fmt.Sprintf("spawn-%d-%d", characterId, monsterId),
-			saga.Pending,
-			saga.SpawnMonster,
-			saga.SpawnMonsterPayload{
-				CharacterId:   characterId,
-				WorldId:       f.WorldId(),
-				ChannelId:     f.ChannelId(),
-				MapId:         mapId,
-				Instance:      instance,
-				MonsterId:     uint32(monsterId),
-				X:             x,
-				Y:             y,
-				Count:         count,
-				SpawnIfAbsent: spawnIfAbsent,
-			},
-		).Build()
-
-	return e.sagaP.Create(s)
+	return saga.SpawnMonsterPayload{
+		CharacterId:   characterId,
+		WorldId:       f.WorldId(),
+		ChannelId:     f.ChannelId(),
+		MapId:         mapId,
+		Instance:      instance,
+		MonsterId:     uint32(monsterId),
+		X:             x,
+		Y:             y,
+		Count:         count,
+		SpawnIfAbsent: spawnIfAbsent,
+	}, nil
 }
 
 // executeSpawnNpc places a scripted NPC on the current field, mirroring
@@ -473,17 +506,12 @@ func (e *OperationExecutor) executeShuffleReactors(f field.Model, characterId ui
 // (MapleMap.java:3962-3975). The optional difficulty param defaults to 1
 // (every G5 script passes 1 today).
 func (e *OperationExecutor) executeResetField(f field.Model, characterId uint32, op operation.Model) error {
-	e.l.Debugf("Resetting field for character [%d].", characterId)
-
-	difficulty := 1
-	params := op.Params()
-	if s, has := params["difficulty"]; has {
-		parsed, err := strconv.Atoi(s)
-		if err != nil {
-			return fmt.Errorf("invalid difficulty [%s]: %w", s, err)
-		}
-		difficulty = parsed
+	payload, err := e.buildResetFieldPayload(f, characterId, op)
+	if err != nil {
+		return err
 	}
+
+	e.l.Debugf("Resetting field for character [%d].", characterId)
 
 	s := saga.NewBuilder().
 		SetSagaType(saga.InventoryTransaction).
@@ -492,14 +520,67 @@ func (e *OperationExecutor) executeResetField(f field.Model, characterId uint32,
 			fmt.Sprintf("reset-field-%d", characterId),
 			saga.Pending,
 			saga.ResetField,
-			saga.ResetFieldPayload{
-				CharacterId: characterId,
-				WorldId:     f.WorldId(),
-				ChannelId:   f.ChannelId(),
-				MapId:       f.MapId(),
-				Instance:    f.Instance(),
-				Difficulty:  difficulty,
-			},
+			payload,
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// buildResetFieldPayload parses a reset_field operation's params into a
+// ResetFieldPayload without creating a saga, so both the standalone
+// reset_field path and the combined reset_field+spawn_monster path
+// (ExecuteOperations) can share the same parsing logic.
+func (e *OperationExecutor) buildResetFieldPayload(f field.Model, characterId uint32, op operation.Model) (saga.ResetFieldPayload, error) {
+	difficulty := 1
+	params := op.Params()
+	if s, has := params["difficulty"]; has {
+		parsed, err := strconv.Atoi(s)
+		if err != nil {
+			return saga.ResetFieldPayload{}, fmt.Errorf("invalid difficulty [%s]: %w", s, err)
+		}
+		difficulty = parsed
+	}
+
+	return saga.ResetFieldPayload{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		Difficulty:  difficulty,
+	}, nil
+}
+
+// executeResetFieldThenSpawnMonster emits a reset_field step immediately
+// followed by a spawn_monster step in a single saga, guaranteeing the spawn
+// is applied strictly after the reset (see ExecuteOperations doc comment).
+func (e *OperationExecutor) executeResetFieldThenSpawnMonster(f field.Model, characterId uint32, resetOp operation.Model, spawnOp operation.Model) error {
+	resetPayload, err := e.buildResetFieldPayload(f, characterId, resetOp)
+	if err != nil {
+		return err
+	}
+
+	spawnPayload, err := e.buildSpawnMonsterPayload(f, characterId, spawnOp)
+	if err != nil {
+		return err
+	}
+
+	e.l.Debugf("Resetting field then spawning monster [%d] at (%d,%d) for character [%d].", spawnPayload.MonsterId, spawnPayload.X, spawnPayload.Y, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-reset-field-spawn").
+		AddStep(
+			fmt.Sprintf("reset-field-%d", characterId),
+			saga.Pending,
+			saga.ResetField,
+			resetPayload,
+		).
+		AddStep(
+			fmt.Sprintf("spawn-%d-%d", characterId, spawnPayload.MonsterId),
+			saga.Pending,
+			saga.SpawnMonster,
+			spawnPayload,
 		).Build()
 
 	return e.sagaP.Create(s)

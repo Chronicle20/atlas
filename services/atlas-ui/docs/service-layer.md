@@ -24,6 +24,10 @@ src/
     ├── bans.service.ts
     ├── characters.service.ts
     ├── conversations.service.ts
+    ├── fields.service.ts        # /api/fields — live field occupancy + field character roster
+    ├── worlds.service.ts        # /api/worlds — world/channel topology
+    ├── live-monsters.service.ts # live monsters for a running field
+    ├── map-entities.service.ts  # map-scoped definition data; getObjects() added alongside portals/npcs/reactors/monsters
     ├── …
     └── index.ts          # re-exports every service + its types
 ```
@@ -96,6 +100,51 @@ export function useInvalidateAccounts() {
 }
 ```
 
+## Cache profiles: definition vs runtime
+
+Every hook falls into one of two cache profiles, chosen by how often the underlying data actually
+changes:
+
+|  | `staleTime` | `gcTime` |
+|---|---|---|
+| Definition (maps, portals, npcs, reactors, monsters, objects, worlds, channels) | `10 * 60 * 1000` | `10 * 60 * 1000` |
+| Runtime (fields, field characters, live monsters) | `5 * 1000` | `60 * 1000` |
+
+Definition data — a map's static layout, or the world/channel topology — barely changes, so it can
+sit in cache for ten minutes. Runtime data — which fields currently exist, who's in them, which
+monsters are alive — changes continuously, so its cache window is five seconds with a one-minute
+GC.
+
+The runtime constants (`RUNTIME_STALE_TIME = 5 * 1000`, `RUNTIME_GC_TIME = 60 * 1000`) are declared
+independently in both `useFields.ts` and `useFieldRuntime.ts` — they're duplicated, not shared from
+a common constant, so keep them in sync by hand if either changes. The definition profile is a
+literal `10 * 60 * 1000` inline at each `useQuery` call in `useMapEntities.ts` and `useWorlds.ts`.
+
+`useFields.ts` exports `fieldQueryOptions(filters)` as the one place the runtime profile is
+assembled for fields; both `useFields` and `useFieldsForMap` spread it, so the two can't drift
+apart from each other even though the constants above aren't shared with `useFieldRuntime.ts`.
+
+Neither profile uses `refetchInterval` anywhere — runtime freshness comes from a short `staleTime`
+plus normal refetch-on-mount/refocus behavior, not polling.
+
+### Key namespaces
+
+Each hook module owns its own key factory, and the roots are deliberately disjoint so that
+invalidating one never touches another:
+
+- `mapEntityKeys` (`useMapEntities.ts`) → `["maps", mapId, "portals" | "npcs" | "reactors" | "monsters" | "objects"]`
+- `worldKeys` (`useWorlds.ts`) → `["worlds"]`, `["worlds", "list"]`, `["worlds", worldId, "channels"]`
+- `fieldKeys` (`useFields.ts`) → `["fields"]`, `["fields", "list", filters]`
+- `fieldRuntimeKeys` (`useFieldRuntime.ts`) → `["fields", worldId, channelId, mapId, instanceId, "monsters" | "characters"]`
+
+`worldKeys` is its own namespace — it carries the definition cache profile, but its key root is
+`["worlds", …]`, not `["maps", …]`. The "definition vs runtime" split above is about the cache
+profile a hook uses, not which key root it lives under.
+
+The `["maps", …]` and `["fields", …]` roots being disjoint matters because a field-runtime refetch
+(e.g. a live monster count changing) must never invalidate the map's definition cache, and vice
+versa — a stale live-occupancy number should never force a portal/NPC refetch.
+
 ## Tenant contract
 
 Every API request carries four headers (SCREAMING_SNAKE_CASE, see `src/lib/headers.tsx`):
@@ -110,7 +159,12 @@ Every API request carries four headers (SCREAMING_SNAKE_CASE, see `src/lib/heade
 1. `api.setTenant(activeTenant)` updates the client's tenant reference so subsequent requests pick up the new headers.
 2. `queryClient.clear()` invalidates every React Query cache entry so tenant A never sees tenant B's data.
 
-Both steps fire together in a single `useEffect` in `src/context/tenant-context.tsx`. Covered by `src/context/__tests__/tenant-context.test.tsx`.
+Both steps fire together in a single `useEffect` in `src/context/tenant-context.tsx:68`. Covered by `src/context/__tests__/tenant-context.test.tsx`.
+
+Because `queryClient.clear()` already wipes every cache entry on tenant change, the tenant is
+deliberately **not** part of any query key in `fieldKeys`, `fieldRuntimeKeys`, or `worldKeys` — one
+more field in a key tuple would be redundant with the clear. What every one of those hooks does
+keep is the `enabled: !!activeTenant` guard, so a query never fires before a tenant is selected.
 
 ## Shared types and helpers
 

@@ -1852,6 +1852,38 @@ func TestUnmarshalSpawnNpcStep(t *testing.T) {
 	}
 }
 
+func TestUnmarshalExplorerQuestStep(t *testing.T) {
+	raw := `{
+		"stepId": "explorer-quest-1",
+		"status": "pending",
+		"action": "explorer_quest",
+		"payload": {
+			"characterId": 1,
+			"worldId": 0,
+			"channelId": 1,
+			"questId": 29005,
+			"mapId": 104000000,
+			"areaName": "Beginner Explorer"
+		}
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ExplorerQuest {
+		t.Fatalf("expected action ExplorerQuest, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ExplorerQuestPayload)
+	if !ok {
+		t.Fatalf("expected ExplorerQuestPayload, got %T", step.Payload)
+	}
+	want := ExplorerQuestPayload{CharacterId: 1, WorldId: world.Id(0), ChannelId: channel.Id(1), QuestId: 29005, MapId: _map.Id(104000000), AreaName: "Beginner Explorer"}
+	if p != want {
+		t.Errorf("payload = %+v, want %+v", p, want)
+	}
+}
+
 func TestUnmarshalClearDropsStep(t *testing.T) {
 	instance := uuid.New()
 	raw := fmt.Sprintf(`{

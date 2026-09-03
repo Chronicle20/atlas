@@ -404,6 +404,26 @@ type SetQuestProgressPayload struct {
 	Progress    string   `json:"progress"`    // Progress value to set
 }
 
+// ExplorerQuestPayload represents the payload required to credit one
+// exploration region for a medal-style quest (task-290 G14).
+//
+// AreaName is the human-readable region label Cosmic passes to
+// earnTitleMessage("<n>/<m> regions explored."). It is carried on the
+// payload because the seed supplies it and it is the only human-readable
+// label of the region, but it is currently unused: atlas-data does not
+// serve the quest's per-status infoNumber or infoEx(0) threshold Cosmic
+// compares the visited count against (MapScriptMethods.java:104-139), so
+// neither the completion packet nor the progress message can be sent
+// faithfully. Only the visited-map count is recorded.
+type ExplorerQuestPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	QuestId     uint32     `json:"questId"`     // QuestId being credited
+	MapId       _map.Id    `json:"mapId"`       // MapId being recorded as visited
+	AreaName    string     `json:"areaName"`    // AreaName is the human-readable region label (currently unused; see doc comment)
+}
+
 // ForfeitQuestPayload represents the payload required to forfeit a quest for a character.
 type ForfeitQuestPayload struct {
 	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action

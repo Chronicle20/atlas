@@ -157,6 +157,7 @@
             "unlock_ui",
             "set_quest_progress",
             "start_quest",
+            "explorer_quest",
             "open_npc",
             "update_area_info",
             "show_info",
@@ -424,6 +425,36 @@
                   "npcId": {
                     "type": "string",
                     "description": "NPC credited with starting the quest (default 0)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "explorer_quest"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "questId",
+                  "areaName"
+                ],
+                "properties": {
+                  "questId": {
+                    "type": "string",
+                    "description": "Quest ID to credit with the current map as a visited exploration region"
+                  },
+                  "areaName": {
+                    "type": "string",
+                    "description": "Human-readable region label (currently unused; atlas-data does not serve the quest's infoEx(0) threshold needed for the completion/progress message)"
                   }
                 }
               }

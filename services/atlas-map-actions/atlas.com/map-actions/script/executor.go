@@ -52,6 +52,8 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeSetQuestProgress(f, characterId, op)
 	case "start_quest":
 		return e.executeStartQuest(f, characterId, op)
+	case "explorer_quest":
+		return e.executeExplorerQuest(f, characterId, op)
 	case "open_npc":
 		return e.executeOpenNpc(f, characterId, op)
 	case "update_area_info":
@@ -688,6 +690,50 @@ func (e *OperationExecutor) executeStartQuest(f field.Model, characterId uint32,
 				WorldId:     f.WorldId(),
 				QuestId:     uint32(questId),
 				NpcId:       uint32(npcId),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeExplorerQuest credits the current map as an exploration region for a
+// medal-style quest, mirroring Cosmic's MapScriptMethods.explorerQuest
+// (MapScriptMethods.java:104-139). MapId is taken from f.MapId() and never
+// from a param -- Cosmic credits the map the character is actually standing
+// in.
+func (e *OperationExecutor) executeExplorerQuest(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	questIdStr, ok := params["questId"]
+	if !ok {
+		return fmt.Errorf("explorer_quest operation missing questId parameter")
+	}
+	questId, err := strconv.ParseUint(questIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid questId [%s]: %w", questIdStr, err)
+	}
+
+	areaName, ok := params["areaName"]
+	if !ok {
+		return fmt.Errorf("explorer_quest operation missing areaName parameter")
+	}
+
+	e.l.Debugf("Crediting exploration region for quest [%d] on map [%d] for character [%d].", questId, f.MapId(), characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("map-action-explorer-quest").
+		AddStep(
+			fmt.Sprintf("explorer-quest-%d-%d", characterId, questId),
+			saga.Pending,
+			saga.ExplorerQuest,
+			saga.ExplorerQuestPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				QuestId:     uint32(questId),
+				MapId:       f.MapId(),
+				AreaName:    areaName,
 			},
 		).Build()
 

@@ -157,6 +157,13 @@ const (
 	SetQuestProgress Action = "set_quest_progress"
 	ForfeitQuest     Action = "forfeit_quest"
 
+	// ExplorerQuest credits one exploration region: force-start the quest if
+	// needed, append the current map to the quest's deduplicated visited-map
+	// set, and write the resulting count as quest progress. Not reducible to
+	// StartQuest + SetQuestProgress, because the dedup and the count are
+	// server-side state neither of those carries (task-290 G14).
+	ExplorerQuest Action = "explorer_quest"
+
 	// Consumable effect actions
 	ApplyConsumableEffect  Action = "apply_consumable_effect"
 	CancelConsumableEffect Action = "cancel_consumable_effect"

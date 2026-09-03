@@ -510,6 +510,79 @@ func TestExecuteStartQuestParamValidation(t *testing.T) {
 	}
 }
 
+func TestExecuteExplorerQuest(t *testing.T) {
+	e, rec := newTestOperationExecutor()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(104000000)).Build()
+
+	op, err := operation.NewBuilder().
+		SetType("explorer_quest").
+		SetParams(map[string]string{"areaName": "Beginner Explorer", "questId": "29005"}).
+		Build()
+	if err != nil {
+		t.Fatalf("operation.NewBuilder().Build(): %v", err)
+	}
+
+	if err := e.ExecuteOperation(f, 1, op); err != nil {
+		t.Fatalf("ExecuteOperation() error = %v, want nil", err)
+	}
+
+	if len(rec.created) != 1 {
+		t.Fatalf("len(rec.created) = %d, want 1", len(rec.created))
+	}
+	if len(rec.created[0].Steps) != 1 {
+		t.Fatalf("len(Steps) = %d, want 1", len(rec.created[0].Steps))
+	}
+	if rec.created[0].Steps[0].Action != saga.ExplorerQuest {
+		t.Errorf("Steps[0].Action = %v, want saga.ExplorerQuest", rec.created[0].Steps[0].Action)
+	}
+	payload, ok := rec.created[0].Steps[0].Payload.(saga.ExplorerQuestPayload)
+	if !ok {
+		t.Fatalf("Steps[0].Payload is not saga.ExplorerQuestPayload")
+	}
+	want := saga.ExplorerQuestPayload{
+		CharacterId: 1,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		QuestId:     29005,
+		MapId:       _map.Id(104000000),
+		AreaName:    "Beginner Explorer",
+	}
+	if payload != want {
+		t.Errorf("payload = %+v, want %+v", payload, want)
+	}
+}
+
+func TestExecuteExplorerQuestParamValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		params        map[string]string
+		wantErrSubstr string
+	}{
+		{name: "missing questId", params: map[string]string{"areaName": "a"}, wantErrSubstr: "explorer_quest operation missing questId parameter"},
+		{name: "missing areaName", params: map[string]string{"questId": "1"}, wantErrSubstr: "explorer_quest operation missing areaName parameter"},
+		{name: "bad questId", params: map[string]string{"questId": "x", "areaName": "a"}, wantErrSubstr: "invalid questId [x]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, _ := newTestOperationExecutor()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(104000000)).Build()
+
+			op, err := operation.NewBuilder().SetType("explorer_quest").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("operation.NewBuilder().Build(): %v", err)
+			}
+
+			err = e.ExecuteOperation(f, 1, op)
+			if err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr) {
+				t.Fatalf("ExecuteOperation() error = %v, want containing %q", err, tt.wantErrSubstr)
+			}
+		})
+	}
+}
+
 func TestExecuteOpenNpc(t *testing.T) {
 	e, rec := newTestOperationExecutor()
 

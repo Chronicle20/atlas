@@ -5,6 +5,7 @@ import (
 	characterConsumer "atlas-quest/kafka/consumer/character"
 	monsterConsumer "atlas-quest/kafka/consumer/monster"
 	questConsumer "atlas-quest/kafka/consumer/quest"
+	"atlas-quest/medal_map"
 	"atlas-quest/quest"
 	"atlas-quest/quest/progress"
 	"context"
@@ -49,7 +50,7 @@ func main() {
 	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(quest.Migration, progress.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(quest.Migration, progress.Migration, medal_map.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -106,6 +107,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(quest.InitResource(GetServer())(db)).
+		AddRouteInitializer(medal_map.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

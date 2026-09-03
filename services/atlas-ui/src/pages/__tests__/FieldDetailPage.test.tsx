@@ -461,6 +461,13 @@ describe("FieldDetailPage", () => {
     expect(screen.getByText(/last updated/i)).toBeInTheDocument();
   });
 
+  it("Refresh is an icon-only button, not a labelled button", () => {
+    renderPage();
+
+    const button = screen.getByRole("button", { name: /refresh/i });
+    expect(button).not.toHaveTextContent(/refresh/i);
+  });
+
   it("refresh also refetches the FR-19 pin queries (portals, npcs, reactors), not just map/characters/monsters/objects", async () => {
     const user = userEvent.setup();
     renderPage();

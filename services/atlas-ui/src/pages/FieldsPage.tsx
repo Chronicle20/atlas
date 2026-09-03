@@ -119,7 +119,8 @@ export function FieldsPage() {
   const worldName =
     worlds.find((world) => Number(world.id) === worldId)?.attributes.name ??
     String(worldId);
-  const channelLabel = channelId === null ? "Any channel" : String(channelId);
+  const channelLabel =
+    channelId === null ? "Any channel" : String(channelId + 1);
 
   // bug-fields-ui item 6: an `?instance=` param switches this route to the
   // field-detail view — there is no second path.

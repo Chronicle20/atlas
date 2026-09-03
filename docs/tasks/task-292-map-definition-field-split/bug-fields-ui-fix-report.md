@@ -187,3 +187,52 @@ included in the full-suite run above):
   `overflow-y-auto` container already scrolls the whole page, so this was
   left simple rather than importing `ItemsPage`'s sticky-header layout,
   which was not requested.
+
+## Review follow-up — closing the two non-blocking findings
+
+`docs/tasks/task-292-map-definition-field-split/reviews/bug-fields-ui.md`
+flagged two non-blocking findings (APPROVED_WITH_FINDINGS verdict). Both
+closed:
+
+1. **`FieldsPage.tsx` EmptyState channel label was 0-based.**
+   `channelLabel` (`FieldsPage.tsx:122`) now reads
+   `channelId === null ? "Any channel" : String(channelId + 1)`, matching
+   the 1-indexed display convention used everywhere else the channel is
+   shown (items 4/7/15). No API value, query key, `SelectItem` value, or
+   URL param was touched — `channelId` state and the `useFields` filter
+   call are unchanged. Updated the one existing test that asserted the old
+   (bug) behaviour: `FieldsPage.test.tsx` "empty state echoes the filters
+   by name, not a missing map" selected the channel-4 option (raw
+   `channelId` 3) and asserted the empty state showed `"3"`; it now
+   asserts `"4"`, matching the selected option's own label.
+
+2. **Refresh icon-button tests only asserted `aria-label`.** Added a
+   sibling assertion in both `FieldDetailPage.test.tsx` and
+   `FieldsPage.test.tsx` — "Refresh is an icon-only button, not a labelled
+   button" — using the same `not.toHaveTextContent` pattern as the
+   existing item-8 "View Map Definition" test:
+   ```ts
+   const button = screen.getByRole("button", { name: /refresh/i });
+   expect(button).not.toHaveTextContent(/refresh/i);
+   ```
+   This fails if the button ever grows a visible "Refresh" text child
+   alongside its `aria-label`, closing the gap the review called out.
+
+### Files changed
+- `src/pages/FieldsPage.tsx` — channel label 1-indexing fix.
+- `src/pages/__tests__/FieldsPage.test.tsx` — updated the empty-state
+  channel-label assertion to the corrected 1-indexed value; added the
+  Refresh icon-only test.
+- `src/pages/__tests__/FieldDetailPage.test.tsx` — added the Refresh
+  icon-only test.
+
+### Verification (module-local)
+- `npx vitest run src/pages/__tests__/FieldsPage.test.tsx
+  src/pages/__tests__/FieldDetailPage.test.tsx` → `Test Files  2 passed
+  (2)`, `Tests  34 passed (34)`.
+- `npx eslint src/pages/FieldsPage.tsx
+  src/pages/__tests__/FieldsPage.test.tsx
+  src/pages/__tests__/FieldDetailPage.test.tsx` → `ESLint: No issues
+  found`.
+- `npx tsc -b` → no output (clean type-check across the whole app,
+  including test files per `tsconfig.app.json`).

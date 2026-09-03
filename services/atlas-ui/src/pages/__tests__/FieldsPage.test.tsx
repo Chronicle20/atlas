@@ -302,7 +302,9 @@ describe("FieldsPage", () => {
     await waitFor(() => {
       const empty = screen.getByTestId("empty-state");
       expect(empty).toHaveTextContent("Scania");
-      expect(empty).toHaveTextContent("3");
+      // Channel label is 1-indexed (item 4/7/15 convention): raw channelId 3
+      // is displayed as "4", matching the selected option.
+      expect(empty).toHaveTextContent("4");
       expect(empty).not.toHaveTextContent(/map.*missing/i);
     });
   });
@@ -360,6 +362,13 @@ describe("FieldsPage", () => {
       screen.getByRole("button", { name: /refresh/i }),
     ).toBeInTheDocument();
     expect(screen.getByTestId("fields-last-updated")).toBeInTheDocument();
+  });
+
+  it("Refresh is an icon-only button, not a labelled button", () => {
+    renderPage();
+
+    const button = screen.getByRole("button", { name: /refresh/i });
+    expect(button).not.toHaveTextContent(/refresh/i);
   });
 
   it("title and runtime badge each render on their own row (item 18)", () => {

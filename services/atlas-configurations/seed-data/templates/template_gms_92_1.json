@@ -2474,9 +2474,45 @@
         ]
       },
       {
+        "opCode": "0x99",
+        "writer": "FieldEffect",
+        "fname": "CField::OnFieldEffect",
+        "options": {
+          "operations": {
+            "SUMMON": 0,
+            "TREMBLE": 1,
+            "OBJECT": 2,
+            "SCREEN": 3,
+            "SOUND": 4,
+            "BOSS_HP": 5,
+            "BACKGROUND_MUSIC": 6,
+            "REWARD_RULLET": 7
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x9D",
         "writer": "FieldEffectWeather",
         "fname": "CField::OnBlowWeather",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xA3",
+        "writer": "ContiMove",
+        "fname": "CField_ContiMove::OnContiMove",
+        "options": {
+          "operations": {
+            "SHOW_STATE": 10,
+            "SHOW_SUB_STATE": 4,
+            "HIDE_STATE": 10,
+            "HIDE_SUB_STATE": 5
+          }
+        },
         "services": [
           "channel"
         ]

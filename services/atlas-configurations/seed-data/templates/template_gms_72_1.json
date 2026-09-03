@@ -2984,6 +2984,22 @@
         ]
       },
       {
+        "opCode": "0x88",
+        "writer": "ContiMove",
+        "fname": "CField_ContiMove::OnContiMove",
+        "options": {
+          "operations": {
+            "SHOW_STATE": 10,
+            "SHOW_SUB_STATE": 4,
+            "HIDE_STATE": 10,
+            "HIDE_SUB_STATE": 5
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x8A",
         "writer": "SetQuestClear",
         "fname": "CField::OnSetQuestClear",

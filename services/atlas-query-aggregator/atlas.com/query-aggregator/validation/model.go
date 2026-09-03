@@ -346,6 +346,16 @@ func (c Condition) Evaluate(l logrus.FieldLogger, ctx context.Context, character
 		if c.includeEquipped {
 			description = fmt.Sprintf("Item %d quantity (including equipped) %s %d", c.referenceId, c.operator, c.value)
 		}
+	case AreaInfoCondition:
+		// Area info validation requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Area %d Info validation requires ValidationContext", c.referenceId),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	default:
 		return ConditionResult{
 			Passed:      false,

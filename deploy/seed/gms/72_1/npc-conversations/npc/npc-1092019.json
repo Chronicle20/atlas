@@ -199,12 +199,16 @@
           "dialogue": {
             "choices": [
               {
+                "nextState": "finalPraise",
+                "text": "Previous"
+              },
+              {
                 "nextState": "finalClose",
                 "text": "Next"
               },
               {
-                "nextState": "finalPraise",
-                "text": "Prev"
+                "nextState": null,
+                "text": "Exit"
               }
             ],
             "dialogueType": "sendNextPrev",
@@ -217,12 +221,16 @@
           "dialogue": {
             "choices": [
               {
+                "nextState": "finalHint",
+                "text": "Previous"
+              },
+              {
                 "nextState": null,
                 "text": "Next"
               },
               {
-                "nextState": "finalHint",
-                "text": "Prev"
+                "nextState": null,
+                "text": "Exit"
               }
             ],
             "dialogueType": "sendNextPrev",

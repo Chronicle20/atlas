@@ -28,7 +28,9 @@
 #
 # Env:
 #   ATLAS_SLOT_DIR          slot directory (default: /var/tmp/atlas/slots)
-#   ATLAS_BUILD_SLOTS       number of slots, positive integer (default: 4)
+#   ATLAS_BUILD_SLOTS       number of slots, positive integer (default: derived
+#                           from the host's PHYSICAL core count — see
+#                           _build_slot_default below)
 #   ATLAS_BUILD_SLOT_TIMEOUT  seconds to wait before giving up; unset/empty
 #                             means block forever
 
@@ -46,12 +48,48 @@ _build_slot_dir() {
     printf '%s\n' "${ATLAS_SLOT_DIR:-/var/tmp/atlas/slots}"
 }
 
+# _build_slot_physical_cores — physical cores on this host, not SMT threads.
+#
+# Go compilation scales with physical cores; SMT buys ~20-30%, not 2x. The
+# original K=4 was sized from `nproc` (24) on a 12-core 5900X and was ~2x
+# oversubscribed before any Claude session, docker, or k8s took a core.
+# `lscpu -p` lists one row per logical CPU with its CORE,SOCKET pair; unique
+# pairs are the physical cores. Falls back to nproc/2 when lscpu is absent
+# (it is present on WSL2 and every Linux CI runner this repo uses).
+_build_slot_physical_cores() {
+    local cores=""
+    if command -v lscpu >/dev/null 2>&1; then
+        cores="$(lscpu -p=CORE,SOCKET 2>/dev/null | grep -v '^#' | sort -u | wc -l | tr -d ' ')"
+    fi
+    if [ -z "$cores" ] || [ "$cores" -lt 1 ] 2>/dev/null; then
+        local logical
+        logical="$(nproc 2>/dev/null || echo 2)"
+        cores=$((logical / 2))
+    fi
+    [ "$cores" -lt 1 ] && cores=1
+    printf '%s\n' "$cores"
+}
+
+# _build_slot_default — K when ATLAS_BUILD_SLOTS is unset.
+#
+# One slot is budgeted at 6 threads (GOMAXPROCS / go build -p, see
+# docs/verification.md "Build slots"), so K = physical_cores / 6, floored at
+# 1. 12 cores -> 2 slots; 24 cores -> 4; a 4-core laptop -> 1.
+_build_slot_default() {
+    local cores k
+    cores="$(_build_slot_physical_cores)"
+    k=$((cores / 6))
+    [ "$k" -lt 1 ] && k=1
+    printf '%s\n' "$k"
+}
+
 # _build_slot_count — resolves and validates ATLAS_BUILD_SLOTS.
 #
 # Prints the count on stdout and returns 0, or prints nothing and returns 2
 # when the value is not a positive integer.
 _build_slot_count() {
-    local n="${ATLAS_BUILD_SLOTS:-4}"
+    local n="${ATLAS_BUILD_SLOTS:-}"
+    [ -z "$n" ] && n="$(_build_slot_default)"
     case "$n" in
         *[!0-9]* | '')
             echo "build-slot: ATLAS_BUILD_SLOTS must be a positive integer, got '$n'" >&2

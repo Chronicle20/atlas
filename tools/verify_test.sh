@@ -76,7 +76,7 @@ real_selected() {
   "$VERIFY" "$@" 2>/dev/null \
     | sed 's/\x1b\[[0-9;]*m//g' \
     | sed -n 's/^  [✓✗] *//p' \
-    | sed 's/^ *//; s/ *$//' | sort
+    | sed 's/  ([0-9]*s)$//; s/^ *//; s/ *$//' | sort
 }
 real_skipped_count() {
   "$VERIFY" "$@" 2>/dev/null \

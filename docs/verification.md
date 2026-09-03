@@ -5,7 +5,7 @@
 
 ```sh
 tools/verify.sh              # full gate — what you run before opening a PR
-tools/verify.sh --quick      # inner loop: build/vet/guards, no docker, no -race
+tools/verify.sh --quick      # inner loop: build/vet/format/guards; no docker, no -race, no linters
 tools/verify.sh --all        # ignore change detection, run everything
 tools/verify.sh --no-docker  # everything except the bake
 
@@ -192,31 +192,47 @@ sessions cannot all run a heavy build gate at once and thrash the box. Task 7
 wires it into `tools/verify.sh` itself; it also works standalone through the
 CLI wrapper, `tools/with-build-slot.sh`.
 
-**Why K=4.** The host measured earlier in this section has 24 logical CPUs
-and, after the `.wslconfig` bump above, 52 GiB of VM memory. The per-slot
-budget one heavy gate run actually uses is:
+**How K is chosen.** `K = physical_cores / 6`, floored at 1, computed by
+`tools/lib/build-slot.sh` from `lscpu` (unique CORE,SOCKET pairs — SMT
+threads do not count). `ATLAS_BUILD_SLOTS` overrides it. The per-worker
+budget one gate run actually uses is:
 
 | resource | value |
 |---|---|
 | `GOMAXPROCS` | 6 |
 | `go build -p` | 6 |
 | `go test -p` | 2 |
+| Go pool workers per gate (`ATLAS_VERIFY_GO_JOBS`) | 2 |
 | BuildKit `max-parallelism` | 8 (`deploy/buildkit/buildkitd.toml`) |
 
-Four slots at 6 threads apiece cover the 24-thread budget without
-oversubscribing it, and each slot's peak memory footprint (a `go build`, a
-`go test`, and a BuildKit solve) fits inside 52 GiB / 4. A fifth concurrent
-gate would either wait for a slot or blow through both budgets at once —
-that's the failure mode this broker exists to prevent.
+The original K=4 was sized from `nproc` on the host in this section, which
+reports 24 — but that host is a 12-core 5900X with SMT, and Go compilation
+scales with physical cores (SMT buys ~20-30%, not 2x). Four slots at 6
+threads was ~2x oversubscribed before any Claude session, docker, or k8s took
+a core, and each slot additionally ran 4 pool workers at `-p 6` — 24 threads
+inside a slot budgeted for 6. On this host K is now 2, and a gate is 2
+workers × 6 threads = one slot. A third concurrent gate waits for a slot
+instead of thrashing the box.
 
 **What's slotted.** Exactly two phases of `verify.sh` acquire a machine-wide
 slot: the bake (`docker buildx bake`, through the CLI wrapper, since it runs
 as an external process) and the Go pool (`launch_go_layers`, held around the
-function itself, and only when `-race` is actually running — a `--quick` pass
-never competes for a slot). Everything else in `verify.sh` is deliberately
-NOT slotted: `go vet` (part of the unslotted half of `go_layer`, cheap next to
-`go build`/`go test -race`), the analyzer/lint/format guards, and the
-`--facts` path, which executes no check at all.
+function itself). The Go pool takes a slot under `--quick` too. It used to be
+exempt on the theory that the inner loop is cheap, but `--quick` is what runs
+after every plan task in every session, and N unarbitrated `--quick` pools
+were the main source of contention on the box. Everything else in `verify.sh`
+is deliberately NOT slotted: the analyzer/lint/format guards and the `--facts`
+path, which executes no check at all.
+
+**Priority.** `verify.sh` renices itself to `ATLAS_VERIFY_NICE` (default 10)
+and drops its I/O class to best-effort/lowest at startup, so every child —
+`go`, `golangci-lint`, the guards — inherits it. The slot broker bounds how
+many gates run; this bounds what each one takes from the interactive sessions
+it is running underneath. `ATLAS_VERIFY_NICE=0` disables it.
+
+**Timing.** The summary prints wall seconds per step, the Go pool's total
+wall time, and the run's total. Read those before tuning anything here — the
+sizing above was inferred for a long time before it was measured.
 
 **Usage.** A caller that runs the guarded work as a subprocess should use the
 CLI wrapper:
@@ -594,14 +610,23 @@ Go module, plus Prettier + ESLint for atlas-ui.
 Fix mode is `tools/lint.sh` with no flags — it rewrites files in place. Run it
 before committing.
 
+Under `--quick`, `verify.sh` passes `--fmt`: the formatters run (`golangci-lint
+fmt --diff` is a parse, not a type-check) and the linters do not. `golangci-lint
+run` type-checks every changed module a third time after `go build` and `go
+vet`, and was the slowest single step of the inner loop. The linters run on
+the flagless pre-PR gate, which is the only run that counts as verified.
+
 Known footguns:
 
-- `--check` false-fails without nvm on PATH (atlas-ui layer). Use `--go` to skip
-  the UI layer when that is not what you are verifying.
-- Cross-worktree golangci-lint lock contention: two worktrees linting at once
-  will block. Serialize them.
 - Merging `main` into a branch that predates task-171 requires a `tools/lint.sh`
   fix pass afterward.
+
+Resolved footguns, kept so nobody re-adds the workaround:
+
+- Cross-worktree golangci-lint lock contention — fixed in #1413; `lint.sh`
+  passes `--allow-parallel-runners` and keys the cache per tree.
+- `--check` false-failing without nvm on PATH — `tools/lib/node-env.sh` now
+  selects the pinned Node itself.
 
 ---
 

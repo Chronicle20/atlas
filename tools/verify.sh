@@ -35,9 +35,12 @@ NO_UI=0
 QUICK=0
 FACTS=0
 
-# Bounded parallelism for the Go layer. The default is the per-slot CPU budget
-# from the build broker (tools/lib/build-slot.sh, K=4 slots on 24 threads).
-GO_JOBS="${ATLAS_VERIFY_GO_JOBS:-4}"
+# Bounded parallelism for the Go layer. Two workers at `go build -p 6` is 12
+# threads — one slot's worth on the 12-physical-core host this is tuned for
+# (tools/lib/build-slot.sh derives K from physical cores; docs/verification.md
+# "Build slots"). The previous default of 4 workers put 24 threads inside a
+# slot that was budgeted for 6.
+GO_JOBS="${ATLAS_VERIFY_GO_JOBS:-2}"
 case "$GO_JOBS" in
     ''|*[!0-9]*|0) echo "verify.sh: ATLAS_VERIFY_GO_JOBS must be a positive integer (got '$GO_JOBS')" >&2; exit 2 ;;
 esac
@@ -63,7 +66,8 @@ usage: tools/verify.sh [options]
   --no-docker    skip `docker buildx bake` (fast inner loop; NOT sufficient
                  before a PR when a go.mod was touched)
   --no-ui        skip the atlas-ui lint/test layer
-  --quick        skip docker + `go test -race` (syntax/vet/guards only)
+  --quick        skip docker, `go test -race`, and the golangci linters
+                 (build/vet/format/guards only — the inner loop)
   --facts        print WHAT this invocation would select — change base, changed
                  services/libs, fan-out reason, module count, guard suites,
                  bake targets, gates — and exit 0 without running any check.
@@ -88,6 +92,19 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# The gate is launched in the background under interactive sessions
+# (/execute-task Step 4c) and must not starve them: lower our own CPU and I/O
+# priority so every child (go, golangci-lint, the guards) inherits it. The
+# slot broker bounds how many gates run; this bounds what each one takes from
+# the sessions that are still typing. ATLAS_VERIFY_NICE=0 disables it.
+VERIFY_NICE="${ATLAS_VERIFY_NICE:-10}"
+if [ "$FACTS" -eq 0 ] && [ "$VERIFY_NICE" != "0" ]; then
+    renice -n "$VERIFY_NICE" -p $$ >/dev/null 2>&1 || true
+    if command -v ionice >/dev/null 2>&1; then
+        ionice -c 2 -n 7 -p $$ >/dev/null 2>&1 || true
+    fi
+fi
+
 # all_modules() is invoked through command substitutions (changed_modules()'s
 # `all="$(all_modules)"`, and the top-level `changed_modules | sort -u`
 # below), each of which runs in its own subshell — a plain variable set
@@ -107,6 +124,14 @@ PASSED=()
 FAILED=()
 SKIPPED=()
 SELECTED=()
+
+# Wall seconds per step, keyed by label, printed in the summary so "where do
+# the minutes go" is a measurement rather than an inference. A step whose work
+# ran elsewhere (the Go pool replays captured logs) sets STEP_SECS_OVERRIDE
+# before calling step() so the recorded time is the build's, not the replay's.
+declare -A STEP_SECS=()
+STEP_SECS_OVERRIDE=""
+VERIFY_T0=$SECONDS
 
 # Informational chatter. Under --facts it must not pollute the fact block on
 # stdout, but it must not be lost either — a suppressed warning is how a fan-out
@@ -133,7 +158,15 @@ step() {
         return 0
     fi
     printf '\n\033[1m── %s\033[0m\n' "$label"
-    if "$@"; then
+    local t0=$SECONDS rc=0 secs
+    if "$@"; then rc=0; else rc=1; fi
+    secs=$((SECONDS - t0))
+    if [ -n "$STEP_SECS_OVERRIDE" ]; then
+        secs="$STEP_SECS_OVERRIDE"
+        STEP_SECS_OVERRIDE=""
+    fi
+    STEP_SECS["$label"]="$secs"
+    if [ "$rc" -eq 0 ]; then
         PASSED+=("$label")
     else
         FAILED+=("$label")
@@ -464,10 +497,9 @@ go_layer() {
     local mod="$1" rel="${1#"$ROOT"/}"
     (
         cd "$mod"
-        # Per-slot CPU budget from the build broker (tools/lib/build-slot.sh,
+        # Per-worker CPU budget from the build broker (tools/lib/build-slot.sh,
         # docs/verification.md "Build slots"): GOMAXPROCS=6, go build -p 6,
-        # go test -p 2 — four slots at 6 threads apiece cover a 24-thread host
-        # without oversubscribing it.
+        # go test -p 2. GO_JOBS workers share one slot.
         export GOMAXPROCS="${ATLAS_GOMAXPROCS:-6}"
         go build -p "${ATLAS_GO_P:-6}" ./... && go vet ./... || exit 1
         if [ "$QUICK" -eq 0 ]; then
@@ -483,25 +515,29 @@ go_layer() {
 # PASSED/FAILED/SELECTED bookkeeping and per-module output order are exactly
 # what a serial run would produce.
 GO_LOG_DIR=""
+GO_POOL_SECS=0
 launch_go_layers() {
     GO_LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/verify-go.XXXXXX")"
     trap 'rm -rf "$GO_LOG_DIR"' EXIT
-    local i=0
+    local i=0 t0=$SECONDS
     for mod in "${MODULES[@]}"; do
         while [ "$(jobs -rp | wc -l)" -ge "$GO_JOBS" ]; do wait -n; done
         (
             # `cmd; rc=$?` would abort the subshell under set -e before the rc
             # file is written, and the replay would then read an empty rc and
             # report a pass. The `if` is load-bearing.
+            m0=$SECONDS
             if go_layer "$mod" >"$GO_LOG_DIR/$i.log" 2>&1; then
                 echo 0 >"$GO_LOG_DIR/$i.rc"
             else
                 echo $? >"$GO_LOG_DIR/$i.rc"
             fi
+            echo $((SECONDS - m0)) >"$GO_LOG_DIR/$i.secs"
         ) &
         i=$((i + 1))
     done
     wait
+    GO_POOL_SECS=$((SECONDS - t0))
 }
 
 replay_go_layer() {
@@ -521,25 +557,33 @@ else
     # One build slot covers the whole parallel phase, held around the
     # launch_go_layers *function* rather than as a subprocess — a slot held by
     # a subprocess would release the instant that subprocess exits, before the
-    # build it guards even starts (docs/verification.md, "Build slots"). Only
-    # acquired when -race is actually running: a --quick pass is the cheap
-    # inner loop and must not compete for machine-wide capacity.
+    # build it guards even starts (docs/verification.md, "Build slots").
+    #
+    # --quick takes a slot too. It used to be exempt on the theory that the
+    # inner loop is cheap, but --quick is what runs after every plan task in
+    # every session: N sessions x GO_JOBS workers x `go build -p 6`, with
+    # nothing arbitrating, is exactly the thrash the broker exists to prevent.
+    # The slot label only names the phase for the broker's wait message.
     if [ "$FACTS" -eq 0 ]; then
         if [ "$QUICK" -eq 0 ]; then
-            if acquire_build_slot "go test -race"; then
-                launch_go_layers
-                release_build_slot
-            else
-                FAILED+=("build slot (go test -race)")
-                GO_POOL_SLOT_OK=0
-            fi
+            GO_SLOT_LABEL="go test -race"
         else
+            GO_SLOT_LABEL="go build/vet"
+        fi
+        if acquire_build_slot "$GO_SLOT_LABEL"; then
             launch_go_layers
+            release_build_slot
+        else
+            FAILED+=("build slot ($GO_SLOT_LABEL)")
+            GO_POOL_SLOT_OK=0
         fi
     fi
     if [ "$FACTS" -eq 1 ] || [ "$GO_POOL_SLOT_OK" -eq 1 ]; then
         i=0
         for mod in "${MODULES[@]}"; do
+            if [ "$FACTS" -eq 0 ]; then
+                STEP_SECS_OVERRIDE="$(cat "$GO_LOG_DIR/$i.secs")"
+            fi
             step "go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race')  ${mod#"$ROOT"/}" \
                 replay_go_layer "$i"
             i=$((i + 1))
@@ -918,11 +962,20 @@ fi
 
 if [ "${#MODULES[@]}" -gt 0 ]; then
     LINT_ARGS=(--check --go)
+    LINT_LABEL="lint & format guard (${#MODULES[@]} module(s))"
     if base="$(resolve_base)"; then
         LINT_ARGS+=(--base "$base")
     fi
-    step "lint & format guard (${#MODULES[@]} module(s))" \
-        ./tools/lint.sh "${LINT_ARGS[@]}" "${MODULES[@]}"
+    # --quick runs the formatters only. `golangci-lint run` type-checks every
+    # changed module a third time (after go build and go vet) and is the
+    # slowest single step of the inner loop; `golangci-lint fmt --diff` is a
+    # parse, not a type-check. The linters still run on the flagless pre-PR
+    # gate, which is the only run that counts as verified anyway.
+    if [ "$QUICK" -eq 1 ]; then
+        LINT_ARGS+=(--fmt)
+        LINT_LABEL="format guard (${#MODULES[@]} module(s); linters deferred to the flagless run)"
+    fi
+    step "$LINT_LABEL" ./tools/lint.sh "${LINT_ARGS[@]}" "${MODULES[@]}"
 else
     skip "lint & format guard, Go layer (no Go module changed)"
 fi
@@ -1060,8 +1113,12 @@ fi
 
 printf '\n\033[1m════ verify.sh summary ════\033[0m\n'
 for s in "${SKIPPED[@]}"; do printf '  \033[2m− %s\033[0m\n' "$s"; done
-for s in "${PASSED[@]}";  do printf '  \033[32m✓\033[0m %s\n' "$s"; done
-for s in "${FAILED[@]}";  do printf '  \033[31m✗ %s\033[0m\n' "$s"; done
+# Timing is a trailing `  (Ns)` so verify_test.sh's label normaliser can strip
+# it; keep that shape if you change it.
+for s in "${PASSED[@]}";  do printf '  \033[32m✓\033[0m %s  \033[2m(%ss)\033[0m\n' "$s" "${STEP_SECS[$s]:-0}"; done
+for s in "${FAILED[@]}";  do printf '  \033[31m✗ %s\033[0m  \033[2m(%ss)\033[0m\n' "$s" "${STEP_SECS[$s]:-0}"; done
+printf '  \033[2mgo pool wall: %ss (%d module(s), %s worker(s), slots=%s) · total: %ss\033[0m\n' \
+    "$GO_POOL_SECS" "${#MODULES[@]}" "$GO_JOBS" "$(_build_slot_count 2>/dev/null || echo '?')" "$((SECONDS - VERIFY_T0))"
 
 if [ "${#FAILED[@]}" -gt 0 ]; then
     printf '\n\033[31m%d check(s) FAILED — the branch is not ready.\033[0m\n' "${#FAILED[@]}"

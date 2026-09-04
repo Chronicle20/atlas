@@ -7,6 +7,7 @@ import (
 	"atlas-channel/character/combo"
 	snapshot "atlas-channel/character/snapshot"
 	"atlas-channel/configuration/projection"
+	datamonster "atlas-channel/data/monster"
 	dataskill "atlas-channel/data/skill"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/asset"
@@ -316,6 +317,7 @@ func main() {
 		monsterDomain.GetAutoAggroGate().EvictTenant(tid)
 		monsterinfo.EvictTenant(tid)
 		dataskill.EvictTenant(tid)
+		datamonster.EvictTenant(tid)
 		ring.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)

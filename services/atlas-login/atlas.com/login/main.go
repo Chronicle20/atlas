@@ -13,7 +13,6 @@ import (
 	"atlas-login/socket"
 	"atlas-login/socket/handler"
 	"atlas-login/socket/writer"
-	"atlas-login/tasks"
 	"context"
 	"fmt"
 	"os"
@@ -167,9 +166,7 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", session.TimeoutTask)
 	}
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(session.NewTimeout(l, tt))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(session.NewTimeout(l, tt))
 
 	rt.TeardownFunc(session.Teardown(l))
 

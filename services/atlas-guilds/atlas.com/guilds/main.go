@@ -7,7 +7,6 @@ import (
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
 	"atlas-guilds/kafka/consumer/invite"
-	"atlas-guilds/tasks"
 	"atlas-guilds/thread"
 	"atlas-guilds/thread/reply"
 	"context"
@@ -117,9 +116,7 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35), service.TenantEnvironment))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35), service.TenantEnvironment))
 
 	rt.Wait()
 }

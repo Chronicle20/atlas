@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Guild Quest - Buried Box Drops the Rusty Key (4001037)",
+      "hitRules": [],
+      "reactorId": "9202002"
+    },
+    "id": "9202002",
+    "type": "reactor-action"
+  }
+}

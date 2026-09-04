@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "OPQ Lobby Reactor",
+      "hitRules": [],
+      "reactorId": "2002010"
+    },
+    "id": "2002010",
+    "type": "reactor-action"
+  }
+}

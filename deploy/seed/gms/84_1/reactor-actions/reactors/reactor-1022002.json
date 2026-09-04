@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Construction Site North of Kerning City - Fire Hydrant",
+      "hitRules": [],
+      "reactorId": "1022002"
+    },
+    "id": "1022002",
+    "type": "reactor-action"
+  }
+}

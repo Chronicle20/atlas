@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "- Drops pass",
+      "hitRules": [],
+      "reactorId": "2202003"
+    },
+    "id": "2202003",
+    "type": "reactor-action"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [],
+      "description": "Tombstone in Forest of Dead Trees III If the chest is destroyed before Riche, killing him should yield no exp",
+      "hitRules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "reactor_state",
+              "value": "0"
+            }
+          ],
+          "id": "weaken_area_boss",
+          "operations": [
+            {
+              "params": {
+                "message": "As the tombstone lit up and vanished, Lich lost all his magic abilities.",
+                "monsterId": "6090000"
+              },
+              "type": "weaken_area_boss"
+            }
+          ]
+        }
+      ],
+      "reactorId": "2119002"
+    },
+    "id": "2119002",
+    "type": "reactor-action"
+  }
+}

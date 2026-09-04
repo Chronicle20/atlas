@@ -97,5 +97,7 @@ use (
 	./tools/catalog-lint
 	./tools/cideps
 	./tools/packet-audit
+	./tools/reactor-seed-gen
+	./tools/reactor-seed-lint
 	./tools/seed-splitters
 )

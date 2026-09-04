@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spawn_monster",
+          "operations": [
+            {
+              "params": {
+                "count": "8",
+                "monsterId": "9300033",
+                "x": "-100",
+                "y": "50"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "description": "Spawn for Jr. Gargoyle (9300033) for Mark of Evil (4001035), Sharenian: Waterway Maze (990000630) Guild Quest - part of stage 4",
+      "hitRules": [],
+      "reactorId": "9201000"
+    },
+    "id": "9201000",
+    "type": "reactor-action"
+  }
+}

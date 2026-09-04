@@ -1,0 +1,12 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [],
+      "description": "Fairy Ring",
+      "hitRules": [],
+      "reactorId": "9102002"
+    },
+    "id": "9102002",
+    "type": "reactor-action"
+  }
+}

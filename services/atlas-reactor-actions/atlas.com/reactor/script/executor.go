@@ -99,8 +99,11 @@ func (e *OperationExecutor) ExecuteOperations(rc ReactorContext, characterId uin
 	return nil
 }
 
-// executeDropItems handles reactor item drops via saga orchestration
-// Supports both legacy params (minMeso, maxMeso, mesoRange) and new params (mesoChance, mesoMin, mesoMax, minItems)
+// executeDropItems handles reactor item drops via saga orchestration.
+// Parameters map positionally from Cosmic's
+// rm.dropItems(meso, mesoChance, minMeso, maxMeso, minItems) onto
+// meso, mesoChance, mesoMin, mesoMax, minItems. dropType is injected by
+// executeSprayItems and is never present in seed data.
 func (e *OperationExecutor) executeDropItems(rc ReactorContext, characterId uint32, op operation.Model) error {
 	params := op.Params()
 
@@ -113,33 +116,21 @@ func (e *OperationExecutor) executeDropItems(rc ReactorContext, characterId uint
 	// Parse meso enabled
 	mesoEnabled := params["meso"] == "true"
 
-	// Parse meso configuration with backward compatibility
 	var mesoChance, mesoMin, mesoMax, minItems uint32 = 1, 1, 1, 0
 
-	// New format: mesoChance
 	if v, ok := params["mesoChance"]; ok {
 		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
 			mesoChance = uint32(parsed)
 		}
 	}
 
-	// New format: mesoMin, fallback to legacy minMeso
 	if v, ok := params["mesoMin"]; ok {
-		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
-			mesoMin = uint32(parsed)
-		}
-	} else if v, ok := params["minMeso"]; ok {
 		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
 			mesoMin = uint32(parsed)
 		}
 	}
 
-	// New format: mesoMax, fallback to legacy maxMeso
 	if v, ok := params["mesoMax"]; ok {
-		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
-			mesoMax = uint32(parsed)
-		}
-	} else if v, ok := params["maxMeso"]; ok {
 		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
 			mesoMax = uint32(parsed)
 		}

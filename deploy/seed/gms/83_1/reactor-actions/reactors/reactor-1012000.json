@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "2",
+                "mesoMax": "40",
+                "mesoMin": "20"
+              },
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Ellinia Plant - drops meso, tree branches, red pots, and Plant Samples (quest item)",
+      "hitRules": [],
+      "reactorId": "1012000"
+    },
+    "id": "1012000",
+    "type": "reactor-action"
+  }
+}

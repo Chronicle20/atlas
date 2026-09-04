@@ -1,0 +1,12 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [],
+      "description": "Flower 5",
+      "hitRules": [],
+      "reactorId": "9018004"
+    },
+    "id": "9018004",
+    "type": "reactor-action"
+  }
+}

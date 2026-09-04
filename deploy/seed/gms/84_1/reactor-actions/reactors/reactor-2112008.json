@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest Rock - drops an item (elixir)",
+      "hitRules": [],
+      "reactorId": "2112008"
+    },
+    "id": "2112008",
+    "type": "reactor-action"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spray_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "400",
+                "mesoMin": "100",
+                "minItems": "15"
+              },
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "description": "Reactor : OrbisPQ Bonus Reactor - Drops all the Bonus Items",
+      "hitRules": [],
+      "reactorId": "2002018"
+    },
+    "id": "2002018",
+    "type": "reactor-action"
+  }
+}

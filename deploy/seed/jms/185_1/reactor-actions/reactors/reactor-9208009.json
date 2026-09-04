@@ -1,0 +1,25 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "update_pq_state",
+          "operations": [
+            {
+              "params": {
+                "updates": "canRevive=1"
+              },
+              "type": "update_pq_state"
+            }
+          ]
+        }
+      ],
+      "description": "Opened GPQ boss room, players may now revive and stay on the GPQ",
+      "hitRules": [],
+      "reactorId": "9208009"
+    },
+    "id": "9208009",
+    "type": "reactor-action"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Yulete's Lab: Making the Reagent",
+      "hitRules": [],
+      "reactorId": "2612005"
+    },
+    "id": "2612005",
+    "type": "reactor-action"
+  }
+}

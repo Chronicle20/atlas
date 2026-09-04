@@ -1,0 +1,55 @@
+{
+  "service": "atlas-reactor-actions + tools/reactor-seed-gen + tools/reactor-seed-lint",
+  "path": "services/atlas-reactor-actions, tools/reactor-seed-gen, tools/reactor-seed-lint",
+  "date": "2026-09-02",
+  "build": "pass",
+  "testsPassed": 3,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "script",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01..05", "name": "Domain file responsibilities", "status": "n-a", "evidence": "executor.go and subdomain.go are neither processor.go/rest.go/requests.go/entity.go/builder.go/model.go/administrator.go/provider.go/state.go"},
+        {"id": "FILE-06", "name": "No package-named catch-all carrying >=2 responsibilities", "status": "pass", "evidence": "executor.go (operation execution only) and subdomain.go (seeder adapter only) each carry a single responsibility"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "executor_test.go:185 TestExecuteSprayItems_SetsDropType and :241 TestExecuteSprayItems_NoParams duplicate the same exercise-and-assert shape as two non-table functions"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "subdomain_test.go:23-92 TestReactorSubdomainBuildTouchRules uses tests := []struct{...} + t.Run"},
+        {"id": "DOM-10", "name": "Test DB setup calls RegisterTenantCallbacks", "status": "n-a", "evidence": "no test in executor_test.go or subdomain_test.go opens a GORM DB directly"},
+        {"id": "DOM-24", "name": "Emit-path producer stub", "status": "n-a", "evidence": "executor_test.go:19-30 injects fakeSagaProcessor; no test reaches AndEmit/message.Emit/producer.Produce"},
+        {"id": "DOM-33", "name": "Interface change updates mocks", "status": "n-a", "evidence": "no Processor/Provider/Administrator interface method added/removed/re-signed"}
+      ]
+    },
+    {
+      "name": "tools/reactor-seed-gen",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities / no catch-all", "status": "n-a", "evidence": "no processor.go/rest.go/requests.go/entity.go/builder.go/model.go/administrator.go/provider.go/state.go exists; doc.go:1-5 describes one pipeline stage per file"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "convert_test.go:9,320, parse_test.go:9, describe_test.go:10 use tests/cases := []struct{...} + t.Run"},
+        {"id": "DOM-20", "name": "Table-driven tests (single-scenario functions)", "status": "pass", "evidence": "emit_test.go:11,50,78,102,140,162 and describe_test.go:88,98,174 each assert a distinct structural invariant, not a repeated scenario needing consolidation"},
+        {"id": "DOM-10", "name": "Test DB setup calls RegisterTenantCallbacks", "status": "n-a", "evidence": "no GORM DB opened in this module's tests"},
+        {"id": "DOM-24", "name": "Emit-path producer stub", "status": "n-a", "evidence": "module has no Kafka dependency"},
+        {"id": "DOM-33", "name": "Interface change updates mocks", "status": "n-a", "evidence": "no Processor/Provider/Administrator interface in this module"}
+      ]
+    },
+    {
+      "name": "tools/reactor-seed-lint",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities / no catch-all", "status": "n-a", "evidence": "no domain-construct file exists; main.go/schema.go/identity.go each own one concern"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "main_test.go:22-125 ten Test functions repeat build/exec/assert-exit-code varying only fixture path and expected substring, none uses tests := []struct{...} + t.Run"},
+        {"id": "DOM-10", "name": "Test DB setup calls RegisterTenantCallbacks", "status": "n-a", "evidence": "no GORM DB opened in this module's tests"},
+        {"id": "DOM-24", "name": "Emit-path producer stub", "status": "n-a", "evidence": "module has no Kafka dependency"},
+        {"id": "DOM-33", "name": "Interface change updates mocks", "status": "n-a", "evidence": "no Processor/Provider/Administrator interface in this module"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "EXT-01..04: script package calls requests.RootUrlFor/requests.GetRequest[T] at executor.go:493-499 and evaluator.go:176-182, both pre-existing and outside this diff's changed hunks (git blame shows commits predating this branch); auditing them would require reading unmodified code outside the review surface"
+  ],
+  "blocking": [
+    "DOM-20: services/atlas-reactor-actions/atlas.com/reactor/script/executor_test.go:185,241 - TestExecuteSprayItems_SetsDropType and TestExecuteSprayItems_NoParams duplicate the same shape across two non-table Test functions instead of a table",
+    "DOM-20: tools/reactor-seed-lint/main_test.go:22-125 - ten Test functions repeat the identical build/exec/assert-exit-code shape varying only fixture path and expected substring, never consolidated into a table-driven test"
+  ],
+  "nonBlocking": []
+}

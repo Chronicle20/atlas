@@ -244,6 +244,7 @@ topics:
       - atlas-channel/kafka/message/monster
       - atlas-consumables/kafka/message/monster
       - atlas-events/kafka/message/monster
+      - atlas-maps/kafka/message/monster
       - atlas-maps/tasks
       - atlas-messages/kafka/message/monster
       - atlas-monsters/kafka/consumer/monster
@@ -389,6 +390,7 @@ topics:
       - atlas-character-factory/kafka/message/saga
       - atlas-character/kafka/message/saga
       - atlas-consumables/kafka/message/saga
+      - atlas-maker/kafka/message/saga
       - atlas-map-actions/kafka/message/saga
       - atlas-messages/kafka/message/saga
       - atlas-mts/kafka/message/saga
@@ -910,6 +912,7 @@ topics:
       - atlas-channel/kafka/message/saga
       - atlas-character-factory/kafka/message/saga
       - atlas-consumables/kafka/message/saga
+      - atlas-maker/kafka/message/saga
       - atlas-map-actions/kafka/message/saga
       - atlas-npc-conversations/kafka/message/saga
       - atlas-portal-actions/kafka/message/saga

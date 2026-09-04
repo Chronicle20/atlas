@@ -64,7 +64,7 @@ func TestExpiryTaskAppliesEnvContextToDespawn(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	task := NewExpiryTask(logrus.New(), context.Background(), time.Second, markerEnvContext)
+	task := NewExpiryTask(logrus.New(), time.Second, markerEnvContext)
 
 	var gotMarker any
 	task.newProcessor = func(l logrus.FieldLogger, pctx context.Context) Processor {
@@ -74,7 +74,7 @@ func TestExpiryTaskAppliesEnvContextToDespawn(t *testing.T) {
 			emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		}
 	}
-	task.Run()
+	task.Run(ctx)
 
 	if gotMarker != "stamped" {
 		t.Fatalf("envContext was not applied to the despawn context: got %v, want \"stamped\"", gotMarker)
@@ -95,7 +95,7 @@ func TestBeholderTaskAppliesEnvContextToSweep(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	task := NewBeholderTask(logrus.New(), context.Background(), time.Second, markerEnvContext)
+	task := NewBeholderTask(logrus.New(), time.Second, markerEnvContext)
 	task.pick = func(int) int { return 0 }
 
 	var gotMarker any
@@ -106,7 +106,7 @@ func TestBeholderTaskAppliesEnvContextToSweep(t *testing.T) {
 		_, err := provider()
 		return err
 	}
-	task.Run()
+	task.Run(ctx)
 
 	if gotMarker != "stamped" {
 		t.Fatalf("envContext was not applied to the sweep context: got %v, want \"stamped\"", gotMarker)

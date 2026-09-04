@@ -2,10 +2,10 @@ package main
 
 import (
 	"atlas-summons/summon"
-	"atlas-summons/tasks"
 	"atlas-summons/world"
 	"context"
 	"os"
+	"sync"
 	"time"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
@@ -101,9 +101,9 @@ func main() {
 	// registerSweepTasks runs only on the leader-elected pod. It registers the
 	// duration-expiry sweep that despawns summons whose lifetime has elapsed, and
 	// the Beholder aura sweep that heals/buffs owners of deployed Beholders.
-	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
-		tasks.Register(l, ctx)(summon.NewExpiryTask(l, ctx, time.Second, withSelfEnvironment))
-		tasks.Register(l, ctx)(summon.NewBeholderTask(l, ctx, time.Second, withSelfEnvironment))
+	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
+		routine.Register(l, ctx, wg)(summon.NewExpiryTask(l, time.Second, withSelfEnvironment))
+		routine.Register(l, ctx, wg)(summon.NewBeholderTask(l, time.Second, withSelfEnvironment))
 	}
 
 	if leaderEnabled(l) {
@@ -117,9 +117,20 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
+		// Held open for the lifetime of the leader-election goroutine below.
+		// registerSweepTasks (and therefore its routine.Register call) only
+		// runs once le.Run elects this pod as leader, which happens
+		// asynchronously inside the routine.Go goroutine. Registering there
+		// calls wg.Add(1) on a detached goroutine, which would race
+		// Manager.Wait() if the counter were allowed to hit zero in between.
+		// Adding 1 here — synchronously, before routine.Go starts — keeps the
+		// counter above zero for the goroutine's whole life, so that later
+		// Add can never race a Wait-induced zero crossing.
+		rt.WaitGroup().Add(1)
 		routine.Go(l, rt.Context(), func(_ context.Context) {
+			defer rt.WaitGroup().Done()
 			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
-				registerSweepTasks(l, leaderCtx)
+				registerSweepTasks(l, leaderCtx, rt.WaitGroup())
 				<-leaderCtx.Done()
 			})
 			if err != nil {
@@ -128,7 +139,7 @@ func main() {
 		})
 	} else {
 		l.Warnf("SUMMON_LEADER_ELECTION_ENABLED=false — sweep tasks run unconditionally on this pod.")
-		registerSweepTasks(l, rt.Context())
+		registerSweepTasks(l, rt.Context(), rt.WaitGroup())
 	}
 
 	rt.Wait()

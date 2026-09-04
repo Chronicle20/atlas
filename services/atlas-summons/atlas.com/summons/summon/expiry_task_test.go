@@ -53,7 +53,7 @@ func TestExpirySweepDespawnsExpired(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	task := NewExpiryTask(logrus.New(), context.Background(), time.Second, identityEnvContext)
+	task := NewExpiryTask(logrus.New(), time.Second, identityEnvContext)
 	// Substitute a processor with a no-op emitter so the sweep does not attempt
 	// a real kafka publish (which would retry for ~15s against no broker).
 	task.newProcessor = func(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -62,7 +62,7 @@ func TestExpirySweepDespawnsExpired(t *testing.T) {
 			emit: func(_ topic.Token, _ model.Provider[[]kafka.Message]) error { return nil },
 		}
 	}
-	task.Run()
+	task.Run(ctx)
 
 	if _, err := GetRegistry().Get(ctx, ten, 1000001); err == nil {
 		t.Fatalf("expected expired summon 1000001 to be despawned")

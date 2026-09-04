@@ -13,7 +13,6 @@ import (
 // only on the leader-elected pod (registered from main.go's registerSweepTasks).
 type ExpiryTask struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	interval time.Duration
 	// newProcessor builds the tenant-scoped processor used to despawn expired
 	// summons. It is a field so tests can substitute a processor with a no-op
@@ -29,8 +28,8 @@ type ExpiryTask struct {
 	envContext func(context.Context) context.Context
 }
 
-func NewExpiryTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *ExpiryTask {
-	return &ExpiryTask{l: l, ctx: ctx, interval: interval, newProcessor: NewProcessor, envContext: envContext}
+func NewExpiryTask(l logrus.FieldLogger, interval time.Duration, envContext func(context.Context) context.Context) *ExpiryTask {
+	return &ExpiryTask{l: l, interval: interval, newProcessor: NewProcessor, envContext: envContext}
 }
 
 func (t *ExpiryTask) SleepTime() time.Duration { return t.interval }
@@ -39,15 +38,15 @@ func (t *ExpiryTask) SleepTime() time.Duration { return t.interval }
 // ExpiresAt is in the past. A tenant-scoped context is built per group so the
 // processor's Despawn (registry removal + oid release + DESTROYED emit) operates
 // in the correct tenant.
-func (t *ExpiryTask) Run() {
-	all, err := GetRegistry().GetAll(t.ctx)
+func (t *ExpiryTask) Run(ctx context.Context) {
+	all, err := GetRegistry().GetAll(ctx)
 	if err != nil {
 		t.l.WithError(err).Errorf("Expiry sweep unable to enumerate summons.")
 		return
 	}
 	now := time.Now()
 	for ten, ms := range all {
-		tctx := t.envContext(tenant.WithContext(t.ctx, ten))
+		tctx := t.envContext(tenant.WithContext(ctx, ten))
 		p := t.newProcessor(t.l, tctx)
 		for _, m := range ms {
 			if m.ExpiresAt().IsZero() || now.Before(m.ExpiresAt()) {

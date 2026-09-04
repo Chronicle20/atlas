@@ -26,16 +26,51 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterInputHandler[M](l)
 }
 
-func ParseConversationId(l logrus.FieldLogger, next func(conversationId uuid.UUID) http.HandlerFunc) http.HandlerFunc {
-	return server.ParseUUIDId(l, "conversationId", next)
+type ConversationIdHandler func(conversationId uuid.UUID) http.HandlerFunc
+
+func ParseConversationId(l logrus.FieldLogger, next ConversationIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		conversationIdStr := mux.Vars(r)["conversationId"]
+		conversationId, err := uuid.Parse(conversationIdStr)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse conversationId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(conversationId)(w, r)
+	}
 }
 
-func ParseNpcId(l logrus.FieldLogger, next func(npcId uint32) http.HandlerFunc) http.HandlerFunc {
-	return server.ParseIntId[uint32](l, "npcId", next)
+type NpcIdHandler func(npcId uint32) http.HandlerFunc
+
+func ParseNpcId(l logrus.FieldLogger, next NpcIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		npcIdStr := mux.Vars(r)["npcId"]
+		var npcId uint32
+		_, err := fmt.Sscanf(npcIdStr, "%d", &npcId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse npcId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(npcId)(w, r)
+	}
 }
 
-func ParseQuestId(l logrus.FieldLogger, next func(questId uint32) http.HandlerFunc) http.HandlerFunc {
-	return server.ParseIntId[uint32](l, "questId", next)
+type QuestIdHandler func(questId uint32) http.HandlerFunc
+
+func ParseQuestId(l logrus.FieldLogger, next QuestIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		questIdStr := mux.Vars(r)["questId"]
+		var questId uint32
+		_, err := fmt.Sscanf(questIdStr, "%d", &questId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse questId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(questId)(w, r)
+	}
 }
 
 type ItemIdHandler func(itemId uint32) http.HandlerFunc

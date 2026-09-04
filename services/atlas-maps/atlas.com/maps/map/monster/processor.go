@@ -66,11 +66,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // SpawnMonsters implements the core spawn logic with cooldown enforcement.
 //
-// 1. Initialize spawn point registry for this map (lazy, from data provider)
-// 2. Get eligible spawn points from Redis via Lua script (NextSpawnAt <= now)
-// 3. Calculate spawn requirements based on character count and total spawn points
-// 4. Randomly select from eligible spawn points
-// 5. Batch update cooldowns in Redis and spawn monsters asynchronously
+//  1. Initialize the spawn point registry for this field (lazy, one HTTP drain)
+//  2. Return early if the field has no characters
+//  3. Atomically claim and fire the field's one-time batch, uncapped (FR-2.1..2.4)
+//  4. Compute the recurring deficit from the RECURRING spawn-point count only
+//  5. Atomically reserve up to that many eligible recurring points and spawn them
 func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) error {
 	p.l.Debugf("Executing spawn mechanism for Tenant [%s] Field [%s].", p.t.String(), f.Id())
 
@@ -96,15 +96,52 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) er
 		return nil
 	}
 
-	totalCount, err := registry.Count(p.ctx, mapKey)
+	// Claim and fire the field's one-time batch before anything else consults a
+	// count. The claim is a single atomic HSETNX inside Lua, so exactly one of
+	// the concurrent triggers (character-enter, and the 10s NewRespawn task)
+	// can win it; the loser sees an empty batch (FR-2.1..2.4).
+	fired, err := registry.ClaimOneTimeSpawnPoints(p.ctx, mapKey)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to claim one-time spawn points for field [%s].", f.Id())
+		return err
+	}
+	if len(fired) > 0 {
+		p.l.Debugf("Firing [%d] one-time spawn points for field [%s].", len(fired), f.Id())
+		for _, csp := range fired {
+			sp := csp.SpawnPoint
+			routine.Go(p.l, p.ctx, func(_ context.Context) {
+				p.mp.CreateMonster(transactionId, f, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
+			})
+		}
+	}
+
+	// Recurring points only: a one-time batch must not inflate the recurring
+	// population target (FR-2.5).
+	recurringCount, err := registry.Count(p.ctx, mapKey)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to count spawn points for field [%s].", f.Id())
 		return err
 	}
-	if totalCount == 0 {
+	if recurringCount == 0 {
+		oneTimeCount, cerr := registry.CountOneTime(p.ctx, mapKey)
+		if cerr != nil {
+			p.l.WithError(cerr).Errorf("Failed to count one-time spawn points for field [%s].", f.Id())
+			return cerr
+		}
+		if oneTimeCount == 0 {
+			p.l.Debugf("Field [%s] has no spawn points: one-time [0] recurring [0].", f.Id())
+		}
 		return nil
 	}
 
+	// monstersInMap counts EVERY monster in the field, including the one-time
+	// ones. On a mixed map, once the one-time batch is alive it will usually
+	// exceed monstersMax, so recurring spawns are suppressed until enough
+	// one-time monsters are killed. This is deliberate, matches the reference
+	// implementation's map-wide respawn deficit, and is not a regression: no
+	// mixed map spawns anything from its one-time set today. Attributing the
+	// count per-origin would require an atlas-monsters contract change, which
+	// is a PRD non-goal. Do not "fix" this.
 	monstersInMap, err := p.mp.CountInMap(transactionId, f)
 	if err != nil {
 		// Skip this pass rather than assuming zero monsters: a transient count
@@ -114,7 +151,7 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) er
 		return err
 	}
 
-	monstersMax := p.getMonsterMax(c, totalCount)
+	monstersMax := p.getMonsterMax(c, recurringCount)
 	toSpawn := monstersMax - monstersInMap
 	if toSpawn <= 0 {
 		return nil

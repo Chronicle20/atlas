@@ -347,9 +347,8 @@ Manages character map visit records in PostgreSQL.
 Retrieves spawn point data from atlas-data service.
 
 - SpawnPointProvider: Provides all spawn points for a map
-- SpawnableSpawnPointProvider: Provides spawn points where MobTime >= 0
-- GetSpawnPoints: Gets all spawn points for a map
-- GetSpawnableSpawnPoints: Gets spawn points where MobTime >= 0
+- GetSpawnPoints: Gets every spawn point on a map, unfiltered
+- Classify: Partitions spawn points into recurring (MobTime >= 0), one-time (MobTime < 0) and hidden (Hide == true) buckets
 
 #### Data Reactor Processor
 

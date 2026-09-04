@@ -1,0 +1,86 @@
+{
+  "service": "atlas-maps",
+  "path": "services/atlas-maps",
+  "date": "2026-09-03",
+  "build": "pass",
+  "testsPassed": 30,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "data/map/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go with NewBuilder()/Build()", "status": "fail", "evidence": "data/map/monster/model.go:1 defines SpawnPoint Model; no builder.go in package"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "no entity.go — not GORM-persisted"},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "n-a", "evidence": "no entity.go — not GORM-persisted"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "n-a", "evidence": "package is inbound-only client; defines Extract, not Transform"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "no resource.go / handlers in package"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "data/map/monster/processor.go:24"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily", "status": "n-a", "evidence": "no provider.go — Redis/HTTP-backed, not GORM"},
+        {"id": "DOM-16", "name": "administrator.go for write domains", "status": "n-a", "evidence": "package performs no writes"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "classify_test.go:5,76 both use tests := []struct{...} + t.Run"},
+        {"id": "DOM-21", "name": "No redeclared shared constant/type", "status": "pass", "evidence": "Classify/Classified new; no libs/atlas-constants collision"},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "n-a", "evidence": "package emits no Kafka messages"},
+        {"id": "DOM-33", "name": "Mocks updated for interface change", "status": "pass", "evidence": "processor.go:13-16 dropped 2 methods; zero remaining references repo-wide; go build green"},
+        {"id": "EXT-01", "name": "RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "grep on data/map/monster/rest.go returns zero matches"},
+        {"id": "EXT-02", "name": "httptest fixture asserts populated domain struct", "status": "pass", "evidence": "processor_drain_test.go:44-79 TestSpawnPointProviderDrainsBeyondOnePage"},
+        {"id": "EXT-03", "name": "Only genuine 404 maps to not-found", "status": "pass", "evidence": "no ErrNotFound handling anywhere in package; errors bubble unmodified, processor.go:37-41"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl(DOMAIN)", "status": "pass", "evidence": "requests.go:16-18 requests.RootUrlFor(ctx, \"DATA\")"}
+      ]
+    },
+    {
+      "name": "map/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go present", "status": "fail", "evidence": "map/monster/model.go:1 defines CooldownSpawnPoint; no builder.go in package"},
+        {"id": "DOM-02", "name": "entity.go Make/ToEntity", "status": "n-a", "evidence": "no entity.go — Redis-backed, not GORM"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "map/monster/processor.go:56"},
+        {"id": "DOM-11", "name": "Provider lazy evaluation", "status": "n-a", "evidence": "no provider.go file"},
+        {"id": "DOM-16", "name": "administrator.go for write domain", "status": "fail", "evidence": "writes in registry.go:304,386,436,475,520,529; no administrator.go"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "19 of 20 new top-level tests use ad hoc t.Run without struct table; only registry_test.go:171-172 (cases := []struct) is table-driven; see registry_test.go:432,676 and processor_test.go:1177,1301,1328,1400,1443,1484"},
+        {"id": "DOM-24", "name": "producertest / no-op producer for emit-reaching tests", "status": "n-a", "evidence": "map/monster tests reach no Kafka emit path"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "processor.go:112,180; confirmed via tools/goroutine-guard.sh exit 0"},
+        {"id": "DOM-29", "name": "Singleton registry via accessor, not per-instance", "status": "pass", "evidence": "registry.go:62-65 sync.Once, :105-108 InitRegistry, :110-112 GetRegistry(); ProcessorImpl holds no cache field, processor.go:44-51"},
+        {"id": "DOM-30", "name": "DB writes emit via AndEmit+Buffer", "status": "pass", "evidence": "n/a in this package — no DB writes, no direct emit call sites"},
+        {"id": "DOM-31", "name": "Tenant travels only via context", "status": "pass", "evidence": "registry.go methods take mapKey (carries tenant.Model); processor.go:60 p.t = tenant.MustFromContext(ctx)"},
+        {"id": "DOM-33", "name": "Mocks updated for interface change", "status": "pass", "evidence": "mockDataProcessor in processor_test.go diff drops removed methods in same diff"},
+        {"id": "FILE-01", "name": "Processor interface/ctor/methods in processor.go", "status": "pass", "evidence": "processor.go:41,56 and all ProcessorImpl methods"},
+        {"id": "FILE-05", "name": "Writes in administrator.go, readers in provider.go", "status": "fail", "evidence": "registry.go bundles writes (304,386,436,475,520,529) and reads (361,373,496) with neither file present"},
+        {"id": "FILE-06", "name": "No single file carrying >=2 responsibilities", "status": "fail", "evidence": "registry.go (~540 lines) carries administrator + provider responsibilities plus persistence/Lua layer; diff adds 4 more methods to it"}
+      ]
+    },
+    {
+      "name": "map (_map)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "map/processor.go:53"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "map/processor_test.go:722,870,920 new tests use ad hoc t.Run, no tests := []struct table found in file"},
+        {"id": "DOM-24", "name": "producertest / injected no-op producer", "status": "pass", "evidence": "processor_test.go:120-166 mockProducerProvider injected per test via createTestProcessor"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "map/processor.go:91,94"},
+        {"id": "DOM-30", "name": "Write ops emit via AndEmit+Buffer", "status": "pass", "evidence": "map/processor.go:131 mb.Put(...) inside Exit, wrapped by ExitAndEmit->message.Emit at :140-142"},
+        {"id": "DOM-31", "name": "Tenant travels only via context", "status": "pass", "evidence": "map/processor.go:118 tenant.MustFromContext; FieldCommand carries no tenant field, pinned by map/producer_test.go:39-52"},
+        {"id": "FILE-01", "name": "Processor interface/methods in processor.go", "status": "pass", "evidence": "map/processor.go:31-41,53"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "n-a", "evidence": "map/producer.go holds only kafka.Message providers, single responsibility"}
+      ]
+    },
+    {
+      "name": "kafka/message/monster",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "kafka.go holds only topic/command consts and envelope structs"},
+        {"id": "DOM-21", "name": "No redeclared shared constant", "status": "pass", "evidence": "new symbols not in libs/atlas-constants; COMMAND_TOPIC_MONSTER string value pre-existing as a distinct local const at tasks/mist_tick.go:104"},
+        {"id": "DOM-23", "name": "Topic env var in configmap+overlays, no literal env", "status": "n-a", "evidence": "COMMAND_TOPIC_MONSTER already present at deploy/k8s/base/env-configmap.yaml:68 and both overlays — not new/renamed"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-20: map/monster/registry_test.go, map/monster/processor_test.go, map/processor_test.go: 19 of 20 new top-level test functions are not table-driven (t.Run subtests with bespoke inline setup instead of tests := []struct{...})",
+    "FILE-05/FILE-06: services/atlas-maps/atlas.com/maps/map/monster/registry.go bundles write (administrator-shaped) and read (provider-shaped) responsibilities in one file with no administrator.go/provider.go split; diff adds 4 more methods to the same file",
+    "DOM-16: map/monster package performs writes with no administrator.go — writes inlined into registry.go",
+    "DOM-01: map/monster/model.go and data/map/monster/model.go both lack a corresponding builder.go/NewBuilder()/Build()",
+    "EXT-01: data/map/monster/rest.go RestModel is missing SetToOneReferenceID/SetToManyReferenceIDs"
+  ],
+  "nonBlocking": []
+}

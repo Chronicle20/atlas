@@ -1,0 +1,103 @@
+{
+  "service": "atlas-maps",
+  "path": "services/atlas-maps",
+  "date": "2026-09-03",
+  "build": "pass",
+  "testsPassed": 34,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "round": 2,
+  "priorAudit": "docs/tasks/task-294-mobtime-one-time-spawn/backend-audit.md",
+  "domains": [
+    {
+      "name": "map/monster",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "FILE-05",
+          "name": "Writes in administrator.go, readers in provider.go",
+          "status": "pass",
+          "evidence": "map/monster/administrator.go:181-371 (8 write methods); map/monster/provider.go:12-51 (Count, CountOneTime, GetSpawnPointsForMap)"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file carrying >=2 responsibilities",
+          "status": "pass",
+          "evidence": "registry.go now holds only construction/keying/stored-representation (registry.go, no func matches for writes or public reads)"
+        },
+        {
+          "id": "DOM-16",
+          "name": "administrator.go holds write functions for a domain with create/update/delete",
+          "status": "pass",
+          "evidence": "map/monster/administrator.go:181-371 holds all 8 write methods, called from processor.go"
+        },
+        {
+          "id": "DOM-01",
+          "name": "builder.go exists with NewBuilder()/fluent setters/validating Build()",
+          "status": "pass",
+          "evidence": "map/monster/builder.go:22-43 (NewBuilder, 2 setters, Build); data/map/monster/builder.go:26-115 (NewBuilder, 12 setters, Build) -- shape present; Build() does not validate invariants, recorded as non-blocking residual risk"
+        },
+        {
+          "id": "DOM-33",
+          "name": "Interface change updates every mock in same diff",
+          "status": "pass",
+          "evidence": "grep -rn SpawnableSpawnPointProvider|GetSpawnableSpawnPoints services/atlas-maps/atlas.com/maps -- zero matches; go build ./... green"
+        },
+        {
+          "id": "DOM-29",
+          "name": "Cache/registry is an application-scoped singleton via GetCache()-equivalent accessor",
+          "status": "pass",
+          "evidence": "registry.go:59-64 registryOnce sync.Once; :102-108 InitRegistry/GetRegistry unchanged by split"
+        },
+        {
+          "id": "DOM-26",
+          "name": "Goroutines via routine.Go",
+          "status": "pass",
+          "evidence": "tools/goroutine-guard.sh exit 0 across 93 modules, re-run after the three fix commits"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Tests are table-driven",
+          "status": "warn",
+          "evidence": "12 of 19 new top-level tests remain non-table-driven; each independently reconfirmed to have zero t.Run siblings (registry_test.go: TestInitializeForMap_IsIdempotent, TestFlushTenant_ClearsAllThreeHashes, TestClaimOneTimeSpawnPoints_ConcurrentFiresExactlyOnce, TestRearmOneTime_ConcurrentTrueExactlyOnce, TestFlushTenant_ReArmsDisarmedField; processor_test.go: TestSpawnMonsters_OneTimeIgnoresCharacterCount, TestSpawnMonsters_MixedMapUsesRecurringDenominator, TestSpawnMonsters_HiddenPointNeverSpawns, TestSpawnMonsters_RecurringOnlyRegression, TestSpawnMonsters_ZeroSpawnPointsLogsBothCounts); recorded as a judged, re-openable exception rather than a clean pass -- see round2 markdown finding 1"
+        }
+      ]
+    },
+    {
+      "name": "data/map/monster",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-01",
+          "name": "builder.go exists",
+          "status": "pass",
+          "evidence": "data/map/monster/builder.go:26-115 -- NewBuilder, 12 fluent setters, Build(); no invariant validation in Build(), non-blocking residual risk"
+        },
+        {
+          "id": "EXT-01",
+          "name": "RestModel implements SetToOneReferenceID/SetToManyReferenceIDs",
+          "status": "pass",
+          "evidence": "data/map/monster/rest.go:39-45 -- both implemented as documented no-ops"
+        }
+      ]
+    },
+    {
+      "name": "map",
+      "type": "sub-domain",
+      "checks": [
+        {
+          "id": "DOM-20",
+          "name": "Tests are table-driven",
+          "status": "warn",
+          "evidence": "map/processor_test.go: TestProcessorImpl_Exit_RearmIsPerFieldKey (844), TestProcessorImpl_Exit_LogsRearm (894) remain non-table-driven, zero t.Run siblings confirmed; TestProcessorImpl_Exit_RearmsAndDestroysOnEmpty (729) converted to table form this round"
+        }
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-01: map/monster/builder.go and data/map/monster/builder.go ship Build() with no invariant validation, and fields stay exported so literal construction remains the majority pattern -- syntactic shape satisfied, architectural intent (preventing invalid construction) not fully delivered; accepted as an explicit, scoped tradeoff, not reopened as blocking",
+    "DOM-20: 12 of 19 new tests remain non-table-driven (see domains[].checks for full list); each confirmed to have zero t.Run siblings in current code; recorded as a judged, re-openable exception rather than a clean pass"
+  ]
+}

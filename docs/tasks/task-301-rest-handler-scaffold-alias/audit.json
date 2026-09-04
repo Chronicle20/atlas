@@ -1,0 +1,60 @@
+{
+  "service": "task-301-rest-handler-scaffold-alias (21 services)",
+  "path": "services/{atlas-account,atlas-ban,atlas-character,atlas-drop-information,atlas-events,atlas-fame,atlas-map-actions,atlas-messages,atlas-mounts,atlas-mts,atlas-notes,atlas-npc-conversations,atlas-npc-shops,atlas-parcel,atlas-party-quests,atlas-pets,atlas-portal-actions,atlas-quest,atlas-rankings,atlas-reactor-actions,atlas-reward-pools}",
+  "date": "2026-09-04",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "rest (19 converted + 2 deleted support packages)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-32", "name": "Routes register through server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "services/atlas-account/atlas.com/account/rest/handler.go:14-25 and identical shape in all 19 surviving rest/handler.go files"},
+        {"id": "FILE-01..06", "name": "No package-named catch-all; correct file placement", "status": "pass", "evidence": "rest packages carry only path-param helpers + aliases; zero new Transform/RestModel/Migration/TableName added anywhere in the diff"},
+        {"id": "n/a", "name": "Deleted rest/handler.go (atlas-events, atlas-fame) had no live callers", "status": "pass", "evidence": "atlas-events/event/definition/resource.go:32-33 already used server.RegisterHandler directly; atlas-fame/main.go has no InitResource call at all; go build/test clean post-deletion"},
+        {"id": "n/a", "name": "ParseEnvironment gained in middleware chain (disclosed behavior delta)", "status": "pass", "evidence": "libs/atlas-rest/server/register.go:11-24 vs old RetrieveSpan->ParseTenant chain; short-circuits on absent header (handler.go:71); disclosed as FR-4.1 in prd.md:195-205, design.md:318-341"},
+        {"id": "n/a", "name": "Malformed-body 400 now JSON:API-shaped (disclosed behavior delta)", "status": "pass", "evidence": "libs/atlas-rest/server/context.go:47-66 + error.go:79-101 vs old bare w.WriteHeader(400); disclosed in plan.md:1985"},
+        {"id": "n/a", "name": "db *gorm.DB curry step dropped from RegisterHandler/RegisterInputHandler", "status": "pass", "evidence": "libs/atlas-rest/server/register.go:11-13; zero remaining RegisterHandler(l)(db)(si) shapes or d.DB()/c.DB() reads in any changed file"}
+      ]
+    },
+    {
+      "name": "resource.go domain/sub-domain packages (41 files)",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01..06", "name": "No new responsibility bled into resource.go", "status": "pass", "evidence": "services/atlas-npc-shops/atlas.com/npc/shops/resource.go diff (446 lines) is pure closure-wrapping; zero new Transform/RestModel/Migration/TableName declarations added across all 41 files"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "pass", "evidence": "grep '_, _ :=.*Transform|_ = .*Transform(' across all 41 diffs: no matches"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "grep os.Getenv across all 41 diffs: no matches"},
+        {"id": "DOM-15", "name": "No db.Create/Save/Delete in handlers", "status": "pass", "evidence": "grep for added db.Create/Save/Delete lines across all 41 diffs: no matches"},
+        {"id": "DOM-30", "name": "Writes emit via AndEmit, not bare producer.ProviderImpl from success path", "status": "n-a", "evidence": "Every *AndEmit call site touched is byte-identical in substance; only db arg source changed (e.g. atlas-account/account/resource.go)"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "grep tenantId|TENANT_ID|TenantId across all 41 diffs: no matches; no RestModel gained a tenant field"},
+        {"id": "SUB-01..04", "name": "Business logic outside handler; administrator writes; RegisterInputHandler[T] for POST; no manual JSON parsing", "status": "pass", "evidence": "grep io.ReadAll|json.NewDecoder|jsonapi.Unmarshal across all 41 diffs: no matches added; POST/PATCH registrar mapping unchanged (atlas-account/account/resource.go:26-36)"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "pass", "evidence": "services/atlas-account/atlas.com/account/account/resource.go:30-31, registrar-to-method mapping unchanged by diff"},
+        {"id": "n/a", "name": "No stray d.DB()/c.DB() or HandlerDependency{db:...} literal remains", "status": "pass", "evidence": "grep across every changed non-test file: no matches; go build ./... clean on all 21 modules"}
+      ]
+    },
+    {
+      "name": "cross-cutting families",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "n-a", "evidence": "zero go / go func statements added anywhere in the diff"},
+        {"id": "DOM-34", "name": "No aliases/dead symbols left behind after libs/atlas-* extraction", "status": "n-a", "evidence": "libs/atlas-rest has an empty diff; no symbol moved between service and lib"},
+        {"id": "DOM-35", "name": "Symbols left unreferenced are deleted", "status": "n-a", "evidence": "same as DOM-34"},
+        {"id": "DOM-10/20/24/33", "name": "Testing family", "status": "n-a", "evidence": "no _test.go touched; no Processor/Provider/Administrator interface re-signed"},
+        {"id": "DOM-29", "name": "Cache family", "status": "n-a", "evidence": "no cache.go touched, no processor/struct gained cached state"},
+        {"id": "SCAFFOLD-01..10", "name": "New service / channel feature scaffolding", "status": "n-a", "evidence": "no services/atlas-<svc>/ directory added; no new channel Writer/Handler; routes.conf untouched"},
+        {"id": "SEC-01..04", "name": "Security", "status": "n-a", "evidence": "no JWT/token/redirect/secret line touched by this diff"},
+        {"id": "EXT-01..04", "name": "External atlas-service HTTP clients", "status": "n-a", "evidence": "grep requests.RootUrl|GetRequest|PostRequest across every changed resource.go/handler.go: no matches"},
+        {"id": "DOM-27", "name": "Transient DB errors surface as 503 via server.WriteErrorResponse", "status": "n-a", "evidence": "pre-existing StatusInternalServerError lines are unchanged in substance by this diff (see Not evaluable)"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-13/DOM-14/DOM-17: full line-by-line semantic read of all 41 resource.go handler bodies' pre-existing business logic was not performed beyond targeted greps and spot-reads of the largest diffs",
+    "DOM-27: whether pre-existing StatusInternalServerError sites (unchanged by this diff) should instead use server.WriteErrorResponse was not evaluated, since those lines predate this branch",
+    "Exact aggregate pass/fail test-function counts across the 21 modules were not summed; verified instead via absence of any FAIL line and ok/[no test files] on every package"
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

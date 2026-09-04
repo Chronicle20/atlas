@@ -359,49 +359,58 @@ func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) mes
 	}
 }
 
+// buildIncreaseExperienceConfig maps an EXPERIENCE_CHANGED event's
+// distributions onto the client's IncreaseExperienceConfig. It is pure: no
+// logger, no context, no session, no package-level state. A nil or empty
+// slice yields the zero config. An unrecognized ExperienceType is silently
+// ignored (see the type table in kafka/message/character/kafka.go).
+func buildIncreaseExperienceConfig(ds []character2.ExperienceDistributions) model2.IncreaseExperienceConfig {
+	c := model2.IncreaseExperienceConfig{}
+	for _, d := range ds {
+		if d.ExperienceType == character2.ExperienceDistributionTypeWhite {
+			c.White = true
+			c.Amount = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeYellow {
+			c.White = false
+			c.Amount = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeChat {
+			c.InChat = true
+			c.Amount = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeMonsterBook {
+			c.MonsterBookBonus = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeMonsterEvent {
+			c.MobEventBonusPercentage = byte(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypePlayTime {
+			c.MobEventBonusPercentage = byte(d.Amount)
+			c.PlayTimeHour = byte(d.Attr1)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeWedding {
+			c.WeddingBonusEXP = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeSpiritWeek {
+			c.QuestBonusRate = byte(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeParty {
+			c.PartyBonusExp = int32(d.Amount)
+			c.PartyBonusEventRate = byte(d.Attr1)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeItem {
+			c.ItemBonusEXP = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeInternetCafe {
+			c.PremiumIPExp = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeRainbowWeek {
+			c.RainbowWeekEventEXP = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypePartyRing {
+			c.PartyEXPRingEXP = int32(d.Amount)
+		} else if d.ExperienceType == character2.ExperienceDistributionTypeCakePie {
+			c.CakePieEventBonus = int32(d.Amount)
+		}
+	}
+	return c
+}
+
 func announceExperienceGain(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(distributions []character2.ExperienceDistributions) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(distributions []character2.ExperienceDistributions) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(distributions []character2.ExperienceDistributions) model.Operator[session.Model] {
 			return func(distributions []character2.ExperienceDistributions) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c := model2.IncreaseExperienceConfig{}
-
-					for _, d := range distributions {
-						if d.ExperienceType == character2.ExperienceDistributionTypeWhite {
-							c.White = true
-							c.Amount = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeYellow {
-							c.White = false
-							c.Amount = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeChat {
-							c.InChat = true
-							c.Amount = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeMonsterBook {
-							c.MonsterBookBonus = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeMonsterEvent {
-							c.MobEventBonusPercentage = byte(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypePlayTime {
-							c.MobEventBonusPercentage = byte(d.Amount)
-							c.PlayTimeHour = byte(d.Attr1)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeWedding {
-							c.WeddingBonusEXP = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeSpiritWeek {
-							c.QuestBonusRate = byte(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeParty {
-							c.PartyBonusExp = int32(d.Amount)
-							c.PartyBonusEventRate = byte(d.Attr1)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeItem {
-							c.ItemBonusEXP = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeInternetCafe {
-							c.PremiumIPExp = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeRainbowWeek {
-							c.RainbowWeekEventEXP = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypePartyRing {
-							c.PartyEXPRingEXP = int32(d.Amount)
-						} else if d.ExperienceType == character2.ExperienceDistributionTypeCakePie {
-							c.CakePieEventBonus = int32(d.Amount)
-						}
-					}
+					c := buildIncreaseExperienceConfig(distributions)
 
 					err := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationIncreaseExperienceBody(
 						c.White, c.Amount, c.InChat, c.MonsterBookBonus,

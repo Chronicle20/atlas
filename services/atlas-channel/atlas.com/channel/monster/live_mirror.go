@@ -22,10 +22,15 @@ const (
 // set the movement path reads (movement/processor.go), plus MaxMp so the
 // PS-1 attack path can adopt the mirror without redesign.
 type LiveEntry struct {
-	Field              field.Model
-	MonsterId          uint32
-	Mp                 uint32
-	MaxMp              uint32
+	Field     field.Model
+	MonsterId uint32
+	Mp        uint32
+	MaxMp     uint32
+	// MaxHp is seeded once from the CREATED fetch and never updated — max HP
+	// does not change over a monster's life. It is the death path's gauge
+	// denominator (design D4): at KILLED the monster is already gone from
+	// atlas-monsters, so this mirror is the only surviving source.
+	MaxHp              uint32
 	ControllerHasAggro bool
 	ControlCharacterId uint32
 	LastWrite          time.Time
@@ -78,6 +83,7 @@ func LiveEntryFromModel(mo Model) LiveEntry {
 		MonsterId:          mo.MonsterId(),
 		Mp:                 mo.Mp(),
 		MaxMp:              mo.MaxMp(),
+		MaxHp:              mo.MaxHp(),
 		ControllerHasAggro: mo.ControllerHasAggro(),
 		ControlCharacterId: mo.ControlCharacterId(),
 		X:                  mo.X(),

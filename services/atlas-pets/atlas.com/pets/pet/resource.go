@@ -23,65 +23,70 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
+			registerGet := rest.RegisterHandler(l)(si)
+			registerInput := rest.RegisterInputHandler[RestModel](l)(si)
 			r := router.PathPrefix("/characters/{characterId}/pets").Subrouter()
-			r.HandleFunc("", registerGet("get_pets_for_character", handleGetPetsForCharacter)).Methods(http.MethodGet)
-			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create_for_character", handleCreate)).Methods(http.MethodPost)
+			r.HandleFunc("", registerGet("get_pets_for_character", handleGetPetsForCharacter(db))).Methods(http.MethodGet)
+			r.HandleFunc("", registerInput("create_for_character", handleCreate(db))).Methods(http.MethodPost)
 			r = router.PathPrefix("/pets").Subrouter()
-			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create", handleCreate)).Methods(http.MethodPost)
-			r.HandleFunc("/{petId}", registerGet("get_pet", handleGetPet)).Methods(http.MethodGet)
-			r.HandleFunc("/{petId}", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_pet", handleUpdate)).Methods(http.MethodPatch)
+			r.HandleFunc("", registerInput("create", handleCreate(db))).Methods(http.MethodPost)
+			r.HandleFunc("/{petId}", registerGet("get_pet", handleGetPet(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{petId}", registerInput("update_pet", handleUpdate(db))).Methods(http.MethodPatch)
 		}
 	}
 }
 
-func handleGetPet(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParsePetId(d.Logger(), func(petId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			res, err := model.Map(Transform(d.Context()))(p.ByIdProvider(petId))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+func handleGetPet(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParsePetId(d.Logger(), func(petId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				res, err := model.Map(Transform(d.Context()))(p.ByIdProvider(petId))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }
 
-func handleGetPetsForCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
-			if err != nil {
-				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-				return
-			}
+func handleGetPetsForCharacter(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
 
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			paged, err := p.ByOwnerIdPagedProvider(characterId, page)()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to locate pets for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				paged, err := p.ByOwnerIdPagedProvider(characterId, page)()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to locate pets for character [%d].", characterId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 
-			res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(paged.Items))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(paged.Items))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
+			}
+		})
+	}
 }
 
 // createPetName defaults a missing pet name. Pets granted through the generic
@@ -145,88 +150,28 @@ func createPetSlot() int8 {
 	return SlotUnspawned
 }
 
-func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		p := NewProcessor(d.Logger(), d.Context(), d.DB())
-		i.Name = createPetName(i.Name)
-		i.Level = createPetLevel(i.Level)
-		i.Expiration = createPetExpiration(i.Expiration, time.Now())
-		i.Slot = createPetSlot()
-		ip, err := model.Map(Extract)(model.FixedProvider(i))()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to create model from input.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		pm, err := p.CreateAndEmit(ip)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to create model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-		res, err := model.Map(Transform(d.Context()))(model.FixedProvider(pm))()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-	}
-}
-
-// handleUpdate is the operator surface for correcting a pet name without a
-// direct DB write. The gameplay rename path is the RENAME Kafka command driven
-// by the pet_name_tag_use saga -- atlas-channel never calls this endpoint
-// (PRD §5.1). `name` is the only writable attribute; every other field on the
-// inbound RestModel is ignored.
-func handleUpdate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
-	return rest.ParsePetId(d.Logger(), func(petId uint32) http.HandlerFunc {
+func handleCreate(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			name := petconst.NormalizeName(i.Name)
-			if err := petconst.ValidateName(name); err != nil {
-				d.Logger().WithError(err).Warnf("Rejecting PATCH of pet [%d]: invalid name [%s].", petId, i.Name)
-				server.WriteBadRequest(d.Logger(), w, err.Error())
-				return
-			}
-
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			existing, err := p.GetById(petId)
+			p := NewProcessor(d.Logger(), d.Context(), db)
+			i.Name = createPetName(i.Name)
+			i.Level = createPetLevel(i.Level)
+			i.Expiration = createPetExpiration(i.Expiration, time.Now())
+			i.Slot = createPetSlot()
+			ip, err := model.Map(Extract)(model.FixedProvider(i))()
 			if err != nil {
-				d.Logger().WithError(err).Warnf("Unable to locate pet [%d].", petId)
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					writeNotFound(d.Logger(), w, "pet not found")
-					return
-				}
-				server.WriteErrorResponse(d.Logger())(w)(err)
+				d.Logger().WithError(err).Errorf("Unable to create model from input.")
+				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 
-			// The owner is taken from the stored row, never from the request:
-			// the processor's ownership check would otherwise be trivially
-			// satisfiable by a caller supplying whatever ownerId it liked. This
-			// makes the check near-tautological through this handler -- it is
-			// reachable only if the pet's owner changes between this read and
-			// the processor's re-read inside its own transaction.
-			if err = p.RenameAndEmit(uuid.New(), petId, existing.OwnerId(), name); err != nil {
-				d.Logger().WithError(err).Warnf("Unable to rename pet [%d].", petId)
-				if errors.Is(err, ErrNotOwner) {
-					writeForbidden(d.Logger(), w, "pet is not owned by character")
-					return
-				}
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			updated, err := p.GetById(petId)
+			pm, err := p.CreateAndEmit(ip)
 			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to create model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
-			res, err := model.Map(Transform(d.Context()))(model.FixedProvider(updated))()
+			res, err := model.Map(Transform(d.Context()))(model.FixedProvider(pm))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -237,7 +182,71 @@ func handleUpdate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
-	})
+	}
+}
+
+// handleUpdate is the operator surface for correcting a pet name without a
+// direct DB write. The gameplay rename path is the RENAME Kafka command driven
+// by the pet_name_tag_use saga -- atlas-channel never calls this endpoint
+// (PRD §5.1). `name` is the only writable attribute; every other field on the
+// inbound RestModel is ignored.
+func handleUpdate(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+		return rest.ParsePetId(d.Logger(), func(petId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				name := petconst.NormalizeName(i.Name)
+				if err := petconst.ValidateName(name); err != nil {
+					d.Logger().WithError(err).Warnf("Rejecting PATCH of pet [%d]: invalid name [%s].", petId, i.Name)
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				existing, err := p.GetById(petId)
+				if err != nil {
+					d.Logger().WithError(err).Warnf("Unable to locate pet [%d].", petId)
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						writeNotFound(d.Logger(), w, "pet not found")
+						return
+					}
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				// The owner is taken from the stored row, never from the request:
+				// the processor's ownership check would otherwise be trivially
+				// satisfiable by a caller supplying whatever ownerId it liked. This
+				// makes the check near-tautological through this handler -- it is
+				// reachable only if the pet's owner changes between this read and
+				// the processor's re-read inside its own transaction.
+				if err = p.RenameAndEmit(uuid.New(), petId, existing.OwnerId(), name); err != nil {
+					d.Logger().WithError(err).Warnf("Unable to rename pet [%d].", petId)
+					if errors.Is(err, ErrNotOwner) {
+						writeForbidden(d.Logger(), w, "pet is not owned by character")
+						return
+					}
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				updated, err := p.GetById(petId)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				res, err := model.Map(Transform(d.Context()))(model.FixedProvider(updated))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }
 
 // operatorErrorObject / operatorErrorBody mirror atlas-rest/server's

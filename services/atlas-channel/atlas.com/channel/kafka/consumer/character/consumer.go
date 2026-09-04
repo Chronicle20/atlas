@@ -367,38 +367,65 @@ func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) mes
 func buildIncreaseExperienceConfig(ds []character2.ExperienceDistributions) model2.IncreaseExperienceConfig {
 	c := model2.IncreaseExperienceConfig{}
 	for _, d := range ds {
-		if d.ExperienceType == character2.ExperienceDistributionTypeWhite {
+		switch d.ExperienceType {
+		case character2.ExperienceDistributionTypeWhite:
+			// White or Yellow text for displaying Amount. Right side. You have
+			// gained experience.
 			c.White = true
 			c.Amount = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeYellow {
+		case character2.ExperienceDistributionTypeYellow:
+			// White or Yellow text for displaying Amount. Right side. You have
+			// gained experience.
 			c.White = false
 			c.Amount = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeChat {
+		case character2.ExperienceDistributionTypeChat:
+			// If true, Amount is written. You have gained experience (%d) in
+			// chat.
 			c.InChat = true
 			c.Amount = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeMonsterBook {
+		case character2.ExperienceDistributionTypeMonsterBook:
+			// Right side. Yellow. Bonus Event EXP
 			c.MonsterBookBonus = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeMonsterEvent {
+		case character2.ExperienceDistributionTypeMonsterEvent:
+			// In chat. Pink. A bonus EXP %d% is awarded for every 3rd monster
+			// defeated.
 			c.MobEventBonusPercentage = byte(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypePlayTime {
+		case character2.ExperienceDistributionTypePlayTime:
+			// In chat. Pink. A bonus EXP %d% is awarded for every 3rd monster
+			// defeated. Right side. Yellow. Bonus EXP for hunting over (%d)
+			// hrs. (+MobEventBonusPercentage)
 			c.MobEventBonusPercentage = byte(d.Amount)
 			c.PlayTimeHour = byte(d.Attr1)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeWedding {
+		case character2.ExperienceDistributionTypeWedding:
+			// Right side. Yellow. Bonus Wedding EXP
 			c.WeddingBonusEXP = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeSpiritWeek {
+		case character2.ExperienceDistributionTypeSpiritWeek:
+			// Earned 'Spirit Week Event' bonus EXP (%d)
 			c.QuestBonusRate = byte(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeParty {
+		case character2.ExperienceDistributionTypeParty:
+			// Right side. Yellow. Bonus Event Party EXP (x0). Dictates if
+			// right side of PartyBonusExp displays a (x0)
 			c.PartyBonusExp = int32(d.Amount)
 			c.PartyBonusEventRate = byte(d.Attr1)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeItem {
+		case character2.ExperienceDistributionTypeItem:
+			// ITEM renders the "Equip Item Bonus EXP" modifier line on the
+			// right side -- NOT "experience that came from an item". It does
+			// not touch the primary amount. Choosing this for an item-sourced
+			// EXP award renders "You have gained experience (+0)". See
+			// task-277,
+			// docs/tasks/task-277-stored-exp-items/bug-redeem-renders-as-item-bonus.md.
 			c.ItemBonusEXP = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeInternetCafe {
+		case character2.ExperienceDistributionTypeInternetCafe:
+			// Right side. Yellow. Internet Cafe EXP Bonus
 			c.PremiumIPExp = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeRainbowWeek {
+		case character2.ExperienceDistributionTypeRainbowWeek:
+			// Right side. Yellow. Rainbow Week Bonus Event EXP
 			c.RainbowWeekEventEXP = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypePartyRing {
+		case character2.ExperienceDistributionTypePartyRing:
+			// Available v95+
 			c.PartyEXPRingEXP = int32(d.Amount)
-		} else if d.ExperienceType == character2.ExperienceDistributionTypeCakePie {
+		case character2.ExperienceDistributionTypeCakePie:
+			// Available v95+
 			c.CakePieEventBonus = int32(d.Amount)
 		}
 	}

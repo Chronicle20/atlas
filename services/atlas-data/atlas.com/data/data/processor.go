@@ -11,6 +11,7 @@ import (
 	"atlas-data/equipment"
 	"atlas-data/etc"
 	"atlas-data/item"
+	"atlas-data/itemmake"
 	_map "atlas-data/map"
 	"atlas-data/mobskill"
 	"atlas-data/monster"
@@ -57,9 +58,10 @@ const (
 	WorkerFace              = "FACE"
 	WorkerHair              = "HAIR"
 	WorkerMobSkill          = "MOB_SKILL"
+	WorkerItemMake          = "ITEM_MAKE"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest, WorkerNPC, WorkerFace, WorkerHair, WorkerMobSkill}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest, WorkerNPC, WorkerFace, WorkerHair, WorkerMobSkill, WorkerItemMake}
 
 type Processor interface {
 	ProcessData() error
@@ -219,6 +221,8 @@ func (p *ProcessorImpl) StartWorker(name string, path string) error {
 		}
 		err = p.RegisterFileData(path, filepath.Join("Skill.wz", "MobSkill.img.xml"), mobskill.NewProcessor(p.l, p.ctx, p.db).RegisterMobSkill)()
 		_ = mobskill.GetMobSkillStringRegistry().Clear(t)
+	} else if name == WorkerItemMake {
+		err = p.RegisterFileData(path, filepath.Join("Etc.wz", "ItemMake.img.xml"), itemmake.NewProcessor(p.l, p.ctx, p.db).RegisterItemMake)()
 	}
 	if err != nil {
 		p.l.WithError(err).Errorf("Worker [%s] failed with error.", name)

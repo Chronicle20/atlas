@@ -506,7 +506,13 @@ func (p *ProcessorImpl) DeleteAndEmit(transactionId uuid.UUID, characterId uint3
 }
 
 // CreateOptions holds all optional parameters for asset creation.
-// UseAverageStats is reserved for Task 11 (average-stat preset items) and is currently unused.
+//
+// Strength through Jump plus Slots let a caller (a maker-skill craft, via
+// AwardCraftedAsset) set an equip's exact stats and upgrade-slot count
+// instead of rolling/averaging them off the template. Explicit stats take
+// precedence over UseAverageStats whenever any of them, or Slots, is
+// non-zero: this is the only rule under which a craft's reagent-adjusted
+// stats are reproducible. See hasExplicitStats/applyExplicitStats.
 type CreateOptions struct {
 	Quantity        uint32
 	Expiration      time.Time
@@ -514,6 +520,22 @@ type CreateOptions struct {
 	Flag            uint16
 	Rechargeable    uint64
 	UseAverageStats bool
+	Slots           uint16
+	Strength        uint16
+	Dexterity       uint16
+	Intelligence    uint16
+	Luck            uint16
+	HP              uint16
+	MP              uint16
+	WeaponAttack    uint16
+	MagicAttack     uint16
+	WeaponDefense   uint16
+	MagicDefense    uint16
+	Accuracy        uint16
+	Avoidability    uint16
+	Hands           uint16
+	Speed           uint16
+	Jump            uint16
 }
 
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error) {
@@ -534,16 +556,24 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 			switch inventoryType {
 			case inventory.TypeValueEquip:
 				// TODO wire up template tradeBlock data to set UNTRADEABLE flag during asset creation
-				ea, err := p.statProcessor.GetById(templateId)
-				if err != nil {
-					if errors.Is(err, requests.ErrNotFound) {
-						p.l.WithError(err).Errorf("Equipment template [%d] not present in atlas-data; seed data is likely missing.", templateId)
-					} else {
-						p.l.WithError(err).Errorf("Unable to get equipment stats for item [%d].", templateId)
+				if hasExplicitStats(opts) {
+					// Explicit stats (a maker-skill craft's reagent-adjusted
+					// values) take precedence over UseAverageStats and never
+					// need the template's base stats, so atlas-data is not
+					// consulted on this path.
+					applyExplicitStats(b, opts)
+				} else {
+					ea, err := p.statProcessor.GetById(templateId)
+					if err != nil {
+						if errors.Is(err, requests.ErrNotFound) {
+							p.l.WithError(err).Errorf("Equipment template [%d] not present in atlas-data; seed data is likely missing.", templateId)
+						} else {
+							p.l.WithError(err).Errorf("Unable to get equipment stats for item [%d].", templateId)
+						}
+						return err
 					}
-					return err
+					applyEquipStats(b, ea, opts.UseAverageStats)
 				}
-				applyEquipStats(b, ea, opts.UseAverageStats)
 			case inventory.TypeValueUse, inventory.TypeValueSetup, inventory.TypeValueETC:
 				b.SetQuantity(opts.Quantity).
 					SetOwnerId(opts.OwnerId).
@@ -689,6 +719,51 @@ func applyEquipStats(b *Builder, ea statistics.Model, useAverageStats bool) *Bui
 		SetSpeed(getRandomStat(ea.Speed(), 5)).
 		SetJump(getRandomStat(ea.Jump(), 5)).
 		SetSlots(ea.Slots())
+}
+
+// hasExplicitStats reports whether opts carries an explicit stat or
+// upgrade-slot value, in which case those values must be applied verbatim in
+// place of the template's rolled/averaged stats.
+func hasExplicitStats(opts CreateOptions) bool {
+	return opts.Slots != 0 ||
+		opts.Strength != 0 ||
+		opts.Dexterity != 0 ||
+		opts.Intelligence != 0 ||
+		opts.Luck != 0 ||
+		opts.HP != 0 ||
+		opts.MP != 0 ||
+		opts.WeaponAttack != 0 ||
+		opts.MagicAttack != 0 ||
+		opts.WeaponDefense != 0 ||
+		opts.MagicDefense != 0 ||
+		opts.Accuracy != 0 ||
+		opts.Avoidability != 0 ||
+		opts.Hands != 0 ||
+		opts.Speed != 0 ||
+		opts.Jump != 0
+}
+
+// applyExplicitStats writes opts' explicit stat and slot values onto b
+// verbatim, setting exactly the fields applyEquipStats sets so that a stat
+// the rolled/averaged path assigns is never silently zeroed on a crafted
+// equip.
+func applyExplicitStats(b *Builder, opts CreateOptions) *Builder {
+	return b.SetStrength(opts.Strength).
+		SetDexterity(opts.Dexterity).
+		SetIntelligence(opts.Intelligence).
+		SetLuck(opts.Luck).
+		SetHp(opts.HP).
+		SetMp(opts.MP).
+		SetWeaponAttack(opts.WeaponAttack).
+		SetMagicAttack(opts.MagicAttack).
+		SetWeaponDefense(opts.WeaponDefense).
+		SetMagicDefense(opts.MagicDefense).
+		SetAccuracy(opts.Accuracy).
+		SetAvoidability(opts.Avoidability).
+		SetHands(opts.Hands).
+		SetSpeed(opts.Speed).
+		SetJump(opts.Jump).
+		SetSlots(opts.Slots)
 }
 
 func getRandomStat(defaultValue uint16, max uint16) uint16 {

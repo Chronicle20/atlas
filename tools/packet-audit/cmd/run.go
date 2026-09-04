@@ -347,6 +347,13 @@ func candidatesFromFName(fname string) []candidate {
 		// rename suffixes (task-100 cluster-H / task-217 Task 12) — both literal
 		// export keys are handled here so report-gen resolves on those versions.
 		return []candidate{{name: "AranComboCounterRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "CUIItemMaker::RequestItemMake":
+		// Maker-skill crafting request (task-285). Encode4(nRecipeClass) inside
+		// the selected arm, then that arm's fields; identical on all eight
+		// applicable versions. NOT a dispatcher family (families are clientbound
+		// only), so no "#" suffix — the mode routes via the tenant template's
+		// options.operations table instead.
+		return []candidate{{name: "MakerSkill", pkg: "character", dir: csvpkg.DirServerbound}}
 	case "CUserLocal::OnIncComboResponse":
 		// Aran combo-counter echo (task-217). Decode4(count) -> m_nCombo,
 		// get_update_time(), DrawCombo(this). Struct is ShowCombo.
@@ -708,6 +715,37 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ClaimResultNotice", pkg: "report", dir: csvpkg.DirClientbound}}
 	case "CWvsContext::OnSueCharacterResult#Result":
 		return []candidate{{name: "SueCharacterResult", pkg: "report", dir: csvpkg.DirClientbound}}
+
+	// CUserLocal::OnMakerResult (MAKER_RESULT, task-285). Unlike the two entries
+	// above, this IS a genuine multi-arm client dispatcher: the handler reads
+	// i32 nResult, then — only for nResult ∈ {0,1} — i32 nMode and
+	// switch-dispatches to four distinct sub-handler bodies (1/2 create,
+	// 3 monster-crystal, 4 disassemble), each reading a different field set. A
+	// nResult outside {0,1} is the bodyless #Failed shape. Disposition:
+	// discrete-per-mode, authored that way from the start
+	// (DISPATCHER_FAMILY.md), so it belongs in NEITHER
+	// dispatcher-lint-baseline.yaml (legacy-only; it is empty and only shrinks)
+	// NOR families.yaml (a cap is unconditional per-op and would pin the whole
+	// op at 🧩, discarding the per-arm byte fixtures — the FIELD_EFFECT model of
+	// grading the op as worst-of-all-arms applies instead). Modes 1 and 2 are
+	// wire-identical but are two separately registered arms: INV-1 forbids one
+	// struct behind more than one #-entry.
+	// reportName pins each arm's report/matrix WriterName to the bare struct
+	// name. `pkg: "character"` is needed to restrict locateAtlasFile's walk, but
+	// without the override qualifiedWriterName would render the arms as
+	// CharacterMakerResult* — changing every arm's matrix PacketID and orphaning
+	// the character.clientbound.MakerResult*.yaml evidence records and the
+	// packet-audit:verify markers, which name the struct itself.
+	case "CUserLocal::OnMakerResult#Create":
+		return []candidate{{name: "MakerResultCreate", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultCreate"}}
+	case "CUserLocal::OnMakerResult#CreateWithUpgrade":
+		return []candidate{{name: "MakerResultCreateWithUpgrade", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultCreateWithUpgrade"}}
+	case "CUserLocal::OnMakerResult#MonsterCrystal":
+		return []candidate{{name: "MakerResultMonsterCrystal", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultMonsterCrystal"}}
+	case "CUserLocal::OnMakerResult#Disassemble":
+		return []candidate{{name: "MakerResultDisassemble", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultDisassemble"}}
+	case "CUserLocal::OnMakerResult#Failed":
+		return []candidate{{name: "MakerResultFailed", pkg: "character", dir: csvpkg.DirClientbound, reportName: "MakerResultFailed"}}
 
 	// --- merchant bucket (task-069, sub-phase 2f) ---
 	case "CWvsContext::OnEntrustedShopCheckResult#OpenShop":

@@ -160,3 +160,26 @@ dispatchers:
   # (Serverbound RPS_ACTION is NOT listed here — it is not a client read-demux; its
   # six senders OnBtStart/SendSelection/Update/OnBtContinue/OnBtExit/OnBtRetry are
   # separate per-fname structs, see rps/serverbound + task-132 ida-rps-serverbound.md.)
+  # CUserLocal::OnMakerResult — NOT LISTED, and deliberately so (task-285). This
+  # IS a genuine mode-byte demultiplexer (the client reads i32 nResult, then, only
+  # for nResult in {0,1}, i32 nMode and switch-dispatches to four structurally
+  # distinct bodies), but it was authored discrete-per-mode from the start per
+  # DISPATCHER_FAMILY.md rather than migrated off a mode-byte-only shape, so it
+  # never needed the 🧩 cap this file exists to apply. All four mode-carrying arms
+  # (MakerResultCreate mode 1, MakerResultCreateWithUpgrade 2,
+  # MakerResultMonsterCrystal 3, MakerResultDisassemble 4) have their own
+  # character/clientbound codec, their own CUserLocal::OnMakerResult#<Arm>
+  # synthetic export entry, their own audit report, and their own
+  # packet-audit:verify byte-fixture + freshly pinned evidence on every one of the
+  # eight versions where the op exists (gms_v72/79/83/84/87/92/95, jms_v185) — the
+  # same full-arm coverage every GRADUATED entry above had to reach. Because the
+  # arms share the base fname, the MAKER_RESULT op row grades worst-of across all
+  # four (build.go worstCandidateCell), so an unverified arm holds the whole row
+  # down instead of hiding behind a verified sibling; the registry entry carries no
+  # single-arm `packet:` link, which is what would otherwise let every candidate
+  # fall back to one arm's fixture. Verified by negative control: removing the
+  # gms_v87 Disassemble evidence record flips that cell ✅ -> ❌.
+  # MakerResultFailed is NOT an arm — it writes no mode field at all (the client
+  # returns at nResult > 1, before the nMode Decode4) — so it has no #-entry, no
+  # report and no evidence record, only a byte fixture and a round-trip test. See
+  # docs/tasks/task-285-maker-skill-crafting/ruling-failed-arm.md.

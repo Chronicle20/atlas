@@ -49,6 +49,8 @@
   value: $(POD_NAMESPACE)
 - name: NS_ATLAS_KITES
   value: $(POD_NAMESPACE)
+- name: NS_ATLAS_MAKER
+  value: $(POD_NAMESPACE)
 - name: NS_ATLAS_MAP_ACTIONS
   value: $(POD_NAMESPACE)
 - name: NS_ATLAS_MAPS

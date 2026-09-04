@@ -35,6 +35,7 @@ resources:
   - atlas-keys.yaml
   - atlas-kites.yaml
   - atlas-login.yaml
+  - atlas-maker.yaml
   - atlas-map-actions.yaml
   - atlas-maps.yaml
   - atlas-minio-init.yaml

@@ -1,0 +1,84 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-28T14:17:25Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	6361eb1db	-	-	-	-
+2026-08-28T14:22:45Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	6361eb1db	APPROVED	no	-	-
+2026-08-28T14:23:03Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	cda7f3f1e	-	-	-	-
+2026-08-28T14:23:16Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	cda7f3f1e	APPROVED	no	-	-
+2026-08-28T14:29:11Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	f6d91735e	-	-	-	-
+2026-08-28T14:29:17Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	f6d91735e	APPROVED	no	-	-
+2026-08-28T14:34:58Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	cda477ff5	-	-	-	-
+2026-08-28T14:35:06Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	cda477ff5	APPROVED	no	-	-
+2026-08-28T14:51:16Z	agent	Task 4 fix 1	task-implementer	sonnet	-	-	-	-	DONE	5a3cdb3ed	-	-	-	-
+2026-08-28T14:51:22Z	agent	Task 4 fix 1	task-reviewer	haiku	-	-	-	-	DONE	5a3cdb3ed	ADDRESSED	no	-	-
+2026-08-28T14:51:27Z	handoff	after Task 4	-	opus	-	-	-	-	-	-	-	-	-	88000
+2026-08-28T16:21:53Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	2df70429f	-	-	-	-
+2026-08-28T16:23:30Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	2df70429f	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-28T16:26:47Z	agent	Task 6	task-implementer	opus	-	-	-	-	BLOCKED	2f2361700	-	-	-	-
+2026-08-28T16:36:07Z	agent	Task 5 fix 1	task-implementer	sonnet	-	-	-	-	DONE	6ff166527	-	-	-	-
+2026-08-28T16:37:47Z	agent	Task 5 fix 1	task-reviewer	haiku	-	-	-	-	DONE	6ff166527	ADDRESSED	no	-	-
+2026-08-28T16:43:27Z	agent	Task 6	packet-implementer	opus	-	-	-	-	DONE	73939663c	-	-	-	-
+2026-08-28T16:48:51Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	73939663c	CHANGES_REQUIRED	yes	-	-
+2026-08-28T16:55:36Z	agent	Task 6 fix 1	packet-implementer	opus	-	-	-	-	DONE	e29058143	-	-	-	-
+2026-08-28T16:58:32Z	agent	Task 6 fix 1	task-reviewer	sonnet	-	-	-	-	DONE	e29058143	ADDRESSED	no	-	-
+2026-08-28T17:08:52Z	agent	Task 7	packet-implementer	opus	-	-	-	-	DONE	ed190de3a	-	-	-	-
+2026-08-28T17:19:39Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	ed190de3a	CHANGES_REQUIRED	yes	-	-
+2026-08-28T17:25:13Z	agent	Task 7 fix 1	packet-implementer	sonnet	-	-	-	-	DONE	b19fe1a92	-	-	-	-
+2026-08-28T17:27:11Z	agent	Task 7 fix 1	task-reviewer	haiku	-	-	-	-	DONE	b19fe1a92	APPROVED	no	-	-
+2026-08-28T17:27:11Z	handoff	after Task 7	-	opus	-	-	-	-	-	-	-	-	-	130000
+2026-08-28T17:44:23Z	agent	MAKER_SKILL pinning	packet-verifier	opus	-	-	-	-	DONE	640b8caa1	-	-	-	-
+2026-08-28T17:50:47Z	agent	MAKER_SKILL pinning	task-reviewer	sonnet	-	-	-	-	DONE	640b8caa1	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-28T17:50:48Z	handoff	after MAKER_SKILL pinning	-	opus	-	-	-	-	-	-	-	-	-	150000
+2026-08-28T17:54:13Z	agent	Task 8	packet-implementer	opus	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-08-28T18:04:58Z	agent	Task 8	packet-implementer	opus	-	-	-	-	DONE_WITH_CONCERNS	8f596fd97	-	-	-	-
+2026-08-28T18:11:02Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	8f596fd97	CHANGES_REQUIRED	no	reviews/task-8.md	-
+2026-08-28T18:11:03Z	agent	Task 8 FAILED-key research	Explore	sonnet	-	-	-	-	DONE	-	-	-	-	-
+2026-08-28T18:28:22Z	agent	gate e29058143..(moving tree)	verify.sh	-	-	-	-	-	INVALID_MOVING_TREE	-	-	-	-	-
+2026-08-28T18:33:55Z	agent	Task 9	packet-implementer	opus	-	-	-	-	DONE	ab31624bd	-	-	-	-
+2026-08-28T18:59:43Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	ab31624bd	CHANGES_REQUIRED	yes	-	-
+2026-08-28T18:59:43Z	agent	Task 9 fix 1	packet-implementer	opus	-	-	-	-	DONE	5d2a2ed52	-	-	-	-
+2026-08-28T20:08:35Z	agent	Tasks 5-9 range	gate	-	-	-	-	-	PASS	00a8c4067	-	-	-	-
+2026-08-28T20:11:26Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE	3ba8a3aff	-	-	-	-
+2026-08-28T20:12:17Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	3ba8a3aff	APPROVED	no	-	-
+2026-08-28T20:22:09Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DONE	b36fff470	-	-	-	-
+2026-08-28T20:28:24Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	DONE	b36fff470	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-29T11:31:43Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	DONE	7b07f6ee2	-	-	-	-
+2026-08-29T11:35:45Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	DONE	c96dd1f	-	-	-	-
+2026-08-29T11:36:14Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	DONE	7b07f6ee2	APPROVED	no	-	-
+2026-08-29T11:37:23Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	DONE	c96dd1f	APPROVED	no	-	-
+2026-08-29T11:47:58Z	agent	Task 14	task-implementer	sonnet	-	-	-	-	DONE	a1d635c	-	-	-	-
+2026-08-29T11:50:13Z	agent	Task 14	task-reviewer	sonnet	-	-	-	-	DONE	a1d635c	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-29T11:53:49Z	agent	Task 15	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	b2bac01d7	-	-	-	-
+2026-08-29T11:56:43Z	agent	Task 15	task-reviewer	sonnet	-	-	-	-	DONE	b2bac01d7	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-29T12:14:21Z	agent	Task 10-15 range	gate	-	-	-	-	-	PASS	b2bac01d7	-	-	-	-
+2026-08-29T12:23:49Z	agent	Task 16	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	b635cf961	-	-	-	-
+2026-08-29T12:24:14Z	agent	Task 16	gate	-	-	-	-	-	FAIL	b635cf961	-	-	-	-
+2026-08-29T12:28:44Z	agent	Task 16	task-reviewer	sonnet	-	-	-	-	DONE	b635cf961	CHANGES_REQUIRED	yes	-	-
+2026-08-29T12:29:47Z	agent	Task 16 fix 1	task-implementer	sonnet	-	-	-	-	DONE	20c25b377	-	-	-	-
+2026-08-29T12:31:56Z	agent	Task 16 range	gate	-	-	-	-	-	PASS	20c25b377	-	-	-	-
+2026-08-29T12:40:05Z	agent	Task 17 derivation	general-purpose	opus	-	-	-	-	DONE	1c61312	-	-	-	-
+2026-08-29T12:51:53Z	agent	Task 17	task-implementer	opus	-	-	-	-	DONE_WITH_CONCERNS	062373736	-	-	-	-
+2026-08-29T12:53:19Z	agent	Task 17 fix 1	task-implementer	sonnet	-	-	-	-	DONE	b16ff729e	-	-	-	-
+2026-08-29T12:53:44Z	agent	Task 17 range	gate	-	-	-	-	-	FAIL	b16ff729e	-	-	-	-
+2026-08-29T12:56:37Z	agent	Task 17	task-reviewer	sonnet	-	-	-	-	DONE	b16ff729e	APPROVED	no	-	-
+2026-08-29T12:59:57Z	agent	Task 17 fix 2	task-implementer	sonnet	-	-	-	-	DONE	450879b45	-	-	-	-
+2026-08-29T13:00:43Z	agent	Task 17 range	gate	-	-	-	-	-	PASS	450879b45	-	-	-	-
+2026-08-29T13:00:44Z	handoff	after Task 17	-	-	-	-	-	-	-	-	-	-	-	140000
+2026-08-29T22:01:19Z	agent	Reagent v72/v79 open item	general-purpose	opus	-	-	-	-	DONE	2bf4370ec	-	-	-	-
+2026-08-29T22:23:09Z	agent	Task 18	general-purpose	opus	-	-	-	-	DONE	b247e0a32	-	-	-	-
+2026-08-29T22:23:17Z	agent	Task 18	task-implementer	sonnet	-	-	-	-	DONE	fd7a3c6c1	-	-	-	-
+2026-08-29T22:23:36Z	agent	Task 18	task-reviewer	sonnet	-	-	-	-	DONE	fd7a3c6c1	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-29T22:42:39Z	agent	Task 19	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	2451a0c51	-	-	-	-
+2026-08-29T22:44:31Z	agent	Task 19 fix 1	task-implementer	sonnet	-	-	-	-	DONE	5c1ce65	-	-	-	-
+2026-08-29T22:46:15Z	agent	Task 19	task-reviewer	sonnet	-	-	-	-	DONE	2451a0c51	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-29T22:46:16Z	handoff	after Task 19	-	-	-	-	-	-	-	-	-	-	-	130000
+2026-08-30T12:15:20Z	agent	Task 26b gate	task-verifier	haiku	-	-	-	-	FAIL	974cf0257	-	-	-	-
+2026-08-30T12:16:31Z	agent	Task 26b	task-reviewer	sonnet	-	-	-	-	DONE	974cf0257	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/task-26b-review.md	-
+2026-08-30T12:22:15Z	agent	Task 26b fix2	task-implementer	sonnet	-	-	-	-	DONE	6f5615c20	-	-	-	-
+2026-08-30T12:22:53Z	handoff	after Task 26b	-	-	-	-	-	-	-	-	-	-	-	130000
+2026-08-30T12:29:18Z	agent	Task 26b fix1	task-implementer	sonnet	-	-	-	-	DONE	331b0c0b5	-	-	-	-
+2026-09-01T10:02:19Z	agent	Task 26	task-implementer	sonnet	-	-	-	-	BLOCKED	331b0c0b5	-	-	-	-
+2026-09-01T10:23:45Z	agent	Task 26a design	general-purpose	opus	-	-	-	-	DONE	331b0c0b5	-	-	-	-
+2026-09-01T10:37:39Z	agent	Task 26a	task-implementer	sonnet	-	-	-	-	DONE	61ff8cbd8	-	-	-	-
+2026-09-01T10:42:34Z	agent	Task 26a	task-reviewer	sonnet	-	-	-	-	DONE	61ff8cbd8	APPROVED	no	-	-
+2026-09-01T11:01:17Z	agent	Task 26	task-implementer	sonnet	-	-	-	-	DONE	3d4391dad	-	-	-	-
+2026-09-01T11:05:03Z	handoff	after Task 26	-	-	-	-	-	-	-	-	-	-	-	150000
+2026-09-01T11:12:43Z	agent	Task 26	task-reviewer	sonnet	-	-	-	-	DONE	3d4391dad	APPROVED_WITH_FINDINGS	no	-	-

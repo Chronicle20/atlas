@@ -1,0 +1,10 @@
+packet: character/clientbound/MakerResultMonsterCrystal
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnMakerResult#MonsterCrystal
+    address: "0x8f5d70"
+    decompile_sha256: f29944c2d1fd137caeb26bca6874448a0caa22422c096dfe7a178bb7b2a6de7c
+verifies:
+    - libs/atlas-packet/character/clientbound/maker_result_test.go#TestMakerResultMonsterCrystalByteOutput

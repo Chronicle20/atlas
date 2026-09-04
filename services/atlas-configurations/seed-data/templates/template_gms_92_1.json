@@ -809,6 +809,23 @@
         ]
       },
       {
+        "opCode": "0x7C",
+        "validator": "LoggedInValidator",
+        "handler": "MakerSkillHandle",
+        "fname": "CUIItemMaker::RequestItemMake",
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "CREATE_WITH_UPGRADE": 2,
+            "MONSTER_CRYSTAL": 3,
+            "DISASSEMBLE": 4
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x7D",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter",
@@ -3516,6 +3533,19 @@
         "services": [
           "channel"
         ]
+      },
+      {
+        "opCode": "0xFA",
+        "writer": "MakerResult",
+        "fname": "CUserLocal::OnMakerResult",
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "CREATE_WITH_UPGRADE": 2,
+            "MONSTER_CRYSTAL": 3,
+            "DISASSEMBLE": 4
+          }
+        }
       },
       {
         "opCode": "0xFF",

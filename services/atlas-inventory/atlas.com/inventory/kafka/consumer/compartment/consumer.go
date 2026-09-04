@@ -241,7 +241,24 @@ func handleCreateAssetCommand(db *gorm.DB) message.Handler[compartment2.Command[
 		// Guarded: this command creates a durable asset, and Kafka delivery is
 		// at-least-once (task-208).
 		_ = database.ApplyOnce(l, ctx, db, c.TransactionId, compartment2.CommandCreateAsset, c, func(tx *gorm.DB) error {
-			return compartment.NewProcessor(l, ctx, tx).CreateAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.Quantity, c.Body.Expiration, c.Body.OwnerId, c.Body.Flag, c.Body.Rechargeable, c.Body.UseAverageStats)
+			return compartment.NewProcessor(l, ctx, tx).CreateAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.Quantity, c.Body.Expiration, c.Body.OwnerId, c.Body.Flag, c.Body.Rechargeable, c.Body.UseAverageStats, compartment.EquipStats{
+				Slots:         c.Body.Slots,
+				Strength:      c.Body.Strength,
+				Dexterity:     c.Body.Dexterity,
+				Intelligence:  c.Body.Intelligence,
+				Luck:          c.Body.Luck,
+				HP:            c.Body.HP,
+				MP:            c.Body.MP,
+				WeaponAttack:  c.Body.WeaponAttack,
+				MagicAttack:   c.Body.MagicAttack,
+				WeaponDefense: c.Body.WeaponDefense,
+				MagicDefense:  c.Body.MagicDefense,
+				Accuracy:      c.Body.Accuracy,
+				Avoidability:  c.Body.Avoidability,
+				Hands:         c.Body.Hands,
+				Speed:         c.Body.Speed,
+				Jump:          c.Body.Jump,
+			})
 		})
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -33,6 +34,7 @@ type CreateAndEquipAssetPayload struct {
 type Processor interface {
 	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
 	RequestCreateItemWithStats(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error
+	RequestCreateItemWithExplicitStats(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, stats saga.AwardCraftedAssetPayload) error
 	RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
 	RequestDestroyAllItems(transactionId uuid.UUID, characterId uint32, templateId uint32) error
 	RequestDestroyItemFromSlot(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
@@ -72,6 +74,14 @@ func (p *ProcessorImpl) RequestCreateItemWithStats(transactionId uuid.UUID, char
 		return errors.New("invalid templateId")
 	}
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, expiration, useAverageStats))
+}
+
+func (p *ProcessorImpl) RequestCreateItemWithExplicitStats(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, stats saga.AwardCraftedAssetPayload) error {
+	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
+	if !ok {
+		return errors.New("invalid templateId")
+	}
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetWithStatsCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, expiration, false, stats))
 }
 
 func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {

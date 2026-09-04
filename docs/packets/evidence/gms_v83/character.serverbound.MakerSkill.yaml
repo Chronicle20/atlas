@@ -1,0 +1,10 @@
+packet: character/serverbound/MakerSkill
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUIItemMaker::RequestItemMake
+    address: "0x827096"
+    decompile_sha256: 3dacf1ef72982d9ac817701bc65404d537cd2a48f71b6aa91d2f9846ff1630f8
+verifies:
+    - libs/atlas-packet/character/serverbound/maker_skill_test.go#TestMakerSkillByteOutputV83

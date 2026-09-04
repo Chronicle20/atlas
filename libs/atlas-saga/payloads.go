@@ -1077,6 +1077,89 @@ type AcceptToParcelPayload struct {
 	Owner         string `json:"owner"`
 }
 
+// AwardCraftedAssetPayload creates an equip with EXPLICIT stats and an explicit
+// upgrade-slot count. It exists because neither AwardAsset (ItemPayload only)
+// nor CreateAndEquipAsset (which adds only UseAverageStats, a toggle into
+// randomized stat rolling) can express "an equip with tuc upgrade slots and
+// reagent-adjusted stats" — FR-3.1 and FR-3.2. The stat block mirrors
+// AcceptToMtsListingPayload's; Slots carries the recipe's `tuc`.
+//
+// Slots deliberately has no omitempty: a zero-slot craft is meaningful and must
+// be distinguishable from an absent field.
+type AwardCraftedAssetPayload struct {
+	CharacterId   uint32 `json:"characterId"`
+	TemplateId    uint32 `json:"templateId"`
+	Quantity      uint32 `json:"quantity"`
+	Slots         uint16 `json:"slots"`
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	HP            uint16 `json:"hp"`
+	MP            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	ShowEffect    bool   `json:"showEffect"`
+}
+
+// CraftManifestItem is one (itemId, count) entry of a craft consumption or
+// production list, aggregated by template id -- never per inventory slot.
+// Mirrors the wire's MakerMaterial (libs/atlas-packet/character/clientbound/maker_result.go).
+type CraftManifestItem struct {
+	ItemId uint32 `json:"itemId"`
+	Count  uint32 `json:"count"`
+}
+
+// CraftManifestPayload carries what a craft actually consumed and produced,
+// resolved from atlas-maker's craft.Plan (never from the client's request --
+// BuildCreatePlan silently drops an unheld gem and an unheld catalyst, task-285
+// FR-3.2). RecordCraftManifest is the vehicle: a self-completing, first step of
+// every craft mode, so the manifest survives to the saga's terminal event even
+// through a pod restart's jsonb rehydration.
+//
+// Fields are grouped by which of the four MAKER_SKILL modes populates them; a
+// single struct carries all four rather than one per mode because Mode 1
+// (CREATE) and Mode 2 (CREATE_WITH_UPGRADE) build byte-identical step lists --
+// nMode cannot be derived from the saga at all and must be stated explicitly
+// (manifest-carrier-derivation.md §2 F2).
+//
+// MesoCost, CatalystUsed and NoItemAwarded deliberately carry no omitempty: a
+// zero cost and a false flag are meaningful and must be distinguishable from
+// an absent field, matching AwardCraftedAssetPayload.Slots's stated reason.
+type CraftManifestPayload struct {
+	CharacterId uint32 `json:"characterId"`
+	Mode        uint32 `json:"mode"` // 1|2|3|4, MAKER_SKILL's nMode
+
+	// Modes 1 and 2 (CREATE / CREATE_WITH_UPGRADE).
+	NoItemAwarded  bool                `json:"noItemAwarded"`
+	TargetItemId   uint32              `json:"targetItemId,omitempty"`
+	ItemNum        uint32              `json:"itemNum,omitempty"`
+	Materials      []CraftManifestItem `json:"materials,omitempty"`
+	GemItemIds     []uint32            `json:"gemItemIds,omitempty"`
+	CatalystUsed   bool                `json:"catalystUsed"`
+	CatalystItemId uint32              `json:"catalystItemId,omitempty"`
+
+	// Mode 3 (MONSTER_CRYSTAL).
+	CrystalItemId  uint32 `json:"crystalItemId,omitempty"`
+	LeftoverItemId uint32 `json:"leftoverItemId,omitempty"`
+
+	// Mode 4 (DISASSEMBLE).
+	DisassembledItemId uint32              `json:"disassembledItemId,omitempty"`
+	Crystals           []CraftManifestItem `json:"crystals,omitempty"`
+
+	// Modes 1, 2 and 4. A COST, always non-negative -- the negation of the
+	// AwardMesos step's Amount. Mode 4's value is craft.DisassembleMesoCharge
+	// (0), by explicit decision pending a real formula -- not derived here.
+	MesoCost uint32 `json:"mesoCost"`
+}
+
 // ReleaseFromParcelPayload (atomic, dispatched to the atlas-parcel custody
 // consumer). Carries only the parcel row id: the parcel row holds the
 // snapshot, so a release can never disagree with the accept that created it.

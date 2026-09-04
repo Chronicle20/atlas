@@ -6,24 +6,27 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // ProcessorMock is a mock implementation of the compartment.Processor interface
 type ProcessorMock struct {
-	RequestCreateItemFunc          func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
-	RequestCreateItemWithStatsFunc func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error
-	RequestDestroyItemFunc         func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
-	RequestDestroyAllItemsFunc     func(transactionId uuid.UUID, characterId uint32, templateId uint32) error
-	RequestEquipAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestUnequipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
-	RequestAcceptAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
-	RequestReleaseAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
-	RequestDestroyItemFromSlotFunc func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
-	RequestSetOwnerFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
-	RequestApplyLockFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
-	RequestApplyKarmaFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error
-	RequestExtendExpirationFunc    func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error
+	RequestCreateItemFunc                  func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
+	RequestCreateItemWithStatsFunc         func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error
+	RequestCreateItemWithExplicitStatsFunc func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, stats saga.AwardCraftedAssetPayload) error
+	RequestDestroyItemFunc                 func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
+	RequestDestroyAllItemsFunc             func(transactionId uuid.UUID, characterId uint32, templateId uint32) error
+	RequestEquipAssetFunc                  func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestUnequipAssetFunc                func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestCreateAndEquipAssetFunc         func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
+	RequestAcceptAssetFunc                 func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
+	RequestReleaseAssetFunc                func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
+	RequestDestroyItemFromSlotFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
+	RequestSetOwnerFunc                    func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
+	RequestApplyLockFunc                   func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
+	RequestApplyKarmaFunc                  func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error
+	RequestExtendExpirationFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
@@ -38,6 +41,14 @@ func (m *ProcessorMock) RequestCreateItem(transactionId uuid.UUID, characterId u
 func (m *ProcessorMock) RequestCreateItemWithStats(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error {
 	if m.RequestCreateItemWithStatsFunc != nil {
 		return m.RequestCreateItemWithStatsFunc(transactionId, characterId, templateId, quantity, expiration, useAverageStats)
+	}
+	return nil
+}
+
+// RequestCreateItemWithExplicitStats is a mock implementation of the compartment.Processor.RequestCreateItemWithExplicitStats method
+func (m *ProcessorMock) RequestCreateItemWithExplicitStats(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, stats saga.AwardCraftedAssetPayload) error {
+	if m.RequestCreateItemWithExplicitStatsFunc != nil {
+		return m.RequestCreateItemWithExplicitStatsFunc(transactionId, characterId, templateId, quantity, expiration, stats)
 	}
 	return nil
 }

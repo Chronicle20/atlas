@@ -197,6 +197,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-maker
+spec:
+  template:
+    spec:
+      containers:
+        - name: maker
+          env:
+            - name: DB_NAME
+              value: "atlas-maker-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-map-actions
 spec:
   template:

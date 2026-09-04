@@ -3,6 +3,68 @@
   "md5": "",
   "generated_at": "2026-06-30T15:47:21Z",
   "functions": {
+      "CUIItemMaker::RequestItemMake": {
+        "address": "0x795dc3",
+        "direction": "serverbound",
+        "notes": "MAKER_SKILL (serverbound, gms_v79 opcode 111/0x6f). CUIItemMaker::RequestItemMake, session 5a1cd4f3, GMS_v79_1_DEVM.exe.i64. Guards precede the send (m_nState==3, class-2 IsExistMakableItem, IsExistEmptySlot, IsEnoughMeso, IsAbleToMake, and class-3 requires a loaded recipe slot); then COutPacket::COutPacket(&oPacket, 111) and a if-chain (v4 > 0) on m_nRecipeClass. The recipe class is encoded exactly ONCE, as the first Encode4 INSIDE the selected arm (mode 1|2 @0x795ee6, mode 3 @0x795ecc, mode 4 @0x795e8b) - there is no pre-switch mode encode, and a class outside 1..4 sends an empty body. task-285.",
+        "calls": [
+          {
+            "op": "Encode4",
+            "comment": "m_nRecipeClass (mode; encoded inside the arm, not before the switch)",
+            "guard": "mode == 1 || mode == 2"
+          },
+          {
+            "op": "Encode4",
+            "comment": "m_nTargetItem (nTargetItemID of the recipe being made)",
+            "guard": "mode == 1 || mode == 2"
+          },
+          {
+            "op": "Encode1",
+            "comment": "m_CatalystSlot.bMounted (catalyst mounted flag)",
+            "guard": "mode == 1 || mode == 2"
+          },
+          {
+            "op": "Encode4",
+            "comment": "m_nNumGem_Mounted (gem count; length prefix for the loop below)",
+            "guard": "mode == 1 || mode == 2"
+          },
+          {
+            "op": "Encode4",
+            "comment": "nGemItemID from m_aGemSlot[i].pItem->nItemID (emitted only for non-null slots)",
+            "guard": "mode == 1 || mode == 2, loop count m_nNumGemSlot"
+          },
+          {
+            "op": "Encode4",
+            "comment": "m_nRecipeClass literal 3",
+            "guard": "mode == 3"
+          },
+          {
+            "op": "Encode4",
+            "comment": "m_aRecipeSlot[0].pItem->nItemID (monster-crystal / leftover source item)",
+            "guard": "mode == 3"
+          },
+          {
+            "op": "Encode4",
+            "comment": "m_nRecipeClass literal 4",
+            "guard": "mode == 4"
+          },
+          {
+            "op": "Encode4",
+            "comment": "m_aRecipeSlot[0].pItem->nItemID (item to disassemble)",
+            "guard": "mode == 4"
+          },
+          {
+            "op": "Encode4",
+            "comment": "m_nTI_DisassbleItem (inventory type of the disassemble target)",
+            "guard": "mode == 4"
+          },
+          {
+            "op": "Encode4",
+            "comment": "m_nSlotPosition_DisassbleItem (slot position of the disassemble target)",
+            "guard": "mode == 4"
+          }
+        ]
+      },
       "CParcelDlg::OnPacket#Open": {
         "address": "0x683b4e",
         "direction": "clientbound",
@@ -11349,6 +11411,215 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v53 <= 1 && v3 == 4"
+        }
+      ]
+    },
+    "CUserLocal::OnMakerResult#Create": {
+      "address": "0x8b5af5",
+      "direction": "clientbound",
+      "notes": "MAKER_RESULT mode-1 arm of CUserLocal::OnMakerResult @0x8b5af5 (gms_v79). Synthetic #-entry: this arm is an inline switch case of the dispatcher, not a separate function, so it carries the dispatcher's own address (same convention as CField::OnWhisper#* and CClientSocket::OnConnect#*). Every Decode site address below is the gms_v79 row of section 3 of docs/tasks/task-285-maker-skill-crafting/wire-derivation.md, read off this version's own decompilation; section 4 records all eight versions as field-for-field identical. task-285.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nResult (read unconditionally; > 1 ends the body)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMode (arm selector; this arm is nMode == 1)",
+          "guard": "nResult == 0 || nResult == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNoItemGain @0x8b5e10 (truthy SUPPRESSES the pair below)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nTargetItemID @0x8b5e29",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1 && !bNoItemGain"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemCount @0x8b5e3a",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1 && !bNoItemGain"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNumUsedItem @0x8b5ebd (loop length prefix)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "used[i].nItemID @0x8b5edb",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1, loop count nNumUsedItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "used[i].nCount @0x8b5ee8",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1, loop count nNumUsedItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNumUsedGem @0x8b5f71 (loop length prefix)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "gem[i].nItemID @0x8b5f82 (id only, no count)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1, loop count nNumUsedGem"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bUsedCatalyst @0x8b6010",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nCatalystItemID @0x8b6022",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1 && bUsedCatalyst"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMesoCost @0x8b60ae (rendered as a loss by the client)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 1"
+        }
+      ]
+    },
+    "CUserLocal::OnMakerResult#CreateWithUpgrade": {
+      "address": "0x8b5af5",
+      "direction": "clientbound",
+      "notes": "MAKER_RESULT mode-2 arm of CUserLocal::OnMakerResult @0x8b5af5 (gms_v79). Synthetic #-entry: this arm is an inline switch case of the dispatcher, not a separate function, so it carries the dispatcher's own address (same convention as CField::OnWhisper#* and CClientSocket::OnConnect#*). Every Decode site address below is the gms_v79 row of section 3 of docs/tasks/task-285-maker-skill-crafting/wire-derivation.md, read off this version's own decompilation; section 4 records all eight versions as field-for-field identical. task-285.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nResult (read unconditionally; > 1 ends the body)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMode (arm selector; this arm is nMode == 2)",
+          "guard": "nResult == 0 || nResult == 1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bNoItemGain @0x8b5e10 (truthy SUPPRESSES the pair below)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nTargetItemID @0x8b5e29",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2 && !bNoItemGain"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemCount @0x8b5e3a",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2 && !bNoItemGain"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNumUsedItem @0x8b5ebd (loop length prefix)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "used[i].nItemID @0x8b5edb",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2, loop count nNumUsedItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "used[i].nCount @0x8b5ee8",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2, loop count nNumUsedItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNumUsedGem @0x8b5f71 (loop length prefix)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "gem[i].nItemID @0x8b5f82 (id only, no count)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2, loop count nNumUsedGem"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bUsedCatalyst @0x8b6010",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nCatalystItemID @0x8b6022",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2 && bUsedCatalyst"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMesoCost @0x8b60ae (rendered as a loss by the client)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 2"
+        }
+      ]
+    },
+    "CUserLocal::OnMakerResult#MonsterCrystal": {
+      "address": "0x8b5af5",
+      "direction": "clientbound",
+      "notes": "MAKER_RESULT mode-3 arm of CUserLocal::OnMakerResult @0x8b5af5 (gms_v79). Synthetic #-entry: this arm is an inline switch case of the dispatcher, not a separate function, so it carries the dispatcher's own address (same convention as CField::OnWhisper#* and CClientSocket::OnConnect#*). Every Decode site address below is the gms_v79 row of section 3 of docs/tasks/task-285-maker-skill-crafting/wire-derivation.md, read off this version's own decompilation; section 4 records all eight versions as field-for-field identical. task-285.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nResult (read unconditionally; > 1 ends the body)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMode (arm selector; this arm is nMode == 3)",
+          "guard": "nResult == 0 || nResult == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nTargetItemID @0x8b5b60 (crystal produced)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nSourceItemID @0x8b5b71 (item consumed; Decode4 despite a byte-width local)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 3"
+        }
+      ]
+    },
+    "CUserLocal::OnMakerResult#Disassemble": {
+      "address": "0x8b5af5",
+      "direction": "clientbound",
+      "notes": "MAKER_RESULT mode-4 arm of CUserLocal::OnMakerResult @0x8b5af5 (gms_v79). Synthetic #-entry: this arm is an inline switch case of the dispatcher, not a separate function, so it carries the dispatcher's own address (same convention as CField::OnWhisper#* and CClientSocket::OnConnect#*). Every Decode site address below is the gms_v79 row of section 3 of docs/tasks/task-285-maker-skill-crafting/wire-derivation.md, read off this version's own decompilation; section 4 records all eight versions as field-for-field identical. task-285.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "nResult (read unconditionally; > 1 ends the body)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMode (arm selector; this arm is nMode == 4)",
+          "guard": "nResult == 0 || nResult == 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nDisassembledItemID @0x8b5c95",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nNumRewardItem @0x8b5d00 (loop length prefix)",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reward[i].nItemID @0x8b5d19",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4, loop count nNumRewardItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "reward[i].nCount @0x8b5d26",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4, loop count nNumRewardItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nMesoCost @0x8b5dac",
+          "guard": "nResult == 0 || nResult == 1 && nMode == 4"
         }
       ]
     },

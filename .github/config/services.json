@@ -253,6 +253,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-maker",
+      "type": "go-service",
+      "path": "services/atlas-maker",
+      "module_path": "services/atlas-maker/atlas.com/maker",
+      "docker_image": "ghcr.io/chronicle20/atlas-maker/atlas-maker",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-map-actions",
       "type": "go-service",
       "path": "services/atlas-map-actions",

@@ -2088,3 +2088,96 @@ func TestHandleClearBackEffect_InvalidPayload(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid payload")
 }
+
+// TestGetHandlerResolvesAwardCraftedAsset verifies AwardCraftedAsset is
+// registered in the GetHandler dispatch table (task-285). A missing case here
+// leaves a saga stuck forever with no error.
+func TestGetHandlerResolvesAwardCraftedAsset(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	h := NewHandler(logger, ctx)
+	handler, ok := h.GetHandler(AwardCraftedAsset)
+	assert.True(t, ok, "AwardCraftedAsset handler not registered")
+	assert.NotNil(t, handler)
+}
+
+// TestStepUnmarshalAwardCraftedAssetLocal exercises the orchestrator's own
+// Step[T].UnmarshalJSON, distinct from the shared library's. Omitting the
+// local `case AwardCraftedAsset:` arm in saga/model.go leaves the payload as
+// an untyped map[string]interface{} with no compile error - the type
+// assertion below is what catches it.
+func TestStepUnmarshalAwardCraftedAssetLocal(t *testing.T) {
+	raw := `{"stepId":"award","status":"pending","action":"award_crafted_asset","payload":{"characterId":1,"templateId":1082002,"quantity":1,"slots":7,"strength":3,"weaponAttack":4}}`
+
+	var step Step[any]
+	err := json.Unmarshal([]byte(raw), &step)
+	assert.NoError(t, err)
+	assert.Equal(t, AwardCraftedAsset, step.Action())
+
+	payload, ok := step.Payload().(AwardCraftedAssetPayload)
+	require.True(t, ok, "Payload: got %T, want AwardCraftedAssetPayload", step.Payload())
+	assert.Equal(t, uint32(1082002), payload.TemplateId)
+	assert.Equal(t, uint16(7), payload.Slots)
+}
+
+// TestHandleAwardCraftedAssetRequestsCreationWithStats verifies
+// handleAwardCraftedAsset dispatches RequestCreateItemWithExplicitStats with
+// the payload's template id, quantity, full stat block, and the step's
+// transaction id.
+func TestHandleAwardCraftedAssetRequestsCreationWithStats(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	payload := AwardCraftedAssetPayload{
+		CharacterId:   12345,
+		TemplateId:    1082002,
+		Quantity:      1,
+		Slots:         7,
+		Strength:      3,
+		Dexterity:     2,
+		WeaponAttack:  4,
+		WeaponDefense: 6,
+	}
+
+	transactionId := uuid.New()
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("award-crafted-asset-step", Pending, AwardCraftedAsset, payload)
+
+	compP := &mock2.ProcessorMock{}
+	called := false
+	compP.RequestCreateItemWithExplicitStatsFunc = func(gotTransactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, stats AwardCraftedAssetPayload) error {
+		called = true
+		assert.Equal(t, transactionId, gotTransactionId)
+		assert.Equal(t, payload.CharacterId, characterId)
+		assert.Equal(t, payload.TemplateId, templateId)
+		assert.Equal(t, payload.Quantity, quantity)
+		assert.Equal(t, payload, stats)
+		return nil
+	}
+
+	err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleAwardCraftedAsset(saga, step)
+	assert.NoError(t, err)
+	assert.True(t, called)
+}
+
+// TestAwardCraftedAssetEventAcceptance verifies the acceptance table maps
+// AwardCraftedAsset to the same asset-created / asset-error event kinds
+// AwardAsset uses.
+func TestAwardCraftedAssetEventAcceptance(t *testing.T) {
+	awardAssetKinds, ok := acceptanceTable[AwardAsset]
+	require.True(t, ok, "AwardAsset missing from acceptanceTable")
+
+	kinds, ok := acceptanceTable[AwardCraftedAsset]
+	require.True(t, ok, "AwardCraftedAsset missing from acceptanceTable; the step would default-deny every event and time out")
+
+	assert.Equal(t, awardAssetKinds, kinds)
+}

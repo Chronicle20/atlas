@@ -11,9 +11,19 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 func RequestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) model.Provider[[]kafka.Message] {
+	return RequestCreateAssetWithStatsCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, expiration, useAverageStats, saga.AwardCraftedAssetPayload{})
+}
+
+// RequestCreateAssetWithStatsCommandProvider extends RequestCreateAssetCommandProvider
+// with the explicit per-stat block and upgrade-slot count carried by a
+// crafted asset. stats.CharacterId, stats.TemplateId, and stats.Quantity are
+// ignored here; the caller-supplied characterId/templateId/quantity remain
+// authoritative.
+func RequestCreateAssetWithStatsCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool, stats saga.AwardCraftedAssetPayload) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.Command[compartment.CreateAssetCommandBody]{
 		TransactionId: transactionId,
@@ -28,6 +38,22 @@ func RequestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint
 			Flag:            0,
 			Rechargeable:    0,
 			UseAverageStats: useAverageStats,
+			Slots:           stats.Slots,
+			Strength:        stats.Strength,
+			Dexterity:       stats.Dexterity,
+			Intelligence:    stats.Intelligence,
+			Luck:            stats.Luck,
+			HP:              stats.HP,
+			MP:              stats.MP,
+			WeaponAttack:    stats.WeaponAttack,
+			MagicAttack:     stats.MagicAttack,
+			WeaponDefense:   stats.WeaponDefense,
+			MagicDefense:    stats.MagicDefense,
+			Accuracy:        stats.Accuracy,
+			Avoidability:    stats.Avoidability,
+			Hands:           stats.Hands,
+			Speed:           stats.Speed,
+			Jump:            stats.Jump,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

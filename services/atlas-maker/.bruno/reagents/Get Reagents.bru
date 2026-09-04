@@ -1,0 +1,34 @@
+meta {
+  name: Get Reagents
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/reagents
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Reagents
+
+  This endpoint retrieves every reagent in the tenant's seed catalog.
+
+  ## Response
+
+  ```json
+  {
+    "data": [
+      {
+        "id": "4021000",
+        "type": "reagents",
+        "attributes": {
+          "stat": "STR",
+          "value": 1
+        }
+      }
+    ]
+  }
+  ```
+}

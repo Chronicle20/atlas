@@ -1,0 +1,33 @@
+meta {
+  name: Get Crystal Band
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/crystal-bands/{{itemId}}
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Crystal Band
+
+  This endpoint retrieves a single crystal band by its minimum level.
+
+  ## Response
+
+  ```json
+  {
+    "data": {
+      "id": "1",
+      "type": "crystalBands",
+      "attributes": {
+        "maxLevel": 40,
+        "crystalItemId": 4260000,
+        "count": 1
+      }
+    }
+  }
+  ```
+}

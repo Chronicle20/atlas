@@ -68,6 +68,15 @@ type (
 
 	// ShowParcel payload type (task-241, task-22)
 	ShowParcelPayload = sharedsaga.ShowParcelPayload
+
+	// CraftManifestPayload (task-285 Task 26) carries what a craft saga
+	// actually consumed/produced, echoed onto a completed craft saga's
+	// StatusEventCompletedBody.Results["craftManifest"] by
+	// atlas-saga-orchestrator (Task 26a). The channel re-marshals the nested
+	// map[string]any into this type (manifest-carrier-derivation.md §5 hop 3)
+	// rather than decoding it field-by-field with resultUint32.
+	CraftManifestPayload = sharedsaga.CraftManifestPayload
+	CraftManifestItem    = sharedsaga.CraftManifestItem
 )
 
 // Re-export constants from atlas-saga shared library

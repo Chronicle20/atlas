@@ -284,6 +284,8 @@ images:
     newTag: main-3993871
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
     newTag: main-e670747
+  - name: ghcr.io/chronicle20/atlas-maker/atlas-maker
+    newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-3993871
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps

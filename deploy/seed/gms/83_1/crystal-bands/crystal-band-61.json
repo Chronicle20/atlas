@@ -1,0 +1,11 @@
+{
+  "data": {
+    "type": "crystalBand",
+    "id": "61",
+    "attributes": {
+      "maxLevel": 70,
+      "crystalItemId": 4260002,
+      "count": 1
+    }
+  }
+}

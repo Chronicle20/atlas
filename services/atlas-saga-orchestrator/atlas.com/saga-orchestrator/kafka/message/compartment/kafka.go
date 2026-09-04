@@ -136,6 +136,22 @@ type CreateAssetCommandBody struct {
 	Flag            uint16    `json:"flag"`
 	Rechargeable    uint64    `json:"rechargeable"`
 	UseAverageStats bool      `json:"useAverageStats,omitempty"`
+	Slots           uint16    `json:"slots"`
+	Strength        uint16    `json:"strength,omitempty"`
+	Dexterity       uint16    `json:"dexterity,omitempty"`
+	Intelligence    uint16    `json:"intelligence,omitempty"`
+	Luck            uint16    `json:"luck,omitempty"`
+	HP              uint16    `json:"hp,omitempty"`
+	MP              uint16    `json:"mp,omitempty"`
+	WeaponAttack    uint16    `json:"weaponAttack,omitempty"`
+	MagicAttack     uint16    `json:"magicAttack,omitempty"`
+	WeaponDefense   uint16    `json:"weaponDefense,omitempty"`
+	MagicDefense    uint16    `json:"magicDefense,omitempty"`
+	Accuracy        uint16    `json:"accuracy,omitempty"`
+	Avoidability    uint16    `json:"avoidability,omitempty"`
+	Hands           uint16    `json:"hands,omitempty"`
+	Speed           uint16    `json:"speed,omitempty"`
+	Jump            uint16    `json:"jump,omitempty"`
 }
 
 type RechargeCommandBody struct {

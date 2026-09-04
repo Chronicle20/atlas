@@ -63,6 +63,7 @@ go_services = [
   "atlas-keys",
   "atlas-kites",
   "atlas-login",
+  "atlas-maker",
   "atlas-map-actions",
   "atlas-maps",
   "atlas-marriages",

@@ -53,7 +53,7 @@ type ProcessorMock struct {
 	DestroyAssetFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error
 	ExpireAssetAndEmitFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
 	ExpireAssetFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
-	CreateAssetAndEmitFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
+	CreateAssetAndEmitFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...compartment.EquipStats) error
 	SetAssetOwnerAndEmitFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
 	SetAssetOwnerFunc                 func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
 	ApplyAssetLockAndEmitFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
@@ -62,8 +62,8 @@ type ProcessorMock struct {
 	ApplyAssetKarmaFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
 	ExtendAssetExpirationAndEmitFunc  func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
 	ExtendAssetExpirationFunc         func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
-	CreateAssetAndLockFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
-	CreateAssetFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
+	CreateAssetAndLockFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...compartment.EquipStats) error
+	CreateAssetFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...compartment.EquipStats) error
 	AttemptEquipmentPickUpAndEmitFunc func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error
 	AttemptEquipmentPickUpFunc        func(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error
 	AttemptItemPickUpAndEmitFunc      func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error
@@ -363,9 +363,9 @@ func (m *ProcessorMock) ExpireAsset(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (m *ProcessorMock) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (m *ProcessorMock) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...compartment.EquipStats) error {
 	if m.CreateAssetAndEmitFunc != nil {
-		return m.CreateAssetAndEmitFunc(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+		return m.CreateAssetAndEmitFunc(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats, stats...)
 	}
 	return nil
 }
@@ -434,20 +434,20 @@ func (m *ProcessorMock) ExtendAssetExpiration(mb *message.Buffer) func(transacti
 	}
 }
 
-func (m *ProcessorMock) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (m *ProcessorMock) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...compartment.EquipStats) error {
 	if m.CreateAssetAndLockFunc != nil {
 		return m.CreateAssetAndLockFunc(mb)
 	}
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...compartment.EquipStats) error {
 		return nil
 	}
 }
 
-func (m *ProcessorMock) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (m *ProcessorMock) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...compartment.EquipStats) error {
 	if m.CreateAssetFunc != nil {
 		return m.CreateAssetFunc(mb)
 	}
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool, stats ...compartment.EquipStats) error {
 		return nil
 	}
 }

@@ -74,6 +74,7 @@ DBS=(
   atlas-guilds
   atlas-inventory
   atlas-keys
+  atlas-maker
   atlas-map-actions
   atlas-maps
   atlas-marriages

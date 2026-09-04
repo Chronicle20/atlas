@@ -184,7 +184,7 @@ func TestMistTick_LiveMist_AppliesDiseaseToContainedCharacters(t *testing.T) {
 	require.NoError(t, reg.Add(tt, liveMist))
 
 	mt := newTestMistTick(t, reg, rec, charLookup)
-	mt.charsInField = func(t tenant.Model, ff field.Model) []uint32 {
+	mt.charsInField = func(ctx context.Context, t tenant.Model, ff field.Model) []uint32 {
 		return []uint32{insideId, outsideId}
 	}
 	mt.runOnce(context.Background())
@@ -248,7 +248,7 @@ func TestMistTick_DifferentInstances_DoNotCrossApply(t *testing.T) {
 	require.NoError(t, reg.Add(tt, mistOnA))
 
 	mt := newTestMistTick(t, reg, rec, charLookup)
-	mt.charsInField = func(tnt tenant.Model, f field.Model) []uint32 {
+	mt.charsInField = func(ctx context.Context, tnt tenant.Model, f field.Model) []uint32 {
 		// Only return the otherInstanceCharId for instanceB. The mist lives on instanceA,
 		// so when MistTick asks for characters in fA it must not see instance-B chars.
 		if f.Instance() == instanceB {

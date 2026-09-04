@@ -3,7 +3,6 @@ package main
 import (
 	"atlas-doors/character"
 	"atlas-doors/door"
-	"atlas-doors/tasks"
 	"atlas-doors/world"
 	"context"
 	"os"
@@ -94,7 +93,7 @@ func main() {
 		// package importing atlas-env itself. Without it, ExpiryTask's
 		// per-tenant REMOVED Kafka events would carry an empty environment
 		// header and fail decide() open per FR-1.8.
-		tasks.Register(l, ctx)(door.NewExpiryTask(l, ctx, time.Second, func(ctx context.Context) context.Context {
+		routine.Register(l, ctx, rt.WaitGroup())(door.NewExpiryTask(l, time.Second, func(ctx context.Context) context.Context {
 			return env.WithContext(ctx, env.Self())
 		}))
 	}

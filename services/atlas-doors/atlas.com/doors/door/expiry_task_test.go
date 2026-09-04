@@ -88,7 +88,6 @@ func TestExpiryRemovesOnlyExpiredPastGrace(t *testing.T) {
 	fake := &fakeExpiryProcessor{}
 	task := &ExpiryTask{
 		l:          logrus.New(),
-		ctx:        ctx,
 		interval:   30 * time.Second,
 		envContext: identityEnvContext,
 		newProcessor: func(l logrus.FieldLogger, tctx context.Context) expiryProcessor {
@@ -100,7 +99,7 @@ func TestExpiryRemovesOnlyExpiredPastGrace(t *testing.T) {
 		},
 	}
 
-	task.Run()
+	task.Run(ctx)
 
 	// Only door1's owner (1001) should have been removed.
 	if len(fake.removed) != 1 {
@@ -148,14 +147,13 @@ func TestExpirySkipsZeroExpiresAt(t *testing.T) {
 	fake := &fakeExpiryProcessor{}
 	task := &ExpiryTask{
 		l:          logrus.New(),
-		ctx:        ctx,
 		interval:   30 * time.Second,
 		envContext: identityEnvContext,
 		newProcessor: func(l logrus.FieldLogger, tctx context.Context) expiryProcessor {
 			return fake
 		},
 	}
-	task.Run()
+	task.Run(ctx)
 
 	if len(fake.removed) != 0 {
 		t.Fatalf("expected no removal for zero ExpiresAt, got %v", fake.removed)
@@ -184,10 +182,9 @@ func TestExpiryTaskTenantContextAppliesEnvContext(t *testing.T) {
 
 	task := &ExpiryTask{
 		l:          logrus.New(),
-		ctx:        context.Background(),
 		envContext: envContext,
 	}
-	tctx := task.tenantContext(ten)
+	tctx := task.tenantContext(context.Background(), ten)
 
 	if got := tctx.Value(envMarkerKey("marker")); got != "stamped" {
 		t.Fatalf("envContext was not applied: got %v, want \"stamped\"", got)

@@ -153,6 +153,8 @@
             "show_intro",
             "spawn_monster",
             "drop_message",
+            "move_environment",
+            "reset_environment",
             "lock_ui",
             "unlock_ui",
             "set_quest_progress",
@@ -170,9 +172,7 @@
             "clear_drops",
             "reset_reactors",
             "shuffle_reactors",
-            "reset_field",
-            "move_environment",
-            "reset_environment"
+            "reset_field"
           ]
         },
         "params": {
@@ -795,13 +795,20 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "move_environment" } }
+            "properties": {
+              "type": {
+                "const": "move_environment"
+              }
+            }
           },
           "then": {
             "properties": {
               "params": {
                 "type": "object",
-                "required": ["name", "value"],
+                "required": [
+                  "name",
+                  "value"
+                ],
                 "properties": {
                   "name": {
                     "type": "string",
@@ -813,7 +820,10 @@
                   },
                   "kind": {
                     "type": "string",
-                    "enum": ["ENVIRONMENT", "OBSTACLE"],
+                    "enum": [
+                      "ENVIRONMENT",
+                      "OBSTACLE"
+                    ],
                     "description": "Which clientbound opcode carries the change; defaults to ENVIRONMENT"
                   }
                 }
@@ -823,7 +833,11 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "reset_environment" } }
+            "properties": {
+              "type": {
+                "const": "reset_environment"
+              }
+            }
           },
           "then": {
             "properties": {

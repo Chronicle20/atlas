@@ -244,6 +244,7 @@ topics:
       - atlas-channel/kafka/message/monster
       - atlas-consumables/kafka/message/monster
       - atlas-events/kafka/message/monster
+      - atlas-maps/kafka/message/monster
       - atlas-maps/tasks
       - atlas-messages/kafka/message/monster
       - atlas-monsters/kafka/consumer/monster

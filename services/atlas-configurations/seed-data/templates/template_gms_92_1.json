@@ -2520,6 +2520,22 @@
         ]
       },
       {
+        "opCode": "0x8F",
+        "writer": "SetBackEffect",
+        "fname": "CMapLoadable::OnSetBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x91",
+        "writer": "ClearBackEffect",
+        "fname": "CMapLoadable::OnClearBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x99",
         "writer": "FieldEffect",
         "fname": "CField::OnFieldEffect",
@@ -2535,22 +2551,6 @@
             "REWARD_RULLET": 7
           }
         },
-        "services": [
-          "channel"
-        ]
-      },
-      {
-        "opCode": "0x8F",
-        "writer": "SetBackEffect",
-        "fname": "CMapLoadable::OnSetBackEffect",
-        "services": [
-          "channel"
-        ]
-      },
-      {
-        "opCode": "0x91",
-        "writer": "ClearBackEffect",
-        "fname": "CMapLoadable::OnClearBackEffect",
         "services": [
           "channel"
         ]

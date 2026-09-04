@@ -15,19 +15,18 @@ const DefaultExpirationInterval = 30 * time.Second
 
 type ExpirationTask struct {
 	l          logrus.FieldLogger
-	ctx        context.Context
 	db         *gorm.DB
 	interval   time.Duration
 	envContext func(context.Context) context.Context
 }
 
-func NewExpirationTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *ExpirationTask {
+func NewExpirationTask(l logrus.FieldLogger, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *ExpirationTask {
 	l.Infof("Initializing shop expiration task to run every %dms.", interval.Milliseconds())
-	return &ExpirationTask{l: l, ctx: ctx, db: db, interval: interval, envContext: envContext}
+	return &ExpirationTask{l: l, db: db, interval: interval, envContext: envContext}
 }
 
-func (t *ExpirationTask) Run() {
-	noTenantCtx := database.WithoutTenantFilter(t.ctx)
+func (t *ExpirationTask) Run(ctx context.Context) {
+	noTenantCtx := database.WithoutTenantFilter(ctx)
 
 	// Single source of truth for the expiry predicate (incl. Draft — a hired
 	// merchant abandoned during setup must still be reaped at its 24h expiry);
@@ -44,7 +43,7 @@ func (t *ExpirationTask) Run() {
 
 	t.l.Infof("Found %d expired shops to reap.", len(results))
 
-	processExpiredShops(t.l, t.ctx, results, closeExpiredShop(t.l, t.db), t.envContext)
+	processExpiredShops(t.l, ctx, results, closeExpiredShop(t.l, t.db), t.envContext)
 }
 
 // closeExpiredShop closes one expired shop and emits its close event.

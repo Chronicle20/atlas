@@ -10,7 +10,6 @@ import (
 	"atlas-merchant/message"
 	"atlas-merchant/searchcount"
 	"atlas-merchant/shop"
-	"atlas-merchant/tasks"
 	"atlas-merchant/visit"
 	"atlas-merchant/visitor"
 	"context"
@@ -104,9 +103,9 @@ func main() {
 	}
 
 	// Start background tasks.
-	tasks.Register(l, rt.Context())(shop.NewExpirationTask(l, rt.Context(), db, shop.DefaultExpirationInterval, envContext))
-	tasks.Register(l, rt.Context())(frederick.NewCleanupTask(l, rt.Context(), db, frederick.DefaultCleanupInterval))
-	tasks.Register(l, rt.Context())(frederick.NewNotificationTask(l, rt.Context(), db, frederick.DefaultNotificationInterval, envContext))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(shop.NewExpirationTask(l, db, shop.DefaultExpirationInterval, envContext))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(frederick.NewCleanupTask(l, db, frederick.DefaultCleanupInterval))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(frederick.NewNotificationTask(l, db, frederick.DefaultNotificationInterval, envContext))
 
 	server.New(l).
 		WithContext(rt.Context()).

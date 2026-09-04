@@ -22,19 +22,18 @@ var notificationTiers = []uint16{2, 5, 10, 15, 30, 60, 90}
 
 type NotificationTask struct {
 	l          logrus.FieldLogger
-	ctx        context.Context
 	db         *gorm.DB
 	interval   time.Duration
 	envContext func(context.Context) context.Context
 }
 
-func NewNotificationTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *NotificationTask {
+func NewNotificationTask(l logrus.FieldLogger, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *NotificationTask {
 	l.Infof("Initializing Frederick notification task to run every %dms.", interval.Milliseconds())
-	return &NotificationTask{l: l, ctx: ctx, db: db, interval: interval, envContext: envContext}
+	return &NotificationTask{l: l, db: db, interval: interval, envContext: envContext}
 }
 
-func (t *NotificationTask) Run() {
-	noTenantCtx := database.WithoutTenantFilter(t.ctx)
+func (t *NotificationTask) Run(ctx context.Context) {
+	noTenantCtx := database.WithoutTenantFilter(ctx)
 
 	var notifications []NotificationEntity
 	err := t.db.WithContext(noTenantCtx).
@@ -57,7 +56,7 @@ func (t *NotificationTask) Run() {
 
 	t.l.Infof("Processing %d Frederick notifications.", len(notifications))
 
-	processDueNotifications(t.l, t.ctx, notifications, notifyAndAdvance(t.l, t.db, noTenantCtx), t.envContext)
+	processDueNotifications(t.l, ctx, notifications, notifyAndAdvance(t.l, t.db, noTenantCtx), t.envContext)
 }
 
 // notifyAndAdvance emits the tier notification for one due entry, then

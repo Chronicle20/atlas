@@ -4,7 +4,6 @@ import (
 	"atlas-rps/game"
 	rpsConsumer "atlas-rps/kafka/consumer/rps"
 	"atlas-rps/rest"
-	"atlas-rps/tasks"
 	"context"
 	"os"
 	"time"
@@ -54,11 +53,9 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(game.NewSweepTask(l, time.Millisecond*50, func(ctx context.Context) context.Context {
-			return env.WithContext(ctx, env.Self())
-		}))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(game.NewSweepTask(l, time.Millisecond*50, func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}))
 
 	server.New(l).
 		WithContext(rt.Context()).

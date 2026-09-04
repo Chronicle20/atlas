@@ -44,7 +44,7 @@ func TestSweepTask_Run_AppliesEnvContext(t *testing.T) {
 		envContextCalled = true
 		return context.WithValue(c, envMarkerKey{}, "pod-env")
 	})
-	task.Run()
+	task.Run(ctx)
 
 	assert.True(t, envContextCalled, "SweepTask.Run must apply envContext to the swept session's context before emitting")
 	_ = reg // producer capture is asserted by TestSweepTask_Run_DisposesExpiredSessionWithNoPayout; this test only pins envContext invocation

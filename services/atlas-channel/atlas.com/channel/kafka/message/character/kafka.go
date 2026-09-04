@@ -107,6 +107,41 @@ const (
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 
+	// ExperienceDistributionType* are the distribution kinds carried in an
+	// EXPERIENCE_CHANGED event's Distributions slice. Each maps to a distinct
+	// field of socket/model.IncreaseExperienceConfig, and each field renders a
+	// DIFFERENT line in the client's experience-gain message.
+	//
+	// Only WHITE, YELLOW and CHAT set the primary "You have gained experience"
+	// amount. EVERY other type is a secondary modifier line rendered IN
+	// ADDITION to that primary line -- picking one of them alone renders
+	// "You have gained experience (+0)" with a bonus line beneath it.
+	//
+	//	WHITE          Amount, White=true          "You have gained experience", white text
+	//	YELLOW         Amount, White=false         "You have gained experience", yellow text
+	//	CHAT           Amount, InChat=true         chat-window experience line
+	//	MONSTER_BOOK   MonsterBookBonus            right side, yellow: Bonus Event EXP
+	//	MONSTER_EVENT  MobEventBonusPercentage     in chat, pink: bonus EXP per 3rd monster defeated
+	//	PLAY_TIME      MobEventBonusPercentage,    right side, yellow: Bonus EXP for hunting over
+	//	               PlayTimeHour (from Attr1)   (N) hrs
+	//	WEDDING        WeddingBonusEXP             right side, yellow: Bonus Wedding EXP
+	//	SPIRIT_WEEK    QuestBonusRate              Earned 'Spirit Week Event' bonus EXP
+	//	PARTY          PartyBonusExp,              right side, yellow: Bonus Event Party EXP
+	//	               PartyBonusEventRate (Attr1)
+	//	ITEM           ItemBonusEXP                right side, yellow: Equip Item Bonus EXP
+	//	INTERNET_CAFE  PremiumIPExp                right side, yellow: Internet Cafe EXP Bonus
+	//	RAINBOW_WEEK   RainbowWeekEventEXP         right side, yellow: Rainbow Week Bonus Event EXP
+	//	PARTY_RING     PartyEXPRingEXP             v95+ only
+	//	CAKE_PIE       CakePieEventBonus           v95+ only
+	//
+	// ITEM is the trap: it is the "Equip Item Bonus EXP" MODIFIER line, not
+	// "experience that came from an item". See task-277,
+	// docs/tasks/task-277-stored-exp-items/bug-redeem-renders-as-item-bonus.md.
+	//
+	// A new constant added here MUST also be added to
+	// AllExperienceDistributionTypes below, or
+	// TestExperienceDistributionTypeExhaustiveness will not notice it is
+	// unmapped.
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
 	ExperienceDistributionTypeChat         = "CHAT"
@@ -124,6 +159,28 @@ const (
 
 	StatusEventActorTypeCharacter = "CHARACTER"
 )
+
+// AllExperienceDistributionTypes enumerates every ExperienceDistributionType*
+// constant, in declaration order. Its sole purpose is exhaustiveness
+// enforcement: TestExperienceDistributionTypeExhaustiveness iterates it and
+// fails when a type has no case in the consumer's mapping table. Adding a
+// constant above without adding it here silently defeats that check.
+var AllExperienceDistributionTypes = []string{
+	ExperienceDistributionTypeWhite,
+	ExperienceDistributionTypeYellow,
+	ExperienceDistributionTypeChat,
+	ExperienceDistributionTypeMonsterBook,
+	ExperienceDistributionTypeMonsterEvent,
+	ExperienceDistributionTypePlayTime,
+	ExperienceDistributionTypeWedding,
+	ExperienceDistributionTypeSpiritWeek,
+	ExperienceDistributionTypeParty,
+	ExperienceDistributionTypeItem,
+	ExperienceDistributionTypeInternetCafe,
+	ExperienceDistributionTypeRainbowWeek,
+	ExperienceDistributionTypePartyRing,
+	ExperienceDistributionTypeCakePie,
+}
 
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`

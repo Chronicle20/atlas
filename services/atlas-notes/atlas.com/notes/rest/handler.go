@@ -2,9 +2,7 @@ package rest
 
 import (
 	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 
@@ -25,30 +23,10 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterInputHandler[M](l)
 }
 
-type CharacterIdHandler func(characterId uint32) http.HandlerFunc
-
-func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		characterId, err := strconv.Atoi(mux.Vars(r)["characterId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(characterId))(w, r)
-	}
+func ParseCharacterId(l logrus.FieldLogger, next func(characterId uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "characterId", next)
 }
 
-type NoteIdHandler func(noteId uint32) http.HandlerFunc
-
-func ParseNoteId(l logrus.FieldLogger, next NoteIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		noteId, err := strconv.Atoi(mux.Vars(r)["noteId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse noteId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(noteId))(w, r)
-	}
+func ParseNoteId(l logrus.FieldLogger, next func(noteId uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "noteId", next)
 }

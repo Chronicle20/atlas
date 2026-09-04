@@ -1,6 +1,10 @@
 package saga
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+)
 
 // EnvCommandTopic is the saga command topic env var name
 // (deploy/k8s/base/env-configmap.yaml), shared across every
@@ -10,8 +14,8 @@ import "github.com/google/uuid"
 // saga participant consumes to learn a saga it emitted reached a terminal
 // state.
 const (
-	EnvCommandTopic     = "COMMAND_TOPIC_SAGA"
-	EnvStatusEventTopic = "EVENT_TOPIC_SAGA_STATUS"
+	EnvCommandTopic     topic.Token = "COMMAND_TOPIC_SAGA"
+	EnvStatusEventTopic topic.Token = "EVENT_TOPIC_SAGA_STATUS"
 )
 
 // StatusEventTypeCompleted and StatusEventTypeFailed are StatusEvent.Type's

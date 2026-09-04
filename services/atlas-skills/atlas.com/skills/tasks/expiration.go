@@ -25,10 +25,10 @@ func NewExpirationTask(l logrus.FieldLogger, db *gorm.DB, interval int, envConte
 	return &ExpirationTask{l, db, interval, envContext}
 }
 
-func (r *ExpirationTask) Run() {
+func (r *ExpirationTask) Run(ctx context.Context) {
 	r.l.Debugf("Executing expiration task.")
 
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-skills").Start(context.Background(), "expiration_task")
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-skills").Start(ctx, "expiration_task")
 	defer span.End()
 
 	skill.ExpireCooldowns(r.l, ctx, r.envContext)

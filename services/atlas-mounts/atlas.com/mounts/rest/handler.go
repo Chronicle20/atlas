@@ -2,9 +2,7 @@ package rest
 
 import (
 	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -18,16 +16,6 @@ type GetHandler = server.GetHandler
 
 var RegisterHandler = server.RegisterHandler
 
-type CharacterIdHandler func(characterId uint32) http.HandlerFunc
-
-func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		characterId, err := strconv.Atoi(mux.Vars(r)["characterId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(characterId))(w, r)
-	}
+func ParseCharacterId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "characterId", next)
 }

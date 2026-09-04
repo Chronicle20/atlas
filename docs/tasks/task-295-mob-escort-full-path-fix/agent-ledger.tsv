@@ -1,0 +1,13 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-04T11:41:54Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T11:44:05Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	b1a0bd331	-	-	-	-
+2026-09-04T11:44:06Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T11:46:05Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	b1a0bd331	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-04T11:46:06Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	6073f7e	-	-	-	-
+2026-09-04T11:47:24Z	agent	Task 3	task-implementer	haiku	-	-	-	-	DONE	cd2d703	-	-	-	-
+2026-09-04T11:47:59Z	agent	Task 2	task-reviewer	haiku	-	-	-	-	DONE	6073f7ee3	APPROVED	no	-	-
+2026-09-04T11:49:16Z	agent	Task 3	task-reviewer	haiku	-	-	-	-	DONE	cd2d70316	APPROVED	no	-	-
+2026-09-04T11:49:58Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	abae6efea	-	-	-	-
+2026-09-04T11:52:17Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	abae6efea	APPROVED	no	-	-
+2026-09-04T11:52:17Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	72000
+2026-09-04T11:54:19Z	agent	Task 5	task-implementer	haiku	-	-	-	-	dispatched	-	-	-	-	-

@@ -7,7 +7,6 @@ import (
 	pet2 "atlas-pets/kafka/consumer/pet"
 	"atlas-pets/pet"
 	"atlas-pets/pet/exclude"
-	"atlas-pets/tasks"
 	"context"
 	"os"
 	"time"
@@ -104,18 +103,16 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		// pet/task.go sits outside env-domain-guard's permitted atlas-env
-		// import list (main.go, kafka/, rest/, socket/), so the environment
-		// that owns each owner's tenant (falling back to this pod's own,
-		// env.Self(), when the tenant is unknown) is threaded in as a plain
-		// function value rather than the package importing atlas-env
-		// itself. Without it, HungerTask's per-owner hunger Kafka events
-		// would carry an empty or wrong environment header and either fail
-		// decide() open per FR-1.8 or be dropped by every consumer's
-		// ownership gate per FR-7.7.
-		tasks.Register(l, rt.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3), service.TenantEnvironment))
-	})
+	// pet/task.go sits outside env-domain-guard's permitted atlas-env
+	// import list (main.go, kafka/, rest/, socket/), so the environment
+	// that owns each owner's tenant (falling back to this pod's own,
+	// env.Self(), when the tenant is unknown) is threaded in as a plain
+	// function value rather than the package importing atlas-env
+	// itself. Without it, HungerTask's per-owner hunger Kafka events
+	// would carry an empty or wrong environment header and either fail
+	// decide() open per FR-1.8 or be dropped by every consumer's
+	// ownership gate per FR-7.7.
+	routine.Register(l, rt.Context(), rt.WaitGroup())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3), service.TenantEnvironment))
 
 	rt.Wait()
 }

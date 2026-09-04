@@ -11,7 +11,7 @@ export function AppShell() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="w-full flex h-screen flex-1 flex-col gap-2 pt-2">
+      <main className="flex h-screen min-w-0 flex-1 flex-col gap-2 pt-2">
         <header className="flex h-12 shrink-0 items-center gap-2 px-2">
           <SidebarToggle />
           <Separator orientation="vertical" className="mr-2 h-4" />

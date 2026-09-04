@@ -49,7 +49,7 @@ byte-identical in all four repositories.
 
 | File | Lines | Wired at | Notes |
 |---|---|---|---|
-| `.claude/hooks/wait-loop-guard.sh` | 157 | `PreToolUse` / `Bash` | Blocks polling and `sleep` loops, and the third consecutive identical read-only command (file-tail polling). |
+| `.claude/hooks/wait-loop-guard.sh` | 160 | `PreToolUse` / `Bash` | Blocks polling and `sleep` loops, and the third consecutive identical read-only command (file-tail polling). |
 | `.claude/hooks/wait-loop-guard_test.sh` | — | — | Ships with its subject. |
 | `.claude/hooks/context-handoff-guard.sh` | 82 | `PreToolUse` / `Agent` | Denies new-unit dispatches past the controller handoff threshold (reads `ESCALATE` from `commit-boundary.sh`). |
 | `.claude/hooks/context-handoff-guard_test.sh` | — | — | Ships with its subject. |
@@ -67,8 +67,9 @@ those to the generic names.
 
 | File | Lines | What is repo-specific |
 |---|---|---|
-| `.claude/hooks/format-on-write.sh` | 45 | Hardcodes `services/atlas-ui` for prettier and sources `tools/toolchain.versions` for the pinned `golangci-lint`. Both must be rebound per §4. |
-| `.claude/hooks/commit-boundary.sh` | 140 | References `tools/task-brief.sh` in its guidance text. Portable once that script exists (§3.4). |
+| `.claude/hooks/format-on-write.sh` | 78 | Wired at `PostToolUse` / `Write\|Edit\|Bash`: formats the file a Write/Edit touched, and the `.go` files an in-place Bash edit names (containment-checked against the repo root). Hardcodes `services/atlas-ui` for prettier and sources `tools/toolchain.versions` for the pinned `golangci-lint`. Both must be rebound per §4. |
+| `.claude/hooks/format-on-write_test.sh` | — | Ships with its subject. Stands up a fake repo root with a logging `golangci-lint` stub; the §4 rebinding must be reflected here too. |
+| `.claude/hooks/commit-boundary.sh` | 143 | References `tools/task-brief.sh` in its guidance text. Portable once that script exists (§3.4). |
 
 ### 3.3 Agents
 
@@ -126,8 +127,8 @@ overwrite.
 ### 3.7 Settings
 
 `.claude/settings.json` gains `disableBundledSkills: true` and the full hook
-wiring — `PreToolUse` (`Write|Edit`, `Agent`, `Bash`, `*`), `PostToolUse`
-(`Write|Edit`, `*`, `Bash`), `SessionStart`, `UserPromptSubmit`.
+wiring — `PreToolUse` (`Write|Edit`, `Agent` ×2, `Bash`, `*`), `PostToolUse`
+(`Write|Edit|Bash`, `*`, `Bash`), `SessionStart`, `UserPromptSubmit`.
 
 ## 4. Per-repository binding table
 

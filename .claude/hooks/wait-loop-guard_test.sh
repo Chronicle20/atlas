@@ -109,6 +109,10 @@ allowk s3 "" 'go test ./...'; allowk s3 "" 'go test ./...'; allowk s3 "" 'go tes
 allowk s3 "" 'cat a.go > b.go'; allowk s3 "" 'cat a.go > b.go'; allowk s3 "" 'cat a.go > b.go'
 # Justified repeats pass.
 allowk s4 "" 'tail -1 /tmp/x.log # POLL-JUSTIFIED: x'; allowk s4 "" 'tail -1 /tmp/x.log # POLL-JUSTIFIED: x'; allowk s4 "" 'tail -1 /tmp/x.log # POLL-JUSTIFIED: x'
+# A pipe inside a quoted argument is not a pipeline stage — still one reader.
+allowk s5 "" "grep -cE 'PASS|FAIL' /tmp/gate.log"
+allowk s5 "" "grep -cE 'PASS|FAIL' /tmp/gate.log"
+denyk  s5 "" "grep -cE 'PASS|FAIL' /tmp/gate.log"
 # No session/agent id: stateless only, never denied for repetition.
 allow 'tail -1 /tmp/gate.log'; allow 'tail -1 /tmp/gate.log'; allow 'tail -1 /tmp/gate.log'
 

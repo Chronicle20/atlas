@@ -26,9 +26,9 @@ format_one() {
     case "$fp" in
     *.go)
         # shellcheck source=../../tools/toolchain.versions
-        source "$ROOT/tools/toolchain.versions" 2>/dev/null || exit 0
+        source "$ROOT/tools/toolchain.versions" 2>/dev/null || return 0
         GOLANGCI="$ROOT/.cache/tools/bin/golangci-lint-${GOLANGCI_LINT_VERSION:-}"
-        [ -x "$GOLANGCI" ] || exit 0
+        [ -x "$GOLANGCI" ] || return 0
         # Format from the file's own module dir so gofumpt sees its go.mod.
         moddir="$(dirname "$fp")"
         while [ "$moddir" != "/" ] && [ ! -f "$moddir/go.mod" ]; do
@@ -57,9 +57,20 @@ cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
 [ -n "$cmd" ] || exit 0
 printf '%s' "$cmd" | grep -Eq '(sed +-i|perl +-[a-zA-Z]*i|python3?\b|awk\b|>>?|\btee\b|\bpatch\b|\bmv\b|\bcp\b)' || exit 0
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)"
+
+# Only ever format inside this repo. A Bash command can name an absolute path
+# anywhere, and `cwd` can sit outside the checkout, so the Write/Edit path's
+# implicit trust does not carry over here. Anything that does not resolve under
+# $ROOT is skipped — skipping is the fail-open direction.
+root_real="$(realpath -m "$ROOT" 2>/dev/null || printf '%s' "$ROOT")"
 n=0
 for tok in $(printf '%s' "$cmd" | grep -oE "[A-Za-z0-9_./-]+\.go\b" | sort -u); do
     case "$tok" in /*) p="$tok" ;; *) p="${cwd:-$ROOT}/$tok" ;; esac
+    p="$(realpath -m "$p" 2>/dev/null || printf '%s' "$p")"
+    case "$p" in
+        "$root_real"/*) ;;
+        *) continue ;;
+    esac
     format_one "$p"
     n=$((n + 1)); [ "$n" -ge 20 ] && break
 done

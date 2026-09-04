@@ -75,8 +75,11 @@ if [ -n "$cmd_raw" ] && ! printf '%s' "$cmd_raw" | grep -q 'POLL-JUSTIFIED:'; th
         # `rtk` is the user's transparent output-filter prefix.
         readonly_re='^(rtk )?(tail|head|cat|wc|grep|egrep|stat|ls|test|\[|du|find|jq|nl|less|more)( |$)'
         is_read=1
+        # Blank quoted spans before splitting on `|`, so a pipe INSIDE a quoted
+        # argument (`grep -E 'a|b' file`) is not mistaken for a pipeline stage.
+        split_src="$(printf '%s' "$norm" | sed "s/'[^']*'/Q/g; s/\"[^\"]*\"/Q/g")"
         old_ifs="$IFS"; IFS='|'
-        for stage in $norm; do
+        for stage in $split_src; do
             stage="$(printf '%s' "$stage" | sed 's/^ *//')"
             printf '%s' "$stage" | grep -Eq "$readonly_re" || { is_read=0; break; }
         done

@@ -78,3 +78,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-03T11:01:01Z	agent	final gate	gate	-	-	-	-	-	PASS	dafc01a56	-	-	-	-
 2026-09-03T11:02:50Z	agent	Refresh fix	task-implementer	sonnet	-	-	-	-	DONE	ed3ea27	-	-	-	-
 2026-09-03T11:18:37Z	agent	post-rebase gate	gate	-	-	-	-	-	PASS	570d8bd2a	-	-	-	-
+2026-09-03T22:02:01Z	agent	bug-fields-ui	task-implementer	sonnet	-	-	-	-	DONE	e25b083f1	-	-	-	-
+2026-09-03T22:02:02Z	agent	bug-maps-ui	task-implementer	sonnet	-	-	-	-	DONE	947013114	-	-	-	-
+2026-09-03T22:02:03Z	agent	bug-fields-ui	task-reviewer	sonnet	-	-	-	-	DONE	947013114	APPROVED_WITH_FINDINGS	true	-	-
+2026-09-03T22:03:44Z	agent	bug-fields-ui-review-findings	task-implementer	sonnet	-	-	-	-	DONE	f29dde41a	-	-	-	-

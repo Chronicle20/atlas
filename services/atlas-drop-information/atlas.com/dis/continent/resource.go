@@ -18,9 +18,9 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
+			registerGet := rest.RegisterHandler(l)(si)
 			r := router.PathPrefix("/continents/drops").Subrouter()
-			r.HandleFunc("", registerGet("get_continent_drops", handleGetContinents)).Methods(http.MethodGet)
+			r.HandleFunc("", registerGet("get_continent_drops", handleGetContinents(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -30,35 +30,37 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 // map, so it has no natural order), not a single Where-filtered query, so
 // it cannot be pushed down to database.PagedQuery. The list of continents
 // is stable-sorted by id before slicing to make paging deterministic.
-func handleGetContinents(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
-		if err != nil {
-			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-			return
+func handleGetContinents(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			ms, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving continent drops.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			sort.SliceStable(ms, func(i, j int) bool {
+				return ms[i].Id() < ms[j].Id()
+			})
+
+			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			paged := paginate.Slice(res, page)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
-
-		ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll()()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Retrieving continent drops.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		sort.SliceStable(ms, func(i, j int) bool {
-			return ms[i].Id() < ms[j].Id()
-		})
-
-		res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		paged := paginate.Slice(res, page)
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 	}
 }

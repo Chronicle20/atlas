@@ -17,9 +17,9 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
+			registerGet := rest.RegisterHandler(l)(si)
 			r := router.PathPrefix("/reactors/{reactorId}/drops").Subrouter()
-			r.HandleFunc("", registerGet("get_reactor_drops", handleGetReactorDrops)).Methods(http.MethodGet)
+			r.HandleFunc("", registerGet("get_reactor_drops", handleGetReactorDrops(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -38,27 +38,29 @@ func ParseReactorId(l logrus.FieldLogger, next ReactorIdHandler) http.HandlerFun
 	}
 }
 
-func handleGetReactorDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			ms, err := drop.NewProcessor(d.Logger(), d.Context(), d.DB()).GetForReactor(reactorId)()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving drops for reactor [%d].", reactorId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+func handleGetReactorDrops(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				ms, err := drop.NewProcessor(d.Logger(), d.Context(), db).GetForReactor(reactorId)()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving drops for reactor [%d].", reactorId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			// Transform to reactor rest model with included drops
-			res, err := Transform(reactorId, ms)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				// Transform to reactor rest model with included drops
+				res, err := Transform(reactorId, ms)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }

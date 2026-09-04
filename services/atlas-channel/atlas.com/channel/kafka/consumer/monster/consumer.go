@@ -9,6 +9,7 @@ import (
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
+	"atlas-channel/monster/bosshp"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -264,7 +265,7 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
+		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
 			return
 		}
@@ -274,6 +275,9 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 
 		// Boss monsters: broadcast HP bar to all characters in the map
 		f := sc.Field(e.MapId, e.Instance)
+		if e.Body.Boss {
+			bossHpBroadcaster(l, ctx, sc, wp, f, e.MonsterId, m.Hp(), m.MaxHp())
+		}
 		routine.Go(l, ctx, func(_ context.Context) {
 			if e.Body.Boss {
 				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
@@ -510,6 +514,26 @@ var monsterStatResetBroadcaster = func(l logrus.FieldLogger, ctx context.Context
 	if err != nil {
 		l.WithError(err).Errorf("Unable to broadcast status effect reset for monster [%d].", uniqueId)
 	}
+}
+
+// bossHpBroadcaster resolves the FR-1 gauge for a monster template and fans the
+// BOSS_HP field effect out to every session in the field. Package-level var so
+// tests can record the broadcast without standing up ForSessionsInMap; the
+// routine.Go is inside so the caller never blocks on the atlas-data lookup.
+var bossHpBroadcaster = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, f field.Model, monsterTemplateId uint32, currentHp uint32, maxHp uint32) {
+	routine.Go(l, ctx, func(_ context.Context) {
+		g, ok, err := bosshp.NewResolver(l, ctx).Resolve(monsterTemplateId, currentHp, maxHp)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to resolve boss HP gauge for monster template [%d] in field map [%d].", monsterTemplateId, f.MapId())
+			return
+		}
+		if !ok {
+			return
+		}
+		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, bosshp.AnnounceOperator(l)(ctx)(wp)(g)); err != nil {
+			l.WithError(err).Errorf("Unable to broadcast boss HP gauge for monster template [%d] in field map [%d].", monsterTemplateId, f.MapId())
+		}
+	})
 }
 
 // statusesWithoutVenom returns a copy of statuses with VENOM removed.

@@ -4,9 +4,11 @@ import (
 	"atlas-saga-orchestrator/character/mock"
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
+	"atlas-saga-orchestrator/data/foothold"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	"atlas-saga-orchestrator/map_command"
+	"atlas-saga-orchestrator/monster"
 	notemock "atlas-saga-orchestrator/note/mock"
 	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
 	"atlas-saga-orchestrator/validation"
@@ -2087,4 +2089,113 @@ func TestHandleClearBackEffect_InvalidPayload(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid payload")
+}
+
+// footholdProcessorMock is a func-field test double for foothold.Processor,
+// used so handleSpawnMonster tests never make an atlas-data HTTP call.
+type footholdProcessorMock struct {
+	getFootholdBelowFunc func(mapId _map.Id, x, y int16) (uint32, error)
+}
+
+func (m *footholdProcessorMock) GetFootholdBelow(mapId _map.Id, x, y int16) (uint32, error) {
+	if m.getFootholdBelowFunc != nil {
+		return m.getFootholdBelowFunc(mapId, x, y)
+	}
+	return 0, nil
+}
+
+var _ foothold.Processor = (*footholdProcessorMock)(nil)
+
+// monsterProcessorMock is a func-field test double for monster.Processor,
+// used to observe the field.Model and team value handleSpawnMonster passes
+// to SpawnMonster without touching the atlas-data/atlas-monster REST layer.
+type monsterProcessorMock struct {
+	spawnMonsterFunc func(f field.Model, monsterId uint32, x, y, fh int16, team int8) error
+}
+
+func (m *monsterProcessorMock) SpawnMonster(f field.Model, monsterId uint32, x, y, fh int16, team int8) error {
+	if m.spawnMonsterFunc != nil {
+		return m.spawnMonsterFunc(f, monsterId, x, y, fh, team)
+	}
+	return nil
+}
+
+var _ monster.Processor = (*monsterProcessorMock)(nil)
+
+// TestHandleSpawnMonsterCarriesInstanceToField pins the FR-16 seam design §6
+// describes: handleSpawnMonster builds the field.Model it hands to
+// monsterP.SpawnMonster from payload.Instance, so a same-map (instanced)
+// spawn resolves to that instance and a cross-map (base-field) spawn
+// resolves to uuid.Nil. It also pins that Team reaches the processor -
+// the map-actions path previously omitted it and sent the zero value.
+func TestHandleSpawnMonsterCarriesInstanceToField(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	tests := []struct {
+		name             string
+		instance         uuid.UUID
+		expectedInstance uuid.UUID
+	}{
+		{
+			name:             "instanced spawn carries the instance through to the field",
+			instance:         uuid.MustParse("44444444-4444-4444-4444-444444444444"),
+			expectedInstance: uuid.MustParse("44444444-4444-4444-4444-444444444444"),
+		},
+		{
+			name:             "base-field spawn resolves to uuid.Nil",
+			instance:         uuid.Nil,
+			expectedInstance: uuid.Nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			saga, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward). // any type; this test never reaches the saga body
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
+
+			payload := SpawnMonsterPayload{
+				WorldId:   0,
+				ChannelId: 1,
+				MapId:     910010000,
+				Instance:  tt.instance,
+				MonsterId: 100100,
+				X:         5,
+				Y:         6,
+				Team:      1,
+				Count:     1,
+			}
+			step := NewStep[any]("spawn-monster-step", Pending, SpawnMonster, payload)
+
+			var capturedField field.Model
+			var capturedTeam int8
+			called := false
+			monsterMock := &monsterProcessorMock{
+				spawnMonsterFunc: func(f field.Model, monsterId uint32, x, y, fh int16, team int8) error {
+					called = true
+					capturedField = f
+					capturedTeam = team
+					return nil
+				},
+			}
+			footholdMock := &footholdProcessorMock{}
+
+			err = NewHandler(logger, ctx).
+				WithFootholdProcessor(footholdMock).
+				WithMonsterProcessor(monsterMock).
+				handleSpawnMonster(saga, step)
+
+			require.NoError(t, err)
+			require.True(t, called)
+			assert.Equal(t, tt.expectedInstance, capturedField.Instance())
+			assert.Equal(t, _map.Id(910010000), capturedField.MapId())
+			assert.Equal(t, int8(1), capturedTeam)
+		})
+	}
 }

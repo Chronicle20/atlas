@@ -507,6 +507,11 @@ location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/environm
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/fields(/.*)?$ {
+  set $u "atlas-maps.${NS_ATLAS_MAPS}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/monsters(/.*)?$ {
   set $u "atlas-monsters.${NS_ATLAS_MONSTERS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

@@ -17,6 +17,7 @@ type Processor interface {
 	GetCharactersInMap(transactionId uuid.UUID, f field.Model) ([]uint32, error)
 	GetCharactersInMapAllInstances(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]uint32, error)
 	GetMapsWithCharacters() []MapKey
+	GetFieldsWithCharacters(t tenant.Model) []FieldOccupancy
 	Enter(transactionId uuid.UUID, f field.Model, characterId uint32)
 	Exit(transactionId uuid.UUID, f field.Model, characterId uint32)
 	ExitAll(characterId uint32) []MapKey
@@ -48,6 +49,10 @@ func (p *ProcessorImpl) GetCharactersInMapAllInstances(_ uuid.UUID, worldId worl
 
 func (p *ProcessorImpl) GetMapsWithCharacters() []MapKey {
 	return getRegistry().GetMapsWithCharacters()
+}
+
+func (p *ProcessorImpl) GetFieldsWithCharacters(t tenant.Model) []FieldOccupancy {
+	return getRegistry().GetFieldsWithCharacters(t)
 }
 
 func (p *ProcessorImpl) Enter(_ uuid.UUID, f field.Model, characterId uint32) {

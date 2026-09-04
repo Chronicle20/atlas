@@ -39,7 +39,7 @@ Represents hair cosmetic data with cash status.
 Represents item name lookup data with item ID and name. Every item string is also classified into a compartment (equipment/use/setup/etc/cash) and subcategory, and — for equipment — a job-class bitmask, at write time (see `item.Classify`).
 
 #### Map
-Represents game maps with name, street name, return map ID, monster rate, event triggers (onFirstUserEnter, onUserEnter), field limits, mob intervals, portals, time mobs, map areas, foothold trees, areas, seats, clock status, everLast status, town status, decay HP, protect item, forced return map ID, boat status, time limits, field type, mob capacity, recovery rate, background types, X limits, reactors, NPCs, and monsters.
+Represents game maps with name, street name, return map ID, monster rate, event triggers (onFirstUserEnter, onUserEnter), field limits, mob intervals, portals, time mobs, map areas, foothold trees, areas, seats, clock status, everLast status, town status, decay HP, protect item, forced return map ID, boat status, time limits, field type, mob capacity, recovery rate, background types, X limits, reactors, NPCs, monsters, and named WZ objects.
 
 ##### Portal (Map sub-model)
 Represents portals within a map with name, target, type, position (x, y), target map ID, and script name.
@@ -52,6 +52,20 @@ Represents monster spawns within a map with template ID, mob time, team, positio
 
 ##### Reactor (Map sub-model)
 Represents reactor spawns within a map with classification, name, position (x, y), delay, and direction.
+
+##### Object (Map sub-model)
+Represents named WZ objects placed on a map: `obj` entries declared per numeric layer imgdir
+(`Map.wz/Map/Map{n}/{id}.img.xml` → layer → `obj`) that carry a non-empty `name` — the only objects
+addressable by `SetObjectState` / `FieldObstacleOnOff`. Has a kind (`ENVIRONMENT` or `OBSTACLE`,
+resolved by looking up the object's `{oS}/{l0}/{l1}/{l2}` reference against the obstacle index built
+once per ingest from `Map.wz/Obj`; `obstacle=1` there means `OBSTACLE`, absence means `ENVIRONMENT`),
+name, object source (the WZ `oS`), layer classification (l0, l1, l2), position (x, y, z), and the
+originating layer number. Identified by composite key `{kind}:{name}` — the same convention
+task-278's environment-object resource uses, so the two collections correlate by id.
+
+**Migration note:** this sub-model was added to the stored Map document after existing tenants were
+already ingested, so a tenant shows no map objects until its MAP data is re-ingested. No migration is
+possible or needed — the data is fully re-derivable from the WZ archive on the next ingest.
 
 ##### Foothold Tree
 Represents the spatial foothold structure for collision detection with quadtree nodes (NorthWest, NorthEast, SouthWest, SouthEast), foothold lists, bounding points, center, depth, and drop position limits.

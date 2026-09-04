@@ -3,6 +3,7 @@ import { useMap } from "@/lib/hooks/api/useMaps";
 import {
   useMapMonsters,
   useMapNpcs,
+  useMapObjects,
   useMapPortals,
   useMapReactors,
 } from "@/lib/hooks/api/useMapEntities";
@@ -12,6 +13,7 @@ import { MapHeader } from "@/components/features/maps/MapHeader";
 import { MapImagePanel } from "@/components/features/maps/MapImagePanel";
 import { MapEntitySummary } from "@/components/features/maps/MapEntitySummary";
 import { ConnectedMapsRow } from "@/components/features/maps/ConnectedMapsRow";
+import { LiveFieldsSection } from "@/components/features/maps/LiveFieldsSection";
 import { MapDetailTabs } from "@/components/features/maps/MapDetailTabs";
 import { HoverHighlightProvider } from "@/components/features/maps/HoverHighlightContext";
 
@@ -24,6 +26,7 @@ export function MapDetailPage() {
   const { data: npcs, error: npcsError } = useMapNpcs(id);
   const { data: monsters, error: monstersError } = useMapMonsters(id);
   const { data: reactors, error: reactorsError } = useMapReactors(id);
+  const { data: objects, error: objectsError } = useMapObjects(id);
 
   if (isLoading) {
     return <PageLoader />;
@@ -74,6 +77,8 @@ export function MapDetailPage() {
 
         <ConnectedMapsRow mapId={id} portals={portals} />
 
+        <LiveFieldsSection mapId={id} />
+
         <MapDetailTabs
           mapId={id}
           portals={portals}
@@ -82,6 +87,8 @@ export function MapDetailPage() {
           monstersError={monstersError}
           reactors={reactors}
           reactorsError={reactorsError}
+          objects={objects}
+          objectsError={objectsError}
         />
       </HoverHighlightProvider>
     </div>

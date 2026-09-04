@@ -1,11 +1,19 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { FieldMonstersTab } from "@/components/features/fields/FieldMonstersTab";
 import type { LiveMonsterData } from "@/services/api/live-monsters.service";
 
-const MAP_ID = 910340000;
+const MOB_NAMES: Record<number, string | undefined> = {
+  100100: "Snail",
+  100101: undefined,
+};
+
+vi.mock("@/lib/hooks/useMobData", () => ({
+  useMobData: (mobId: number) => ({ name: MOB_NAMES[mobId] }),
+}));
 
 function makeMonster(
   id: string,
@@ -17,7 +25,7 @@ function makeMonster(
     attributes: {
       worldId: 0,
       channelId: 1,
-      mapId: MAP_ID,
+      mapId: 910340000,
       instance: "00000000-0000-0000-0000-000000000000",
       monsterId: 100100,
       controlCharacterId: 0,
@@ -46,8 +54,6 @@ const monsters: LiveMonsterData[] = [
     maxHp: 250,
     x: 640,
     y: 120,
-    spawnSourceType: "MAP",
-    spawnSourceId: "spawn-a",
   }),
   makeMonster("9002", {
     monsterId: 100100,
@@ -62,15 +68,13 @@ const monsters: LiveMonsterData[] = [
     maxHp: 500,
     x: -30,
     y: 45,
-    spawnSourceType: "EVENT",
-    spawnSourceId: "boss-1",
   }),
 ];
 
 function renderTab(data: LiveMonsterData[] | undefined, error?: Error) {
   return render(
     <MemoryRouter>
-      <FieldMonstersTab monsters={data} error={error} mapId={MAP_ID} />
+      <FieldMonstersTab monsters={data} error={error} />
     </MemoryRouter>,
   );
 }
@@ -119,30 +123,43 @@ describe("FieldMonstersTab", () => {
     expect(screen.queryByText("State")).not.toBeInTheDocument();
   });
 
-  it("monster links to the definition", () => {
+  it("has no Spawn column", () => {
+    renderTab(monsters);
+
+    expect(
+      screen.queryByRole("columnheader", { name: "Spawn" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the resolved monster name as a badge, linked to the definition", () => {
     renderTab(monsters);
 
     const row = screen.getByText("9001").closest("tr");
     expect(row).not.toBeNull();
     const link = row!.querySelector("a[href='/monsters/100100']");
     expect(link).not.toBeNull();
+    expect(link).toHaveTextContent("Snail");
   });
 
-  it("spawn is blank-tolerant", () => {
+  it("falls back to the raw template id when the name resolver has no name", () => {
     renderTab(monsters);
 
-    const row = screen.getByText("9002").closest("tr");
+    const row = screen.getByText("9003").closest("tr");
     expect(row).not.toBeNull();
-    expect(row).toHaveTextContent("—");
+    const link = row!.querySelector("a[href='/monsters/100101']");
+    expect(link).not.toBeNull();
+    expect(link).toHaveTextContent("100101");
   });
 
-  it("spawn links to the definition tab", () => {
+  it("carries the template id in a copyable tooltip", async () => {
+    const user = userEvent.setup();
     renderTab(monsters);
 
+    expect(screen.queryByText("100100")).not.toBeInTheDocument();
     const row = screen.getByText("9001").closest("tr");
     expect(row).not.toBeNull();
-    const link = row!.querySelector("a[href='/maps/910340000?tab=monsters']");
-    expect(link).not.toBeNull();
+    await user.hover(row!.querySelector("a[href='/monsters/100100']")!);
+    expect(await screen.findByText("100100")).toBeInTheDocument();
   });
 
   it("empty tab", () => {

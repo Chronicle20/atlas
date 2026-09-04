@@ -21,6 +21,7 @@ import { useMap } from "@/lib/hooks/api/useMaps";
 import { useWorlds } from "@/lib/hooks/api/useWorlds";
 import { characterKeys } from "@/lib/hooks/api/useCharacters";
 import {
+  useFieldCharacterDetails,
   useFieldCharacters,
   useLiveMonsters,
 } from "@/lib/hooks/api/useFieldRuntime";
@@ -30,8 +31,12 @@ import {
   useMapPortals,
   useMapReactors,
 } from "@/lib/hooks/api/useMapEntities";
-import type { PositionedMonster } from "@/services/api/map-entities.service";
+import type {
+  PositionedCharacter,
+  PositionedMonster,
+} from "@/services/api/map-entities.service";
 import type { LiveMonsterData } from "@/services/api/live-monsters.service";
+import type { Character } from "@/types/models/character";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +57,31 @@ function toPositionedMonsters(
       y: m.attributes.y,
     },
   }));
+}
+
+// bug-fields-ui-round2 item 4: adapt the batched character-detail results
+// into map pins, mirroring toPositionedMonsters above. A character whose
+// enrichment is still pending or errored is dropped rather than pinned at a
+// fabricated position — the table row degrades to the raw id (unchanged),
+// but the overlay simply has no pin for it yet.
+function toPositionedCharacters(
+  characterIds: string[],
+  details: (Character | undefined)[],
+): PositionedCharacter[] {
+  const positioned: PositionedCharacter[] = [];
+  characterIds.forEach((id, i) => {
+    const character = details[i];
+    if (!character) return;
+    positioned.push({
+      id,
+      attributes: {
+        name: character.attributes.name,
+        x: character.attributes.x,
+        y: character.attributes.y,
+      },
+    });
+  });
+  return positioned;
 }
 
 const DEFAULT_TAB = "characters";
@@ -98,6 +128,12 @@ export function FieldDetailPage() {
   const portalsQuery = useMapPortals(mapId ?? "");
   const npcsQuery = useMapNpcs(mapId ?? "");
   const reactorsQuery = useMapReactors(mapId ?? "");
+
+  // Called unconditionally (hooks rule) ahead of the loading/error early
+  // returns below; `characterIds` is empty until charactersQuery resolves,
+  // so this is a no-op query array until then.
+  const characterIds = charactersQuery.data?.map((c) => c.id) ?? [];
+  const characterDetailQueries = useFieldCharacterDetails(characterIds);
 
   const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh(
     [
@@ -164,7 +200,6 @@ export function FieldDetailPage() {
     );
   }
 
-  const characterIds = charactersQuery.data?.map((c) => c.id) ?? [];
   const characterCount = characterIds.length;
 
   // FR-22: the characters query resolved with no rows — the torn-down
@@ -260,6 +295,10 @@ export function FieldDetailPage() {
           npcs={npcsQuery.data}
           monsters={toPositionedMonsters(monstersQuery.data)}
           reactors={reactorsQuery.data}
+          characters={toPositionedCharacters(
+            characterIds,
+            characterDetailQueries.map((q) => q.data),
+          )}
         />
 
         <FieldTabs
@@ -273,7 +312,6 @@ export function FieldDetailPage() {
             <FieldMonstersTab
               monsters={monstersQuery.data}
               error={monstersQuery.error ?? undefined}
-              mapId={numericMapId}
             />
           }
           objects={

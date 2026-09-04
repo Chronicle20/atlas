@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -8,29 +9,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useMobData } from "@/lib/hooks/useMobData";
 import type { LiveMonsterData } from "@/services/api/live-monsters.service";
 
 export interface FieldMonstersTabProps {
   monsters?: LiveMonsterData[] | undefined;
   error?: Error | undefined;
-  mapId: number;
 }
 
 /**
- * FR-28..FR-31: the field-detail Monsters tab. D13 settled the columns:
- * Object ID, Monster (linked), HP, Position, Spawn — there is no `state`
- * field on the live-monster payload, so FR-31's dead/alive distinction is
- * `hp === 0` styling (a `data-dead` attribute), never a color alone.
- * The spawn column is best-effort (FR-30): `spawnSourceId` is opaque and
- * cannot be correlated to a specific definition spawn row, so it links the
- * map definition's Monsters tab rather than a row.
+ * FR-28..FR-31: the field-detail Monsters tab. Columns are Object ID,
+ * Monster (name badge, linked), HP, Position — there is no `state` field on
+ * the live-monster payload, so FR-31's dead/alive distinction is `hp === 0`
+ * styling (a `data-dead` attribute), never a color alone. There is no Spawn
+ * column: `spawnSourceType`/`spawnSourceId` are opaque provenance fields
+ * (atlas-monsters stores and echoes them but never interprets them), so they
+ * cannot be correlated to a specific definition spawn row.
  */
-export function FieldMonstersTab({
-  monsters,
-  error,
-  mapId,
-}: FieldMonstersTabProps) {
+export function FieldMonstersTab({ monsters, error }: FieldMonstersTabProps) {
   if (error) {
     return (
       <Card>
@@ -73,12 +76,11 @@ export function FieldMonstersTab({
           <TableHead>Monster</TableHead>
           <TableHead>HP</TableHead>
           <TableHead>Position</TableHead>
-          <TableHead>Spawn</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {monsters.map((monster) => (
-          <FieldMonsterRow key={monster.id} monster={monster} mapId={mapId} />
+          <FieldMonsterRow key={monster.id} monster={monster} />
         ))}
       </TableBody>
     </Table>
@@ -87,14 +89,12 @@ export function FieldMonstersTab({
 
 interface FieldMonsterRowProps {
   monster: LiveMonsterData;
-  mapId: number;
 }
 
-function FieldMonsterRow({ monster, mapId }: FieldMonsterRowProps) {
-  const { monsterId, hp, maxHp, x, y, spawnSourceType, spawnSourceId } =
-    monster.attributes;
+function FieldMonsterRow({ monster }: FieldMonsterRowProps) {
+  const { monsterId, hp, maxHp, x, y } = monster.attributes;
   const dead = hp === 0;
-  const hasSpawn = !!spawnSourceType || !!spawnSourceId;
+  const { name } = useMobData(monsterId);
 
   return (
     <TableRow
@@ -103,21 +103,21 @@ function FieldMonsterRow({ monster, mapId }: FieldMonsterRowProps) {
     >
       <TableCell>{monster.id}</TableCell>
       <TableCell>
-        <Link to={`/monsters/${monsterId}`} className="underline">
-          {monsterId}
-        </Link>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link to={`/monsters/${monsterId}`}>
+                <Badge variant="secondary">{name ?? monsterId}</Badge>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent copyable>
+              <p>{monsterId}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </TableCell>
       <TableCell>{`${hp} / ${maxHp}`}</TableCell>
       <TableCell>{`(${x}, ${y})`}</TableCell>
-      <TableCell>
-        {hasSpawn ? (
-          <Link to={`/maps/${mapId}?tab=monsters`} className="underline">
-            {[spawnSourceType, spawnSourceId].filter(Boolean).join(" / ")}
-          </Link>
-        ) : (
-          "—"
-        )}
-      </TableCell>
     </TableRow>
   );
 }

@@ -16,6 +16,7 @@ import type {
   MapNpcData,
   MapPortalData,
   MapReactorData,
+  PositionedCharacter,
   PositionedMonster,
 } from "@/services/api/map-entities.service";
 import { MapImageOverlay } from "./MapImageOverlay";
@@ -36,6 +37,7 @@ interface MapImagePanelProps {
   npcs?: MapNpcData[] | undefined;
   monsters?: PositionedMonster[] | undefined;
   reactors?: MapReactorData[] | undefined;
+  characters?: PositionedCharacter[] | undefined;
 }
 
 const PREVIEW_MAX_HEIGHT = "max-h-[320px]";
@@ -49,6 +51,7 @@ export function MapImagePanel({
   npcs,
   monsters,
   reactors,
+  characters,
 }: MapImagePanelProps) {
   const { activeTenant } = useTenant();
   const { setHovered } = useHoverHighlight();
@@ -153,6 +156,7 @@ export function MapImagePanel({
                   npcs={npcs}
                   monsters={monsters}
                   reactors={reactors}
+                  characters={characters}
                 />
               </div>
             ) : (
@@ -208,6 +212,7 @@ export function MapImagePanel({
                   npcs={npcs}
                   monsters={monsters}
                   reactors={reactors}
+                  characters={characters}
                   size="large"
                 />
               </div>

@@ -93,6 +93,20 @@ export interface PositionedMonster {
   };
 }
 
+// The structural minimum the same overlay needs to place and label a
+// character marker (see MapImageOverlay's CharacterMarker/computeMarkers).
+// `FieldDetailPage` adapts the batched character-detail results
+// (`useFieldCharacterDetails`) to it, dropping characters still pending or
+// errored enrichment rather than fabricating a position for them.
+export interface PositionedCharacter {
+  id: string;
+  attributes: {
+    name: string;
+    x: number;
+    y: number;
+  };
+}
+
 class MapEntitiesService {
   async getPortals(mapId: string): Promise<MapPortalData[]> {
     return api.getList<MapPortalData>(`/api/data/maps/${mapId}/portals`);

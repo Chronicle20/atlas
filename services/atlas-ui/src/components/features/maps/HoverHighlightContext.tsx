@@ -12,6 +12,7 @@ export type HoverTarget =
   | { kind: "monster"; template: number; spawnIndex?: number }
   | { kind: "reactor"; reactorId: string }
   | { kind: "npc"; template: number; spawnIndex?: number }
+  | { kind: "character"; characterId: string }
   | null;
 
 interface HoverHighlightContextValue {
@@ -46,6 +47,11 @@ export function HoverHighlightProvider({ children }: { children: ReactNode }) {
           );
         case "npc":
           return hovered.kind === "npc" && hovered.template === target.template;
+        case "character":
+          return (
+            hovered.kind === "character" &&
+            hovered.characterId === target.characterId
+          );
         default:
           return false;
       }

@@ -101,7 +101,7 @@ export function LiveFieldsSection({ mapId }: LiveFieldsSectionProps) {
                   <TableHead>Channel</TableHead>
                   <TableHead>Instance</TableHead>
                   <TableHead>Characters</TableHead>
-                  <TableHead>Live Monsters</TableHead>
+                  <TableHead>Monsters</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

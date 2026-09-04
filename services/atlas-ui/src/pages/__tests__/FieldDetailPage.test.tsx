@@ -54,9 +54,12 @@ vi.mock("@/lib/hooks/api/useWorlds", () => ({
 
 const useFieldCharactersMock = vi.fn();
 const useLiveMonstersMock = vi.fn();
+const useFieldCharacterDetailsMock = vi.fn();
 vi.mock("@/lib/hooks/api/useFieldRuntime", () => ({
   useFieldCharacters: (...args: unknown[]) => useFieldCharactersMock(...args),
   useLiveMonsters: (...args: unknown[]) => useLiveMonstersMock(...args),
+  useFieldCharacterDetails: (...args: unknown[]) =>
+    useFieldCharacterDetailsMock(...args),
 }));
 
 const useMapObjectsMock = vi.fn();
@@ -185,6 +188,46 @@ function makeLiveMonster(id: string, monsterId: number): LiveMonsterData {
   };
 }
 
+function makeCharacterDetail(
+  id: string,
+  overrides: Partial<{ name: string; x: number; y: number }> = {},
+) {
+  return queryResult({
+    id,
+    attributes: {
+      accountId: 1,
+      worldId: 0,
+      name: overrides.name ?? `Char${id}`,
+      level: 30,
+      experience: 0,
+      gachaponExperience: 0,
+      strength: 4,
+      dexterity: 4,
+      intelligence: 4,
+      luck: 4,
+      hp: 100,
+      maxHp: 100,
+      mp: 50,
+      maxMp: 50,
+      meso: 0,
+      hpMpUsed: 0,
+      jobId: 0,
+      skinColor: 0,
+      gender: 0,
+      fame: 0,
+      hair: 0,
+      face: 0,
+      ap: 0,
+      sp: "",
+      spawnPoint: 0,
+      gm: 0,
+      x: overrides.x ?? 0,
+      y: overrides.y ?? 0,
+      stance: 0,
+    },
+  });
+}
+
 function makePortal(id: string): MapPortalData {
   return {
     id,
@@ -293,6 +336,7 @@ describe("FieldDetailPage", () => {
     useWorldsMock.mockReset();
     useFieldCharactersMock.mockReset();
     useLiveMonstersMock.mockReset();
+    useFieldCharacterDetailsMock.mockReset();
     useMapObjectsMock.mockReset();
     useMapPortalsMock.mockReset();
     useMapNpcsMock.mockReset();
@@ -306,6 +350,10 @@ describe("FieldDetailPage", () => {
       queryResult([makeWorld("1", "Bera"), makeWorld("2", "Kradia")]),
     );
     useFieldCharactersMock.mockReturnValue(queryResult(makeFieldCharacters(2)));
+    useFieldCharacterDetailsMock.mockReturnValue([
+      makeCharacterDetail("100", { name: "Alice", x: 10, y: 20 }),
+      makeCharacterDetail("101", { name: "Bob", x: 30, y: 40 }),
+    ]);
     useLiveMonstersMock.mockReturnValue(
       queryResult([
         makeLiveMonster("m1", 100100),
@@ -438,6 +486,7 @@ describe("FieldDetailPage", () => {
       npcs?: MapNpcData[];
       reactors?: MapReactorData[];
       monsters?: { id: string; attributes: { template: number } }[];
+      characters?: { id: string; attributes: { name: string } }[];
     };
 
     expect(props.portals).toEqual([makePortal("p1")]);
@@ -449,6 +498,38 @@ describe("FieldDetailPage", () => {
       { id: "m1", attributes: { template: 100100, x: 0, y: 0 } },
       { id: "m2", attributes: { template: 100100, x: 0, y: 0 } },
       { id: "m3", attributes: { template: 100101, x: 0, y: 0 } },
+    ]);
+  });
+
+  it("bug-fields-ui-round2 item 4: passes batch-enriched character pins to MapImagePanel", () => {
+    renderPage();
+
+    expect(mapImagePanelPropsSpy).toHaveBeenCalled();
+    const props = mapImagePanelPropsSpy.mock.calls[0]?.[0] as {
+      characters?: {
+        id: string;
+        attributes: { name: string; x: number; y: number };
+      }[];
+    };
+
+    expect(props.characters).toEqual([
+      { id: "100", attributes: { name: "Alice", x: 10, y: 20 } },
+      { id: "101", attributes: { name: "Bob", x: 30, y: 40 } },
+    ]);
+  });
+
+  it("bug-fields-ui-round2 item 4: drops a character pin whose enrichment hasn't resolved yet", () => {
+    useFieldCharacterDetailsMock.mockReturnValue([
+      makeCharacterDetail("100", { name: "Alice", x: 10, y: 20 }),
+      queryResult(undefined, { isLoading: true }),
+    ]);
+    renderPage();
+
+    const props = mapImagePanelPropsSpy.mock.calls[0]?.[0] as {
+      characters?: { id: string }[];
+    };
+    expect(props.characters).toEqual([
+      { id: "100", attributes: { name: "Alice", x: 10, y: 20 } },
     ]);
   });
 

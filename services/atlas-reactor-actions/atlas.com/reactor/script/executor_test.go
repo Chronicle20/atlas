@@ -2,6 +2,7 @@ package script
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -114,21 +115,27 @@ func TestExecuteMoveEnvironment(t *testing.T) {
 			},
 		},
 		{
+			// FR-15: error text now uses the shared ops.ParamError format;
+			// pass/fail outcome is unchanged.
 			name:      "missing name errors",
 			params:    map[string]string{"value": "3"},
-			wantErr:   "move_environment operation missing name parameter",
+			wantErr:   `move_environment: parameter "name" is required`,
 			wantSagas: 0,
 		},
 		{
+			// FR-15: error text now uses the shared ops.ParamError format;
+			// pass/fail outcome is unchanged.
 			name:      "blank name errors",
 			params:    map[string]string{"name": "", "value": "3"},
-			wantErr:   "move_environment operation missing name parameter",
+			wantErr:   `move_environment: parameter "name" is required`,
 			wantSagas: 0,
 		},
 		{
+			// FR-15: error text now uses the shared ops.ParamError format;
+			// pass/fail outcome is unchanged.
 			name:      "missing value errors",
 			params:    map[string]string{"name": "gate01"},
-			wantErr:   "move_environment operation missing value parameter",
+			wantErr:   `move_environment: parameter "value" is required`,
 			wantSagas: 0,
 		},
 		{
@@ -157,9 +164,11 @@ func TestExecuteMoveEnvironment(t *testing.T) {
 			},
 		},
 		{
+			// FR-15: error text now uses the shared ops.ParamError format;
+			// pass/fail outcome is unchanged.
 			name:      "bad kind errors",
 			params:    map[string]string{"name": "gate01", "value": "3", "kind": "GATE"},
-			wantErr:   "unrecognized object kind [GATE]",
+			wantErr:   `move_environment: parameter "kind" value "GATE": unrecognized object kind [GATE]`,
 			wantSagas: 0,
 		},
 	}
@@ -294,5 +303,139 @@ func TestExecuteMoveEnvironment_NoLongerReturnsNilStub(t *testing.T) {
 	}
 	if len(d.created) != 1 {
 		t.Fatalf("created sagas = %d, want exactly 1", len(d.created))
+	}
+}
+
+// TestExecuteSpawnMonsterRejectsBadNumerics verifies that spawn_monster's
+// numeric parameters (x, y, count) are hard errors when unparsable — the
+// previous local parsing silently kept the default (FR-15) — and that valid
+// defaults still use the reactor's position.
+func TestExecuteSpawnMonsterRejectsBadNumerics(t *testing.T) {
+	tests := []struct {
+		name       string
+		params     map[string]string
+		wantErrHas []string
+		checkFn    func(t *testing.T, p saga.SpawnMonsterPayload)
+	}{
+		{
+			name:       "bad x errors",
+			params:     map[string]string{"monsterId": "100100", "x": "abc"},
+			wantErrHas: []string{"spawn_monster", `"x"`, `"abc"`},
+		},
+		{
+			name:       "bad y errors",
+			params:     map[string]string{"monsterId": "100100", "y": "abc"},
+			wantErrHas: []string{"spawn_monster", `"y"`, `"abc"`},
+		},
+		{
+			name:       "bad count errors",
+			params:     map[string]string{"monsterId": "100100", "count": "abc"},
+			wantErrHas: []string{"spawn_monster", `"count"`, `"abc"`},
+		},
+		{
+			name:   "good defaults still use reactor position",
+			params: map[string]string{"monsterId": "100100"},
+			checkFn: func(t *testing.T, p saga.SpawnMonsterPayload) {
+				rc := testReactorContext()
+				if p.X != rc.X {
+					t.Errorf("X = %v, want %v", p.X, rc.X)
+				}
+				if p.Y != rc.Y {
+					t.Errorf("Y = %v, want %v", p.Y, rc.Y)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, d := newTestExecutor(t)
+			rc := testReactorContext()
+			op := newOperation(t, "spawn_monster", tt.params)
+
+			err := e.ExecuteOperation(rc, 1234, op)
+
+			if tt.wantErrHas != nil {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				for _, substr := range tt.wantErrHas {
+					if !strings.Contains(err.Error(), substr) {
+						t.Errorf("error %q does not contain %q", err.Error(), substr)
+					}
+				}
+				if len(d.created) != 0 {
+					t.Fatalf("created sagas = %d, want 0", len(d.created))
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("expected nil error, got %v", err)
+			}
+			if len(d.created) != 1 {
+				t.Fatalf("created sagas = %d, want 1", len(d.created))
+			}
+			s := d.created[0]
+			if len(s.Steps) != 1 {
+				t.Fatalf("steps = %d, want 1", len(s.Steps))
+			}
+			p, ok := s.Steps[0].Payload.(saga.SpawnMonsterPayload)
+			if !ok {
+				t.Fatalf("payload type = %T, want SpawnMonsterPayload", s.Steps[0].Payload)
+			}
+			if tt.checkFn != nil {
+				tt.checkFn(t, p)
+			}
+		})
+	}
+}
+
+// TestExecuteDropMessageAcceptsMessageTypeAlias verifies that drop_message
+// accepts messageType (FR-13; reactor-actions previously read only `type`)
+// and that the numeric `type` alias still maps to its string form.
+func TestExecuteDropMessageAcceptsMessageTypeAlias(t *testing.T) {
+	tests := []struct {
+		name            string
+		params          map[string]string
+		wantMessageType string
+	}{
+		{
+			name:            "messageType key",
+			params:          map[string]string{"message": "hi", "messageType": "NOTICE"},
+			wantMessageType: "NOTICE",
+		},
+		{
+			name:            "numeric type alias",
+			params:          map[string]string{"message": "hi", "type": "5"},
+			wantMessageType: "PINK_TEXT",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, d := newTestExecutor(t)
+			rc := testReactorContext()
+			op := newOperation(t, "drop_message", tt.params)
+
+			err := e.ExecuteOperation(rc, 1234, op)
+			if err != nil {
+				t.Fatalf("expected nil error, got %v", err)
+			}
+			if len(d.created) != 1 {
+				t.Fatalf("created sagas = %d, want 1", len(d.created))
+			}
+			s := d.created[0]
+			if len(s.Steps) != 1 {
+				t.Fatalf("steps = %d, want 1", len(s.Steps))
+			}
+			p, ok := s.Steps[0].Payload.(saga.SendMessagePayload)
+			if !ok {
+				t.Fatalf("payload type = %T, want SendMessagePayload", s.Steps[0].Payload)
+			}
+			if p.MessageType != tt.wantMessageType {
+				t.Errorf("MessageType = %q, want %q", p.MessageType, tt.wantMessageType)
+			}
+		})
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/ops"
 )
 
 // ReactorContext holds context information for reactor operation execution
@@ -186,61 +187,24 @@ func (e *OperationExecutor) executeDropItems(rc ReactorContext, characterId uint
 
 // executeSpawnMonster spawns monsters at the reactor location
 func (e *OperationExecutor) executeSpawnMonster(rc ReactorContext, characterId uint32, op operation.Model) error {
-	params := op.Params()
-
-	monsterIdStr, ok := params["monsterId"]
-	if !ok {
-		return fmt.Errorf("spawn_monster operation missing monsterId parameter")
-	}
-
-	monsterId, err := strconv.ParseUint(monsterIdStr, 10, 32)
+	t := ops.NewTargetBuilder(rc.Field).SetPosition(rc.X, rc.Y).Build()
+	st, err := ops.SpawnMonster(op.Params(), ops.DirectResolver{}, t, characterId)
 	if err != nil {
-		return fmt.Errorf("invalid monsterId [%s]: %w", monsterIdStr, err)
+		return err
+	}
+	p, err := ops.PayloadOf[saga.SpawnMonsterPayload](st)
+	if err != nil {
+		return err
 	}
 
-	count := 1
-	if countStr, ok := params["count"]; ok {
-		if c, err := strconv.Atoi(countStr); err == nil {
-			count = c
-		}
-	}
+	e.l.Debugf("Spawning [%d] monster(s) [%d] at reactor [%s] location (%d, %d)", p.Count, p.MonsterId, rc.Classification, p.X, p.Y)
 
-	// Allow x/y override from params, default to reactor position
-	x := rc.X
-	y := rc.Y
-	if xStr, ok := params["x"]; ok {
-		if parsed, err := strconv.ParseInt(xStr, 10, 16); err == nil {
-			x = int16(parsed)
-		}
-	}
-	if yStr, ok := params["y"]; ok {
-		if parsed, err := strconv.ParseInt(yStr, 10, 16); err == nil {
-			y = int16(parsed)
-		}
-	}
-
-	e.l.Debugf("Spawning [%d] monster(s) [%d] at reactor [%s] location (%d, %d)", count, monsterId, rc.Classification, x, y)
-
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("reactor-action-spawn").
-		AddStep(
-			fmt.Sprintf("spawn-%s-%d", rc.Classification, monsterId),
-			saga.Pending,
-			saga.SpawnMonster,
-			saga.SpawnMonsterPayload{
-				CharacterId: characterId,
-				WorldId:     rc.Field.WorldId(),
-				ChannelId:   rc.Field.ChannelId(),
-				MapId:       rc.Field.MapId(),
-				Instance:    rc.Field.Instance(),
-				MonsterId:   uint32(monsterId),
-				X:           x,
-				Y:           y,
-				Team:        0,
-				Count:       count,
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("reactor-action-spawn"),
+		fmt.Sprintf("spawn-%s-%d", rc.Classification, p.MonsterId),
+	).Build()
 
 	return e.sagaP.Create(s)
 }
@@ -282,46 +246,20 @@ func (e *OperationExecutor) executeWeakenAreaBoss(rc ReactorContext, characterId
 // Parameters: name (required, non-blank), value (required, uint32), kind
 // (optional, ENVIRONMENT or OBSTACLE; blank defaults to ENVIRONMENT).
 func (e *OperationExecutor) executeMoveEnvironment(rc ReactorContext, characterId uint32, op operation.Model) error {
-	params := op.Params()
-
-	name, ok := params["name"]
-	if !ok || strings.TrimSpace(name) == "" {
-		return fmt.Errorf("move_environment operation missing name parameter")
-	}
-
-	valueStr, ok := params["value"]
-	if !ok || strings.TrimSpace(valueStr) == "" {
-		return fmt.Errorf("move_environment operation missing value parameter")
-	}
-	value, err := strconv.ParseUint(strings.TrimSpace(valueStr), 10, 32)
-	if err != nil {
-		return fmt.Errorf("move_environment operation has non-numeric value parameter [%s]: %w", valueStr, err)
-	}
-
-	kind, err := field.ParseObjectKind(params["kind"])
+	t := ops.NewTargetBuilder(rc.Field).SetPosition(rc.X, rc.Y).Build()
+	st, err := ops.MoveEnvironment(op.Params(), ops.DirectResolver{}, t, characterId)
 	if err != nil {
 		return err
 	}
 
-	e.l.Debugf("Moving environment object [%s] kind [%s] to state [%d] at reactor [%s].", name, kind, value, rc.Classification)
+	e.l.Debugf("Moving environment object [%s] at reactor [%s].", op.Params()["name"], rc.Classification)
 
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("reactor-action-move-environment").
-		AddStep(
-			fmt.Sprintf("move-environment-%s-%s", rc.Classification, name),
-			saga.Pending,
-			saga.MoveEnvironment,
-			saga.MoveEnvironmentPayload{
-				WorldId:   rc.Field.WorldId(),
-				ChannelId: rc.Field.ChannelId(),
-				MapId:     rc.Field.MapId(),
-				Instance:  rc.Field.Instance(),
-				Kind:      kind,
-				Name:      name,
-				State:     uint32(value),
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("reactor-action-move-environment"),
+		fmt.Sprintf("move-environment-%s-%s", rc.Classification, op.Params()["name"]),
+	).Build()
 
 	return e.sagaP.Create(s)
 }
@@ -329,22 +267,20 @@ func (e *OperationExecutor) executeMoveEnvironment(rc ReactorContext, characterI
 // executeResetEnvironment clears every tracked field object and restores the
 // field's objects to their default state. Takes no parameters.
 func (e *OperationExecutor) executeResetEnvironment(rc ReactorContext, characterId uint32, op operation.Model) error {
+	t := ops.NewTargetBuilder(rc.Field).SetPosition(rc.X, rc.Y).Build()
+	st, err := ops.ResetEnvironment(op.Params(), ops.DirectResolver{}, t, characterId)
+	if err != nil {
+		return err
+	}
+
 	e.l.Debugf("Resetting environment objects in map [%d] at reactor [%s].", rc.Field.MapId(), rc.Classification)
 
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("reactor-action-reset-environment").
-		AddStep(
-			fmt.Sprintf("reset-environment-%s", rc.Classification),
-			saga.Pending,
-			saga.ResetEnvironment,
-			saga.ResetEnvironmentPayload{
-				WorldId:   rc.Field.WorldId(),
-				ChannelId: rc.Field.ChannelId(),
-				MapId:     rc.Field.MapId(),
-				Instance:  rc.Field.Instance(),
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("reactor-action-reset-environment"),
+		fmt.Sprintf("reset-environment-%s", rc.Classification),
+	).Build()
 
 	return e.sagaP.Create(s)
 }
@@ -363,43 +299,20 @@ func (e *OperationExecutor) executeKillAllMonsters(rc ReactorContext, characterI
 
 // executeDropMessage sends a message to the player
 func (e *OperationExecutor) executeDropMessage(rc ReactorContext, characterId uint32, op operation.Model) error {
-	params := op.Params()
-
-	message, ok := params["message"]
-	if !ok {
-		return fmt.Errorf("drop_message operation missing message parameter")
+	t := ops.NewTargetBuilder(rc.Field).SetPosition(rc.X, rc.Y).Build()
+	st, err := ops.SendMessage(op.Params(), ops.DirectResolver{}, t, characterId)
+	if err != nil {
+		return err
 	}
 
-	messageType := "PINK_TEXT"
-	if mt, ok := params["type"]; ok {
-		// Convert numeric type to string type
-		switch mt {
-		case "5":
-			messageType = "PINK_TEXT"
-		case "6":
-			messageType = "BLUE_TEXT"
-		default:
-			messageType = mt
-		}
-	}
+	e.l.Debugf("Sending message to character [%d].", characterId)
 
-	e.l.Debugf("Sending message to character [%d]: %s", characterId, message)
-
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("reactor-action-message").
-		AddStep(
-			fmt.Sprintf("message-%d", characterId),
-			saga.Pending,
-			saga.SendMessage,
-			saga.SendMessagePayload{
-				CharacterId: characterId,
-				WorldId:     rc.Field.WorldId(),
-				ChannelId:   rc.Field.ChannelId(),
-				MessageType: messageType,
-				Message:     message,
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("reactor-action-message"),
+		fmt.Sprintf("message-%d", characterId),
+	).Build()
 
 	return e.sagaP.Create(s)
 }
@@ -538,19 +451,20 @@ func (e *OperationExecutor) executeStageClearAttempt(rc ReactorContext, characte
 		return fmt.Errorf("failed to get PQ instance for character %d: %w", characterId, err)
 	}
 
+	t := ops.NewTargetBuilder(rc.Field).SetPosition(rc.X, rc.Y).Build()
+	st, err := ops.StageClearAttemptPq(t, characterId, pqInstance.Id)
+	if err != nil {
+		return err
+	}
+
 	e.l.Debugf("Attempting stage clear: instance=%s, reactor=%s, character=%d", pqInstance.Id, rc.Classification, characterId)
 
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("reactor-action-stage-clear").
-		AddStep(
-			fmt.Sprintf("stage-clear-%s-%d", rc.Classification, characterId),
-			saga.Pending,
-			saga.StageClearAttemptPq,
-			saga.StageClearAttemptPqPayload{
-				InstanceId: pqInstance.Id,
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("reactor-action-stage-clear"),
+		fmt.Sprintf("stage-clear-%s-%d", rc.Classification, characterId),
+	).Build()
 
 	return e.sagaP.Create(s)
 }

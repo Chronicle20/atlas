@@ -19,145 +19,116 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerHandler := rest.RegisterHandler(l)(db)(si)
-			registerInputHandler := rest.RegisterInputHandler[RestModel](l)(db)(si)
+			registerHandler := rest.RegisterHandler(l)(si)
+			registerInputHandler := rest.RegisterInputHandler[RestModel](l)(si)
 
 			// Register handlers - specific routes before parameterized routes
-			router.HandleFunc("/reactors/actions", registerHandler("get_all_scripts", GetAllScriptsHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/reactors/actions", registerInputHandler("create_script", CreateScriptHandler)).Methods(http.MethodPost)
-			router.HandleFunc("/reactors/actions/{scriptId}", registerHandler("get_script", GetScriptHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/reactors/actions/{scriptId}", registerInputHandler("update_script", UpdateScriptHandler)).Methods(http.MethodPatch)
-			router.HandleFunc("/reactors/actions/{scriptId}", registerHandler("delete_script", DeleteScriptHandler)).Methods(http.MethodDelete)
-			router.HandleFunc("/reactors/{reactorId}/actions", registerHandler("get_scripts_by_reactor", GetScriptsByReactorHandler)).Methods(http.MethodGet)
+			router.HandleFunc("/reactors/actions", registerHandler("get_all_scripts", GetAllScriptsHandler(db))).Methods(http.MethodGet)
+			router.HandleFunc("/reactors/actions", registerInputHandler("create_script", CreateScriptHandler(db))).Methods(http.MethodPost)
+			router.HandleFunc("/reactors/actions/{scriptId}", registerHandler("get_script", GetScriptHandler(db))).Methods(http.MethodGet)
+			router.HandleFunc("/reactors/actions/{scriptId}", registerInputHandler("update_script", UpdateScriptHandler(db))).Methods(http.MethodPatch)
+			router.HandleFunc("/reactors/actions/{scriptId}", registerHandler("delete_script", DeleteScriptHandler(db))).Methods(http.MethodDelete)
+			router.HandleFunc("/reactors/{reactorId}/actions", registerHandler("get_scripts_by_reactor", GetScriptsByReactorHandler(db))).Methods(http.MethodGet)
 		}
 	}
 }
 
 // GetAllScriptsHandler handles GET /reactors/actions
-func GetAllScriptsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
-		if err != nil {
-			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-			return
-		}
+func GetAllScriptsHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
 
-		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page)()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Retrieving scripts.")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+			paged, err := NewProcessor(d.Logger(), d.Context(), db).AllProvider(page)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving scripts.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 
-		rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
+			rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
 
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
+		}
 	}
 }
 
 // GetScriptHandler handles GET /reactor-actions/{scriptId}
-func GetScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByIdProvider(scriptId)()
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				d.Logger().WithError(err).Errorf("Script not found.")
-				w.WriteHeader(http.StatusNotFound)
-				return
+func GetScriptHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).ByIdProvider(scriptId)()
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					d.Logger().WithError(err).Errorf("Script not found.")
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving script.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 			}
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving script.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			rm, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
-}
-
-// GetScriptsByReactorHandler handles GET /reactor-actions/reactor/{reactorId}
-func GetScriptsByReactorHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseReactorId(d.Logger(), func(reactorId string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByReactorIdProvider(reactorId)()
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				d.Logger().WithError(err).Errorf("Script not found for reactor [%s].", reactorId)
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving script for reactor [%s].", reactorId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			rm, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
-}
-
-// CreateScriptHandler handles POST /reactor-actions
-func CreateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Extract domain model from REST model
-		m, err := Extract(rm)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Extracting domain model from REST model.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		// Create script
-		createdModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating script.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		// Transform back to REST model
-		createdRm, err := Transform(createdModel)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		// Return created script
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		w.WriteHeader(http.StatusCreated)
-		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(createdRm)
+		})
 	}
 }
 
-// UpdateScriptHandler handles PATCH /reactor-actions/{scriptId}
-func UpdateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
-	return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
+// GetScriptsByReactorHandler handles GET /reactor-actions/reactor/{reactorId}
+func GetScriptsByReactorHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseReactorId(d.Logger(), func(reactorId string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).ByReactorIdProvider(reactorId)()
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					d.Logger().WithError(err).Errorf("Script not found for reactor [%s].", reactorId)
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving script for reactor [%s].", reactorId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// CreateScriptHandler handles POST /reactor-actions
+func CreateScriptHandler(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			// Extract domain model from REST model
 			m, err := Extract(rm)
@@ -167,44 +138,85 @@ func UpdateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm R
 				return
 			}
 
-			// Update script
-			updatedModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(scriptId, m)
+			// Create script
+			createdModel, err := NewProcessor(d.Logger(), d.Context(), db).Create(m)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Updating script.")
+				d.Logger().WithError(err).Errorf("Creating script.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			// Transform back to REST model
-			updatedRm, err := Transform(updatedModel)
+			createdRm, err := Transform(createdModel)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			// Return updated script
+			// Return created script
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(updatedRm)
+			w.WriteHeader(http.StatusCreated)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(createdRm)
 		}
-	})
+	}
+}
+
+// UpdateScriptHandler handles PATCH /reactor-actions/{scriptId}
+func UpdateScriptHandler(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
+		return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				// Extract domain model from REST model
+				m, err := Extract(rm)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Extracting domain model from REST model.")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				// Update script
+				updatedModel, err := NewProcessor(d.Logger(), d.Context(), db).Update(scriptId, m)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Updating script.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				// Transform back to REST model
+				updatedRm, err := Transform(updatedModel)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				// Return updated script
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(updatedRm)
+			}
+		})
+	}
 }
 
 // DeleteScriptHandler handles DELETE /reactor-actions/{scriptId}
-func DeleteScriptHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			// Delete script
-			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(scriptId)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Deleting script.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+func DeleteScriptHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				// Delete script
+				err := NewProcessor(d.Logger(), d.Context(), db).Delete(scriptId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Deleting script.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			// Return success
-			w.WriteHeader(http.StatusNoContent)
-		}
-	})
+				// Return success
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
+	}
 }

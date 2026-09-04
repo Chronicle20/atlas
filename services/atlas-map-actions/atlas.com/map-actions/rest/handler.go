@@ -25,19 +25,8 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterInputHandler[M](l)
 }
 
-type ScriptIdHandler func(scriptId uuid.UUID) http.HandlerFunc
-
-func ParseScriptId(l logrus.FieldLogger, next ScriptIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		scriptIdStr := mux.Vars(r)["scriptId"]
-		scriptId, err := uuid.Parse(scriptIdStr)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse scriptId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(scriptId)(w, r)
-	}
+func ParseScriptId(l logrus.FieldLogger, next func(scriptId uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "scriptId", next)
 }
 
 type ScriptNameHandler func(scriptName string) http.HandlerFunc

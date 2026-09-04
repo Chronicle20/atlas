@@ -31,40 +31,42 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) func(worldIdOf
 	return func(db *gorm.DB) func(worldIdOf WorldIdOf) server.RouteInitializer {
 		return func(worldIdOf WorldIdOf) server.RouteInitializer {
 			return func(router *mux.Router, l logrus.FieldLogger) {
-				registerGet := rest.RegisterHandler(l)(db)(si)
+				registerGet := rest.RegisterHandler(l)(si)
 				r := router.PathPrefix("/characters/{characterId}/teleport-rock-maps").Subrouter()
-				r.HandleFunc("", registerGet("get_teleport_rock_maps", handleGetTeleportRockMaps)).Methods(http.MethodGet)
-				r.HandleFunc("", rest.RegisterInputHandler[AddMapInputRestModel](l)(db)(si)("add_teleport_rock_map", handleAddTeleportRockMap(worldIdOf))).Methods(http.MethodPost)
-				r.HandleFunc("/{list}/{mapId}", registerGet("remove_teleport_rock_map", handleRemoveTeleportRockMap(worldIdOf))).Methods(http.MethodDelete)
+				r.HandleFunc("", registerGet("get_teleport_rock_maps", handleGetTeleportRockMaps(db))).Methods(http.MethodGet)
+				r.HandleFunc("", rest.RegisterInputHandler[AddMapInputRestModel](l)(si)("add_teleport_rock_map", handleAddTeleportRockMap(db, worldIdOf))).Methods(http.MethodPost)
+				r.HandleFunc("/{list}/{mapId}", registerGet("remove_teleport_rock_map", handleRemoveTeleportRockMap(db, worldIdOf))).Methods(http.MethodDelete)
 			}
 		}
 	}
 }
 
-func handleGetTeleportRockMaps(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByCharacterId(characterId)
-			if err != nil {
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+func handleGetTeleportRockMaps(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(characterId)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			res, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				res, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }
 
-func handleAddTeleportRockMap(worldIdOf WorldIdOf) rest.InputHandler[AddMapInputRestModel] {
+func handleAddTeleportRockMap(db *gorm.DB, worldIdOf WorldIdOf) rest.InputHandler[AddMapInputRestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input AddMapInputRestModel) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +80,7 @@ func handleAddTeleportRockMap(worldIdOf WorldIdOf) rest.InputHandler[AddMapInput
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).
+				m, err := NewProcessor(d.Logger(), d.Context(), db).
 					Add(uuid.New(), worldId, characterId, _map.Id(input.MapId), vip)
 				if err != nil {
 					if s := statusForError(err); s != 0 {
@@ -94,7 +96,7 @@ func handleAddTeleportRockMap(worldIdOf WorldIdOf) rest.InputHandler[AddMapInput
 	}
 }
 
-func handleRemoveTeleportRockMap(worldIdOf WorldIdOf) rest.GetHandler {
+func handleRemoveTeleportRockMap(db *gorm.DB, worldIdOf WorldIdOf) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +115,7 @@ func handleRemoveTeleportRockMap(worldIdOf WorldIdOf) rest.GetHandler {
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).
+				m, err := NewProcessor(d.Logger(), d.Context(), db).
 					Remove(uuid.New(), worldId, characterId, _map.Id(mapId), vip)
 				if err != nil {
 					if s := statusForError(err); s != 0 {

@@ -1,139 +1,41 @@
 // Package rest provides HTTP handler registration utilities for the NPC shops service.
 //
-// This service uses a DB-parameterized variant of RegisterHandler and RegisterInputHandler
-// because handlers require database access through processors. This pattern follows the
-// atlas-rest convention for services with database dependencies, using curried function
-// composition to inject the database connection.
-//
-// The handler registration wraps server.RetrieveSpan and server.ParseTenant from atlas-rest
-// to provide consistent tracing and multi-tenancy support.
-//
-// For services without database requirements, see atlas-parties/rest/handler.go as a reference
-// for the simpler variant without the db parameter.
+// HandlerDependency, HandlerContext, GetHandler, InputHandler, RegisterHandler, and
+// RegisterInputHandler are thin aliases over the shared libs/atlas-rest/server
+// scaffolding, which wraps server.RetrieveSpan and server.ParseTenant to provide
+// consistent tracing and multi-tenancy support. Handlers that need database access
+// take a *gorm.DB parameter and close over it; resource registrars pass db per
+// call site rather than currying it through the registration functions.
 package rest
 
 import (
-	"context"
-	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
-type HandlerDependency struct {
-	l   logrus.FieldLogger
-	db  *gorm.DB
-	ctx context.Context
+type HandlerDependency = server.HandlerDependency
+
+type HandlerContext = server.HandlerContext
+
+type GetHandler = server.GetHandler
+
+type InputHandler[M any] = server.InputHandler[M]
+
+var RegisterHandler = server.RegisterHandler
+
+func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
+	return server.RegisterInputHandler[M](l)
 }
 
-func (h HandlerDependency) Logger() logrus.FieldLogger {
-	return h.l
+func ParseNpcId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "npcId", next)
 }
 
-func (h HandlerDependency) DB() *gorm.DB {
-	return h.db
-}
-
-func (h HandlerDependency) Context() context.Context {
-	return h.ctx
-}
-
-type HandlerContext struct {
-	si jsonapi.ServerInformation
-}
-
-func (h HandlerContext) ServerInformation() jsonapi.ServerInformation {
-	return h.si
-}
-
-type GetHandler func(d *HandlerDependency, c *HandlerContext) http.HandlerFunc
-
-type InputHandler[M any] func(d *HandlerDependency, c *HandlerContext, model M) http.HandlerFunc
-
-func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandler[M]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var model M
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		err = jsonapi.Unmarshal(body, &model)
-		if err != nil {
-			d.l.WithError(err).Errorln("Deserializing input", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(d, c, model)(w, r)
-	}
-}
-
-func RegisterHandler(l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-	return func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-		return func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-			return func(handlerName string, handler GetHandler) http.HandlerFunc {
-				return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-					fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-					return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-						return handler(&HandlerDependency{l: tl, db: db, ctx: tctx}, &HandlerContext{si: si})
-					})
-				})
-			}
-		}
-	}
-}
-
-func RegisterInputHandler[M any](l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-	return func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-		return func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-			return func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-				return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-					fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-					return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-						return ParseInput[M](&HandlerDependency{l: tl, db: db, ctx: tctx}, &HandlerContext{si: si}, handler)
-					})
-				})
-			}
-		}
-	}
-}
-
-type NpcIdHandler func(npcId uint32) http.HandlerFunc
-
-func ParseNpcId(l logrus.FieldLogger, next NpcIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		npcId, err := strconv.Atoi(vars["npcId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing npcId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(npcId))(w, r)
-	}
-}
-
-type CommodityIdHandler func(commodityId uuid.UUID) http.HandlerFunc
-
-func ParseCommodityId(l logrus.FieldLogger, next CommodityIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		commodityId, err := uuid.Parse(vars["commodityId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing commodityId as uuid")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(commodityId)(w, r)
-	}
+func ParseCommodityId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "commodityId", next)
 }

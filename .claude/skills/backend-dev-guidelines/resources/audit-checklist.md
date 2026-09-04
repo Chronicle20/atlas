@@ -61,7 +61,7 @@ So:
 | **Channel wire values** (DOM-25) | Diff touches `services/atlas-channel` or `libs/atlas-packet`, or a domain service emits a byte a client interprets | [anti-patterns.md](anti-patterns.md#audit-verification--dom-25-client-interpreted-wire-values) |
 | **Resilience** (DOM-27, 28) | DB-backed service handlers, or `model.Decorator` / enrichment paths changed | [patterns-resilience.md](patterns-resilience.md#audit-verification--dom-27-dom-28) |
 | **External clients** (EXT-01..04) | Changed package calls `requests.RootUrl` / `requests.GetRequest[T]` / `requests.PostRequest[T]` for another atlas service | [cross-service-implementation.md](cross-service-implementation.md#audit-verification--ext-0104) |
-| **Scaffolding** (SCAFFOLD-01..09) | Diff adds a `services/atlas-<svc>/` directory, registers a new atlas-channel `Writer`/`Handler`, or changes `deploy/shared/routes.conf` | [scaffolding-checklist.md](scaffolding-checklist.md#audit-verification--scaffold-0109) |
+| **Scaffolding** (SCAFFOLD-01..10) | Diff adds a `services/atlas-<svc>/` directory, registers a new atlas-channel `Writer`/`Handler`, or changes `deploy/shared/routes.conf` | [scaffolding-checklist.md](scaffolding-checklist.md#audit-verification--scaffold-0110) |
 | **Security** (SEC-01..04) | Service handles authentication, authorization, tokens, redirects, or secrets | [patterns-security.md](patterns-security.md) |
 
 ## Foundational guidelines — no numbered rules

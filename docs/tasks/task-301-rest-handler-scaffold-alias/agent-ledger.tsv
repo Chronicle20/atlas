@@ -1,0 +1,100 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-04T12:27:40Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	9d5b7b8	-	-	-	-
+2026-09-04T12:29:11Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	9d5b7b8	APPROVED	no	-	-
+2026-09-04T12:30:22Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	cce9a5c	-	-	-	-
+2026-09-04T12:32:14Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	cce9a5c	APPROVED	no	-	-
+2026-09-04T12:32:15Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	e023ad2	-	-	-	-
+2026-09-04T12:35:26Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	e023ad2	CHANGES_REQUIRED	no	-	-
+2026-09-04T12:35:26Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	1531c1a	-	-	-	-
+2026-09-04T12:37:32Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	1531c1a	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-4-atlas-rankings.md	-
+2026-09-04T12:37:33Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-04T12:41:14Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	f3a14e6	-	-	-	-
+2026-09-04T12:41:18Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	f3a14e6	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-5-atlas-drop-information.md	-
+2026-09-04T12:41:21Z	agent	Tasks 1-4	task-verifier	haiku	-	-	-	-	ERROR	1531c1a	-	-	.superpowers/sdd/plan/gates/gate-1-4c.log	-
+2026-09-04T12:42:34Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	3ae29d5	-	-	-	-
+2026-09-04T12:43:30Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	3ae29d5	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-6-atlas-pets.md	-
+2026-09-04T12:45:44Z	agent	Tasks 1-6	task-verifier	haiku	-	-	-	-	DONE	3ae29d5	PASS	no	.superpowers/sdd/plan/gates/gate-1-6.log	-
+2026-09-04T12:48:46Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE	b96fa96	-	-	-	-
+2026-09-04T12:49:23Z	agent	Task 7	task-verifier	haiku	-	-	-	-	DONE	b96fa96	PASS	no	.superpowers/sdd/plan/gates/gate-7.log	-
+2026-09-04T12:50:20Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	b96fa96	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-7-atlas-quest.md	-
+2026-09-04T12:50:23Z	handoff	after Task 7	-	-	-	-	-	-	-	b96fa96	-	-	-	-
+2026-09-04T12:54:01Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-04T12:58:16Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE	97bad8d5	-	-	-	-
+2026-09-04T12:58:20Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-04T12:59:08Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	97bad8d5	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-8-atlas-parcel.md	-
+2026-09-04T13:01:34Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DONE	6fd988e9	-	-	-	-
+2026-09-04T13:02:23Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	6fd988e9	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-9-atlas-notes.md	-
+2026-09-04T13:03:19Z	agent	Tasks 8-9	task-verifier	haiku	-	-	-	-	DONE	6fd988e9	PASS	no	.superpowers/sdd/plan/gates/gate-8-9.log	-
+2026-09-04T13:03:23Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-04T13:07:13Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE	61b0bd6	-	-	-	-
+2026-09-04T13:07:16Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-04T13:08:19Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	61b0bd6	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-10-atlas-map-actions.md	-
+2026-09-04T13:11:29Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DONE	b0834c9	-	-	-	-
+2026-09-04T13:12:55Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	DONE	b0834c9	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-11-atlas-portal-actions.md	-
+2026-09-04T13:13:51Z	agent	Tasks 10-11	task-verifier	haiku	-	-	-	-	DONE	b0834c9	PASS	no	.superpowers/sdd/plan/gates/gate-10-11.log	-
+2026-09-04T13:14:13Z	handoff	after Task 11	-	-	-	-	-	-	-	b0834c9	-	-	-	-
+2026-09-04T13:17:49Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	DONE	d1b421b	-	-	-	-
+2026-09-04T13:18:33Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	DISPATCHED	d1b421b	-	-	-	-
+2026-09-04T13:18:34Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-04T13:19:37Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	DONE	d1b421b	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-12-atlas-reactor-actions.md	-
+2026-09-04T13:21:55Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	DONE	06ae056	-	-	-	-
+2026-09-04T13:22:27Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	DISPATCHED	06ae056	-	-	-	-
+2026-09-04T13:22:28Z	agent	Tasks 12-13	task-verifier	haiku	-	-	-	-	DISPATCHED	06ae056	-	-	-	-
+2026-09-04T13:23:49Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	DONE	06ae056	APPROVED_WITH_FINDINGS	yes	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-13-atlas-account.md	-
+2026-09-04T13:26:56Z	agent	Tasks 12-13	task-verifier	haiku	-	-	-	-	DONE	06ae056	PASS	no	.superpowers/sdd/plan/gates/gate-12-13.log	-
+2026-09-04T13:26:58Z	agent	Task 14	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-04T13:32:26Z	agent	Task 14	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	33c2273	-	-	-	-
+2026-09-04T13:34:31Z	agent	Task 14 fix round	task-implementer	sonnet	-	-	-	-	DONE	c63ded9	-	-	-	-
+2026-09-04T13:34:31Z	agent	Task 14	task-verifier	haiku	-	-	-	-	DISPATCHED	c63ded9	-	-	-	-
+2026-09-04T13:34:32Z	agent	Task 14	task-reviewer	sonnet	-	-	-	-	DISPATCHED	c63ded9	-	-	-	-
+2026-09-04T13:35:43Z	agent	Task 14	task-verifier	haiku	-	-	-	-	DONE	c63ded9	PASS	no	.superpowers/sdd/plan/gates/gate-14.log	-
+2026-09-04T13:36:31Z	agent	Task 14	task-reviewer	sonnet	-	-	-	-	DONE	c63ded9	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-14-atlas-party-quests.md	-
+2026-09-04T13:36:31Z	handoff	after Task 14	-	-	-	-	-	-	-	c63ded9	-	-	-	-
+2026-09-04T14:21:36Z	agent	Task 15	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:26:38Z	agent	Task 15	task-implementer	sonnet	-	-	-	-	DONE	aa33395f4	-	-	-	-
+2026-09-04T14:26:39Z	agent	Task 15	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:26:39Z	agent	Task 16	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:27:48Z	agent	Task 15	task-reviewer	sonnet	-	-	-	-	DONE	aa33395f4	APPROVED	no	-	-
+2026-09-04T14:30:49Z	agent	Task 16	task-implementer	sonnet	-	-	-	-	DONE	4db1055c7	-	-	-	-
+2026-09-04T14:30:50Z	agent	Task 16	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:30:50Z	agent	Tasks 15-16	task-verifier	haiku	-	-	-	-	dispatched	4db1055c7	-	-	-	-
+2026-09-04T14:33:15Z	agent	Tasks 15-16	task-verifier	haiku	-	-	-	-	PASS	4db1055c7	-	-	-	-
+2026-09-04T14:33:15Z	agent	Task 16	task-reviewer	sonnet	-	-	-	-	DONE	4db1055c7	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-04T14:33:15Z	agent	Task 17	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:38:12Z	agent	Task 17	task-implementer	sonnet	-	-	-	-	DONE	9f88119f8	-	-	-	-
+2026-09-04T14:38:14Z	agent	Task 17	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:38:17Z	agent	Task 18	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:39:58Z	agent	Task 17	task-reviewer	sonnet	-	-	-	-	DONE	9f88119f8	APPROVED	no	-	-
+2026-09-04T14:45:26Z	agent	Task 18	task-implementer	sonnet	-	-	-	-	DONE	b73dc8b50	-	-	-	-
+2026-09-04T14:45:28Z	agent	Task 18 fix round 1	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:47:21Z	agent	Task 18 fix round 1	task-implementer	sonnet	-	-	-	-	DONE	cc0c55dcd	-	-	-	-
+2026-09-04T14:47:28Z	agent	Tasks 17-18	task-verifier	haiku	-	-	-	-	dispatched	cc0c55dcd	-	-	-	-
+2026-09-04T14:47:34Z	agent	Task 18	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T14:49:27Z	agent	Task 18	task-reviewer	sonnet	-	-	-	-	DONE	cc0c55dcd	APPROVED	no	-	-
+2026-09-04T14:58:20Z	agent	Tasks 17-18	task-verifier	haiku	-	-	-	-	ERROR	cc0c55dcd	-	-	-	-
+2026-09-04T15:09:57Z	agent	Tasks 17-18	task-verifier	haiku	-	-	-	-	PASS	cc0c55dcd	-	-	-	-
+2026-09-04T15:10:05Z	handoff	after Task 18	-	-	-	-	-	-	done	cc0c55dcd	-	-	-	44000
+2026-09-04T15:31:28Z	agent	Task 19	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T15:38:57Z	agent	Task 19	task-implementer	sonnet	-	-	-	-	DONE	0fd55ce60	-	-	-	-
+2026-09-04T15:38:57Z	agent	Task 19	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T15:38:57Z	agent	Task 20	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T15:40:15Z	agent	Task 19	task-reviewer	sonnet	-	-	-	-	DONE	0fd55ce60	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-19-atlas-mts.md	-
+2026-09-04T15:49:11Z	agent	Task 20	task-implementer	sonnet	-	-	-	-	STALLED	-	-	-	-	-
+2026-09-04T15:49:11Z	agent	Task 20 continuation	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T16:05:10Z	agent	Task 20 continuation	task-implementer	sonnet	-	-	-	-	DONE	06bb4733f	-	-	-	-
+2026-09-04T16:05:10Z	agent	Task 20	task-reviewer	sonnet	-	-	-	-	DONE	06bb4733f	APPROVED	no	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-20-atlas-character.md	-
+2026-09-04T16:06:48Z	agent	Task 21	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T16:09:34Z	agent	Task 21	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	3871257	-	-	-	-
+2026-09-04T16:09:35Z	agent	Task 21 fix round 1	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T16:09:54Z	agent	Task 21 fix round 1	task-implementer	sonnet	-	-	-	-	DONE	b86769b	-	-	-	-
+2026-09-04T16:13:28Z	agent	Task 21	task-reviewer	sonnet	-	-	-	-	DONE	b86769b	APPROVED_WITH_FINDINGS	yes	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-21-docs.md	-
+2026-09-04T16:13:29Z	agent	Task 21 fix round 2	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T16:42:29Z	agent	Task 22	task-verifier	haiku	-	-	-	-	DONE	78efed404	FAIL	-	-	-
+2026-09-04T16:42:30Z	agent	Task 22 lint fix	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T16:44:28Z	agent	Task 22 lint fix	task-implementer	sonnet	-	-	-	-	DONE	c70eed4	-	-	-	-
+2026-09-04T16:44:28Z	agent	Task 22 re-gate	task-verifier	haiku	-	-	-	-	dispatched	c70eed4	-	-	-	-
+2026-09-04T16:51:28Z	agent	Task 22 re-gate	task-verifier	haiku	-	-	-	-	DONE	b5b3e840c	PASS	-	-	-
+2026-09-04T22:55:53Z	agent	Review 1-11	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	5cca6611d	APPROVED	no	-	-
+2026-09-04T22:55:55Z	agent	Review 12-22	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	5cca6611d	CHANGES_REQUIRED	yes	-	-
+2026-09-04T22:55:57Z	agent	Backend audit	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	5cca6611d	APPROVED	no	-	-
+2026-09-04T22:56:00Z	agent	Task 18 fix	task-implementer	sonnet	-	-	-	-	DONE	1c88163e5	-	-	-	-

@@ -87,7 +87,30 @@ vars {
 
 Optionally add sample request `.bru` files for the service's endpoints.
 
-## 4. Ingress Route (REST services only)
+## 4. REST Handler Scaffolding (REST services only)
+**File:** `services/atlas-<service>/atlas.com/<svc>/rest/handler.go`
+
+`rest/handler.go` declares only aliases over `libs/atlas-rest/server` — copy the
+pattern from `services/atlas-mts/atlas.com/mts/rest/handler.go`, not from
+an older service:
+
+- `HandlerDependency`, `HandlerContext`, and `GetHandler` alias the shared
+  scaffolding types.
+- `InputHandler[M]` is added only if the service has an input handler.
+- `var RegisterHandler = server.RegisterHandler`, and, where needed, the
+  generic `RegisterInputHandler` wrapper.
+- Do not declare a local `ParseInput` wrapper — no service calls one.
+
+A DB-backed service closes its `*gorm.DB` over the handler constructor —
+`func handleX(db *gorm.DB) rest.GetHandler` — and never puts it on
+`HandlerDependency`. Reference:
+`services/atlas-configurations/atlas.com/configurations/environments/resource.go:45`.
+
+Service-specific path-parameter helpers stay in the service's `rest` package
+and delegate to `server.ParseIntId` / `server.ParseUUIDId` /
+`server.ParseStringId` when the path segment is a plain int, UUID, or string.
+
+## 5. Ingress Route (REST services only)
 **File:** `deploy/shared/routes.conf`
 
 Add a location block **alphabetically** in the shared routes file (single-sourced for K8s and compose):
@@ -102,7 +125,7 @@ After editing, run `tools/gen-routes.sh` to regenerate
 commit both files. (`deploy/scripts/sync-k8s-ingress-routes.sh` is **dead** — it
 targets a `deploy/k8s/ingress.yaml` that no longer exists. Do not run it.)
 
-## 5. Tenant Opcode Template (atlas-channel packet writers/handlers only)
+## 6. Tenant Opcode Template (atlas-channel packet writers/handlers only)
 **File:** `services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json`
 
 Atlas tenants are seeded from these JSON templates the first time they are created. If your service introduces new packet writers or recv handlers in `atlas-channel` (i.e., the change touches `libs/atlas-packet/character/{clientbound,serverbound}/<feature>/` or registers new `Writer`/`Handler` constants in `services/atlas-channel/atlas.com/channel/main.go`), seed the corresponding opcode rows in **every targeted template** so fresh tenants get the mappings without manual operator action.
@@ -128,7 +151,7 @@ If the feature targets a single client version (e.g. v83-only), only that templa
 
 Operators creating a tenant from a snapshot taken before this change still need the rows applied via `atlas-tenants` admin; the seed templates only affect tenants instantiated post-merge.
 
-## 6. Post-Scaffold Verification
+## 7. Post-Scaffold Verification
 After scaffolding is complete:
 1. Run `tools/service-registration-guard.sh` (machine-checks every registration list; also a CI job), then the remaining commands in `docs/adding-a-new-service.md` §Verification (overlay renders, ghcr tag existence, bake build)
 2. `/service-doc` — generates/verifies service documentation
@@ -142,12 +165,12 @@ After scaffolding is complete:
 - Entity structs should use `TenantId` (not `TenantID`) for field naming consistency
 
 ## Conditional Steps
-- Steps 3 and 4 only apply to services that expose REST endpoints. Kafka-only services skip Bruno and ingress.
-- Step 5 only applies when the change introduces new atlas-channel packet writers or recv handlers. Pure-REST services and Kafka-only services skip the opcode template seed.
+- Steps 3, 4, and 5 only apply to services that expose REST endpoints. Kafka-only services skip Bruno, REST handler scaffolding, and ingress.
+- Step 6 only applies when the change introduces new atlas-channel packet writers or recv handlers. Pure-REST services and Kafka-only services skip the opcode template seed.
 
 ---
 
-## Audit verification — SCAFFOLD-01..09
+## Audit verification — SCAFFOLD-01..10
 
 Rule IDs are defined in [audit-checklist.md](audit-checklist.md). These checks
 trigger when the diff:
@@ -173,3 +196,4 @@ this section is the audit's verification form of it.
 | SCAFFOLD-07 | For each new `Writer` / `Handler` constant, grep its name in the targeted `services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json`. | Each new `Writer` appears as a `"writer": "<Name>"` row in `writers[]`; each new recv `Handler` appears as a `"handler": "<Name>"` row in `handlers[]`. The targeted client version(s) must match what the design doc declared. Pure-REST and Kafka-only services skip this check. |
 | SCAFFOLD-08 | `test -d services/atlas-<service>/.bruno && test -f services/atlas-<service>/.bruno/bruno.json` | Directory exists with `bruno.json`, `collection.bru`, and an `environments/` directory. Skip for Kafka-only services. |
 | SCAFFOLD-09 | `tools/service-registration-guard.sh` | Exit 0. This structurally checks the enumerations that fail *silently* when missed: both overlays' `images:` pins, the main `ATLAS_ENV` and db-name-suffix patches, `ATLAS_DB_NAMES`, `tools/db-bootstrap.sh`, base kustomization membership, and atlas-env key parity between base and overlays. Exit 2 means "cannot verify" (fail-closed) — record that as a FAIL, not a PASS. |
+| SCAFFOLD-10 | `grep -c '= server.HandlerDependency' services/atlas-<service>/atlas.com/<svc>/rest/handler.go`, `grep -c 'type HandlerDependency struct' services/atlas-<service>/atlas.com/<svc>/rest/handler.go`, `grep -c 'gorm.io/gorm' services/atlas-<service>/atlas.com/<svc>/rest/handler.go`, and `grep -rc 'd\.DB()' services/atlas-<service>/` | First is ≥1; the other three are 0. `rest/handler.go` aliases the shared scaffolding (`libs/atlas-rest/server`) and declares no scaffolding of its own. A DB-backed service closes its `*gorm.DB` over the handler constructor — `func handleX(db *gorm.DB) rest.GetHandler` — and never puts it on `HandlerDependency`. Skip for Kafka-only services (no `rest/` package). |

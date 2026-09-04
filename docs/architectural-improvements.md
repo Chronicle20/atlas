@@ -356,11 +356,25 @@ Consider direct service-to-service communication for internal calls, or deploy t
 
 ## Low: Duplicated Database/REST Boilerplate
 
-### Problem
+### Status: RESOLVED
+
+`database/connection.go` and `rest/request.go` were already consolidated into shared libraries fleet-wide; `rest/handler.go` was the last of the three duplicated files and has now been converted across every remaining service. All three are gone: `find services -path '*/rest/request.go'`, `find services -path '*/database/connection.go'`, and `grep -rl 'type HandlerDependency struct' --include=handler.go services` all return no output.
+
+**Implemented:**
+- 19 services converted to alias form over `libs/atlas-rest/server` (`rest/handler.go` now declares only aliases — `HandlerDependency`, `HandlerContext`, `GetHandler`, `RegisterHandler`, and, where needed, `InputHandler[M]` / `RegisterInputHandler`)
+- 2 dead handler packages deleted (`atlas-fame`, `atlas-events`)
+- `*gorm.DB` moved off `HandlerDependency` into the handler-constructor closure at 175 call sites
+- Two intentional behavior deltas: `ParseEnvironment` is now part of the shared parsing chain, and malformed-body requests now return 400s carrying a JSON:API errors document
+
+**Files:**
+- `libs/atlas-rest/server` — shared `HandlerDependency`, `HandlerContext`, `GetHandler`, `InputHandler[M]`, `RegisterHandler`, `RegisterInputHandler`, and `ParseIntId` / `ParseUUIDId` / `ParseStringId`
+- `services/atlas-<service>/atlas.com/<svc>/rest/handler.go` — per-service alias file, 19 services converted (pattern reference: `services/atlas-guilds/atlas.com/guilds/rest/handler.go`)
+
+### Original Problem
 
 `database/connection.go`, `rest/handler.go`, and `rest/request.go` are copy-pasted across 25+ services with minor variations.
 
-### Recommendation
+### Original Recommendation
 
 Extract into shared libraries. The `Provider` pattern already abstracts data access, so the refactor surface is bounded.
 

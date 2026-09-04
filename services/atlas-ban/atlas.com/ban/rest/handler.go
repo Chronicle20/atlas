@@ -1,142 +1,37 @@
 package rest
 
 import (
-	"context"
-	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
-type HandlerDependency struct {
-	l   logrus.FieldLogger
-	db  *gorm.DB
-	ctx context.Context
+type HandlerDependency = server.HandlerDependency
+
+type HandlerContext = server.HandlerContext
+
+type GetHandler = server.GetHandler
+
+type InputHandler[M any] = server.InputHandler[M]
+
+var RegisterHandler = server.RegisterHandler
+
+func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
+	return server.RegisterInputHandler[M](l)
 }
 
-func (h HandlerDependency) Logger() logrus.FieldLogger {
-	return h.l
+func ParseBanId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "banId", next)
 }
 
-func (h HandlerDependency) DB() *gorm.DB {
-	return h.db
+func ParseAccountId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "accountId", next)
 }
 
-func (h HandlerDependency) Context() context.Context {
-	return h.ctx
-}
-
-type HandlerContext struct {
-	si jsonapi.ServerInformation
-}
-
-func (h HandlerContext) ServerInformation() jsonapi.ServerInformation {
-	return h.si
-}
-
-type GetHandler func(d *HandlerDependency, c *HandlerContext) http.HandlerFunc
-
-type InputHandler[M any] func(d *HandlerDependency, c *HandlerContext, model M) http.HandlerFunc
-
-func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandler[M]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var model M
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		err = jsonapi.Unmarshal(body, &model)
-		if err != nil {
-			d.l.WithError(err).Errorln("Deserializing input", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(d, c, model)(w, r)
-	}
-}
-
-func RegisterHandler(l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-	return func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-		return func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-			return func(handlerName string, handler GetHandler) http.HandlerFunc {
-				return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-					fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-					return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-						return handler(&HandlerDependency{l: tl, db: db, ctx: tctx}, &HandlerContext{si: si})
-					})
-				})
-			}
-		}
-	}
-}
-
-func RegisterInputHandler[M any](l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-	return func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-		return func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-			return func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-				return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-					fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-					return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-						return ParseInput[M](&HandlerDependency{l: tl, db: db, ctx: tctx}, &HandlerContext{si: si}, handler)
-					})
-				})
-			}
-		}
-	}
-}
-
-type BanIdHandler func(id uint32) http.HandlerFunc
-
-func ParseBanId(l logrus.FieldLogger, next BanIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		value, err := strconv.Atoi(vars["banId"])
-		if err != nil {
-			l.WithError(err).Errorln("Error parsing id as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(value))(w, r)
-	}
-}
-
-type AccountIdHandler func(id uint32) http.HandlerFunc
-
-func ParseAccountId(l logrus.FieldLogger, next AccountIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		value, err := strconv.Atoi(vars["accountId"])
-		if err != nil {
-			l.WithError(err).Errorln("Error parsing id as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(value))(w, r)
-	}
-}
-
-type ReportIdHandler func(id uuid.UUID) http.HandlerFunc
-
-func ParseReportId(l logrus.FieldLogger, next ReportIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		id, err := uuid.Parse(vars["reportId"])
-		if err != nil {
-			l.WithError(err).Errorln("Error parsing reportId as uuid")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(id)(w, r)
-	}
+func ParseReportId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "reportId", next)
 }

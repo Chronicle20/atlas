@@ -19,133 +19,143 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerHandler := rest.RegisterHandler(l)(db)(si)
+			registerHandler := rest.RegisterHandler(l)(si)
 
-			router.HandleFunc("/party-quests/instances", registerHandler("get_all_instances", GetAllInstancesHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/party-quests/instances/{instanceId}", registerHandler("get_instance", GetInstanceHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/party-quests/instances/character/{characterId}", registerHandler("get_instance_by_character", GetInstanceByCharacterHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/party-quests/instances/character/{characterId}/timer", registerHandler("get_timer_by_character", GetTimerByCharacterHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/party-quests/instances/field/{fieldInstance}", registerHandler("get_instance_by_field", GetInstanceByFieldHandler)).Methods(http.MethodGet)
+			router.HandleFunc("/party-quests/instances", registerHandler("get_all_instances", GetAllInstancesHandler(db))).Methods(http.MethodGet)
+			router.HandleFunc("/party-quests/instances/{instanceId}", registerHandler("get_instance", GetInstanceHandler(db))).Methods(http.MethodGet)
+			router.HandleFunc("/party-quests/instances/character/{characterId}", registerHandler("get_instance_by_character", GetInstanceByCharacterHandler(db))).Methods(http.MethodGet)
+			router.HandleFunc("/party-quests/instances/character/{characterId}/timer", registerHandler("get_timer_by_character", GetTimerByCharacterHandler(db))).Methods(http.MethodGet)
+			router.HandleFunc("/party-quests/instances/field/{fieldInstance}", registerHandler("get_instance_by_field", GetInstanceByFieldHandler(db))).Methods(http.MethodGet)
 		}
 	}
 }
 
-func GetAllInstancesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
-		if err != nil {
-			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-			return
+func GetAllInstancesHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			instances := NewProcessor(d.Logger(), d.Context(), db).GetAll()
+
+			sorted := make([]Model, len(instances))
+			copy(sorted, instances)
+			sort.Slice(sorted, func(i, j int) bool {
+				return sorted[i].Id().String() < sorted[j].Id().String()
+			})
+			paged := paginate.Slice(sorted, page)
+
+			rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 		}
+	}
+}
 
-		instances := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll()
+func GetInstanceHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).GetById(instanceId)
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 
-		sorted := make([]Model, len(instances))
-		copy(sorted, instances)
-		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].Id().String() < sorted[j].Id().String()
+				rm, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
 		})
-		paged := paginate.Slice(sorted, page)
-
-		rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 	}
 }
 
-func GetInstanceHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(instanceId)
-			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
+func GetInstanceByCharacterHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacter(characterId)
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 
-			rm, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				rm, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
 }
 
-func GetInstanceByCharacterHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByCharacter(characterId)
-			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
+func GetInstanceByFieldHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseFieldInstance(d.Logger(), func(fieldInstance uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).GetByFieldInstance(fieldInstance)
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 
-			rm, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				rm, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
 }
 
-func GetInstanceByFieldHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseFieldInstance(d.Logger(), func(fieldInstance uuid.UUID) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByFieldInstance(fieldInstance)
-			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
+func GetTimerByCharacterHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				duration, err := NewProcessor(d.Logger(), d.Context(), db).GetTimerByCharacter(characterId)
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				rm := TimerRestModel{
+					Id:       characterId,
+					Duration: duration,
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[TimerRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 			}
-
-			rm, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
-}
-
-func GetTimerByCharacterHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			duration, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetTimerByCharacter(characterId)
-			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			rm := TimerRestModel{
-				Id:       characterId,
-				Duration: duration,
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[TimerRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
+		})
+	}
 }

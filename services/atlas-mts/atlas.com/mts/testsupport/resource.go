@@ -65,14 +65,14 @@ const (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerSeed := rest.RegisterInputHandler[SeedRestModel](l)(db)(si)
+			registerSeed := rest.RegisterInputHandler[SeedRestModel](l)(si)
 
 			r := router.PathPrefix("/test").Subrouter()
-			r.HandleFunc("/listings/seed", registerSeed("test_seed_listings", handleSeedListings)).Methods(http.MethodPost)
+			r.HandleFunc("/listings/seed", registerSeed("test_seed_listings", handleSeedListings(db))).Methods(http.MethodPost)
 
-			registerGet := rest.RegisterHandler(l)(db)(si)
-			r.HandleFunc("/listings/{listingId}/expire", registerGet("test_expire_listing", handleExpireListing)).Methods(http.MethodPost)
-			r.HandleFunc("/sweep", registerGet("test_run_sweep", handleRunSweep)).Methods(http.MethodPost)
+			registerGet := rest.RegisterHandler(l)(si)
+			r.HandleFunc("/listings/{listingId}/expire", registerGet("test_expire_listing", handleExpireListing(db))).Methods(http.MethodPost)
+			r.HandleFunc("/sweep", registerGet("test_run_sweep", handleRunSweep(db))).Methods(http.MethodPost)
 
 			registerSimulateRoutes(r, l, db, si, producer.ProviderImpl(l))
 		}
@@ -83,10 +83,10 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 // Split out so simulate_test.go can mount the identical wiring with a
 // recording producer.
 func registerSimulateRoutes(r *mux.Router, l logrus.FieldLogger, db *gorm.DB, si jsonapi.ServerInformation, pf providerFn) {
-	registerPurchase := rest.RegisterInputHandler[PurchaseRestModel](l)(db)(si)
-	registerBid := rest.RegisterInputHandler[BidRestModel](l)(db)(si)
-	r.HandleFunc("/purchases", registerPurchase("test_simulate_purchase", handleSimulatePurchase(pf))).Methods(http.MethodPost)
-	r.HandleFunc("/bids", registerBid("test_simulate_bid", handleSimulateBid(pf))).Methods(http.MethodPost)
+	registerPurchase := rest.RegisterInputHandler[PurchaseRestModel](l)(si)
+	registerBid := rest.RegisterInputHandler[BidRestModel](l)(si)
+	r.HandleFunc("/purchases", registerPurchase("test_simulate_purchase", handleSimulatePurchase(db, pf))).Methods(http.MethodPost)
+	r.HandleFunc("/bids", registerBid("test_simulate_bid", handleSimulateBid(db, pf))).Methods(http.MethodPost)
 }
 
 // muxRouterWithSimulateRoutes builds a standalone router holding only the
@@ -115,14 +115,14 @@ func (testsupportServerInfo) GetPrefix() string  { return "/api" }
 // economically/semantically by the production consumer the same way a
 // real client's would be, so rejecting it structurally here would diverge
 // from that fidelity contract.
-func handleSimulatePurchase(pf providerFn) func(d *rest.HandlerDependency, c *rest.HandlerContext, rm PurchaseRestModel) http.HandlerFunc {
+func handleSimulatePurchase(db *gorm.DB, pf providerFn) func(d *rest.HandlerDependency, c *rest.HandlerContext, rm PurchaseRestModel) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm PurchaseRestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if rm.ListingId == "" || rm.BuyerId == 0 || rm.BuyerAccountId == 0 {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			m, err := listing.NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(rm.ListingId)
+			m, err := listing.NewProcessor(d.Logger(), d.Context(), db).GetById(rm.ListingId)
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
@@ -152,14 +152,14 @@ func handleSimulatePurchase(pf providerFn) func(d *rest.HandlerDependency, c *re
 // handleSimulateBid emits the channel-identical PLACE_BID command. Structural
 // pre-checks only (active auction) — increment/escrow validation stays in the
 // production consumer, which emits BID_FAILED as for a real client.
-func handleSimulateBid(pf providerFn) func(d *rest.HandlerDependency, c *rest.HandlerContext, rm BidRestModel) http.HandlerFunc {
+func handleSimulateBid(db *gorm.DB, pf providerFn) func(d *rest.HandlerDependency, c *rest.HandlerContext, rm BidRestModel) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm BidRestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if rm.ListingId == "" || rm.BidderId == 0 || rm.BidderAccountId == 0 || rm.Amount == 0 {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			m, err := listing.NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(rm.ListingId)
+			m, err := listing.NewProcessor(d.Logger(), d.Context(), db).GetById(rm.ListingId)
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
@@ -205,175 +205,177 @@ func effectiveSellerAccountId(entryAccountId uint32) uint32 {
 // the template id) so seeded rows land under the right client tabs. The item
 // snapshot is synthetic — see design-e2e-testing.md §4.3 for the fidelity
 // ledger.
-func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm SeedRestModel) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// The response echoes the just-created batch (never more than
-		// seedMaxListings=200 rows), so a single page.PageSize=paginate.MaxPageSize
-		// (250) page always holds every row; this satisfies the repo-wide
-		// pagination convention (task-117) without pretending a one-shot creation
-		// result is a queryable, growing collection.
-		page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
-		if perr != nil {
-			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-			return
-		}
-
-		t := tenant.MustFromContext(d.Context())
-
-		// First pass: validate every entry (saleType, templateId) and compute
-		// the total-vs-cap BEFORE creating anything, so any 400 happens with
-		// zero rows created — never a partial commit across entries. Also collect
-		// the distinct seller accounts so their cash-shop wallets can be ensured
-		// before seeding (else the buy's seller-points credit fails and no seeded
-		// listing is buyable).
-		total := 0
-		sellerAccounts := make(map[uint32]bool)
-		for _, e := range rm.Entries {
-			st := listing.SaleType(e.SaleType)
-			if st != listing.SaleTypeFixed && st != listing.SaleTypeAuction {
-				d.Logger().Errorf("Seed entry has invalid saleType [%s].", e.SaleType)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			if e.TemplateId == 0 {
-				d.Logger().Errorf("Seed entry missing templateId.")
-				w.WriteHeader(http.StatusBadRequest)
+func handleSeedListings(db *gorm.DB) rest.InputHandler[SeedRestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm SeedRestModel) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			// The response echoes the just-created batch (never more than
+			// seedMaxListings=200 rows), so a single page.PageSize=paginate.MaxPageSize
+			// (250) page always holds every row; this satisfies the repo-wide
+			// pagination convention (task-117) without pretending a one-shot creation
+			// result is a queryable, growing collection.
+			page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
 				return
 			}
 
-			count := e.Count
-			if count <= 0 {
-				count = 1
-			}
-			total += count
-			sellerAccounts[effectiveSellerAccountId(e.SellerAccountId)] = true
-		}
-		if total == 0 || total > seedMaxListings {
-			d.Logger().Errorf("Seed request wants [%d] listings (allowed 1..%d).", total, seedMaxListings)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+			t := tenant.MustFromContext(d.Context())
 
-		// Ensure each seller account has a cash-shop wallet BEFORE seeding, so
-		// every seeded listing is immediately buyable (the sale credits the
-		// seller's points; account 0 / a wallet-less account fails the settle).
-		// A wallet that already exists is left as-is. Failing here (rather than
-		// seeding un-buyable listings) keeps the endpoint honest.
-		walletP := wallet.NewProcessor(d.Logger(), d.Context())
-		for acct := range sellerAccounts {
-			if err := walletP.EnsureWallet(acct, 0, 0, 0); err != nil {
-				d.Logger().WithError(err).Errorf("Ensuring cash-shop wallet for seed seller account [%d]; seeded listings would not be buyable.", acct)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-		}
-
-		// Second pass: everything below is validated, so all remaining errors
-		// are unexpected (build/create) failures — create inside a single
-		// transaction so any of them rolls back the whole seed (500, zero rows).
-		db := d.DB().WithContext(d.Context())
-		created := make([]listing.Model, 0, total)
-		txErr := db.Transaction(func(tx *gorm.DB) error {
+			// First pass: validate every entry (saleType, templateId) and compute
+			// the total-vs-cap BEFORE creating anything, so any 400 happens with
+			// zero rows created — never a partial commit across entries. Also collect
+			// the distinct seller accounts so their cash-shop wallets can be ensured
+			// before seeding (else the buy's seller-points credit fails and no seeded
+			// listing is buyable).
+			total := 0
+			sellerAccounts := make(map[uint32]bool)
 			for _, e := range rm.Entries {
 				st := listing.SaleType(e.SaleType)
+				if st != listing.SaleTypeFixed && st != listing.SaleTypeAuction {
+					d.Logger().Errorf("Seed entry has invalid saleType [%s].", e.SaleType)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if e.TemplateId == 0 {
+					d.Logger().Errorf("Seed entry missing templateId.")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
 
 				count := e.Count
 				if count <= 0 {
 					count = 1
 				}
-				quantity := e.Quantity
-				if quantity == 0 {
-					quantity = 1
-				}
-				listValue := e.ListValue
-				if listValue == 0 {
-					listValue = defaultSeedListValue
-				}
-				sellerId := e.SellerId
-				if sellerId == 0 {
-					sellerId = defaultSeedSellerId
-				}
-				sellerAccountId := effectiveSellerAccountId(e.SellerAccountId)
-				sellerName := e.SellerName
-				if sellerName == "" {
-					sellerName = defaultSeedSellerName
-				}
+				total += count
+				sellerAccounts[effectiveSellerAccountId(e.SellerAccountId)] = true
+			}
+			if total == 0 || total > seedMaxListings {
+				d.Logger().Errorf("Seed request wants [%d] listings (allowed 1..%d).", total, seedMaxListings)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 
-				// Category mirrors the custody consumer's derivation: the section tab
-				// from the sale type ("1" For Sale, "3" Auction), the item sub-tab
-				// from the template id's inventory type.
-				category := "1"
-				if st == listing.SaleTypeAuction {
-					category = "3"
-				}
-				subCategory := ""
-				if it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId)); ok {
-					subCategory = strconv.Itoa(int(it))
-				}
-
-				for i := 0; i < count; i++ {
-					b := listing.NewBuilder(t.Id(), world.Id(rm.WorldId), sellerId).
-						SetSellerAccountId(sellerAccountId).
-						SetSellerName(sellerName).
-						SetSaleType(st).
-						SetState(listing.StateActive).
-						SetTemplateId(e.TemplateId).
-						SetQuantity(quantity).
-						SetListValue(listValue).
-						SetBuyNowPrice(e.BuyNowPrice).
-						SetCommissionRate(0.10).
-						SetCategory(category).
-						SetSubCategory(subCategory).
-						SetMinIncrement(1)
-					// Every listing carries a sale term (era-faithful: fixed
-					// sales expire back to the seller too). durationSeconds
-					// overrides for both types; the defaults differ — a short
-					// window for auctions (they exist to be expired in tests)
-					// and the production 7-day term for fixed sales.
-					duration := defaultSeedDuration
-					if st == listing.SaleTypeFixed {
-						duration = defaultSeedFixedTerm
-					}
-					if e.DurationSeconds > 0 {
-						duration = time.Duration(e.DurationSeconds) * time.Second
-					}
-					end := time.Now().Add(duration)
-					b = b.SetEndsAt(&end)
-					if st == listing.SaleTypeAuction {
-						b = b.SetCurrentBid(e.StartingBid)
-					}
-					m, err := b.Build()
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Building seed listing.")
-						return err
-					}
-					cm, err := listing.CreateListing(tx, m)
-					if err != nil {
-						d.Logger().WithError(err).Errorf("Creating seed listing.")
-						return err
-					}
-					created = append(created, cm)
+			// Ensure each seller account has a cash-shop wallet BEFORE seeding, so
+			// every seeded listing is immediately buyable (the sale credits the
+			// seller's points; account 0 / a wallet-less account fails the settle).
+			// A wallet that already exists is left as-is. Failing here (rather than
+			// seeding un-buyable listings) keeps the endpoint honest.
+			walletP := wallet.NewProcessor(d.Logger(), d.Context())
+			for acct := range sellerAccounts {
+				if err := walletP.EnsureWallet(acct, 0, 0, 0); err != nil {
+					d.Logger().WithError(err).Errorf("Ensuring cash-shop wallet for seed seller account [%d]; seeded listings would not be buyable.", acct)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
 				}
 			}
-			return nil
-		})
-		if txErr != nil {
-			server.WriteErrorResponse(d.Logger())(w)(txErr)
-			return
-		}
 
-		res, err := model.SliceMap(listing.Transform)(model.FixedProvider(created))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model for seeded listings.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
+			// Second pass: everything below is validated, so all remaining errors
+			// are unexpected (build/create) failures — create inside a single
+			// transaction so any of them rolls back the whole seed (500, zero rows).
+			sdb := db.WithContext(d.Context())
+			created := make([]listing.Model, 0, total)
+			txErr := sdb.Transaction(func(tx *gorm.DB) error {
+				for _, e := range rm.Entries {
+					st := listing.SaleType(e.SaleType)
+
+					count := e.Count
+					if count <= 0 {
+						count = 1
+					}
+					quantity := e.Quantity
+					if quantity == 0 {
+						quantity = 1
+					}
+					listValue := e.ListValue
+					if listValue == 0 {
+						listValue = defaultSeedListValue
+					}
+					sellerId := e.SellerId
+					if sellerId == 0 {
+						sellerId = defaultSeedSellerId
+					}
+					sellerAccountId := effectiveSellerAccountId(e.SellerAccountId)
+					sellerName := e.SellerName
+					if sellerName == "" {
+						sellerName = defaultSeedSellerName
+					}
+
+					// Category mirrors the custody consumer's derivation: the section tab
+					// from the sale type ("1" For Sale, "3" Auction), the item sub-tab
+					// from the template id's inventory type.
+					category := "1"
+					if st == listing.SaleTypeAuction {
+						category = "3"
+					}
+					subCategory := ""
+					if it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId)); ok {
+						subCategory = strconv.Itoa(int(it))
+					}
+
+					for i := 0; i < count; i++ {
+						b := listing.NewBuilder(t.Id(), world.Id(rm.WorldId), sellerId).
+							SetSellerAccountId(sellerAccountId).
+							SetSellerName(sellerName).
+							SetSaleType(st).
+							SetState(listing.StateActive).
+							SetTemplateId(e.TemplateId).
+							SetQuantity(quantity).
+							SetListValue(listValue).
+							SetBuyNowPrice(e.BuyNowPrice).
+							SetCommissionRate(0.10).
+							SetCategory(category).
+							SetSubCategory(subCategory).
+							SetMinIncrement(1)
+						// Every listing carries a sale term (era-faithful: fixed
+						// sales expire back to the seller too). durationSeconds
+						// overrides for both types; the defaults differ — a short
+						// window for auctions (they exist to be expired in tests)
+						// and the production 7-day term for fixed sales.
+						duration := defaultSeedDuration
+						if st == listing.SaleTypeFixed {
+							duration = defaultSeedFixedTerm
+						}
+						if e.DurationSeconds > 0 {
+							duration = time.Duration(e.DurationSeconds) * time.Second
+						}
+						end := time.Now().Add(duration)
+						b = b.SetEndsAt(&end)
+						if st == listing.SaleTypeAuction {
+							b = b.SetCurrentBid(e.StartingBid)
+						}
+						m, err := b.Build()
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Building seed listing.")
+							return err
+						}
+						cm, err := listing.CreateListing(tx, m)
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Creating seed listing.")
+							return err
+						}
+						created = append(created, cm)
+					}
+				}
+				return nil
+			})
+			if txErr != nil {
+				server.WriteErrorResponse(d.Logger())(w)(txErr)
+				return
+			}
+
+			res, err := model.SliceMap(listing.Transform)(model.FixedProvider(created))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model for seeded listings.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			d.Logger().Infof("[TEST ROUTE] Seeded [%d] listings in world [%d] for tenant [%s].", len(created), rm.WorldId, t.Id())
+			paged := paginate.Slice(res, page)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			w.WriteHeader(http.StatusCreated)
+			server.MarshalPaginatedResponse[[]listing.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
-		d.Logger().Infof("[TEST ROUTE] Seeded [%d] listings in world [%d] for tenant [%s].", len(created), rm.WorldId, t.Id())
-		paged := paginate.Slice(res, page)
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		w.WriteHeader(http.StatusCreated)
-		server.MarshalPaginatedResponse[[]listing.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -381,51 +383,55 @@ func handleSeedListings(d *rest.HandlerDependency, c *rest.HandlerContext, rm Se
 // so the next sweep settles it. 404 unknown listing, 409 when the row is not
 // an active auction (already settled / fixed sale), 204 on success. Only the
 // timestamp is synthetic — discovery and settlement stay production code.
-func handleExpireListing(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseListingId(d.Logger(), func(listingId string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			p := listing.NewProcessor(d.Logger(), d.Context(), d.DB())
-			if _, err := p.GetById(listingId); err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					w.WriteHeader(http.StatusNotFound)
+func handleExpireListing(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseListingId(d.Logger(), func(listingId string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				p := listing.NewProcessor(d.Logger(), d.Context(), db)
+				if _, err := p.GetById(listingId); err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Retrieving listing [%s] for test expire.", listingId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				d.Logger().WithError(err).Errorf("Retrieving listing [%s] for test expire.", listingId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
+				rows, err := listing.BackdateEndsAt(db.WithContext(d.Context()), listingId, time.Now().Add(-time.Second))
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Backdating listing [%s].", listingId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				if rows == 0 {
+					// Not an active auction (fixed sale, or already settled).
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
+				d.Logger().Infof("[TEST ROUTE] Backdated ends_at on listing [%s].", listingId)
+				w.WriteHeader(http.StatusNoContent)
 			}
-			rows, err := listing.BackdateEndsAt(d.DB().WithContext(d.Context()), listingId, time.Now().Add(-time.Second))
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Backdating listing [%s].", listingId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			if rows == 0 {
-				// Not an active auction (fixed sale, or already settled).
-				w.WriteHeader(http.StatusConflict)
-				return
-			}
-			d.Logger().Infof("[TEST ROUTE] Backdated ends_at on listing [%s].", listingId)
-			w.WriteHeader(http.StatusNoContent)
-		}
-	})
+		})
+	}
 }
 
 // handleRunSweep runs one production expiration sweep on demand — the same
 // task.Sweep the 60s ticker calls, cross-tenant like the ticker (the sweep
 // itself applies WithoutTenantFilter; the row's own tenant_id scopes each
 // settle). Returns the number of listings settled/expired this pass.
-func handleRunSweep(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		swept, err := task.Sweep(d.Logger(), d.Context(), d.DB())
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Test-route sweep failed.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
+func handleRunSweep(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			swept, err := task.Sweep(d.Logger(), d.Context(), db)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Test-route sweep failed.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			d.Logger().Infof("[TEST ROUTE] Sweep settled/expired [%d] listings.", swept)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[SweepResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(SweepResultRestModel{Id: uuid.NewString(), Swept: swept})
 		}
-		d.Logger().Infof("[TEST ROUTE] Sweep settled/expired [%d] listings.", swept)
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[SweepResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(SweepResultRestModel{Id: uuid.NewString(), Swept: swept})
 	}
 }

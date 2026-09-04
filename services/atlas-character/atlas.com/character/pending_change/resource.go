@@ -21,87 +21,91 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
+			registerGet := rest.RegisterHandler(l)(si)
 			r := router.PathPrefix("/characters/{characterId}/pending-changes").Subrouter()
-			r.HandleFunc("", registerGet("get_pending_changes", handleGetPendingChanges)).Methods(http.MethodGet)
-			r.HandleFunc("", rest.RegisterInputHandler[CreateInputRestModel](l)(db)(si)("create_pending_change", handleCreatePendingChange)).Methods(http.MethodPost)
-			r.HandleFunc("/{id}", registerGet("cancel_pending_change", handleCancelPendingChange)).Methods(http.MethodDelete)
-			r.HandleFunc("/{id}/resolve", rest.RegisterInputHandler[ResolveInputRestModel](l)(db)(si)("resolve_pending_change", handleResolvePendingChange)).Methods(http.MethodPost)
-			r.HandleFunc("/cancel", rest.RegisterInputHandler[CancelInputRestModel](l)(db)(si)("cancel_pending_change_for_character", handleCancelPendingChangeForCharacter)).Methods(http.MethodPost)
+			r.HandleFunc("", registerGet("get_pending_changes", handleGetPendingChanges(db))).Methods(http.MethodGet)
+			r.HandleFunc("", rest.RegisterInputHandler[CreateInputRestModel](l)(si)("create_pending_change", handleCreatePendingChange(db))).Methods(http.MethodPost)
+			r.HandleFunc("/{id}", registerGet("cancel_pending_change", handleCancelPendingChange(db))).Methods(http.MethodDelete)
+			r.HandleFunc("/{id}/resolve", rest.RegisterInputHandler[ResolveInputRestModel](l)(si)("resolve_pending_change", handleResolvePendingChange(db))).Methods(http.MethodPost)
+			r.HandleFunc("/cancel", rest.RegisterInputHandler[CancelInputRestModel](l)(si)("cancel_pending_change_for_character", handleCancelPendingChangeForCharacter(db))).Methods(http.MethodPost)
 
 			// This route deliberately sits OUTSIDE the /pending-changes
 			// subrouter's prefix — it is the synchronous availability check
 			// (design §3.5) atlas-channel calls before it ever POSTs a
 			// WORLD_TRANSFER pending-change request, so it is not itself a
 			// pending-changes resource.
-			router.HandleFunc("/characters/{characterId}/transfer-eligibility", registerGet("get_transfer_eligibility", handleGetTransferEligibility)).Methods(http.MethodGet)
+			router.HandleFunc("/characters/{characterId}/transfer-eligibility", registerGet("get_transfer_eligibility", handleGetTransferEligibility(db))).Methods(http.MethodGet)
 
 			// The destination-free counterpart (design's OQ-7 split,
 			// docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md):
 			// atlas-channel's CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE handler is
 			// asked before a destination world is chosen, so it cannot supply
 			// destinationWorldId and cannot use the route above.
-			router.HandleFunc("/characters/{characterId}/transfer-eligibility-independent", registerGet("get_transfer_eligibility_independent", handleGetTransferEligibilityIndependent)).Methods(http.MethodGet)
+			router.HandleFunc("/characters/{characterId}/transfer-eligibility-independent", registerGet("get_transfer_eligibility_independent", handleGetTransferEligibilityIndependent(db))).Methods(http.MethodGet)
 		}
 	}
 }
 
-func handleGetPendingChanges(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByCharacterId(characterId)
-			if err != nil {
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+func handleGetPendingChanges(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				ms, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(characterId)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }
 
 // handleGetTransferEligibility runs the full 11-gate table with no side
 // effect and reports the result, so atlas-channel can render the client's
 // WORLD_TRANSFER availability response without ever creating a pending
 // change (design §3.5).
-func handleGetTransferEligibility(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			destStr := r.URL.Query().Get("destinationWorldId")
-			destVal, err := strconv.ParseUint(destStr, 10, 8)
-			if err != nil {
-				server.WriteBadRequest(d.Logger(), w, "invalid or missing destinationWorldId")
-				return
-			}
-			destinationWorldId := world.Id(destVal)
+func handleGetTransferEligibility(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				destStr := r.URL.Query().Get("destinationWorldId")
+				destVal, err := strconv.ParseUint(destStr, 10, 8)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid or missing destinationWorldId")
+					return
+				}
+				destinationWorldId := world.Id(destVal)
 
-			eligible, reason, err := NewProcessor(d.Logger(), d.Context(), d.DB()).
-				CheckTransferEligibility(characterId, destinationWorldId)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Checking transfer eligibility for character [%d] to world [%d].", characterId, destinationWorldId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				eligible, reason, err := NewProcessor(d.Logger(), d.Context(), db).
+					CheckTransferEligibility(characterId, destinationWorldId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Checking transfer eligibility for character [%d] to world [%d].", characterId, destinationWorldId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			res := EligibilityRestModel{
-				Id:       strconv.FormatUint(uint64(characterId), 10),
-				Eligible: eligible,
-				Reason:   reason,
+				res := EligibilityRestModel{
+					Id:       strconv.FormatUint(uint64(characterId), 10),
+					Eligible: eligible,
+					Reason:   reason,
+				}
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[EligibilityRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[EligibilityRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+		})
+	}
 }
 
 // handleGetTransferEligibilityIndependent runs ONLY the destination-independent
@@ -110,57 +114,61 @@ func handleGetTransferEligibility(d *rest.HandlerDependency, c *rest.HandlerCont
 // atlas-channel's CHECK-time handler — which is asked before a destination
 // world is chosen — can report a precise rejection reason instead of
 // answering ALLOWED unconditionally (design's OQ-7 split).
-func handleGetTransferEligibilityIndependent(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			eligible, reason, err := NewProcessor(d.Logger(), d.Context(), d.DB()).
-				CheckTransferEligibilityIndependent(characterId)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Checking destination-independent transfer eligibility for character [%d].", characterId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			res := EligibilityRestModel{
-				Id:       strconv.FormatUint(uint64(characterId), 10),
-				Eligible: eligible,
-				Reason:   reason,
-			}
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[EligibilityRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
-}
-
-func handleCreatePendingChange(d *rest.HandlerDependency, c *rest.HandlerContext, input CreateInputRestModel) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).
-				CreateAndEmit(uuid.New(), characterId, input.Type, input.RequestedName, input.DestinationWorldId, input.AssetId)
-			if err != nil {
-				if status, reason, ok := statusForError(err); ok {
-					d.Logger().WithError(err).Warnf("Rejected pending-change request for character [%d].", characterId)
-					writeReasonError(w, status, reason)
+func handleGetTransferEligibilityIndependent(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				eligible, reason, err := NewProcessor(d.Logger(), d.Context(), db).
+					CheckTransferEligibilityIndependent(characterId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Checking destination-independent transfer eligibility for character [%d].", characterId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				d.Logger().WithError(err).Errorf("Creating pending change for character [%d].", characterId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
 
-			res, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
+				res := EligibilityRestModel{
+					Id:       strconv.FormatUint(uint64(characterId), 10),
+					Eligible: eligible,
+					Reason:   reason,
+				}
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[EligibilityRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
+		})
+	}
+}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+func handleCreatePendingChange(db *gorm.DB) rest.InputHandler[CreateInputRestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input CreateInputRestModel) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).
+					CreateAndEmit(uuid.New(), characterId, input.Type, input.RequestedName, input.DestinationWorldId, input.AssetId)
+				if err != nil {
+					if status, reason, ok := statusForError(err); ok {
+						d.Logger().WithError(err).Warnf("Rejected pending-change request for character [%d].", characterId)
+						writeReasonError(w, status, reason)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Creating pending change for character [%d].", characterId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				res, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }
 
 // handleCancelPendingChange is the operator-facing cancel route: DELETE by
@@ -172,48 +180,50 @@ func handleCreatePendingChange(d *rest.HandlerDependency, c *rest.HandlerContext
 // ownership check at all before that (design §5.4 addendum). A mismatch is
 // reported as 404, the same as an unknown id, so this route does not leak
 // whether a given id exists under a different character.
-func handleCancelPendingChange(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			id, err := uuid.Parse(mux.Vars(r)["id"])
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			existing, err := p.GetById(id)
-			if err != nil {
-				if status, reason, ok := statusForError(err); ok {
-					writeReasonError(w, status, reason)
+func handleCancelPendingChange(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				id, err := uuid.Parse(mux.Vars(r)["id"])
+				if err != nil {
+					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				d.Logger().WithError(err).Errorf("Loading pending change [%s].", id)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			if existing.CharacterId() != characterId {
-				writeReasonError(w, http.StatusNotFound, "")
-				return
-			}
 
-			_, moved, err := p.ResolveAndEmit(id, StatusCancelled, "operator_cancelled")
-			if err != nil {
-				if status, reason, ok := statusForError(err); ok {
-					writeReasonError(w, status, reason)
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				existing, err := p.GetById(id)
+				if err != nil {
+					if status, reason, ok := statusForError(err); ok {
+						writeReasonError(w, status, reason)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Loading pending change [%s].", id)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				d.Logger().WithError(err).Errorf("Cancelling pending change [%s].", id)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
+				if existing.CharacterId() != characterId {
+					writeReasonError(w, http.StatusNotFound, "")
+					return
+				}
+
+				_, moved, err := p.ResolveAndEmit(id, StatusCancelled, "operator_cancelled")
+				if err != nil {
+					if status, reason, ok := statusForError(err); ok {
+						writeReasonError(w, status, reason)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Cancelling pending change [%s].", id)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				if !moved {
+					writeReasonError(w, http.StatusConflict, "")
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
 			}
-			if !moved {
-				writeReasonError(w, http.StatusConflict, "")
-				return
-			}
-			w.WriteHeader(http.StatusNoContent)
-		}
-	})
+		})
+	}
 }
 
 // handleCancelPendingChangeForCharacter is the player-initiated cancel route
@@ -230,39 +240,41 @@ func handleCancelPendingChange(d *rest.HandlerDependency, _ *rest.HandlerContext
 // No pending record of the requested type is a normal race (the sweeper or
 // an operator got there first), not an error -- it maps to 404, and the
 // caller (atlas-channel) treats that as "nothing to cancel," not a failure.
-func handleCancelPendingChangeForCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, input CancelInputRestModel) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, moved, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CancelForCharacterAndType(characterId, input.Type)
-			if err != nil {
-				if status, reason, ok := statusForError(err); ok {
-					writeReasonError(w, status, reason)
+func handleCancelPendingChangeForCharacter(db *gorm.DB) rest.InputHandler[CancelInputRestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input CancelInputRestModel) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, moved, err := NewProcessor(d.Logger(), d.Context(), db).CancelForCharacterAndType(characterId, input.Type)
+				if err != nil {
+					if status, reason, ok := statusForError(err); ok {
+						writeReasonError(w, status, reason)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Cancelling pending [%s] change for character [%d].", input.Type, characterId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				d.Logger().WithError(err).Errorf("Cancelling pending [%s] change for character [%d].", input.Type, characterId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			if !moved {
-				if m.Id() == uuid.Nil {
-					writeReasonError(w, http.StatusNotFound, "")
+				if !moved {
+					if m.Id() == uuid.Nil {
+						writeReasonError(w, http.StatusNotFound, "")
+						return
+					}
+					writeReasonError(w, http.StatusConflict, "")
 					return
 				}
-				writeReasonError(w, http.StatusConflict, "")
-				return
-			}
 
-			res, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
+				res, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+		})
+	}
 }
 
 // handleResolvePendingChange is the world-transfer saga's terminal-outcome
@@ -270,36 +282,38 @@ func handleCancelPendingChangeForCharacter(d *rest.HandlerDependency, c *rest.Ha
 // failure. It reuses the same transition guard as the operator cancel route,
 // so a redelivered resolve is idempotent (design §3.10) — the second call
 // sees moved == false and emits nothing.
-func handleResolvePendingChange(d *rest.HandlerDependency, _ *rest.HandlerContext, input ResolveInputRestModel) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(_ uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			id, err := uuid.Parse(mux.Vars(r)["id"])
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			if input.Status != StatusApplied && input.Status != StatusRejected {
-				server.WriteBadRequest(d.Logger(), w, "status must be APPLIED or REJECTED")
-				return
-			}
-
-			_, moved, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ResolveAndEmit(id, input.Status, input.Reason)
-			if err != nil {
-				if status, reason, ok := statusForError(err); ok {
-					writeReasonError(w, status, reason)
+func handleResolvePendingChange(db *gorm.DB) rest.InputHandler[ResolveInputRestModel] {
+	return func(d *rest.HandlerDependency, _ *rest.HandlerContext, input ResolveInputRestModel) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(_ uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				id, err := uuid.Parse(mux.Vars(r)["id"])
+				if err != nil {
+					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				d.Logger().WithError(err).Errorf("Resolving pending change [%s] to [%s].", id, input.Status)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
+				if input.Status != StatusApplied && input.Status != StatusRejected {
+					server.WriteBadRequest(d.Logger(), w, "status must be APPLIED or REJECTED")
+					return
+				}
+
+				_, moved, err := NewProcessor(d.Logger(), d.Context(), db).ResolveAndEmit(id, input.Status, input.Reason)
+				if err != nil {
+					if status, reason, ok := statusForError(err); ok {
+						writeReasonError(w, status, reason)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Resolving pending change [%s] to [%s].", id, input.Status)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				if !moved {
+					writeReasonError(w, http.StatusConflict, "")
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
 			}
-			if !moved {
-				writeReasonError(w, http.StatusConflict, "")
-				return
-			}
-			w.WriteHeader(http.StatusNoContent)
-		}
-	})
+		})
+	}
 }
 
 // statusForError maps a typed processor rejection to the HTTP status the REST

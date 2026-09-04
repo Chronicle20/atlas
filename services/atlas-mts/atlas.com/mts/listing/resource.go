@@ -37,17 +37,17 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
-			registerInput := rest.RegisterInputHandler[CreateListingRestModel](l)(db)(si)
+			registerGet := rest.RegisterHandler(l)(si)
+			registerInput := rest.RegisterInputHandler[CreateListingRestModel](l)(si)
 
 			r := router.PathPrefix("/worlds/{worldId}/listings").Subrouter()
-			r.HandleFunc("", registerGet("browse_listings", handleBrowseListings)).Methods(http.MethodGet)
-			r.HandleFunc("", registerInput("create_listing", handleCreateListing)).Methods(http.MethodPost)
-			r.HandleFunc("/{listingId}", registerGet("get_listing", handleGetListing)).Methods(http.MethodGet)
-			r.HandleFunc("/{listingId}", registerGet("cancel_listing", handleCancelListing)).Methods(http.MethodDelete)
+			r.HandleFunc("", registerGet("browse_listings", handleBrowseListings(db))).Methods(http.MethodGet)
+			r.HandleFunc("", registerInput("create_listing", handleCreateListing(db))).Methods(http.MethodPost)
+			r.HandleFunc("/{listingId}", registerGet("get_listing", handleGetListing(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{listingId}", registerGet("cancel_listing", handleCancelListing(db))).Methods(http.MethodDelete)
 
 			cr := router.PathPrefix("/characters/{characterId}/mts/listings").Subrouter()
-			cr.HandleFunc("", registerGet("get_character_active_listings", handleGetCharacterActiveListings)).Methods(http.MethodGet)
+			cr.HandleFunc("", registerGet("get_character_active_listings", handleGetCharacterActiveListings(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -56,34 +56,36 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 // listing count is bounded by the tenant's per-character active cap, see
 // getActiveCountBySeller) — page[size] defaults to and caps at
 // paginate.MaxPageSize, mirroring holding.handleGetCharacterHoldings.
-func handleGetCharacterActiveListings(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
-			if perr != nil {
-				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-				return
-			}
+func handleGetCharacterActiveListings(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if perr != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
 
-			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByCharacterActivePagedProvider(characterId, page)()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving active listings for character [%d].", characterId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				paged, err := NewProcessor(d.Logger(), d.Context(), db).ByCharacterActivePagedProvider(characterId, page)()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving active listings for character [%d].", characterId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
+			}
+		})
+	}
 }
 
 // handleCancelListing performs the seller's cancel of an active listing, moving
@@ -104,267 +106,275 @@ func handleGetCharacterActiveListings(d *rest.HandlerDependency, c *rest.Handler
 // consumer emits LISTING_CANCELLED). This REST entry point is the direct (e.g.
 // channel-driven) cancel; it does not emit, keeping a single producer of the
 // status event per the command-path-owns-emission convention.
-func handleCancelListing(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseListingId(d.Logger(), func(listingId string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			characterIdStr := r.URL.Query().Get("characterId")
-			if characterIdStr == "" {
-				d.Logger().Errorf("Cancel listing [%s] missing characterId query param for the seller-only check.", listingId)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			characterId64, err := strconv.ParseUint(characterIdStr, 10, 32)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to parse characterId query for cancel of listing [%s].", listingId)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			characterId := uint32(characterId64)
-
-			// The seller-only owner-check + race-safe cancel + cancelled-history row
-			// all live in the processor (shared with the Kafka cancel consumer); the
-			// handler only maps the outcome to an HTTP status.
-			res, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CancelForSeller(listingId, characterId)
-			if err != nil {
-				switch {
-				case errors.Is(err, gorm.ErrRecordNotFound):
-					w.WriteHeader(http.StatusNotFound)
-				case errors.Is(err, ErrNotOwner):
-					d.Logger().Errorf("Character [%d] attempted to cancel listing [%s] they do not own; forbidden.", characterId, listingId)
-					w.WriteHeader(http.StatusForbidden)
-				default:
-					d.Logger().WithError(err).Errorf("Cancelling listing [%s].", listingId)
-					server.WriteErrorResponse(d.Logger())(w)(err)
+func handleCancelListing(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseListingId(d.Logger(), func(listingId string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				characterIdStr := r.URL.Query().Get("characterId")
+				if characterIdStr == "" {
+					d.Logger().Errorf("Cancel listing [%s] missing characterId query param for the seller-only check.", listingId)
+					w.WriteHeader(http.StatusBadRequest)
+					return
 				}
-				return
+				characterId64, err := strconv.ParseUint(characterIdStr, 10, 32)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to parse characterId query for cancel of listing [%s].", listingId)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				characterId := uint32(characterId64)
+
+				// The seller-only owner-check + race-safe cancel + cancelled-history row
+				// all live in the processor (shared with the Kafka cancel consumer); the
+				// handler only maps the outcome to an HTTP status.
+				res, err := NewProcessor(d.Logger(), d.Context(), db).CancelForSeller(listingId, characterId)
+				if err != nil {
+					switch {
+					case errors.Is(err, gorm.ErrRecordNotFound):
+						w.WriteHeader(http.StatusNotFound)
+					case errors.Is(err, ErrNotOwner):
+						d.Logger().Errorf("Character [%d] attempted to cancel listing [%s] they do not own; forbidden.", characterId, listingId)
+						w.WriteHeader(http.StatusForbidden)
+					default:
+						d.Logger().WithError(err).Errorf("Cancelling listing [%s].", listingId)
+						server.WriteErrorResponse(d.Logger())(w)(err)
+					}
+					return
+				}
+				if !res.Won {
+					// Race loser / already-not-active: a clean conflict, not a 500.
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
 			}
-			if !res.Won {
-				// Race loser / already-not-active: a clean conflict, not a 500.
-				w.WriteHeader(http.StatusConflict)
-				return
-			}
-			w.WriteHeader(http.StatusNoContent)
-		}
-	})
+		})
+	}
 }
 
 // handleCreateListing initiates a list: it validates the request against the
 // tenant config and, on success, emits a TransferToMts saga. The response is
 // 202 Accepted carrying the pre-allocated listing id — the listing row does not
 // exist yet (it is created when the custody saga's AcceptToMtsListing lands).
-func handleCreateListing(d *rest.HandlerDependency, c *rest.HandlerContext, rm CreateListingRestModel) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			req := ListRequest{
-				WorldId:             worldId,
-				SellerId:            rm.SellerId,
-				SellerAccountId:     rm.SellerAccountId,
-				SellerName:          rm.SellerName,
-				SellerLevel:         rm.SellerLevel,
-				ItemId:              rm.ItemId,
-				SaleType:            SaleType(rm.SaleType),
-				SourceInventoryType: rm.SourceInventoryType,
-				AssetId:             rm.AssetId,
-				Quantity:            rm.Quantity,
-				ListValue:           rm.ListValue,
-				BuyNowPrice:         rm.BuyNowPrice,
-				DurationHours:       rm.DurationHours,
-				Category:            rm.Category,
-				SubCategory:         rm.SubCategory,
-			}
-
-			listingId, err := NewProcessor(d.Logger(), d.Context(), d.DB()).List(req)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Initiating listing for world [%d] seller [%d].", byte(worldId), rm.SellerId)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			res := CreateListingRestModel{
-				Id:                  listingId.String(),
-				SellerId:            rm.SellerId,
-				SellerName:          rm.SellerName,
-				SaleType:            rm.SaleType,
-				SourceInventoryType: rm.SourceInventoryType,
-				AssetId:             rm.AssetId,
-				Quantity:            rm.Quantity,
-				ListValue:           rm.ListValue,
-				BuyNowPrice:         rm.BuyNowPrice,
-				DurationHours:       rm.DurationHours,
-				Category:            rm.Category,
-				SubCategory:         rm.SubCategory,
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			w.WriteHeader(http.StatusAccepted)
-			server.MarshalResponse[CreateListingRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
-}
-
-func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			query := r.URL.Query()
-
-			// Repo-wide standard paging (task-117): page[number] (1-based) /
-			// page[size], parsed via paginate.ParseParams. The default page
-			// size (DefaultPageSize=16) preserves the game's existing 16-per-
-			// page browse window; MaxPageSize(250) lets a semantic-all drain
-			// consumer (requests.DrainProvider) request large pages. Invalid
-			// values (non-integer, <1, >max, or the legacy bare ?limit=) are a
-			// 400, never silently clamped.
-			page, perr := paginate.ParseParams(query, DefaultPageSize, paginate.MaxPageSize)
-			if perr != nil {
-				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-				return
-			}
-
-			f := BrowseFilter{
-				Category:    query.Get("category"),
-				SubCategory: query.Get("subCategory"),
-				SaleType:    SaleType(firstNonEmpty(query.Get("saleType"), query.Get("type"))),
-				SellerName:  query.Get("sellerName"),
-			}
-			if v := query.Get("itemId"); v != "" {
-				if itemId, err := strconv.ParseUint(v, 10, 32); err == nil {
-					f.ItemId = uint32(itemId)
+func handleCreateListing(db *gorm.DB) rest.InputHandler[CreateListingRestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm CreateListingRestModel) http.HandlerFunc {
+		return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				req := ListRequest{
+					WorldId:             worldId,
+					SellerId:            rm.SellerId,
+					SellerAccountId:     rm.SellerAccountId,
+					SellerName:          rm.SellerName,
+					SellerLevel:         rm.SellerLevel,
+					ItemId:              rm.ItemId,
+					SaleType:            SaleType(rm.SaleType),
+					SourceInventoryType: rm.SourceInventoryType,
+					AssetId:             rm.AssetId,
+					Quantity:            rm.Quantity,
+					ListValue:           rm.ListValue,
+					BuyNowPrice:         rm.BuyNowPrice,
+					DurationHours:       rm.DurationHours,
+					Category:            rm.Category,
+					SubCategory:         rm.SubCategory,
 				}
-			}
-			if v := query.Get("itemIds"); v != "" {
-				// Comma-separated decimal template ids (the marketplace name-search
-				// result set). Skip empties / unparseable tokens gracefully so a
-				// malformed entry narrows the search rather than failing the request.
-				for _, tok := range strings.Split(v, ",") {
-					tok = strings.TrimSpace(tok)
-					if tok == "" {
-						continue
-					}
-					if id, err := strconv.ParseUint(tok, 10, 32); err == nil {
-						f.ItemIds = append(f.ItemIds, uint32(id))
-					}
-				}
-			}
-			if v := query.Get("serial"); v != "" {
-				if serial, err := strconv.ParseUint(v, 10, 32); err == nil {
-					f.Serial = uint32(serial)
-				}
-			}
-			if v := query.Get("serials"); v != "" {
-				// Comma-separated decimal ITC serials (the Cart's favorited listings).
-				// Skip empties / unparseable tokens gracefully.
-				for _, tok := range strings.Split(v, ",") {
-					tok = strings.TrimSpace(tok)
-					if tok == "" {
-						continue
-					}
-					if serial, err := strconv.ParseUint(tok, 10, 32); err == nil {
-						f.Serials = append(f.Serials, uint32(serial))
-					}
-				}
-			}
-			if v := query.Get("sellerId"); v != "" {
-				if sellerId, err := strconv.ParseUint(v, 10, 32); err == nil {
-					f.SellerId = uint32(sellerId)
-				}
-			}
-			if v := query.Get("excludeSellerId"); v != "" {
-				if excludeSellerId, err := strconv.ParseUint(v, 10, 32); err == nil {
-					f.ExcludeSellerId = uint32(excludeSellerId)
-				}
-			}
-			if v := query.Get("offerWishSerial"); v != "" {
-				if offerWishSerial, err := strconv.ParseUint(v, 10, 32); err == nil {
-					f.OfferWishSerial = uint32(offerWishSerial)
-				}
-			}
-			if query.Get("excludeOffers") == "true" {
-				f.ExcludeOffers = true
-			}
 
-			// Map the 1-based wire page onto the provider's 0-based offset
-			// field: page.Number is always >=1 (ParseParams default/floor),
-			// so f.Page is always >=0 here. A caller sending page[number]=N
-			// gets the identical window a pre-task-117 caller got from
-			// page=N-1 (same Limit/Offset math in getBrowse).
-			f.Page = page.Number - 1
-			f.PageSize = page.Size
-
-			// Public browse only ever shows active listings; sold/cancelled/
-			// expired listings are never surfaced here.
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			ms, err := p.Browse(worldId, StateActive, f)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Browsing listings for world [%d].", byte(worldId))
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			// Stamp the buyer-visible contract fee (MarkedUp(base)-base) so the client
-			// can show the all-in price. commissionBase (flat NX) is read once from
-			// tenant config.
-			t := tenant.MustFromContext(d.Context())
-			commissionBase := configuration.GetRegistry().GetTenantConfig(d.Logger(), d.Context(), t.Id()).CommissionBase()
-			for i := range res {
-				res[i] = withContractFee(res[i], commissionBase)
-			}
-
-			// Report the TOTAL matching count (not this page's length) so a paging
-			// client renders a real total and last page — the returned-length
-			// heuristic (a full page implies "maybe one more") can neither show the
-			// total nor find the true last page. The count applies the same filters
-			// as the page (shared browseFilterQuery), ignoring page/pageSize.
-			total, err := p.CountBrowse(worldId, StateActive, f)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Counting listings for world [%d].", byte(worldId))
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			paged := model.Paged[RestModel]{Items: res, Total: int(total), Page: page}
-
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
-		}
-	})
-}
-
-func handleGetListing(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseListingId(d.Logger(), func(listingId string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(listingId)
-			if err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					w.WriteHeader(http.StatusNotFound)
+				listingId, err := NewProcessor(d.Logger(), d.Context(), db).List(req)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Initiating listing for world [%d] seller [%d].", byte(worldId), rm.SellerId)
+					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				d.Logger().WithError(err).Errorf("Retrieving listing [%s].", listingId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
 
-			rm, err := Transform(m)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			t := tenant.MustFromContext(d.Context())
-			commissionBase := configuration.GetRegistry().GetTenantConfig(d.Logger(), d.Context(), t.Id()).CommissionBase()
-			rm = withContractFee(rm, commissionBase)
+				res := CreateListingRestModel{
+					Id:                  listingId.String(),
+					SellerId:            rm.SellerId,
+					SellerName:          rm.SellerName,
+					SaleType:            rm.SaleType,
+					SourceInventoryType: rm.SourceInventoryType,
+					AssetId:             rm.AssetId,
+					Quantity:            rm.Quantity,
+					ListValue:           rm.ListValue,
+					BuyNowPrice:         rm.BuyNowPrice,
+					DurationHours:       rm.DurationHours,
+					Category:            rm.Category,
+					SubCategory:         rm.SubCategory,
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusAccepted)
+				server.MarshalResponse[CreateListingRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
+}
+
+func handleBrowseListings(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+
+				// Repo-wide standard paging (task-117): page[number] (1-based) /
+				// page[size], parsed via paginate.ParseParams. The default page
+				// size (DefaultPageSize=16) preserves the game's existing 16-per-
+				// page browse window; MaxPageSize(250) lets a semantic-all drain
+				// consumer (requests.DrainProvider) request large pages. Invalid
+				// values (non-integer, <1, >max, or the legacy bare ?limit=) are a
+				// 400, never silently clamped.
+				page, perr := paginate.ParseParams(query, DefaultPageSize, paginate.MaxPageSize)
+				if perr != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				f := BrowseFilter{
+					Category:    query.Get("category"),
+					SubCategory: query.Get("subCategory"),
+					SaleType:    SaleType(firstNonEmpty(query.Get("saleType"), query.Get("type"))),
+					SellerName:  query.Get("sellerName"),
+				}
+				if v := query.Get("itemId"); v != "" {
+					if itemId, err := strconv.ParseUint(v, 10, 32); err == nil {
+						f.ItemId = uint32(itemId)
+					}
+				}
+				if v := query.Get("itemIds"); v != "" {
+					// Comma-separated decimal template ids (the marketplace name-search
+					// result set). Skip empties / unparseable tokens gracefully so a
+					// malformed entry narrows the search rather than failing the request.
+					for _, tok := range strings.Split(v, ",") {
+						tok = strings.TrimSpace(tok)
+						if tok == "" {
+							continue
+						}
+						if id, err := strconv.ParseUint(tok, 10, 32); err == nil {
+							f.ItemIds = append(f.ItemIds, uint32(id))
+						}
+					}
+				}
+				if v := query.Get("serial"); v != "" {
+					if serial, err := strconv.ParseUint(v, 10, 32); err == nil {
+						f.Serial = uint32(serial)
+					}
+				}
+				if v := query.Get("serials"); v != "" {
+					// Comma-separated decimal ITC serials (the Cart's favorited listings).
+					// Skip empties / unparseable tokens gracefully.
+					for _, tok := range strings.Split(v, ",") {
+						tok = strings.TrimSpace(tok)
+						if tok == "" {
+							continue
+						}
+						if serial, err := strconv.ParseUint(tok, 10, 32); err == nil {
+							f.Serials = append(f.Serials, uint32(serial))
+						}
+					}
+				}
+				if v := query.Get("sellerId"); v != "" {
+					if sellerId, err := strconv.ParseUint(v, 10, 32); err == nil {
+						f.SellerId = uint32(sellerId)
+					}
+				}
+				if v := query.Get("excludeSellerId"); v != "" {
+					if excludeSellerId, err := strconv.ParseUint(v, 10, 32); err == nil {
+						f.ExcludeSellerId = uint32(excludeSellerId)
+					}
+				}
+				if v := query.Get("offerWishSerial"); v != "" {
+					if offerWishSerial, err := strconv.ParseUint(v, 10, 32); err == nil {
+						f.OfferWishSerial = uint32(offerWishSerial)
+					}
+				}
+				if query.Get("excludeOffers") == "true" {
+					f.ExcludeOffers = true
+				}
+
+				// Map the 1-based wire page onto the provider's 0-based offset
+				// field: page.Number is always >=1 (ParseParams default/floor),
+				// so f.Page is always >=0 here. A caller sending page[number]=N
+				// gets the identical window a pre-task-117 caller got from
+				// page=N-1 (same Limit/Offset math in getBrowse).
+				f.Page = page.Number - 1
+				f.PageSize = page.Size
+
+				// Public browse only ever shows active listings; sold/cancelled/
+				// expired listings are never surfaced here.
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				ms, err := p.Browse(worldId, StateActive, f)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Browsing listings for world [%d].", byte(worldId))
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				// Stamp the buyer-visible contract fee (MarkedUp(base)-base) so the client
+				// can show the all-in price. commissionBase (flat NX) is read once from
+				// tenant config.
+				t := tenant.MustFromContext(d.Context())
+				commissionBase := configuration.GetRegistry().GetTenantConfig(d.Logger(), d.Context(), t.Id()).CommissionBase()
+				for i := range res {
+					res[i] = withContractFee(res[i], commissionBase)
+				}
+
+				// Report the TOTAL matching count (not this page's length) so a paging
+				// client renders a real total and last page — the returned-length
+				// heuristic (a full page implies "maybe one more") can neither show the
+				// total nor find the true last page. The count applies the same filters
+				// as the page (shared browseFilterQuery), ignoring page/pageSize.
+				total, err := p.CountBrowse(worldId, StateActive, f)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Counting listings for world [%d].", byte(worldId))
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				paged := model.Paged[RestModel]{Items: res, Total: int(total), Page: page}
+
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
+			}
+		})
+	}
+}
+
+func handleGetListing(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseListingId(d.Logger(), func(listingId string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).GetById(listingId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Retrieving listing [%s].", listingId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				rm, err := Transform(m)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				t := tenant.MustFromContext(d.Context())
+				commissionBase := configuration.GetRegistry().GetTenantConfig(d.Logger(), d.Context(), t.Id()).CommissionBase()
+				rm = withContractFee(rm, commissionBase)
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
 }
 
 func firstNonEmpty(values ...string) string {

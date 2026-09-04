@@ -19,81 +19,23 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerHandler := rest.RegisterHandler(l)(db)(si)
-			registerInputHandler := rest.RegisterInputHandler[RestModel](l)(db)(si)
+			registerHandler := rest.RegisterHandler(l)(si)
+			registerInputHandler := rest.RegisterInputHandler[RestModel](l)(si)
 
 			// Register handlers - specific routes before parameterized routes
-			router.HandleFunc("/maps/actions", registerHandler("get_all_scripts", GetAllScriptsHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/maps/actions", registerInputHandler("create_script", CreateScriptHandler)).Methods(http.MethodPost)
-			router.HandleFunc("/maps/actions/{scriptId}", registerHandler("get_script", GetScriptHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/maps/actions/{scriptId}", registerInputHandler("update_script", UpdateScriptHandler)).Methods(http.MethodPatch)
-			router.HandleFunc("/maps/actions/{scriptId}", registerHandler("delete_script", DeleteScriptHandler)).Methods(http.MethodDelete)
-			router.HandleFunc("/maps/{scriptName}/actions", registerHandler("get_scripts_by_name", GetScriptsByNameHandler)).Methods(http.MethodGet)
+			router.HandleFunc("/maps/actions", registerHandler("get_all_scripts", GetAllScriptsHandler(db))).Methods(http.MethodGet)
+			router.HandleFunc("/maps/actions", registerInputHandler("create_script", CreateScriptHandler(db))).Methods(http.MethodPost)
+			router.HandleFunc("/maps/actions/{scriptId}", registerHandler("get_script", GetScriptHandler(db))).Methods(http.MethodGet)
+			router.HandleFunc("/maps/actions/{scriptId}", registerInputHandler("update_script", UpdateScriptHandler(db))).Methods(http.MethodPatch)
+			router.HandleFunc("/maps/actions/{scriptId}", registerHandler("delete_script", DeleteScriptHandler(db))).Methods(http.MethodDelete)
+			router.HandleFunc("/maps/{scriptName}/actions", registerHandler("get_scripts_by_name", GetScriptsByNameHandler(db))).Methods(http.MethodGet)
 		}
 	}
 }
 
 // GetAllScriptsHandler handles GET /maps/actions
-func GetAllScriptsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
-		if err != nil {
-			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-			return
-		}
-
-		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page)()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Retrieving scripts.")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
-	}
-}
-
-// GetScriptHandler handles GET /maps/actions/{scriptId}
-func GetScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByIdProvider(scriptId)()
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				d.Logger().WithError(err).Errorf("Script not found.")
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving script.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			rm, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
-}
-
-// GetScriptsByNameHandler handles GET /maps/{scriptName}/actions
-func GetScriptsByNameHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseScriptName(d.Logger(), func(scriptName string) http.HandlerFunc {
+func GetAllScriptsHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 			if err != nil {
@@ -101,17 +43,17 @@ func GetScriptsByNameHandler(d *rest.HandlerDependency, c *rest.HandlerContext) 
 				return
 			}
 
-			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByScriptNameProvider(scriptName, page)()
+			paged, err := NewProcessor(d.Logger(), d.Context(), db).AllProvider(page)()
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving scripts for [%s].", scriptName)
-				server.WriteErrorResponse(d.Logger())(w)(err)
+				d.Logger().WithError(err).Errorf("Retrieving scripts.")
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
 			rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -119,43 +61,76 @@ func GetScriptsByNameHandler(d *rest.HandlerDependency, c *rest.HandlerContext) 
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 		}
-	})
-}
-
-// CreateScriptHandler handles POST /maps/actions
-func CreateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m, err := Extract(rm)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Extracting domain model from REST model.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		createdModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating script.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		createdRm, err := Transform(createdModel)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		w.WriteHeader(http.StatusCreated)
-		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(createdRm)
 	}
 }
 
-// UpdateScriptHandler handles PATCH /maps/actions/{scriptId}
-func UpdateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
-	return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
+// GetScriptHandler handles GET /maps/actions/{scriptId}
+func GetScriptHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := NewProcessor(d.Logger(), d.Context(), db).ByIdProvider(scriptId)()
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					d.Logger().WithError(err).Errorf("Script not found.")
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving script.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// GetScriptsByNameHandler handles GET /maps/{scriptName}/actions
+func GetScriptsByNameHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseScriptName(d.Logger(), func(scriptName string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				paged, err := NewProcessor(d.Logger(), d.Context(), db).ByScriptNameProvider(scriptName, page)()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving scripts for [%s].", scriptName)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
+			}
+		})
+	}
+}
+
+// CreateScriptHandler handles POST /maps/actions
+func CreateScriptHandler(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			m, err := Extract(rm)
 			if err != nil {
@@ -164,14 +139,14 @@ func UpdateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm R
 				return
 			}
 
-			updatedModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(scriptId, m)
+			createdModel, err := NewProcessor(d.Logger(), d.Context(), db).Create(m)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Updating script.")
+				d.Logger().WithError(err).Errorf("Creating script.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			updatedRm, err := Transform(updatedModel)
+			createdRm, err := Transform(createdModel)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -180,23 +155,60 @@ func UpdateScriptHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm R
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(updatedRm)
+			w.WriteHeader(http.StatusCreated)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(createdRm)
 		}
-	})
+	}
+}
+
+// UpdateScriptHandler handles PATCH /maps/actions/{scriptId}
+func UpdateScriptHandler(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
+		return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := Extract(rm)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Extracting domain model from REST model.")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				updatedModel, err := NewProcessor(d.Logger(), d.Context(), db).Update(scriptId, m)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Updating script.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				updatedRm, err := Transform(updatedModel)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Transforming domain model to REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(updatedRm)
+			}
+		})
+	}
 }
 
 // DeleteScriptHandler handles DELETE /maps/actions/{scriptId}
-func DeleteScriptHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(scriptId)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Deleting script.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+func DeleteScriptHandler(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseScriptId(d.Logger(), func(scriptId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := NewProcessor(d.Logger(), d.Context(), db).Delete(scriptId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Deleting script.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			w.WriteHeader(http.StatusNoContent)
-		}
-	})
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
+	}
 }

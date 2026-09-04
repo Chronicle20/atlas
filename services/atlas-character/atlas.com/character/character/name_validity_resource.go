@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
@@ -21,7 +23,7 @@ type NameValidityResponse struct {
 // reservation gate applies to creation too (design ruling): a live pending
 // name-change reservation must block a creation of the same name, or the
 // rename loses its own race at apply time. nil is a safe default (no gate).
-func handleGetNameValidity(nameReservedOf NameReservedFunc) rest.GetHandler {
+func handleGetNameValidity(db *gorm.DB, nameReservedOf NameReservedFunc) rest.GetHandler {
 	return func(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			q := r.URL.Query()
@@ -49,7 +51,7 @@ func handleGetNameValidity(nameReservedOf NameReservedFunc) rest.GetHandler {
 				return
 			}
 
-			res, err := NewProcessor(d.Logger(), d.Context(), d.DB()).
+			res, err := NewProcessor(d.Logger(), d.Context(), db).
 				WithNameReserved(nameReservedOf).
 				CheckNameValidity(name, world.Id(wid), scope)
 			if err != nil {

@@ -42,18 +42,18 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
-			registerDiscardPatch := rest.RegisterInputHandler[DiscardRestModel](l)(db)(si)
-			registerNotifyPatch := rest.RegisterInputHandler[NotifyRestModel](l)(db)(si)
+			registerGet := rest.RegisterHandler(l)(si)
+			registerDiscardPatch := rest.RegisterInputHandler[DiscardRestModel](l)(si)
+			registerNotifyPatch := rest.RegisterInputHandler[NotifyRestModel](l)(si)
 
 			pr := router.PathPrefix("/parcels").Subrouter()
-			pr.HandleFunc("", registerGet("get_parcels", handleGetParcels)).Methods(http.MethodGet)
-			pr.HandleFunc("/{parcelId}", registerGet("get_parcel", handleGetParcel)).Methods(http.MethodGet)
-			pr.HandleFunc("/{parcelId}", registerDiscardPatch("discard_parcel", handleDiscardParcel)).Methods(http.MethodPatch)
-			pr.HandleFunc("/{parcelId}/notify", registerNotifyPatch("notify_parcel", handleNotifyParcel)).Methods(http.MethodPatch)
+			pr.HandleFunc("", registerGet("get_parcels", handleGetParcels(db))).Methods(http.MethodGet)
+			pr.HandleFunc("/{parcelId}", registerGet("get_parcel", handleGetParcel(db))).Methods(http.MethodGet)
+			pr.HandleFunc("/{parcelId}", registerDiscardPatch("discard_parcel", handleDiscardParcel(db))).Methods(http.MethodPatch)
+			pr.HandleFunc("/{parcelId}/notify", registerNotifyPatch("notify_parcel", handleNotifyParcel(db))).Methods(http.MethodPatch)
 
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
-			cr.HandleFunc("/parcel-status", registerGet("get_character_parcel_status", handleGetParcelStatus)).Methods(http.MethodGet)
+			cr.HandleFunc("/parcel-status", registerGet("get_character_parcel_status", handleGetParcelStatus(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -70,70 +70,72 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 // has many worlds; this is the third instance of this exact mis-scoping
 // risk in the plan — task-2's provider WHERE clause and task-3's
 // HasInFlight both had the same shape of finding).
-func handleGetParcels(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query()
+func handleGetParcels(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			q := r.URL.Query()
 
-		if v := q.Get("filter[status]"); v != "" && v != StatusPending {
-			server.WriteBadRequest(d.Logger(), w, "filter[status] must be \"pending\"")
-			return
-		}
-
-		p := NewProcessor(d.Logger(), d.Context(), d.DB())
-
-		switch {
-		case q.Get("filter[recipientId]") != "":
-			recipientId, err := strconv.ParseUint(q.Get("filter[recipientId]"), 10, 32)
-			if err != nil {
-				d.Logger().WithError(err).Warnf("Unable to parse filter[recipientId].")
-				server.WriteBadRequest(d.Logger(), w, "filter[recipientId] must be a uint32")
+			if v := q.Get("filter[status]"); v != "" && v != StatusPending {
+				server.WriteBadRequest(d.Logger(), w, "filter[status] must be \"pending\"")
 				return
 			}
 
-			v := q.Get("filter[worldId]")
-			if v == "" {
-				d.Logger().Warnf("Parcel list request for recipient [%d] omitted filter[worldId].", recipientId)
-				server.WriteBadRequest(d.Logger(), w, "filter[worldId] is required")
-				return
-			}
-			parsed, werr := strconv.ParseUint(v, 10, 8)
-			if werr != nil {
-				d.Logger().WithError(werr).Warnf("Unable to parse filter[worldId].")
-				server.WriteBadRequest(d.Logger(), w, "filter[worldId] must be a byte")
-				return
-			}
-			worldId := world.Id(byte(parsed))
+			p := NewProcessor(d.Logger(), d.Context(), db)
 
-			ms, err := p.GetForRecipient(uint32(recipientId), worldId)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving parcels for recipient [%d].", recipientId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
+			switch {
+			case q.Get("filter[recipientId]") != "":
+				recipientId, err := strconv.ParseUint(q.Get("filter[recipientId]"), 10, 32)
+				if err != nil {
+					d.Logger().WithError(err).Warnf("Unable to parse filter[recipientId].")
+					server.WriteBadRequest(d.Logger(), w, "filter[recipientId] must be a uint32")
+					return
+				}
+
+				v := q.Get("filter[worldId]")
+				if v == "" {
+					d.Logger().Warnf("Parcel list request for recipient [%d] omitted filter[worldId].", recipientId)
+					server.WriteBadRequest(d.Logger(), w, "filter[worldId] is required")
+					return
+				}
+				parsed, werr := strconv.ParseUint(v, 10, 8)
+				if werr != nil {
+					d.Logger().WithError(werr).Warnf("Unable to parse filter[worldId].")
+					server.WriteBadRequest(d.Logger(), w, "filter[worldId] must be a byte")
+					return
+				}
+				worldId := world.Id(byte(parsed))
+
+				ms, err := p.GetForRecipient(uint32(recipientId), worldId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving parcels for recipient [%d].", recipientId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				writeParcels(d, c, w, r, ms)
+				return
+
+			case q.Get("filter[senderId]") != "":
+				senderId, err := strconv.ParseUint(q.Get("filter[senderId]"), 10, 32)
+				if err != nil {
+					d.Logger().WithError(err).Warnf("Unable to parse filter[senderId].")
+					server.WriteBadRequest(d.Logger(), w, "filter[senderId] must be a uint32")
+					return
+				}
+
+				ms, err := p.GetPendingForSender(uint32(senderId))
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving parcels for sender [%d].", senderId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				writeParcels(d, c, w, r, ms)
+				return
+
+			default:
+				d.Logger().Warnf("Parcel list request supplied neither filter[recipientId] nor filter[senderId].")
+				server.WriteBadRequest(d.Logger(), w, "one of filter[recipientId] or filter[senderId] is required")
 				return
 			}
-			writeParcels(d, c, w, r, ms)
-			return
-
-		case q.Get("filter[senderId]") != "":
-			senderId, err := strconv.ParseUint(q.Get("filter[senderId]"), 10, 32)
-			if err != nil {
-				d.Logger().WithError(err).Warnf("Unable to parse filter[senderId].")
-				server.WriteBadRequest(d.Logger(), w, "filter[senderId] must be a uint32")
-				return
-			}
-
-			ms, err := p.GetPendingForSender(uint32(senderId))
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving parcels for sender [%d].", senderId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-			writeParcels(d, c, w, r, ms)
-			return
-
-		default:
-			d.Logger().Warnf("Parcel list request supplied neither filter[recipientId] nor filter[senderId].")
-			server.WriteBadRequest(d.Logger(), w, "one of filter[recipientId] or filter[senderId] is required")
-			return
 		}
 	}
 }
@@ -153,39 +155,41 @@ func writeParcels(d *rest.HandlerDependency, c *rest.HandlerContext, w http.Resp
 
 // handleGetParcel retrieves a single parcel by id. A malformed uuid or an id
 // with no row is rejected cleanly (400 / 404) — never a disconnect.
-func handleGetParcel(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			parcelId, err := uuid.Parse(parcelIdStr)
-			if err != nil {
-				d.Logger().WithError(err).Warnf("Unable to parse parcelId [%s].", parcelIdStr)
-				server.WriteBadRequest(d.Logger(), w, "parcelId must be a uuid")
-				return
-			}
+func handleGetParcel(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				parcelId, err := uuid.Parse(parcelIdStr)
+				if err != nil {
+					d.Logger().WithError(err).Warnf("Unable to parse parcelId [%s].", parcelIdStr)
+					server.WriteBadRequest(d.Logger(), w, "parcelId must be a uuid")
+					return
+				}
 
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(parcelId)
-			if errors.Is(err, ErrNotFound) {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving parcel [%s].", parcelId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				m, err := NewProcessor(d.Logger(), d.Context(), db).GetById(parcelId)
+				if errors.Is(err, ErrNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving parcel [%s].", parcelId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			res, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				res, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }
 
 // handleDiscardParcel marks a pending parcel discarded on behalf of the
@@ -195,43 +199,45 @@ func handleGetParcel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 // disconnect, since atlas-channel already re-validates the same facts
 // before issuing this PATCH and a 409 here means the two disagreed (a race,
 // not caller error).
-func handleDiscardParcel(d *rest.HandlerDependency, c *rest.HandlerContext, input DiscardRestModel) http.HandlerFunc {
-	return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			parcelId, err := uuid.Parse(parcelIdStr)
-			if err != nil {
-				d.Logger().WithError(err).Warnf("Unable to parse parcelId [%s].", parcelIdStr)
-				server.WriteBadRequest(d.Logger(), w, "parcelId must be a uuid")
-				return
-			}
+func handleDiscardParcel(db *gorm.DB) rest.InputHandler[DiscardRestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input DiscardRestModel) http.HandlerFunc {
+		return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				parcelId, err := uuid.Parse(parcelIdStr)
+				if err != nil {
+					d.Logger().WithError(err).Warnf("Unable to parse parcelId [%s].", parcelIdStr)
+					server.WriteBadRequest(d.Logger(), w, "parcelId must be a uuid")
+					return
+				}
 
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Discard(parcelId, input.RecipientId)
-			if errors.Is(err, ErrNotFound) {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			if errors.Is(err, ErrNotRecipient) || errors.Is(err, ErrNotPending) {
-				w.WriteHeader(http.StatusConflict)
-				return
-			}
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Discarding parcel [%s] for recipient [%d].", parcelId, input.RecipientId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				m, err := NewProcessor(d.Logger(), d.Context(), db).Discard(parcelId, input.RecipientId)
+				if errors.Is(err, ErrNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if errors.Is(err, ErrNotRecipient) || errors.Is(err, ErrNotPending) {
+					w.WriteHeader(http.StatusConflict)
+					return
+				}
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Discarding parcel [%s] for recipient [%d].", parcelId, input.RecipientId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			res, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				res, err := model.Map(Transform)(model.FixedProvider(m))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }
 
 // handleNotifyParcel stamps LastNotified on a parcel (task-241 Task 21's
@@ -239,61 +245,65 @@ func handleDiscardParcel(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 // recipient-gated: it is atlas-channel's own bookkeeping, invisible to the
 // player, so no caller-supplied ownership check applies. A missing id is
 // still a clean 404, never a disconnect.
-func handleNotifyParcel(d *rest.HandlerDependency, c *rest.HandlerContext, _ NotifyRestModel) http.HandlerFunc {
-	return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			parcelId, err := uuid.Parse(parcelIdStr)
-			if err != nil {
-				d.Logger().WithError(err).Warnf("Unable to parse parcelId [%s].", parcelIdStr)
-				server.WriteBadRequest(d.Logger(), w, "parcelId must be a uuid")
-				return
-			}
+func handleNotifyParcel(db *gorm.DB) rest.InputHandler[NotifyRestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, _ NotifyRestModel) http.HandlerFunc {
+		return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				parcelId, err := uuid.Parse(parcelIdStr)
+				if err != nil {
+					d.Logger().WithError(err).Warnf("Unable to parse parcelId [%s].", parcelIdStr)
+					server.WriteBadRequest(d.Logger(), w, "parcelId must be a uuid")
+					return
+				}
 
-			_, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(parcelId)
-			if errors.Is(err, ErrNotFound) {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving parcel [%s] to notify.", parcelId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				_, err = NewProcessor(d.Logger(), d.Context(), db).GetById(parcelId)
+				if errors.Is(err, ErrNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving parcel [%s] to notify.", parcelId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			if err := NewProcessor(d.Logger(), d.Context(), d.DB()).MarkNotified(parcelId); err != nil {
-				d.Logger().WithError(err).Errorf("Marking parcel [%s] notified.", parcelId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				if err := NewProcessor(d.Logger(), d.Context(), db).MarkNotified(parcelId); err != nil {
+					d.Logger().WithError(err).Errorf("Marking parcel [%s] notified.", parcelId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			w.WriteHeader(http.StatusNoContent)
-		}
-	})
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
+	}
 }
 
 // handleGetParcelStatus answers "does this character have a pending
 // parcel" — the narrow round trip task-26's world-transfer gate 12 calls,
 // rather than a full mailbox fetch.
-func handleGetParcelStatus(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			inFlight, err := NewProcessor(d.Logger(), d.Context(), d.DB()).HasInFlight(characterId)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving parcel status for character [%d].", characterId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+func handleGetParcelStatus(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				inFlight, err := NewProcessor(d.Logger(), d.Context(), db).HasInFlight(characterId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving parcel status for character [%d].", characterId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			res, err := transformParcelStatus(characterId, inFlight)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				res, err := transformParcelStatus(characterId, inFlight)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[parcelStatusRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[parcelStatusRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
 }

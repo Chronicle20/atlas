@@ -23,53 +23,55 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			// Add endpoints to get and delete shops for a tenant
-			router.HandleFunc("/shops", rest.RegisterHandler(l)(db)(si)("get_all_shops", handleGetAllShops)).Methods(http.MethodGet)
-			router.HandleFunc("/shops", rest.RegisterHandler(l)(db)(si)("delete_all_shops", handleDeleteAllShops)).Methods(http.MethodDelete)
+			router.HandleFunc("/shops", rest.RegisterHandler(l)(si)("get_all_shops", handleGetAllShops(db))).Methods(http.MethodGet)
+			router.HandleFunc("/shops", rest.RegisterHandler(l)(si)("delete_all_shops", handleDeleteAllShops(db))).Methods(http.MethodDelete)
 
 			r := router.PathPrefix("/npcs/{npcId}/shop").Subrouter()
-			r.HandleFunc("", rest.RegisterHandler(l)(db)(si)("get_shop", handleGetShop)).Methods(http.MethodGet)
-			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create_shop", handleCreateShop)).Methods(http.MethodPost)
-			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_shop", handleUpdateShop)).Methods(http.MethodPut)
-			r.HandleFunc("/characters", rest.RegisterHandler(l)(db)(si)("get_shop_characters", handleGetShopCharacters)).Methods(http.MethodGet)
+			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_shop", handleGetShop(db))).Methods(http.MethodGet)
+			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("create_shop", handleCreateShop(db))).Methods(http.MethodPost)
+			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("update_shop", handleUpdateShop(db))).Methods(http.MethodPut)
+			r.HandleFunc("/characters", rest.RegisterHandler(l)(si)("get_shop_characters", handleGetShopCharacters(db))).Methods(http.MethodGet)
 
 			// Commodities are now a relationship of shops
-			r.HandleFunc("/relationships/commodities", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("add_commodity", handleAddCommodity)).Methods(http.MethodPost)
-			r.HandleFunc("/relationships/commodities", rest.RegisterHandler(l)(db)(si)("delete_all_commodities", handleDeleteAllCommodities)).Methods(http.MethodDelete)
-			r.HandleFunc("/relationships/commodities/{commodityId}", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("update_commodity", handleUpdateCommodity)).Methods(http.MethodPut)
-			r.HandleFunc("/relationships/commodities/{commodityId}", rest.RegisterHandler(l)(db)(si)("remove_commodity", handleRemoveCommodity)).Methods(http.MethodDelete)
+			r.HandleFunc("/relationships/commodities", rest.RegisterInputHandler[commodities.RestModel](l)(si)("add_commodity", handleAddCommodity(db))).Methods(http.MethodPost)
+			r.HandleFunc("/relationships/commodities", rest.RegisterHandler(l)(si)("delete_all_commodities", handleDeleteAllCommodities(db))).Methods(http.MethodDelete)
+			r.HandleFunc("/relationships/commodities/{commodityId}", rest.RegisterInputHandler[commodities.RestModel](l)(si)("update_commodity", handleUpdateCommodity(db))).Methods(http.MethodPut)
+			r.HandleFunc("/relationships/commodities/{commodityId}", rest.RegisterHandler(l)(si)("remove_commodity", handleRemoveCommodity(db))).Methods(http.MethodDelete)
 		}
 	}
 }
 
-func handleGetShop(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			// Get the shop model with decorators
-			shopModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByNpcIdProvider(decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)(npcId)()
-			if err != nil {
-				if errors.Is(err, ErrNotFound) {
-					w.WriteHeader(http.StatusNotFound)
+func handleGetShop(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				// Get the shop model with decorators
+				shopModel, err := NewProcessor(d.Logger(), d.Context(), db).ByNpcIdProvider(decoratorsFromInclude(d.Logger(), d.Context(), db, r)...)(npcId)()
+				if err != nil {
+					if errors.Is(err, ErrNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+
+					d.Logger().WithError(err).Errorf("Retrieving shop model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
-				d.Logger().WithError(err).Errorf("Retrieving shop model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				// Transform the shop model to a REST model
+				res, err := Transform(shopModel)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			// Transform the shop model to a REST model
-			res, err := Transform(shopModel)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
+		})
+	}
 }
 
 func decoratorsFromInclude(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, r *http.Request) []model.Decorator[Model] {
@@ -83,52 +85,20 @@ func decoratorsFromInclude(l logrus.FieldLogger, ctx context.Context, db *gorm.D
 	return make([]model.Decorator[Model], 0)
 }
 
-func handleAddCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i commodities.RestModel) http.HandlerFunc {
-	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			// Default values for new fields
-			discountRate := i.DiscountRate
-			tokenTemplateId := i.TokenTemplateId
-			tokenPrice := i.TokenPrice
-			period := i.Period
-			levelLimited := i.LevelLimit
-			commodity, err := p.AddCommodity(npcId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Adding commodity.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			res, err := commodities.Transform(commodity)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			w.WriteHeader(http.StatusCreated)
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[commodities.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-		}
-	})
-}
-
-func handleUpdateCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i commodities.RestModel) http.HandlerFunc {
-	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
-		return rest.ParseCommodityId(d.Logger(), func(commodityId uuid.UUID) http.HandlerFunc {
+func handleAddCommodity(db *gorm.DB) rest.InputHandler[commodities.RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i commodities.RestModel) http.HandlerFunc {
+		return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p := NewProcessor(d.Logger(), d.Context(), d.DB())
+				p := NewProcessor(d.Logger(), d.Context(), db)
 				// Default values for new fields
 				discountRate := i.DiscountRate
 				tokenTemplateId := i.TokenTemplateId
 				tokenPrice := i.TokenPrice
 				period := i.Period
 				levelLimited := i.LevelLimit
-				commodity, err := p.UpdateCommodity(commodityId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
+				commodity, err := p.AddCommodity(npcId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 				if err != nil {
-					d.Logger().WithError(err).Errorf("Updating commodity.")
+					d.Logger().WithError(err).Errorf("Adding commodity.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
@@ -140,23 +110,79 @@ func handleUpdateCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i 
 					return
 				}
 
-				w.WriteHeader(http.StatusOK)
+				w.WriteHeader(http.StatusCreated)
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[commodities.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
-	})
+	}
 }
 
-func handleRemoveCommodity(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
-		return rest.ParseCommodityId(d.Logger(), func(commodityId uuid.UUID) http.HandlerFunc {
+func handleUpdateCommodity(db *gorm.DB) rest.InputHandler[commodities.RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i commodities.RestModel) http.HandlerFunc {
+		return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+			return rest.ParseCommodityId(d.Logger(), func(commodityId uuid.UUID) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					p := NewProcessor(d.Logger(), d.Context(), db)
+					// Default values for new fields
+					discountRate := i.DiscountRate
+					tokenTemplateId := i.TokenTemplateId
+					tokenPrice := i.TokenPrice
+					period := i.Period
+					levelLimited := i.LevelLimit
+					commodity, err := p.UpdateCommodity(commodityId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Updating commodity.")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					res, err := commodities.Transform(commodity)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Creating REST model.")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					w.WriteHeader(http.StatusOK)
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[commodities.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				}
+			})
+		})
+	}
+}
+
+func handleRemoveCommodity(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+			return rest.ParseCommodityId(d.Logger(), func(commodityId uuid.UUID) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					p := NewProcessor(d.Logger(), d.Context(), db)
+					err := p.RemoveCommodity(commodityId)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Removing commodity.")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					w.WriteHeader(http.StatusNoContent)
+				}
+			})
+		})
+	}
+}
+
+func handleDeleteAllCommodities(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p := NewProcessor(d.Logger(), d.Context(), d.DB())
-				err := p.RemoveCommodity(commodityId)
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				err := p.DeleteAllCommoditiesByNpcId(npcId)
 				if err != nil {
-					d.Logger().WithError(err).Errorf("Removing commodity.")
+					d.Logger().WithError(err).Errorf("Deleting all commodities for NPC %d.", npcId)
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
@@ -164,36 +190,22 @@ func handleRemoveCommodity(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 				w.WriteHeader(http.StatusNoContent)
 			}
 		})
-	})
+	}
 }
 
-func handleDeleteAllCommodities(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+func handleDeleteAllShops(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			err := p.DeleteAllCommoditiesByNpcId(npcId)
+			p := NewProcessor(d.Logger(), d.Context(), db)
+			err := p.DeleteAllShops()
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Deleting all commodities for NPC %d.", npcId)
+				d.Logger().WithError(err).Errorf("Deleting all shops.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			w.WriteHeader(http.StatusNoContent)
 		}
-	})
-}
-
-func handleDeleteAllShops(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		p := NewProcessor(d.Logger(), d.Context(), d.DB())
-		err := p.DeleteAllShops()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Deleting all shops.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		w.WriteHeader(http.StatusNoContent)
 	}
 }
 
@@ -203,36 +215,38 @@ func handleDeleteAllShops(d *rest.HandlerDependency, _ *rest.HandlerContext) htt
 // other internal caller besides this handler, so it is left unchanged and
 // materialized in full here, stable-sorted (characterIds are already
 // unique uint32s) for determinism, then paginate.Slice applied.
-func handleGetShopCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
-			if err != nil {
-				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-				return
+func handleGetShopCharacters(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				characterIds := p.GetCharactersInShop(npcId)
+
+				sorted := make([]uint32, len(characterIds))
+				copy(sorted, characterIds)
+				sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+
+				paged := paginate.Slice(sorted, page)
+
+				res, err := model.SliceMap(TransformCharacterList)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalPaginatedResponse[[]CharacterListRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 			}
-
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			characterIds := p.GetCharactersInShop(npcId)
-
-			sorted := make([]uint32, len(characterIds))
-			copy(sorted, characterIds)
-			sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
-
-			paged := paginate.Slice(sorted, page)
-
-			res, err := model.SliceMap(TransformCharacterList)(model.FixedProvider(paged.Items))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalPaginatedResponse[[]CharacterListRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
-		}
-	})
+		})
+	}
 }
 
 // handleGetAllShops is content full-table (no per-request WHERE filter), so
@@ -240,119 +254,125 @@ func handleGetShopCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) 
 // is the one route in this task with a below-default cap: 50/250 per the
 // task-117 brief (content full-table lists default to the smaller page
 // size rather than the game-capped 250/250 used elsewhere).
-func handleGetAllShops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
-		if err != nil {
-			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-			return
+func handleGetAllShops(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			p := NewProcessor(d.Logger(), d.Context(), db)
+
+			// Get one page of shops using the processor
+			paged, err := p.GetAllShops(page, decoratorsFromInclude(d.Logger(), d.Context(), db, r)...)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Getting all shops.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			// Transform shop models to REST models
+			restShops, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST models.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			// Return the response
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShops, paginate.EnvelopeFor(paged), r)
 		}
-
-		p := NewProcessor(d.Logger(), d.Context(), d.DB())
-
-		// Get one page of shops using the processor
-		paged, err := p.GetAllShops(page, decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Getting all shops.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		// Transform shop models to REST models
-		restShops, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST models.")
-			server.WriteErrorResponse(d.Logger())(w)(err)
-			return
-		}
-
-		// Return the response
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShops, paginate.EnvelopeFor(paged), r)
 	}
 }
 
-func handleCreateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
-	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+func handleCreateShop(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+		return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				p := NewProcessor(d.Logger(), d.Context(), db)
 
-			// Extract commodities from the REST model
-			commodityModels := make([]commodities.Model, 0, len(i.Commodities))
-			for _, cr := range i.Commodities {
-				cm, err := commodities.Extract(cr)
+				// Extract commodities from the REST model
+				commodityModels := make([]commodities.Model, 0, len(i.Commodities))
+				for _, cr := range i.Commodities {
+					cm, err := commodities.Extract(cr)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Extracting commodity model.")
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					commodityModels = append(commodityModels, cm)
+				}
+
+				// Create the shop
+				shop, err := p.CreateShop(npcId, i.Recharger, commodityModels)
 				if err != nil {
-					d.Logger().WithError(err).Errorf("Extracting commodity model.")
-					w.WriteHeader(http.StatusBadRequest)
+					d.Logger().WithError(err).Errorf("Creating shop.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				commodityModels = append(commodityModels, cm)
-			}
 
-			// Create the shop
-			shop, err := p.CreateShop(npcId, i.Recharger, commodityModels)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating shop.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				// Transform the shop model to a REST model
+				restShop, err := Transform(shop)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			// Transform the shop model to a REST model
-			restShop, err := Transform(shop)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
+				// Return the response
+				w.WriteHeader(http.StatusCreated)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShop)
 			}
-
-			// Return the response
-			w.WriteHeader(http.StatusCreated)
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShop)
-		}
-	})
+		})
+	}
 }
 
-func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
-	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+func handleUpdateShop(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+		return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				p := NewProcessor(d.Logger(), d.Context(), db)
 
-			// Extract commodities from the REST model
-			commodityModels := make([]commodities.Model, 0, len(i.Commodities))
-			for _, cr := range i.Commodities {
-				cm, err := commodities.Extract(cr)
+				// Extract commodities from the REST model
+				commodityModels := make([]commodities.Model, 0, len(i.Commodities))
+				for _, cr := range i.Commodities {
+					cm, err := commodities.Extract(cr)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Extracting commodity model.")
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					commodityModels = append(commodityModels, cm)
+				}
+
+				// Update the shop
+				shop, err := p.UpdateShop(npcId, i.Recharger, commodityModels)
 				if err != nil {
-					d.Logger().WithError(err).Errorf("Extracting commodity model.")
-					w.WriteHeader(http.StatusBadRequest)
+					d.Logger().WithError(err).Errorf("Updating shop.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				commodityModels = append(commodityModels, cm)
-			}
 
-			// Update the shop
-			shop, err := p.UpdateShop(npcId, i.Recharger, commodityModels)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Updating shop.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
+				// Transform the shop model to a REST model
+				restShop, err := Transform(shop)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
 
-			// Transform the shop model to a REST model
-			restShop, err := Transform(shop)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
+				// Return the response
+				w.WriteHeader(http.StatusOK)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShop)
 			}
-
-			// Return the response
-			w.WriteHeader(http.StatusOK)
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShop)
-		}
-	})
+		})
+	}
 }

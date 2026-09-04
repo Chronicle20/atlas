@@ -44,7 +44,7 @@ func (t *Sweep) Run(ctx context.Context) {
 	defer span.End()
 
 	t.l.Debugf("Executing %s task.", SweepTask)
-	err := model.ForEachSlice(model.FixedProvider(GetRegistry().Tenants()), func(te tenant.Model) error {
+	err := model.ForEachSlice(model.FixedProvider(GetRegistry().Tenants(sctx)), func(te tenant.Model) error {
 		tctx := t.envContext(tenant.WithContext(sctx, te))
 		return NewProcessor(t.l, tctx).SweepTenant()
 	})

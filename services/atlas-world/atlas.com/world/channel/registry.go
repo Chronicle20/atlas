@@ -76,8 +76,7 @@ func (r *Registry) RemoveByWorldAndChannel(ctx context.Context, ch channelConsta
 	return nil
 }
 
-func (r *Registry) Tenants() []tenant.Model {
-	ctx := context.Background()
+func (r *Registry) Tenants(ctx context.Context) []tenant.Model {
 	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil

@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"atlas-reactors/reactor"
+	"context"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ func NewCooldownCleanup(l logrus.FieldLogger) *CooldownCleanup {
 	return &CooldownCleanup{l: l}
 }
 
-func (c *CooldownCleanup) Run() {
+func (c *CooldownCleanup) Run(_ context.Context) {
 	c.l.Debugf("Running cooldown cleanup task.")
 	reactor.GetRegistry().CleanupExpiredCooldowns()
 }

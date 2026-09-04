@@ -64,9 +64,7 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewCooldownCleanup(l))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewCooldownCleanup(l))
 
 	server.New(l).
 		WithContext(rt.Context()).

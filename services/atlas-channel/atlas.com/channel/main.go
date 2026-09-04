@@ -83,7 +83,6 @@ import (
 	"atlas-channel/socket"
 	"atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
-	"atlas-channel/tasks"
 	"context"
 	"fmt"
 	"os"
@@ -345,23 +344,19 @@ func main() {
 		}).Run(rt.Context(), l)
 	})
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(channel3.NewHeartbeat(l, rt.Context(), time.Second*10))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(channel3.NewHeartbeat(l, time.Second*10))
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		// character/combo sits outside env-domain-guard's permitted
-		// atlas-env import list (main.go, kafka/, rest/, socket/), so the
-		// environment that owns each expired combo's tenant (falling back
-		// to this pod's own, env.Self(), when the tenant is unknown) is
-		// threaded in as a plain function value (service.TenantEnvironment)
-		// rather than the package importing atlas-env itself. Without it,
-		// DecayTick's per-character buff-cancel Kafka events would carry an
-		// empty or wrong environment header and either fail decide() open
-		// per FR-1.8 or be dropped by every consumer's ownership gate per
-		// FR-7.7.
-		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second, service.TenantEnvironment))
-	})
+	// character/combo sits outside env-domain-guard's permitted
+	// atlas-env import list (main.go, kafka/, rest/, socket/), so the
+	// environment that owns each expired combo's tenant (falling back
+	// to this pod's own, env.Self(), when the tenant is unknown) is
+	// threaded in as a plain function value (service.TenantEnvironment)
+	// rather than the package importing atlas-env itself. Without it,
+	// DecayTick's per-character buff-cancel Kafka events would carry an
+	// empty or wrong environment header and either fail decide() open
+	// per FR-1.8 or be dropped by every consumer's ownership gate per
+	// FR-7.7.
+	routine.Register(l, rt.Context(), rt.WaitGroup())(combo.NewDecayTick(l, time.Second, service.TenantEnvironment))
 
 	rt.TeardownFunc(session.Teardown(l))
 

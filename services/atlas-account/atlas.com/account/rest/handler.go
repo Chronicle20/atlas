@@ -30,7 +30,7 @@ func ParseAccountId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) ht
 }
 
 // AccountIdAndWorldIdHandler is the world-scoped counterpart of
-// AccountIdHandler, for the character-slots sub-resource
+// ParseAccountId, for the character-slots sub-resource
 // (accounts/{accountId}/worlds/{worldId}/character-slots, task-246
 // bug-b-type-must-add-a-slot.md).
 type AccountIdAndWorldIdHandler func(accountId uint32, worldId byte) http.HandlerFunc

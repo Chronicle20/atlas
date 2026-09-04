@@ -1,9 +1,7 @@
 package rest
 
 import (
-	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -27,61 +25,20 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterInputHandler[M](l)
 }
 
-type DefinitionIdHandler func(definitionId uuid.UUID) http.HandlerFunc
-
-func ParseDefinitionId(l logrus.FieldLogger, next DefinitionIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		definitionId, err := uuid.Parse(mux.Vars(r)["definitionId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse definitionId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(definitionId)(w, r)
-	}
+func ParseDefinitionId(l logrus.FieldLogger, next func(definitionId uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "definitionId", next)
 }
 
-type InstanceIdHandler func(instanceId uuid.UUID) http.HandlerFunc
-
-func ParseInstanceId(l logrus.FieldLogger, next InstanceIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		instanceId, err := uuid.Parse(mux.Vars(r)["instanceId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse instanceId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(instanceId)(w, r)
-	}
+func ParseInstanceId(l logrus.FieldLogger, next func(instanceId uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "instanceId", next)
 }
 
-type QuestIdHandler func(questId string) http.HandlerFunc
-
-func ParseQuestId(l logrus.FieldLogger, next QuestIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		questId := mux.Vars(r)["questId"]
-		if questId == "" {
-			l.Errorf("Empty questId in path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(questId)(w, r)
-	}
+func ParseQuestId(l logrus.FieldLogger, next func(questId string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "questId", next)
 }
 
-type CharacterIdHandler func(characterId uint32) http.HandlerFunc
-
-func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		characterIdStr := mux.Vars(r)["characterId"]
-		characterId, err := strconv.Atoi(characterIdStr)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(characterId))(w, r)
-	}
+func ParseCharacterId(l logrus.FieldLogger, next func(characterId uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "characterId", next)
 }
 
 type FieldInstanceHandler func(fieldInstance uuid.UUID) http.HandlerFunc
@@ -98,18 +55,6 @@ func ParseFieldInstance(l logrus.FieldLogger, next FieldInstanceHandler) http.Ha
 	}
 }
 
-type MapIdHandler func(mapId uint32) http.HandlerFunc
-
-func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		mapIdStr := mux.Vars(r)["mapId"]
-		var mapId uint32
-		_, err := fmt.Sscanf(mapIdStr, "%d", &mapId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse mapId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(mapId)(w, r)
-	}
+func ParseMapId(l logrus.FieldLogger, next func(mapId uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "mapId", next)
 }

@@ -17,9 +17,9 @@ import (
 const SweepTaskName = "rps_sweep_task"
 
 // SweepTask periodically reclaims RPS sessions abandoned past their TTL. It
-// implements the routine.Task interface structurally (Run + SleepTime) without
-// importing the "atlas-rps/tasks" package, mirroring
-// atlas-expressions/atlas.com/expressions/expression/task.go's RevertTask.
+// implements the routine.Task interface structurally (Run + SleepTime),
+// mirroring atlas-expressions/atlas.com/expressions/expression/task.go's
+// RevertTask.
 //
 // A swept session is disposed with NO payout: PopExpired has already removed
 // it from the registry, so Run emits the same GameEnded{disconnected} event

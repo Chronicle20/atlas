@@ -38,8 +38,8 @@ func NewInviteTimeout(l logrus.FieldLogger, interval time.Duration, envContext f
 	return &Timeout{l, interval, timeout, envContext}
 }
 
-func (t *Timeout) Run() {
-	_, span := otel.GetTracerProvider().Tracer("atlas-invites").Start(context.Background(), TimeoutTask)
+func (t *Timeout) Run(ctx context.Context) {
+	_, span := otel.GetTracerProvider().Tracer("atlas-invites").Start(ctx, TimeoutTask)
 	defer span.End()
 
 	tenants := GetRegistry().GetActiveTenants()

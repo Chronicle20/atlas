@@ -287,7 +287,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-80e874a
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
-    newTag: main-80e874a
+    newTag: main-5cba6a3
   - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
     newTag: main-80e874a
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant

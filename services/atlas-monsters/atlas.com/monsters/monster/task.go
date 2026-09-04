@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"context"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -16,7 +17,7 @@ func NewRegistryAudit(l logrus.FieldLogger, interval time.Duration) *RegistryAud
 	return &RegistryAudit{l, interval}
 }
 
-func (t *RegistryAudit) Run() {
+func (t *RegistryAudit) Run(ctx context.Context) {
 	monsters := GetMonsterRegistry().GetMonsters()
 	var mapCount, monsterCount int
 	for _, mons := range monsters {

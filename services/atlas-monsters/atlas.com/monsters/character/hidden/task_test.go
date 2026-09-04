@@ -34,7 +34,7 @@ func TestReconciliationRemovesStaleKeepsActive(t *testing.T) {
 			return []buff.Model{}, nil
 		}
 	}
-	task.Run()
+	task.Run(ctx)
 
 	ms, _ := r.MemberSet(ctx, ten)
 	if _, ok := ms[1]; ok {

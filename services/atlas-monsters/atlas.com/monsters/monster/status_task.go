@@ -13,29 +13,28 @@ import (
 
 type StatusExpirationTask struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	interval time.Duration
 }
 
-func NewStatusExpirationTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *StatusExpirationTask {
+func NewStatusExpirationTask(l logrus.FieldLogger, interval time.Duration) *StatusExpirationTask {
 	l.Infof("Initializing status expiration task to run every %dms.", interval.Milliseconds())
-	return &StatusExpirationTask{l: l, ctx: ctx, interval: interval}
+	return &StatusExpirationTask{l: l, interval: interval}
 }
 
-func (t *StatusExpirationTask) Run() {
+func (t *StatusExpirationTask) Run(ctx context.Context) {
 	monsters := GetMonsterRegistry().GetMonsters()
 	for ten, mons := range monsters {
 		for _, m := range mons {
 			if len(m.StatusEffects()) == 0 {
 				continue
 			}
-			t.processMonsterEffects(ten, m)
+			t.processMonsterEffects(ctx, ten, m)
 		}
 	}
 }
 
-func (t *StatusExpirationTask) processMonsterEffects(ten tenant.Model, m Model) {
-	tctx := tenant.WithContext(t.ctx, ten)
+func (t *StatusExpirationTask) processMonsterEffects(ctx context.Context, ten tenant.Model, m Model) {
+	tctx := tenant.WithContext(ctx, ten)
 
 	for _, se := range m.StatusEffects() {
 		if se.Expired() {

@@ -21,7 +21,6 @@ const ReconcileInterval = 5 * time.Minute
 // the next APPLIED/EXPIRED event.
 type ReconciliationTask struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	interval time.Duration
 	registry *Registry
 	buffsFn  func(t tenant.Model, characterId uint32) ([]buff.Model, error)
@@ -29,7 +28,7 @@ type ReconciliationTask struct {
 
 func NewReconciliationTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *ReconciliationTask {
 	l.Infof("Initializing hidden-character reconciliation task to run every %dms.", interval.Milliseconds())
-	t := &ReconciliationTask{l: l, ctx: ctx, interval: interval}
+	t := &ReconciliationTask{l: l, interval: interval}
 	t.registry = GetRegistry()
 	t.buffsFn = func(ten tenant.Model, characterId uint32) ([]buff.Model, error) {
 		return buff.NewProcessor(l, tenant.WithContext(ctx, ten)).GetByCharacterId(characterId)
@@ -37,13 +36,13 @@ func NewReconciliationTask(l logrus.FieldLogger, ctx context.Context, interval t
 	return t
 }
 
-func (t *ReconciliationTask) Run() {
+func (t *ReconciliationTask) Run(ctx context.Context) {
 	if t.registry == nil {
 		return
 	}
-	all := t.registry.GetAll(t.ctx)
+	all := t.registry.GetAll(ctx)
 	for ten, ids := range all {
-		tctx := tenant.WithContext(t.ctx, ten)
+		tctx := tenant.WithContext(ctx, ten)
 		for _, id := range ids {
 			bs, err := t.buffsFn(ten, id)
 			if err != nil {
@@ -53,7 +52,7 @@ func (t *ReconciliationTask) Run() {
 			if !buff.HasActiveGmHide(tctx, bs) {
 				// Warn: reaching here means an EXPIRED event was lost.
 				t.l.Warnf("Hidden-set reconciliation: character [%d] has no active SuperGmHide buff; removing stale entry.", id)
-				if err := t.registry.Remove(t.ctx, ten, id); err != nil {
+				if err := t.registry.Remove(ctx, ten, id); err != nil {
 					t.l.WithError(err).Warnf("Hidden-set reconciliation: unable to remove stale entry for character [%d].", id)
 				}
 			}

@@ -57,7 +57,7 @@ func (tk *MonsterSkillPickerSweepTask) SleepTime() time.Duration { return tk.int
 
 // Run scans all live monsters and repicks any whose next-eligible-repick
 // timestamp has elapsed and whose template has at least one skill.
-func (tk *MonsterSkillPickerSweepTask) Run() {
+func (tk *MonsterSkillPickerSweepTask) Run(ctx context.Context) {
 	monsters := GetMonsterRegistry().GetMonsters()
 	now := tk.nowFn()
 	skillCache := make(map[uuid.UUID]map[uint32]bool)

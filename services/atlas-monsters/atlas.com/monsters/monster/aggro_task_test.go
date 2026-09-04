@@ -90,7 +90,7 @@ func TestAggroDecayTaskFullClearEmitsAggroChanged(t *testing.T) {
 	tk, events, _ := newAggroTaskWithRecorder(t, nil /* no bosses */)
 	// Override now to be far in the future, satisfying the idle threshold.
 	tk.nowFn = func() int64 { return AggroIdleThresholdMs + 1_000 }
-	tk.Run()
+	tk.Run(ctx)
 
 	if len(*events) != 1 {
 		t.Fatalf("expected 1 event, got %d (%+v)", len(*events), *events)
@@ -132,7 +132,7 @@ func TestAggroDecayTaskNoEmitWhenNoAggroToFlip(t *testing.T) {
 
 	tk, events, _ := newAggroTaskWithRecorder(t, nil)
 	tk.nowFn = func() int64 { return AggroIdleThresholdMs + 1_000 }
-	tk.Run()
+	tk.Run(ctx)
 
 	if len(*events) != 0 {
 		t.Fatalf("expected no events, got %d (%+v)", len(*events), *events)
@@ -157,7 +157,7 @@ func TestAggroDecayTaskBossExemption(t *testing.T) {
 
 	tk, events, _ := newAggroTaskWithRecorder(t, map[uint32]bool{bossTemplate: true})
 	tk.nowFn = func() int64 { return AggroIdleThresholdMs + 1_000 }
-	tk.Run()
+	tk.Run(ctx)
 
 	if len(*events) != 0 {
 		t.Fatalf("boss should be skipped, got %d events", len(*events))
@@ -194,7 +194,7 @@ func TestAggroDecayTaskBossCacheHitsLookupOncePerTemplate(t *testing.T) {
 
 	tk, _, calls := newAggroTaskWithRecorder(t, nil)
 	tk.nowFn = func() int64 { return AggroIdleThresholdMs + 1_000 }
-	tk.Run()
+	tk.Run(ctx)
 
 	// Two distinct templates -> 2 lookups regardless of monster count.
 	if *calls != 2 {
@@ -221,7 +221,7 @@ func TestAggroDecayTaskNoOpWhenAllFresh(t *testing.T) {
 
 	tk, events, _ := newAggroTaskWithRecorder(t, nil)
 	tk.nowFn = func() int64 { return now }
-	tk.Run()
+	tk.Run(ctx)
 	if len(*events) != 0 {
 		t.Fatalf("expected no events, got %d", len(*events))
 	}
@@ -324,7 +324,7 @@ func TestAggroDecayTaskReleasesExpiredAutoAggroLease(t *testing.T) {
 
 			tk, events, _ := newAggroTaskWithRecorder(t, nil)
 			tk.nowFn = func() int64 { return tt.nowMs }
-			tk.Run()
+			tk.Run(ctx)
 
 			if len(*events) != tt.wantEvents {
 				t.Fatalf("expected %d events, got %d (%+v)", tt.wantEvents, len(*events), *events)
@@ -364,7 +364,7 @@ func TestAggroDecayTaskLeaseSkipsBosses(t *testing.T) {
 
 	tk, events, _ := newAggroTaskWithRecorder(t, map[uint32]bool{9300018: true})
 	tk.nowFn = func() int64 { return 20_000 }
-	tk.Run()
+	tk.Run(ctx)
 
 	if len(*events) != 0 {
 		t.Fatalf("boss should be skipped, got %d events", len(*events))
@@ -391,7 +391,7 @@ func TestAggroDecayTaskLeaseLeavesControllerIntact(t *testing.T) {
 
 	tk, _, _ := newAggroTaskWithRecorder(t, nil)
 	tk.nowFn = func() int64 { return 20_000 }
-	tk.Run()
+	tk.Run(ctx)
 
 	got, _ := r.GetMonster(ten, m.UniqueId())
 	if got.ControlCharacterId() != 7 {

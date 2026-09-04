@@ -8,10 +8,10 @@ import (
 	monster2 "atlas-monsters/kafka/consumer/monster"
 	"atlas-monsters/monster"
 	"atlas-monsters/monster/information"
-	"atlas-monsters/tasks"
 	"atlas-monsters/world"
 	"context"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -99,15 +99,15 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
-		tasks.Register(l, ctx)(monster.NewRegistryAudit(l, time.Second*30))
-		tasks.Register(l, ctx)(monster.NewStatusExpirationTask(l, ctx, time.Second))
-		tasks.Register(l, ctx)(monster.NewDropTimerTask(l, ctx, time.Second))
-		tasks.Register(l, ctx)(monster.NewSelfDestructTimerTask(l, ctx, time.Second))
-		tasks.Register(l, ctx)(monster.NewMonsterAggroDecayTask(l, ctx, monster.AggroSweepInterval))
-		tasks.Register(l, ctx)(monster.NewMonsterSkillPickerSweepTask(l, ctx, monster.MonsterSkillPickerSweepInterval))
-		tasks.Register(l, ctx)(monster.NewMonsterRecoveryTask(l, ctx, monster.MonsterRecoveryInterval))
-		tasks.Register(l, ctx)(hidden.NewReconciliationTask(l, ctx, hidden.ReconcileInterval))
+	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
+		routine.Register(l, ctx, wg)(monster.NewRegistryAudit(l, time.Second*30))
+		routine.Register(l, ctx, wg)(monster.NewStatusExpirationTask(l, time.Second))
+		routine.Register(l, ctx, wg)(monster.NewDropTimerTask(l, time.Second))
+		routine.Register(l, ctx, wg)(monster.NewSelfDestructTimerTask(l, time.Second))
+		routine.Register(l, ctx, wg)(monster.NewMonsterAggroDecayTask(l, ctx, monster.AggroSweepInterval))
+		routine.Register(l, ctx, wg)(monster.NewMonsterSkillPickerSweepTask(l, ctx, monster.MonsterSkillPickerSweepInterval))
+		routine.Register(l, ctx, wg)(monster.NewMonsterRecoveryTask(l, ctx, monster.MonsterRecoveryInterval))
+		routine.Register(l, ctx, wg)(hidden.NewReconciliationTask(l, ctx, hidden.ReconcileInterval))
 	}
 
 	if leaderEnabled(l) {
@@ -121,9 +121,20 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
+		// Held open for the lifetime of the leader-election goroutine below.
+		// registerSweepTasks (and therefore its routine.Register call) only
+		// runs once le.Run elects this pod as leader, which happens
+		// asynchronously inside the routine.Go goroutine. Registering there
+		// calls wg.Add(1) on a detached goroutine, which would race
+		// Manager.Wait() if the counter were allowed to hit zero in between.
+		// Adding 1 here — synchronously, before routine.Go starts — keeps the
+		// counter above zero for the goroutine's whole life, so that later
+		// Add can never race a Wait-induced zero crossing.
+		rt.WaitGroup().Add(1)
 		routine.Go(l, rt.Context(), func(_ context.Context) {
+			defer rt.WaitGroup().Done()
 			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
-				registerSweepTasks(l, leaderCtx)
+				registerSweepTasks(l, leaderCtx, rt.WaitGroup())
 				<-leaderCtx.Done()
 			})
 			if err != nil {
@@ -132,7 +143,7 @@ func main() {
 		})
 	} else {
 		l.Warnf("MONSTER_LEADER_ELECTION_ENABLED=false — sweep tasks run unconditionally on this pod.")
-		registerSweepTasks(l, rt.Context())
+		registerSweepTasks(l, rt.Context(), rt.WaitGroup())
 	}
 
 	rt.TeardownFunc(monster.Teardown(l))

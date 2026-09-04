@@ -46,7 +46,7 @@ func TestRecoveryTask_AppliesMpAndEmitsHp(t *testing.T) {
 		},
 		mpEmitFn: func(_ tenant.Model, _ Model, _ uint32) error { return nil },
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	got, err := r.GetMonster(tm, m.UniqueId())
 	if err != nil {
@@ -91,7 +91,7 @@ func TestRecoveryTask_SkipsBothZero(t *testing.T) {
 		},
 		emitFn: func(_ tenant.Model, _ Model) error { return nil },
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if applyCalls != 0 {
 		t.Errorf("expected zero applyFn calls when both recoveries are 0; got %d", applyCalls)
@@ -121,7 +121,7 @@ func TestRecoveryTask_SkipsFullHpAndFullMp(t *testing.T) {
 		applyFn: r.ApplyRecovery,
 		emitFn:  func(_ tenant.Model, _ Model) error { return nil },
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if infoCalls != 0 {
 		t.Errorf("expected zero info lookups for at-cap mob; got %d", infoCalls)
@@ -154,7 +154,7 @@ func TestRecoveryTask_SkipsDeadMob(t *testing.T) {
 		applyFn: r.ApplyRecovery,
 		emitFn:  func(_ tenant.Model, _ Model) error { return nil },
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if infoCalls != 0 {
 		t.Errorf("expected zero info lookups for dead mob; got %d", infoCalls)
@@ -193,7 +193,7 @@ func TestRecovery_MpApplied_EmitsMpChanged(t *testing.T) {
 			return nil
 		},
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if len(amounts) != 1 {
 		t.Fatalf("expected exactly 1 MP_CHANGED emit, got %d", len(amounts))
@@ -234,7 +234,7 @@ func TestRecovery_MpNotApplied_NoMpChangedEmit(t *testing.T) {
 		emitFn:   func(_ tenant.Model, _ Model) error { return nil },
 		mpEmitFn: func(_ tenant.Model, _ Model, _ uint32) error { called = true; return nil },
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if called {
 		t.Fatalf("mpApplied=false must not emit MP_CHANGED")

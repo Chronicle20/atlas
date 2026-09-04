@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-channel/character/snapshot"
 	"atlas-channel/server"
+	model2 "atlas-channel/socket/model"
 	"context"
 	"testing"
 
@@ -197,5 +198,225 @@ func TestSnapshotHandlers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, tt.run)
+	}
+}
+
+// distributionMappingCase drives both TestBuildIncreaseExperienceConfig and
+// TestExperienceDistributionTypeExhaustiveness. `types` names the distribution
+// types the case is the coverage owner of; multi-distribution and unknown-type
+// cases declare nil so they contribute nothing to the coverage set.
+type distributionMappingCase struct {
+	name  string
+	types []string
+	given []character2.ExperienceDistributions
+	want  model2.IncreaseExperienceConfig
+}
+
+var distributionMappingCases = []distributionMappingCase{
+	{
+		name:  "White_PrimaryWhiteText",
+		types: []string{character2.ExperienceDistributionTypeWhite},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeWhite, Amount: 1000},
+		},
+		want: model2.IncreaseExperienceConfig{White: true, Amount: 1000},
+	},
+	{
+		name:  "Yellow_PrimaryYellowText",
+		types: []string{character2.ExperienceDistributionTypeYellow},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeYellow, Amount: 2000},
+		},
+		want: model2.IncreaseExperienceConfig{Amount: 2000},
+	},
+	{
+		name:  "Chat_PrimaryInChat",
+		types: []string{character2.ExperienceDistributionTypeChat},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeChat, Amount: 3000},
+		},
+		want: model2.IncreaseExperienceConfig{InChat: true, Amount: 3000},
+	},
+	{
+		name:  "MonsterBook_BonusEventExp",
+		types: []string{character2.ExperienceDistributionTypeMonsterBook},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeMonsterBook, Amount: 4000},
+		},
+		want: model2.IncreaseExperienceConfig{MonsterBookBonus: 4000},
+	},
+	{
+		name:  "MonsterEvent_MobEventPercentage",
+		types: []string{character2.ExperienceDistributionTypeMonsterEvent},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeMonsterEvent, Amount: 11},
+		},
+		want: model2.IncreaseExperienceConfig{MobEventBonusPercentage: 11},
+	},
+	{
+		name:  "PlayTime_MobEventPercentageAndHours",
+		types: []string{character2.ExperienceDistributionTypePlayTime},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypePlayTime, Amount: 22, Attr1: 33},
+		},
+		want: model2.IncreaseExperienceConfig{MobEventBonusPercentage: 22, PlayTimeHour: 33},
+	},
+	{
+		name:  "Wedding_BonusWeddingExp",
+		types: []string{character2.ExperienceDistributionTypeWedding},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeWedding, Amount: 5000},
+		},
+		want: model2.IncreaseExperienceConfig{WeddingBonusEXP: 5000},
+	},
+	{
+		name:  "SpiritWeek_QuestBonusRate",
+		types: []string{character2.ExperienceDistributionTypeSpiritWeek},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeSpiritWeek, Amount: 55},
+		},
+		want: model2.IncreaseExperienceConfig{QuestBonusRate: 55},
+	},
+	{
+		name:  "Party_BonusExpAndEventRate",
+		types: []string{character2.ExperienceDistributionTypeParty},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeParty, Amount: 6000, Attr1: 44},
+		},
+		want: model2.IncreaseExperienceConfig{PartyBonusExp: 6000, PartyBonusEventRate: 44},
+	},
+	{
+		// task-277 trap: an ITEM-only award leaves Amount at zero, so the
+		// client renders "You have gained experience (+0)".
+		name:  "Item_EquipItemBonusExpNotPrimary",
+		types: []string{character2.ExperienceDistributionTypeItem},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeItem, Amount: 7000},
+		},
+		want: model2.IncreaseExperienceConfig{ItemBonusEXP: 7000},
+	},
+	{
+		name:  "InternetCafe_PremiumIpExp",
+		types: []string{character2.ExperienceDistributionTypeInternetCafe},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeInternetCafe, Amount: 8000},
+		},
+		want: model2.IncreaseExperienceConfig{PremiumIPExp: 8000},
+	},
+	{
+		name:  "RainbowWeek_BonusEventExp",
+		types: []string{character2.ExperienceDistributionTypeRainbowWeek},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeRainbowWeek, Amount: 9000},
+		},
+		want: model2.IncreaseExperienceConfig{RainbowWeekEventEXP: 9000},
+	},
+	{
+		name:  "PartyRing_ExpRingExp_v95Plus",
+		types: []string{character2.ExperienceDistributionTypePartyRing},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypePartyRing, Amount: 10000},
+		},
+		want: model2.IncreaseExperienceConfig{PartyEXPRingEXP: 10000},
+	},
+	{
+		name:  "CakePie_EventBonus_v95Plus",
+		types: []string{character2.ExperienceDistributionTypeCakePie},
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeCakePie, Amount: 11000},
+		},
+		want: model2.IncreaseExperienceConfig{CakePieEventBonus: 11000},
+	},
+	{
+		// Producer parity: character/processor.go appends WHITE and CHAT
+		// with the same amount, so the primary-award shape combines both.
+		name:  "WhiteAndChat_PrimaryAwardShape",
+		types: nil,
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeWhite, Amount: 1500},
+			{ExperienceType: character2.ExperienceDistributionTypeChat, Amount: 1500},
+		},
+		want: model2.IncreaseExperienceConfig{White: true, InChat: true, Amount: 1500},
+	},
+	{
+		name:  "PrimaryPlusBonuses_Accumulate",
+		types: nil,
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeWhite, Amount: 2500},
+			{ExperienceType: character2.ExperienceDistributionTypeParty, Amount: 600, Attr1: 66},
+			{ExperienceType: character2.ExperienceDistributionTypeItem, Amount: 770},
+		},
+		want: model2.IncreaseExperienceConfig{
+			White: true, Amount: 2500,
+			PartyBonusExp: 600, PartyBonusEventRate: 66,
+			ItemBonusEXP: 770,
+		},
+	},
+	{
+		// FR-8/FR-9: the last distribution to touch White/Amount wins; WHITE
+		// followed by YELLOW clears White even though a WHITE entry was seen.
+		name:  "WhiteThenYellow_LastWins",
+		types: nil,
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: character2.ExperienceDistributionTypeWhite, Amount: 1200},
+			{ExperienceType: character2.ExperienceDistributionTypeYellow, Amount: 3400},
+		},
+		want: model2.IncreaseExperienceConfig{Amount: 3400},
+	},
+	{
+		name:  "EmptySlice_ZeroConfig",
+		types: nil,
+		given: nil,
+		want:  model2.IncreaseExperienceConfig{},
+	},
+	{
+		// FR-6: "DEATH" is a real distribution type the producer emits
+		// (atlas-character's ExperienceDistributionTypeDeath), but
+		// atlas-channel has no arm for it, so it is silently dropped today.
+		// This case pins that observed behavior.
+		name:  "UnknownType_DeathIgnored",
+		types: nil,
+		given: []character2.ExperienceDistributions{
+			{ExperienceType: "DEATH", Amount: 9999},
+			{ExperienceType: character2.ExperienceDistributionTypeWhite, Amount: 1300},
+		},
+		want: model2.IncreaseExperienceConfig{White: true, Amount: 1300},
+	},
+}
+
+func TestBuildIncreaseExperienceConfig(t *testing.T) {
+	for _, tc := range distributionMappingCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := buildIncreaseExperienceConfig(tc.given)
+			if got != tc.want {
+				t.Errorf("config mismatch\n got: %+v\nwant: %+v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestExperienceDistributionTypeExhaustiveness(t *testing.T) {
+	covered := map[string]string{} // distribution type -> owning case name
+	for _, tc := range distributionMappingCases {
+		for _, dt := range tc.types {
+			if prev, ok := covered[dt]; ok {
+				t.Fatalf("distribution type %q claimed by two cases: %q and %q", dt, prev, tc.name)
+			}
+			covered[dt] = tc.name
+		}
+	}
+
+	registered := map[string]bool{}
+	for _, dt := range character2.AllExperienceDistributionTypes {
+		registered[dt] = true
+		if _, ok := covered[dt]; !ok {
+			t.Errorf("distribution type %q is in AllExperienceDistributionTypes but has no case in distributionMappingCases", dt)
+		}
+	}
+
+	for dt, name := range covered {
+		if !registered[dt] {
+			t.Errorf("case %q covers distribution type %q, which is not in AllExperienceDistributionTypes", name, dt)
+		}
 	}
 }

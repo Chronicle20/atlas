@@ -1,0 +1,98 @@
+{
+  "service": "task-300-shared-script-operations",
+  "path": "libs/atlas-script-core, services/atlas-map-actions, services/atlas-reactor-actions, services/atlas-portal-actions, services/atlas-npc-conversations, services/atlas-saga-orchestrator",
+  "date": "2026-09-04",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-script-core/ops",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "n-a", "evidence": "No FILE-01..05 category present; no catch-all combining >=2 responsibilities."},
+        {"id": "DOM-21", "name": "No redeclaration of shared domain types", "status": "pass", "evidence": "ops.go:60-116, quest.go:18-22 are new operation-building types; monster.go:5-8, movement.go:1-8, environment.go:29-56 reuse libs/atlas-constants (map.Id, field.ParseObjectKind)."},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "ops_test.go:14,81,110,153,173,190,317; effect_test.go:177; environment_test.go:165; message_test.go:157 — t.Run without tests := []struct{...} table."},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "n-a", "evidence": "ops.go:1-5 doc comment: package performs no I/O; tests never reach AndEmit/message.Emit/producer.Produce."},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "No bare go statement; tools/goroutine-guard.sh exit 0 repo-wide."},
+        {"id": "DOM-34", "name": "No re-export shims after migration", "status": "pass", "evidence": "grep for delegating aliases over the package found none (destination package)."},
+        {"id": "DOM-35", "name": "No dead symbols after extraction", "status": "n-a", "evidence": "N/A to destination package; see npc/saga row."}
+      ]
+    },
+    {
+      "name": "services/atlas-map-actions/atlas.com/map-actions/script",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "executor.go holds only OperationExecutor/Execute* methods; no catch-all."},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "executor_test.go:283 TestExecuteSpawnMonsterCarriesInstance uses tests := []struct{...} + t.Run."},
+        {"id": "DOM-26", "name": "Goroutines", "status": "pass", "evidence": "No bare go; guard exit 0."},
+        {"id": "DOM-34", "name": "Direct delegation, no wrapper", "status": "pass", "evidence": "executor.go:95-96,114-115,158-159,178-179,197-198 call ops.* directly."}
+      ]
+    },
+    {
+      "name": "services/atlas-reactor-actions/atlas.com/reactor/script",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "executor.go holds only executor methods; no catch-all."},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "warn", "evidence": "executor.go:472-479 and evaluator.go:177-183 call requests.GetRequest[pqInstanceRestModel] outside requests.go; unmodified by this diff (pre-existing)."},
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "warn", "evidence": "evaluator.go:155-168 pqInstanceRestModel lacks these methods; unmodified by this diff (pre-existing)."},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "executor_test.go TestExecuteDropMessageAcceptsTypeAlias has no tests := []struct{...} table (TestExecuteSpawnMonsterRejectsBadNumerics at :313 does)."},
+        {"id": "DOM-26", "name": "Goroutines", "status": "pass", "evidence": "No bare go; guard exit 0."},
+        {"id": "DOM-34", "name": "Direct delegation", "status": "pass", "evidence": "executor.go:200-201,224-225,251-252,281-282,320-321,438-439 call ops.* directly."}
+      ]
+    },
+    {
+      "name": "services/atlas-portal-actions/atlas.com/portal/script",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "executor.go holds only executor/opTable-dispatch methods; no catch-all."},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "executor_test.go:164,183,203 TestExecuteDropMessageAcceptsTypeAlias, TestExecuteCreateSkillWidensLevel, TestExecuteWarpKeepsTransactionWiring — no table."},
+        {"id": "DOM-26", "name": "Goroutines", "status": "pass", "evidence": "No bare go; guard exit 0."},
+        {"id": "DOM-34", "name": "Direct delegation", "status": "pass", "evidence": "executor.go calls ops.PlayPortalSound, ops.WarpToPortal, ops.SendMessage, ops.ShowHint, ops.CreateSkill, ops.UpdateSkill, ops.StartInstanceTransport, ops.ApplyConsumableEffect, ops.SaveLocation, ops.WarpToSavedLocation, ops.StartQuest directly."}
+      ]
+    },
+    {
+      "name": "services/atlas-npc-conversations/atlas.com/npc/conversation",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:116 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor"},
+        {"id": "FILE-01", "name": "Processor lives in processor.go", "status": "pass", "evidence": "processor.go:33 type Processor interface"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "operation_executor_test.go:1159,1229,1302,1348,1426,1514 and TestExecuteDropMessageAcceptsMessageTypeAlias — no tests := []struct{...} table."},
+        {"id": "DOM-26", "name": "Goroutines", "status": "pass", "evidence": "No bare go; guard exit 0."},
+        {"id": "DOM-34", "name": "Direct delegation, no shim", "status": "pass", "evidence": "operation_executor.go:27 imports saga \"github.com/Chronicle20/atlas/libs/atlas-saga\" directly and calls ops.* throughout; processor.go:6,80-91,873,917,979,1047,1108,1173 import/call npcsaga directly, not the removed re-export."}
+      ]
+    },
+    {
+      "name": "services/atlas-npc-conversations/atlas.com/npc/saga",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-34", "name": "No re-export shim survives the move", "status": "pass", "evidence": "saga/model.go (164 lines of type/const re-exports) and saga/builder.go (12 lines) deleted in full per git diff --stat; remaining model.go holds only the genuine ValidateCharacterStatePayload wrapper."},
+        {"id": "DOM-35", "name": "No dead symbols left behind", "status": "pass", "evidence": "grep for removed re-exported names across services/atlas-npc-conversations/atlas.com/npc finds only qualified references through the shared saga import alias."}
+      ]
+    },
+    {
+      "name": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "handler_test.go TestHandleSpawnMonsterCarriesInstanceToField uses tests := []struct{...} + t.Run."},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "handler.go untouched by this diff; WithFootholdProcessor/WithMonsterProcessor pre-existing; no interface signature changed."},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "n-a", "evidence": "handleSpawnMonster under test calls injected mocks only; no Kafka path reached."}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-30: sagaP.Create implementations in each service's saga/processor.go are unchanged by this diff; the AndEmit + message.Buffer pattern there was not re-verified.",
+    "DOM-27: no changed package is a DB-backed HTTP handler, so no error branch exists to evaluate."
+  ],
+  "blocking": [
+    "DOM-20: libs/atlas-script-core/ops/ops_test.go:14,81,110,153,173,190,317 — seven test functions use bare t.Run subtests, not the required table-driven shape",
+    "DOM-20: libs/atlas-script-core/ops/effect_test.go:177, environment_test.go:165, message_test.go:157 — same non-table-driven shape",
+    "DOM-20: services/atlas-portal-actions/atlas.com/portal/script/executor_test.go:164,183,203 — same",
+    "DOM-20: services/atlas-reactor-actions/atlas.com/reactor/script/executor_test.go TestExecuteDropMessageAcceptsTypeAlias — same",
+    "DOM-20: services/atlas-npc-conversations/atlas.com/npc/conversation/operation_executor_test.go:1159,1229,1302,1348,1426,1514 and TestExecuteDropMessageAcceptsMessageTypeAlias — same"
+  ],
+  "nonBlocking": [
+    "FILE-03/EXT-01: services/atlas-reactor-actions/atlas.com/reactor/script/executor.go:472-479, evaluator.go:155-183 — cross-service request function outside requests.go, REST model missing SetToOneReferenceID/SetToManyReferenceIDs; pre-existing, unmodified by this diff"
+  ]
+}

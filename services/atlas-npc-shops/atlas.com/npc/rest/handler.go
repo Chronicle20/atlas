@@ -1,15 +1,11 @@
 // Package rest provides HTTP handler registration utilities for the NPC shops service.
 //
-// This service uses a DB-parameterized variant of RegisterHandler and RegisterInputHandler
-// because handlers require database access through processors. This pattern follows the
-// atlas-rest convention for services with database dependencies, using curried function
-// composition to inject the database connection.
-//
-// The handler registration wraps server.RetrieveSpan and server.ParseTenant from atlas-rest
-// to provide consistent tracing and multi-tenancy support.
-//
-// For services without database requirements, see atlas-parties/rest/handler.go as a reference
-// for the simpler variant without the db parameter.
+// HandlerDependency, HandlerContext, GetHandler, InputHandler, RegisterHandler, and
+// RegisterInputHandler are thin aliases over the shared libs/atlas-rest/server
+// scaffolding, which wraps server.RetrieveSpan and server.ParseTenant to provide
+// consistent tracing and multi-tenancy support. Handlers that need database access
+// take a *gorm.DB parameter and close over it; resource registrars pass db per
+// call site rather than currying it through the registration functions.
 package rest
 
 import (

@@ -51,8 +51,8 @@ func TestSweep_Run_AppliesEnvContext(t *testing.T) {
 		return context.WithValue(c, sweepEnvMarkerKey{}, "pod-env")
 	}
 
-	sweep := broadcast.NewSweep(logger, context.Background(), time.Second, envContext)
-	sweep.Run()
+	sweep := broadcast.NewSweep(logger, time.Second, envContext)
+	sweep.Run(ctx)
 
 	assert.True(t, envContextCalled, "Sweep.Run must apply envContext to each swept tenant's context before emitting")
 	assert.Equal(t, tenantId.String(), seenTenantId, "envContext must be applied after tenant.WithContext, so it observes the swept tenant's own id")

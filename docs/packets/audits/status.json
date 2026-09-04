@@ -14790,6 +14790,62 @@
     },
     {
       "kind": "op",
+      "op": "CONTI_MOVE",
+      "packet": "field/clientbound/FieldContiMove",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_ContiMove::OnContiMove"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ⚠️",
+          "opcode": 91
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🚫",
+          "opcode": 111
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict 🚫",
+          "opcode": 136
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 140
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 148
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 151
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 156
+        },
+        "gms_v92": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ⚠️",
+          "opcode": 163
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 164
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 145
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "FAMILY_JOIN_REQUEST_RESULT",
       "direction": "clientbound",
       "tier1": false,
@@ -15012,6 +15068,62 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 95
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "CONTI_STATE",
+      "packet": "field/clientbound/FieldTransport",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_ContiMove::OnContiState"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ⚠️",
+          "opcode": 92
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ⚠️",
+          "opcode": 112
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ⚠️",
+          "opcode": 137
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 141
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 149
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 152
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 157
+        },
+        "gms_v92": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 164
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 165
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 146
         }
       }
     },
@@ -22517,59 +22629,6 @@
     },
     {
       "kind": "op",
-      "op": "CONTI_MOVE",
-      "packet": "field/clientbound/FieldContiMove",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_ContiMove::OnContiMove"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 140
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 148
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 151
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 156
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ⚠️",
-          "opcode": 163
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 164
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 145
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "BOOBY_TRAP_ALERT",
       "direction": "serverbound",
       "tier1": false,
@@ -22622,59 +22681,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 143
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "CONTI_STATE",
-      "packet": "field/clientbound/FieldTransport",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_ContiMove::OnContiState"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 141
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 149
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 152
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 157
-        },
-        "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 164
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 165
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 146
         }
       }
     },

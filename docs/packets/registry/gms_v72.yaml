@@ -972,6 +972,22 @@
   ida:
     address: 5350690
   note: 'CField::OnPacket @0x515879 case 135 -> vtable+0x20 resolves to CField::OnClock @0x51a522 (was sub_51A522, named task-113 stage E; structurally identical to v79 CField::OnClock, same clock-window field this[107]). Read order verified identical to v79. Δ-4 vs v79 (139).'
+- op: CONTI_MOVE
+  direction: clientbound
+  opcode: 136
+  fname: CField_ContiMove::OnContiMove
+  provenance: ida-discovered
+  ida:
+    address: 5417621
+  note: 'task-290 C9b: the CField_ContiMove::OnPacket override @0x52aa5f routes case 136 -> CField_ContiMove::OnContiMove @0x52aa95, case 137 -> OnContiState @0x52aafa; default falls through to CField::OnPacket @0x515879. Both handlers were already named in the v72 IDB; only the registry rows were missing. Δ-4 vs v79 (140).'
+- op: CONTI_STATE
+  direction: clientbound
+  opcode: 137
+  fname: CField_ContiMove::OnContiState
+  provenance: ida-discovered
+  ida:
+    address: 5417722
+  note: 'task-290 C9b: the CField_ContiMove::OnPacket override @0x52aa5f case 137 -> CField_ContiMove::OnContiState @0x52aafa; reads Decode1(state)+Decode1(overrideAppear), body identical to v79/v83. Δ-4 vs v79 (141).'
 - op: SET_QUEST_CLEAR
   direction: clientbound
   opcode: 138

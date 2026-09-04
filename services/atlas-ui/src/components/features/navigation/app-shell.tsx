@@ -11,7 +11,7 @@ export function AppShell() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="w-full flex h-screen flex-1 flex-col gap-2 pt-2">
+      <main className="flex h-screen min-w-0 flex-1 flex-col gap-2 pt-2">
         <header className="flex h-12 shrink-0 items-center gap-2 px-2">
           <SidebarToggle />
           <Separator orientation="vertical" className="mr-2 h-4" />
@@ -27,7 +27,7 @@ export function AppShell() {
         </header>
         <DeploymentScopeBanner />
         <div className="flex flex-1 flex-col overflow-hidden gap-4 p-2 pt-0">
-          <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-sidebar">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto rounded-xl bg-sidebar">
             <Outlet />
           </div>
         </div>

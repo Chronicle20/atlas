@@ -249,7 +249,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-80e874a
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-80e874a
+    newTag: main-3174ec4
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-80e874a
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
@@ -363,6 +363,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-80e874a
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-90aa7f7
+    newTag: main-3174ec4
 commonLabels:
   atlas.env: main

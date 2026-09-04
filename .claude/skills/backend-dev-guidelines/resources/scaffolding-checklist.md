@@ -91,7 +91,7 @@ Optionally add sample request `.bru` files for the service's endpoints.
 **File:** `services/atlas-<service>/atlas.com/<svc>/rest/handler.go`
 
 `rest/handler.go` declares only aliases over `libs/atlas-rest/server` — copy the
-pattern from `services/atlas-guilds/atlas.com/guilds/rest/handler.go`, not from
+pattern from `services/atlas-mts/atlas.com/mts/rest/handler.go`, not from
 an older service:
 
 - `HandlerDependency`, `HandlerContext`, and `GetHandler` alias the shared

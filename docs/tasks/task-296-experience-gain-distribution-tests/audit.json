@@ -1,0 +1,45 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "date": "2026-09-04",
+  "commitRange": "25ba8d1cb..HEAD",
+  "build": "pass",
+  "testsPassed": 177,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "kafka/consumer/character",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor interface/constructor/methods in processor.go", "status": "n-a", "evidence": "no Processor/ProcessorImpl/NewProcessor symbol in the package" },
+        { "id": "FILE-02", "name": "RestModel/Transform/Extract/JSON:API methods in rest.go", "status": "n-a", "evidence": "no RestModel/Transform/Extract symbol in the package" },
+        { "id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "n-a", "evidence": "no requests.RootUrl/GetRequest/PostRequest in the package" },
+        { "id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "n-a", "evidence": "no entity struct/Migration/TableName in the package" },
+        { "id": "FILE-05", "name": "Builder/Model/writes/readers placed per file table", "status": "n-a", "evidence": "no Builder, domain Model, Create/Update/Delete write, or database.Query/SliceQuery reader in the package" },
+        { "id": "FILE-06", "name": "No pkgname.go bundling >=2 responsibilities", "status": "n-a", "evidence": "no FILE-01..05 responsibility present in the package; consumer.go holds only message.Handler functions" },
+        { "id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "n-a", "evidence": "consumer_test.go opens no GORM DB (server.NewProcessor + in-memory snapshot.GetRegistry only)" },
+        { "id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "consumer_test.go:56 TestSnapshotHandlers and consumer_test.go:215-396 distributionMappingCases/TestBuildIncreaseExperienceConfig both use tests := []struct{...} + t.Run" },
+        { "id": "DOM-24", "name": "Emit-reaching test packages install producertest/no-op producer", "status": "n-a", "evidence": "no AndEmit/message.Emit/producer.Produce in consumer_test.go; exercised handlers (consumer.go:596,609,622,640,369) take writer.Producer as _ or none, and their bodies only touch snapshot.GetRegistry() or pure struct construction" },
+        { "id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "no Processor/Provider/Administrator interface method added, removed, or re-signed" },
+        { "id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "grep -nE '^\\s*go (func|[A-Za-z_])' consumer.go: no match" },
+        { "id": "DOM-25", "name": "Client-interpreted wire values resolved from a table", "status": "n-a", "evidence": "buildIncreaseExperienceConfig (consumer.go:369-423) sets payload amount/percentage/hour/bonus fields from pre-existing semantic ExperienceDistributionType* keys, not dispatcher-mode/sub-op/notice-fail-reason codes from a lookup table; downstream charpkt.CharacterStatusMessageOperationIncreaseExperienceBody call unchanged by the refactor" },
+        { "id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "consumer_test.go:64 tenant.WithContext(context.Background(), tm); production code reads tenant only via tenant.MustFromContext(ctx) (consumer.go:604,617,630,648); no rest.go/resource.go exists to carry tenant on a public surface" }
+      ]
+    },
+    {
+      "name": "kafka/message/character",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..05", "name": "File placement responsibilities", "status": "n-a", "evidence": "kafka.go holds only const/var/struct declarations for Kafka event bodies; no graded responsibility symbol present" },
+        { "id": "FILE-06", "name": "No catch-all bundling >=2 responsibilities", "status": "n-a", "evidence": "nothing to bundle" },
+        { "id": "DOM-21", "name": "No redeclaration of a shared libs/atlas-constants type/const", "status": "n-a", "evidence": "diff only adds doc comments to existing consts and a new []string var AllExperienceDistributionTypes (kafka.go:160-176) - no new type or named const block declared" },
+        { "id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "grep -nE '^\\s*go (func|[A-Za-z_])' kafka.go: no match" },
+        { "id": "DOM-25", "name": "Client-interpreted wire values", "status": "n-a", "evidence": "AllExperienceDistributionTypes is a documentation/exhaustiveness registry of pre-existing semantic keys, not a wire-code table" }
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [],
+  "nonBlocking": []
+}

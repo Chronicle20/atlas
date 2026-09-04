@@ -49,8 +49,10 @@ byte-identical in all four repositories.
 
 | File | Lines | Wired at | Notes |
 |---|---|---|---|
-| `.claude/hooks/wait-loop-guard.sh` | 91 | `PreToolUse` / `Bash` | Blocks polling and `sleep` loops. |
+| `.claude/hooks/wait-loop-guard.sh` | 157 | `PreToolUse` / `Bash` | Blocks polling and `sleep` loops, and the third consecutive identical read-only command (file-tail polling). |
 | `.claude/hooks/wait-loop-guard_test.sh` | — | — | Ships with its subject. |
+| `.claude/hooks/context-handoff-guard.sh` | 82 | `PreToolUse` / `Agent` | Denies new-unit dispatches past the controller handoff threshold (reads `ESCALATE` from `commit-boundary.sh`). |
+| `.claude/hooks/context-handoff-guard_test.sh` | — | — | Ships with its subject. |
 | `.claude/hooks/block-home-paths-in-docs.sh` | 34 | `PreToolUse` / `Write\|Edit` | Rejects literal home/absolute paths under `docs/`. |
 | `.claude/hooks/turn-budget.sh` | 138 | `PostToolUse` / `*` | Counts tool calls per agent. |
 | `.claude/hooks/turn-budget-guard.sh` | 109 | `PreToolUse` / `*` | Makes the implementer tool-call cap binding. |

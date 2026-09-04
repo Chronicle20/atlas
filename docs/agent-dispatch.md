@@ -182,7 +182,11 @@ conversation.
 **The floor.** Below roughly 60k tokens a fresh agent re-discovers files you
 already hold, and you pay for that discovery twice; under ~40 tool calls,
 prefer continuing. `.claude/hooks/commit-boundary.sh` encodes this floor and
-raises the question at commits past it.
+raises the question at commits past it. Past its ESCALATE tier (~150k),
+`.claude/hooks/context-handoff-guard.sh` denies dispatching a *new* unit
+(implementer, explorer, planner, bare general-purpose) while still allowing
+the dispatches that finish the unit in flight (reviewers, verifiers,
+auditors); a `CONTEXT-JUSTIFIED:` line in the prompt is the escape hatch.
 
 **The backstop.** ~150k tokens for a controller, or 4 completed plan tasks
 in one session, whichever comes first — the one context that lives for a

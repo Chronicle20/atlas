@@ -1,6 +1,11 @@
 ---
 description: Phase 3 — invoke superpowers:writing-plans to produce an implementation plan inside the task worktree
 argument-hint: Task identifier — accepts "task-054-effect-duration-units", "task-054", "054", or "54"
+# "This phase is a turn problem, not a reasoning problem" (see below). The two
+# sampled plan sessions in the 2026-08-29 audit ran 82–88% of their context
+# above 150k on Opus/Fable controllers. Deep discovery is delegated (Step 4a);
+# the controller assembles. Pin it.
+model: sonnet
 ---
 
 You are starting Phase 3 of the Atlas four-phase development workflow. Argument: **$ARGUMENTS**
@@ -144,6 +149,13 @@ answerable from Step 4: F1 is the survey's EXISTING/UNRESOLVED split, F5 is
 `--symbols`. Settle every unresolved path and every invented symbol **before**
 the first Write. Append later task sections if the plan is long; do not re-emit
 sections you already wrote.
+
+**Edit `plan.md` in place after a scope change.** When an `AskUserQuestion`
+ruling or a lint finding changes the plan, apply it with `Edit` to the
+sections it touches. Never write a sibling (`plan-b.md`, `plan-c.md`,
+`plan-c2.md`, …) and then diff or reconcile the variants: one measured
+session produced five whole-file rewrites this way, each re-emitting ~50 KB
+at 300k+ context. Git carries the history; the task folder holds one plan.
 
 ### Step 5a — Atlas plan-task format (required)
 

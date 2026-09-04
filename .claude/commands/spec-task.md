@@ -28,6 +28,15 @@ Before creating anything, gather just enough context to ask intelligent question
 3. Scan existing task folder names (don't read full PRDs unless one looks directly related).
 4. Identify which services would be affected.
 
+**Phase 1 dispatches no agents.** The scan above is a handful of reads by
+you, not a survey. Do not fan out into WZ data, IDA decompiles, packet
+registries, or pipeline code to answer an interview question — that is
+`/design-task` and `/plan-task` work, and it arrives there with a PRD to
+scope it. A question the scan cannot answer goes into §9 Open Questions with
+the evidence source named (WZ file, IDB function, service), not into a
+subagent. One measured spec interview spent 73% of its cost on nine research
+agents doing design-phase reverse engineering before the PRD existed.
+
 ### Step 4 — Confirm scope before creating the worktree
 
 Present to the user:

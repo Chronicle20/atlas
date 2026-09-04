@@ -81,6 +81,37 @@ sleep 30'
 allow 'sleep 60 # POLL-JUSTIFIED: external rate limit, no callback available'
 allow 'true # POLL-JUSTIFIED: demonstrating the escape hatch'
 
+echo "== file-tail polling: third identical read-only command denied =="
+export TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR"' EXIT
+runk() { jq -nc --arg s "$1" --arg a "$2" --arg c "$3" '{session_id:$s, agent_id:$a, tool_input:{command:$c}}' | "$HOOK"; }
+denyk()  { out="$(runk "$@")"; if printf '%s' "$out" | grep -q '"permissionDecision":"deny"'; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL (expected deny): $3"; fi; }
+allowk() { out="$(runk "$@")"; if [ -z "$out" ]; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL (expected allow): $3"; fi; }
+allowk s1 "" 'tail -1 /tmp/gate.log'
+allowk s1 "" 'tail  -1 /tmp/gate.log'          # 2nd (whitespace-normalized): a re-check is fine
+denyk  s1 "" 'tail -1 /tmp/gate.log'           # 3rd: poll
+denyk  s1 "" 'tail -1 /tmp/gate.log'           # stays denied
+allowk s1 "" 'go build ./...'                  # different command resets the streak
+allowk s1 "" 'tail -1 /tmp/gate.log'
+allowk s1 "" 'tail -1 /tmp/gate.log'
+denyk  s1 "" 'tail -1 /tmp/gate.log'
+# Pipelines of readers count; other sessions/agents are keyed separately.
+allowk s2 "" 'grep -c "EXIT=" /tmp/verify.log | tail -1'
+allowk s2 "" 'grep -c "EXIT=" /tmp/verify.log | tail -1'
+denyk  s2 "" 'grep -c "EXIT=" /tmp/verify.log | tail -1'
+allowk s2 agentX 'grep -c "EXIT=" /tmp/verify.log | tail -1'
+allowk s2 agentX 'wc -l /tmp/verify.log'
+allowk s2 agentX 'wc -l /tmp/verify.log'
+denyk  s2 agentX 'wc -l /tmp/verify.log'
+# Work that happens to repeat is not a poll: it writes, chains, or is not a reader.
+allowk s3 "" 'git status --short'; allowk s3 "" 'git status --short'; allowk s3 "" 'git status --short'
+allowk s3 "" 'go test ./...'; allowk s3 "" 'go test ./...'; allowk s3 "" 'go test ./...'
+allowk s3 "" 'cat a.go > b.go'; allowk s3 "" 'cat a.go > b.go'; allowk s3 "" 'cat a.go > b.go'
+# Justified repeats pass.
+allowk s4 "" 'tail -1 /tmp/x.log # POLL-JUSTIFIED: x'; allowk s4 "" 'tail -1 /tmp/x.log # POLL-JUSTIFIED: x'; allowk s4 "" 'tail -1 /tmp/x.log # POLL-JUSTIFIED: x'
+# No session/agent id: stateless only, never denied for repetition.
+allow 'tail -1 /tmp/gate.log'; allow 'tail -1 /tmp/gate.log'; allow 'tail -1 /tmp/gate.log'
+
 echo
 echo "passed: $pass  failed: $fail"
 [ "$fail" -eq 0 ]

@@ -836,6 +836,7 @@ var doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 var bossHpSenderFn = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, m monster.Model) error {
 	g, ok, err := bosshp.NewResolver(l, ctx).Resolve(m.MonsterId(), m.Hp(), m.MaxHp())
 	if err != nil {
+		degrade.Observe(l, "channel.map.boss_hp_resolve", m.MonsterId(), err)
 		l.WithError(err).Errorf("Unable to resolve boss HP gauge for mob [%d]; skipping.", m.UniqueId())
 		return nil
 	}

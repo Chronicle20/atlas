@@ -284,8 +284,9 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			bossHpBroadcaster(l, ctx, sc, wp, f, e.MonsterId, m.Hp(), m.MaxHp())
 		}
 		routine.Go(l, ctx, func(_ context.Context) {
+			var aerr error
 			if e.Body.Boss {
-				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
+				aerr = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
 			} else {
 				idProvider := model2.FixedProvider([]uint32{e.Body.ActorId})
 
@@ -297,17 +298,20 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 					idProvider = party.MemberToMemberIdMapper(mp)
 				}
 
-				err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(idProvider, announcer)
+				aerr = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(idProvider, announcer)
 			}
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
+			if aerr != nil {
+				l.WithError(aerr).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 			}
 		})
 		if shouldEchoDamagePacket(e.Body.DamageSource) {
 			routine.Go(l, ctx, func(_ context.Context) {
-				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+				eerr := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
 					return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDamageWriter)(monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageTypeUnk3, e.Body.Damage, m.Hp(), m.MaxHp()).Encode)(s)
 				})
+				if eerr != nil {
+					l.WithError(eerr).Errorf("Unable to echo monster [%d] damage packet.", e.UniqueId)
+				}
 			})
 		}
 	}
@@ -535,6 +539,7 @@ var bossHpBroadcaster = func(l logrus.FieldLogger, ctx context.Context, sc serve
 	routine.Go(l, ctx, func(_ context.Context) {
 		g, ok, err := bosshp.NewResolver(l, ctx).Resolve(monsterTemplateId, currentHp, maxHp)
 		if err != nil {
+			degrade.Observe(l, "channel.monster.boss_hp_resolve", monsterTemplateId, err)
 			l.WithError(err).Errorf("Unable to resolve boss HP gauge for monster template [%d] in field map [%d].", monsterTemplateId, f.MapId())
 			return
 		}

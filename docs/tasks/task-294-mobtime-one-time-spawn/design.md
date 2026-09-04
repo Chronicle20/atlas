@@ -152,10 +152,14 @@ would only create a second, never-read representation. `fromStored` therefore yi
 is what keeps the Redis JSON shape stable across the rolling deploy.
 
 Consequence, accepted per FR-1.4 and open question 2: `600020300` (Wolf Spider Cavern,
-`9400545`) and `800020130` (Encounter with the Buddha, `9400013`) each lose their single
-spawn point and become empty of static monsters. Both are one-point maps in the sweep; both
-currently spawn. This is a deliberate, PRD-sanctioned content change, and it must appear in
-the PR body's behavior-change section, not just in a test.
+`9400545`) and `800020130` (Encounter with the Buddha, `9400013`) each lose **one** spawn
+point — the single `hide = true` entry each carries. They are the only two such maps in the
+dataset; they are *not* one-point maps. `600020300` keeps 63 of its 64 points, `800020130`
+keeps 16 of its 17, and neither becomes empty. Because `getMonsterMax` is map-wide, the only
+observable count delta is on `800020130` (solo: `ceil(0.75 × 17) = 13` → `ceil(0.75 × 16) =
+12`); `600020300` stays at 48 either way, with one coordinate no longer eligible. This is a
+deliberate, PRD-sanctioned content change, and it must appear in the PR body's
+behavior-change section, not just in a test.
 
 ### D5 — Fire via one atomic claim-and-fetch Lua script
 
@@ -445,7 +449,7 @@ No migration, no schema change, no manifest change, no `atlas-data` / `atlas-mon
 | `DESTROY_FIELD` fires too broadly | Gated on `RearmOneTime() == true` — only fields that actually fired a batch (D7) |
 | Orphaned `v1` keys after deploy | Bounded, inert, reaped by the next `DATA_UPDATED` flush; documented in the PR body (D2) |
 | Recurring suppression on the 61 mixed maps | Accepted and documented in code (D8); matches reference behavior; not a regression from `main` |
-| `600020300` / `800020130` lose their monster | PRD-sanctioned (FR-1.4); must be named in the PR body as a behavior change |
+| `600020300` / `800020130` each lose one (hidden) spawn point of 64 / 17 | PRD-sanctioned (FR-1.4); must be named in the PR body as a behavior change. Only `800020130` has an observable count delta (13 → 12 solo) |
 | Rebase collision with PR #1566 in `Exit` | Confirmed not yet merged; reconcile into one emptiness block, never two (D6) |
 
 ---

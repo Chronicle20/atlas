@@ -1159,7 +1159,7 @@ git commit -m "refactor(maps): drop the Spawnable predicate now that Classify ow
 
 The PR body must name these as **behavior changes**, not bury them in a test (design D4, D2, D8):
 
-1. `600020300` (Wolf Spider Cavern, `9400545`) and `800020130` (Encounter with the Buddha, `9400013`) each lose their single `hide = true` spawn point and become empty of static monsters. Both currently spawn on `main`. PRD-sanctioned under FR-1.4.
+1. `600020300` (Wolf Spider Cavern, 64 points) and `800020130` (Encounter with the Buddha, 17 points) each lose the single `hide = true` spawn point they carry — the only two such points in the dataset. Neither map becomes empty; every other point is unaffected. Both currently spawn on `main`. Because `getMonsterMax` is map-wide, only `800020130` has an observable count delta (solo: 13 → 12); `600020300` stays at 48. PRD-sanctioned under FR-1.4.
 2. The `v2:` key-schema token orphans every pre-existing `maps:spawn` key. The orphans are inert, bounded at one hash per field per tenant ever visited, and are reaped by the next `DATA_UPDATED` flush, whose SCAN pattern is namespace-wide. No manual Redis cleanup is required.
 3. On the 61 mixed maps, recurring spawns are suppressed while the one-time batch is alive, because `monstersInMap` counts every monster in the field. This matches the reference implementation and is not a regression from `main`, where no mixed map spawns its one-time set at all.
 4. Fields that fire a one-time batch now emit `DESTROY_FIELD` to `atlas-monsters` when they empty. Recurring-only fields never fire and never emit.

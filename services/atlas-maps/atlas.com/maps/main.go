@@ -129,18 +129,10 @@ func main() {
 		return env.WithContext(ctx, env.Self())
 	}
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewRespawn(l, 10000, envContext))
-	})
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewWeather(l, time.Second, envContext))
-	})
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewJukebox(l, time.Second, envContext))
-	})
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewMistTick(l, 1000, charLookup, envContext))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewRespawn(l, 10000, envContext))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewWeather(l, time.Second, envContext))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewJukebox(l, time.Second, envContext))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewMistTick(l, 1000, charLookup, envContext))
 
 	server.New(l).
 		WithContext(rt.Context()).

@@ -291,7 +291,7 @@ func changeMpCommandProvider(m mist.Mist, characterId uint32, amount int16) mode
 
 // MistTick is the periodic tick task that expires mists past their lifetime
 // and re-applies the disease to characters currently inside the mist's
-// bounding box. It is registered via tasks.Register in main.
+// bounding box. It is registered via routine.Register in main.
 type MistTick struct {
 	l                logrus.FieldLogger
 	interval         int
@@ -342,10 +342,10 @@ func NewMistTick(l logrus.FieldLogger, interval int, charLookup CharacterLookup,
 	}
 }
 
-// Run is invoked once per tick by tasks.Register's loop. It fans out per
+// Run is invoked once per tick by routine.Register's loop. It fans out per
 // tenant goroutines as described in FR-4.6.3.
-func (r *MistTick) Run() {
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(context.Background(), MistTickTask)
+func (r *MistTick) Run(ctx context.Context) {
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(ctx, MistTickTask)
 	defer span.End()
 	r.runOnce(ctx)
 }

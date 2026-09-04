@@ -2,9 +2,7 @@ package rest
 
 import (
 	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 
@@ -25,30 +23,10 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterInputHandler[M](l)
 }
 
-type CharacterIdHandler func(characterId uint32) http.HandlerFunc
-
-func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		characterId, err := strconv.Atoi(mux.Vars(r)["characterId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(characterId))(w, r)
-	}
+func ParseCharacterId(l logrus.FieldLogger, next func(characterId uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "characterId", next)
 }
 
-type InventoryTypeHandler func(inventoryType int8) http.HandlerFunc
-
-func ParseInventoryType(l logrus.FieldLogger, next InventoryTypeHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		inventoryType, err := strconv.Atoi(mux.Vars(r)["inventoryType"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse inventoryType from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(int8(inventoryType))(w, r)
-	}
+func ParseInventoryType(l logrus.FieldLogger, next func(inventoryType int8) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[int8](l, "inventoryType", next)
 }

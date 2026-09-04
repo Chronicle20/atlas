@@ -6,6 +6,7 @@ import (
 	mock2 "atlas-saga-orchestrator/compartment/mock"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
+	"atlas-saga-orchestrator/map_command"
 	notemock "atlas-saga-orchestrator/note/mock"
 	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
 	"atlas-saga-orchestrator/validation"
@@ -24,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -1704,6 +1706,211 @@ func TestHandlePlayJukebox_InvalidPayload(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid payload")
 }
 
+// mapCommandProcessorMock is a func-field test double for map_command.Processor,
+// used to observe the environment-object handlers' delegation without touching
+// the atlas-kafka producer/WriterFactory.
+type mapCommandProcessorMock struct {
+	setEnvironmentStateFunc func(transactionId uuid.UUID, f field.Model, kind field.ObjectKind, name string, state uint32) error
+	resetEnvironmentFunc    func(transactionId uuid.UUID, f field.Model) error
+}
+
+func (m *mapCommandProcessorMock) FieldEffectWeather(_ uuid.UUID, _ field.Model, _ uint32, _ string, _ uint32) error {
+	return nil
+}
+
+func (m *mapCommandProcessorMock) PlayJukebox(_ uuid.UUID, _ field.Model, _ uint32, _ string, _ uint32) error {
+	return nil
+}
+
+func (m *mapCommandProcessorMock) SetEnvironmentState(transactionId uuid.UUID, f field.Model, kind field.ObjectKind, name string, state uint32) error {
+	if m.setEnvironmentStateFunc != nil {
+		return m.setEnvironmentStateFunc(transactionId, f, kind, name, state)
+	}
+	return nil
+}
+
+func (m *mapCommandProcessorMock) ResetEnvironment(transactionId uuid.UUID, f field.Model) error {
+	if m.resetEnvironmentFunc != nil {
+		return m.resetEnvironmentFunc(transactionId, f)
+	}
+	return nil
+}
+
+func (m *mapCommandProcessorMock) SetBackEffect(_ uuid.UUID, _ field.Model, _ backeffect.Effect, _ uint32, _ uint8, _ uint32) error {
+	return nil
+}
+
+func (m *mapCommandProcessorMock) ClearBackEffect(_ uuid.UUID, _ field.Model) error {
+	return nil
+}
+
+var _ map_command.Processor = (*mapCommandProcessorMock)(nil)
+
+// TestHandleMoveEnvironment_InvalidPayload proves handleMoveEnvironment rejects
+// a step whose payload is not a MoveEnvironmentPayload before touching Kafka.
+func TestHandleMoveEnvironment_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("move-environment-step", Pending, MoveEnvironment, PlayJukeboxPayload{})
+
+	called := false
+	mapCommandMock := &mapCommandProcessorMock{
+		setEnvironmentStateFunc: func(_ uuid.UUID, _ field.Model, _ field.ObjectKind, _ string, _ uint32) error {
+			called = true
+			return nil
+		},
+	}
+
+	err = NewHandler(logger, ctx).WithMapCommandProcessor(mapCommandMock).handleMoveEnvironment(saga, step)
+
+	assert.Error(t, err)
+	assert.Equal(t, "invalid payload", err.Error())
+	assert.False(t, called, "SetEnvironmentState must not be called for an invalid payload")
+}
+
+// TestHandleResetEnvironment_InvalidPayload proves handleResetEnvironment
+// rejects a step whose payload is not a ResetEnvironmentPayload before
+// touching Kafka.
+func TestHandleResetEnvironment_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("reset-environment-step", Pending, ResetEnvironment, MoveEnvironmentPayload{})
+
+	called := false
+	mapCommandMock := &mapCommandProcessorMock{
+		resetEnvironmentFunc: func(_ uuid.UUID, _ field.Model) error {
+			called = true
+			return nil
+		},
+	}
+
+	err = NewHandler(logger, ctx).WithMapCommandProcessor(mapCommandMock).handleResetEnvironment(saga, step)
+
+	assert.Error(t, err)
+	assert.Equal(t, "invalid payload", err.Error())
+	assert.False(t, called, "ResetEnvironment must not be called for an invalid payload")
+}
+
+// TestHandleMoveEnvironment_DelegatesToMapCommand proves handleMoveEnvironment
+// forwards a valid payload's field and object state to
+// map_command.Processor.SetEnvironmentState and completes the step.
+func TestHandleMoveEnvironment_DelegatesToMapCommand(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	payload := MoveEnvironmentPayload{
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(910010000),
+		Instance:  uuid.Nil,
+		Kind:      field.ObjectKindObstacle,
+		Name:      "obs3",
+		State:     2,
+	}
+	step := NewStep[any]("move-environment-step", Pending, MoveEnvironment, payload)
+
+	var callCount int
+	var gotField field.Model
+	var gotKind field.ObjectKind
+	var gotName string
+	var gotState uint32
+	mapCommandMock := &mapCommandProcessorMock{
+		setEnvironmentStateFunc: func(_ uuid.UUID, f field.Model, kind field.ObjectKind, name string, state uint32) error {
+			callCount++
+			gotField = f
+			gotKind = kind
+			gotName = name
+			gotState = state
+			return nil
+		},
+	}
+
+	err = NewHandler(logger, ctx).WithMapCommandProcessor(mapCommandMock).handleMoveEnvironment(saga, step)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, callCount)
+	assert.Equal(t, world.Id(0), gotField.WorldId())
+	assert.Equal(t, channel.Id(1), gotField.ChannelId())
+	assert.Equal(t, _map.Id(910010000), gotField.MapId())
+	assert.Equal(t, uuid.Nil, gotField.Instance())
+	assert.Equal(t, field.ObjectKindObstacle, gotKind)
+	assert.Equal(t, "obs3", gotName)
+	assert.Equal(t, uint32(2), gotState)
+}
+
+// TestHandleResetEnvironment_DelegatesToMapCommand proves
+// handleResetEnvironment forwards a valid payload's field to
+// map_command.Processor.ResetEnvironment and completes the step.
+func TestHandleResetEnvironment_DelegatesToMapCommand(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	payload := ResetEnvironmentPayload{
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(910010000),
+		Instance:  uuid.Nil,
+	}
+	step := NewStep[any]("reset-environment-step", Pending, ResetEnvironment, payload)
+
+	var callCount int
+	var gotField field.Model
+	mapCommandMock := &mapCommandProcessorMock{
+		resetEnvironmentFunc: func(_ uuid.UUID, f field.Model) error {
+			callCount++
+			gotField = f
+			return nil
+		},
+	}
+
+	err = NewHandler(logger, ctx).WithMapCommandProcessor(mapCommandMock).handleResetEnvironment(saga, step)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, callCount)
+	assert.Equal(t, world.Id(0), gotField.WorldId())
+	assert.Equal(t, channel.Id(1), gotField.ChannelId())
+	assert.Equal(t, _map.Id(910010000), gotField.MapId())
+	assert.Equal(t, uuid.Nil, gotField.Instance())
+}
+
 // TestDeployPlayerNpcAction covers handleDeployPlayerNpc (FR-6.2).
 //
 // The step is no longer self-completing (Task 23b): the emitted command
@@ -1828,4 +2035,56 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "atlas-maps unreachable")
 	})
+}
+
+// TestHandleSetBackEffect_InvalidPayload proves handleSetBackEffect rejects a
+// step whose payload is not a SetBackEffectPayload before touching Kafka. The
+// happy path is not covered here for the same reason handlePlayJukebox is not:
+// no fixture in this package stubs the atlas-kafka producer's
+// WriterFactory/env-topic resolution. Message-shape coverage lives in
+// TestSetBackEffectCommandProvider (map_command/producer_test.go).
+func TestHandleSetBackEffect_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("set-back-effect-step", Pending, SetBackEffect, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleSetBackEffect(saga, step)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+}
+
+// TestHandleClearBackEffect_InvalidPayload proves handleClearBackEffect rejects
+// a step whose payload is not a ClearBackEffectPayload before touching Kafka.
+// Message-shape coverage lives in TestClearBackEffectCommandProvider
+// (map_command/producer_test.go).
+func TestHandleClearBackEffect_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("clear-back-effect-step", Pending, ClearBackEffect, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleClearBackEffect(saga, step)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
 }

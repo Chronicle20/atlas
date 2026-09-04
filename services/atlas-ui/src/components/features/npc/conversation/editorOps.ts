@@ -56,6 +56,18 @@ function rewireStateRefs(
     next.askNumber.nextState =
       rewire(next.askNumber.nextState) ?? next.askNumber.nextState;
   }
+  if (next.askText) {
+    if (next.askText.nextState !== undefined) {
+      next.askText.nextState =
+        rewire(next.askText.nextState) ?? next.askText.nextState;
+    }
+    if (next.askText.matches) {
+      next.askText.matches = next.askText.matches.map((m) => ({
+        ...m,
+        nextState: rewire(m.nextState) ?? m.nextState,
+      }));
+    }
+  }
   if (next.askStyle) {
     next.askStyle.nextState =
       rewire(next.askStyle.nextState) ?? next.askStyle.nextState;
@@ -295,6 +307,17 @@ export function emptyStateOfType(
         defaultValue: 0,
         minValue: 0,
         maxValue: 0,
+        nextState: "",
+      };
+      break;
+    case "askText":
+      base.askText = {
+        text: "",
+        defaultText: "",
+        minLength: 0,
+        maxLength: 32,
+        contextKey: "answer",
+        matches: [],
         nextState: "",
       };
       break;
@@ -547,7 +570,7 @@ export function moveChoiceDown<T>(arr: T[], i: number): T[] {
   return next;
 }
 
-function setTransitionTarget(
+export function setTransitionTarget(
   state: ConversationState,
   kind: Transition["kind"],
   ordinal: number,
@@ -572,6 +595,14 @@ function setTransitionTarget(
       break;
     case "answer":
       if (clone.askNumber) clone.askNumber.nextState = stringTarget;
+      break;
+    case "match":
+      if (clone.askText?.matches?.[ordinal]) {
+        clone.askText.matches[ordinal].nextState = stringTarget;
+      }
+      break;
+    case "fallback":
+      if (clone.askText) clone.askText.nextState = stringTarget;
       break;
     case "selection":
       if (clone.askStyle) clone.askStyle.nextState = stringTarget;

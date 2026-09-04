@@ -1,8 +1,10 @@
 package conversation
 
 import (
+	"atlas-npc-conversations/conversation/quest/progress"
 	"atlas-npc-conversations/saga"
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -927,4 +930,223 @@ func TestCreateSagaForOperations_ChangeJobAppendsCancelAllBuffs(t *testing.T) {
 	if last.Action != saga.CancelAllBuffs {
 		t.Errorf("last step action = %v, want CancelAllBuffs", last.Action)
 	}
+}
+
+// fakeProgressProcessor is an inline test double for progress.Processor.
+type fakeProgressProcessor struct {
+	entries []progress.Model
+	err     error
+	called  *bool
+}
+
+func (f fakeProgressProcessor) GetByCharacterAndQuest(characterId uint32, questId uint32) model.Provider[[]progress.Model] {
+	return func() ([]progress.Model, error) {
+		if f.called != nil {
+			*f.called = true
+		}
+		return f.entries, f.err
+	}
+}
+
+func mustProgressEntry(t *testing.T, infoNumber uint32, progressValue string) progress.Model {
+	t.Helper()
+	m, err := progress.Extract(progress.RestModel{InfoNumber: infoNumber, Progress: progressValue})
+	if err != nil {
+		t.Fatalf("failed to build progress entry: %v", err)
+	}
+	return m
+}
+
+func TestGetQuestProgressOperation(t *testing.T) {
+	transportErr := errors.New("connection refused")
+
+	tests := []struct {
+		name          string
+		params        map[string]string
+		seedContext   map[string]string
+		entries       []func(t *testing.T) progress.Model
+		procErr       error
+		wantErr       bool
+		wantErrSubstr string
+		wantContext   *string
+	}{
+		{
+			name:   "default info number",
+			params: map[string]string{"questId": "3360", "contextKey": "magatiaPassword"},
+			entries: []func(t *testing.T) progress.Model{
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 0, "Open Sesame") },
+			},
+			wantContext: strPtr("Open Sesame"),
+		},
+		{
+			name:   "named info number",
+			params: map[string]string{"questId": "20730", "infoNumber": "9300285", "contextKey": "gate"},
+			entries: []func(t *testing.T) progress.Model{
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 0, "x") },
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 9300285, "0") },
+			},
+			wantContext: strPtr("0"),
+		},
+		{
+			name:   "step alias",
+			params: map[string]string{"questId": "20730", "step": "9300285", "contextKey": "gate"},
+			entries: []func(t *testing.T) progress.Model{
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 0, "x") },
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 9300285, "0") },
+			},
+			wantContext: strPtr("0"),
+		},
+		{
+			name:   "infoNumber wins over step",
+			params: map[string]string{"questId": "20730", "infoNumber": "9300285", "step": "1", "contextKey": "gate"},
+			entries: []func(t *testing.T) progress.Model{
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 0, "x") },
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 9300285, "0") },
+			},
+			wantContext: strPtr("0"),
+		},
+		{
+			name:   "numeric-looking progress stays a string",
+			params: map[string]string{"questId": "6400", "contextKey": "seagull"},
+			entries: []func(t *testing.T) progress.Model{
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 0, "72") },
+			},
+			wantContext: strPtr("72"),
+		},
+		{
+			name:        "unstarted quest",
+			params:      map[string]string{"questId": "3360", "contextKey": "pw"},
+			procErr:     progress.ErrNotFound,
+			wantContext: strPtr(""),
+		},
+		{
+			name:   "info number absent from collection",
+			params: map[string]string{"questId": "3360", "infoNumber": "5", "contextKey": "pw"},
+			entries: []func(t *testing.T) progress.Model{
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 0, "x") },
+			},
+			wantContext: strPtr(""),
+		},
+		{
+			name:        "empty collection",
+			params:      map[string]string{"questId": "3360", "contextKey": "pw"},
+			entries:     []func(t *testing.T) progress.Model{},
+			wantContext: strPtr(""),
+		},
+		{
+			name:    "transport error",
+			params:  map[string]string{"questId": "3360", "contextKey": "pw"},
+			procErr: transportErr,
+			wantErr: true,
+		},
+		{
+			name:          "missing questId",
+			params:        map[string]string{"contextKey": "pw"},
+			wantErr:       true,
+			wantErrSubstr: "questId",
+		},
+		{
+			name:          "missing contextKey",
+			params:        map[string]string{"questId": "3360"},
+			wantErr:       true,
+			wantErrSubstr: "contextKey",
+		},
+		{
+			name:        "questId from context",
+			params:      map[string]string{"questId": "{context.qid}", "contextKey": "pw"},
+			seedContext: map[string]string{"qid": "3360"},
+			entries: []func(t *testing.T) progress.Model{
+				func(t *testing.T) progress.Model { return mustProgressEntry(t, 0, "z") },
+			},
+			wantContext: strPtr("z"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mr := miniredis.RunT(t)
+			rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+			InitRegistry(rc)
+
+			l, _ := test.NewNullLogger()
+			l.SetLevel(logrus.DebugLevel)
+
+			var tm tenant.Model
+			tctx := tenant.WithContext(context.Background(), tm)
+			characterId := uint32(77)
+
+			builder := NewConversationContextBuilder().
+				SetCharacterId(characterId).
+				AddContextValue("_seed", "1")
+			for k, v := range tc.seedContext {
+				builder = builder.AddContextValue(k, v)
+			}
+			convCtx := builder.Build()
+			GetRegistry().SetContext(tctx, characterId, convCtx)
+			defer GetRegistry().ClearContext(tctx, characterId)
+
+			var entries []progress.Model
+			for _, f := range tc.entries {
+				entries = append(entries, f(t))
+			}
+
+			var called bool
+			progressExpectedNotCalled := tc.name == "missing questId" || tc.name == "missing contextKey"
+			procP := fakeProgressProcessor{entries: entries, err: tc.procErr, called: &called}
+
+			executor := &OperationExecutorImpl{
+				l:              l,
+				ctx:            tctx,
+				t:              tm,
+				questProgressP: procP,
+			}
+
+			op, err := func() (OperationModel, error) {
+				b := NewOperationBuilder().SetType("local:get_quest_progress")
+				for k, v := range tc.params {
+					b.AddParamValue(k, v)
+				}
+				return b.Build()
+			}()
+			if err != nil {
+				t.Fatalf("failed to build op: %v", err)
+			}
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+			err = executor.ExecuteOperation(f, characterId, op)
+
+			if progressExpectedNotCalled && called {
+				t.Errorf("quest progress processor was called for case %q, expected it not to be", tc.name)
+			}
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("ExecuteOperation returned nil error, want non-nil")
+				}
+				if tc.wantErrSubstr != "" && !strings.Contains(err.Error(), tc.wantErrSubstr) {
+					t.Errorf("error %q does not contain %q", err.Error(), tc.wantErrSubstr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("ExecuteOperation returned error: %v", err)
+			}
+
+			if tc.wantContext != nil {
+				got, err := executor.getContextValue(characterId, tc.params["contextKey"])
+				if err != nil {
+					t.Fatalf("failed to read context key %q: %v", tc.params["contextKey"], err)
+				}
+				if got != *tc.wantContext {
+					t.Errorf("context[%q] = %q, want %q", tc.params["contextKey"], got, *tc.wantContext)
+				}
+			}
+		})
+	}
+}
+
+func strPtr(s string) *string {
+	return &s
 }

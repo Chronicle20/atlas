@@ -108,6 +108,8 @@ func (v *Validator) validateState(state StateModel, stateIds map[string]bool, re
 		v.validateListSelection(state.Id(), state.ListSelection(), stateIds, result)
 	case AskNumberType:
 		v.validateAskNumber(state.Id(), state.AskNumber(), stateIds, result)
+	case AskTextType:
+		v.validateAskText(state.Id(), state.AskText(), stateIds, result)
 	case AskStyleType:
 		v.validateAskStyle(state.Id(), state.AskStyle(), stateIds, result)
 	case AskSlideMenuType:
@@ -421,6 +423,56 @@ func (v *Validator) validateAskNumber(stateId string, askNumber *AskNumberModel,
 	}
 }
 
+// validateAskText validates an ask text state
+func (v *Validator) validateAskText(stateId string, askText *AskTextModel, stateIds map[string]bool, result *ValidationResult) {
+	if askText == nil {
+		result.addError(stateId, "askText", "required", "Ask text is required for askText state")
+		return
+	}
+
+	if askText.Text() == "" {
+		result.addError(stateId, "askText.text", "required", "Ask text is required")
+	}
+
+	if askText.ContextKey() == "" {
+		result.addError(stateId, "askText.contextKey", "required", "Context key is required")
+	}
+
+	if askText.MaxLength() == 0 {
+		result.addError(stateId, "askText.maxLength", "required", "Max length must be greater than 0")
+	}
+
+	if askText.MinLength() > askText.MaxLength() {
+		result.addError(stateId, "askText.minLength", "invalid", "Min length must be <= max length")
+	}
+
+	// Validate nextState reference
+	if askText.NextState() == "" {
+		result.addError(stateId, "askText.nextState", "required", "Next state is required")
+	} else if !stateIds[askText.NextState()] {
+		result.addError(stateId, "askText.nextState", "invalid_reference", fmt.Sprintf("Next state '%s' does not exist", askText.NextState()))
+	}
+
+	// Validate each match in the ordered, first-match-wins branch table
+	for i, m := range askText.Matches() {
+		if m.Value() == "" && m.ValueFromContext() == "" {
+			result.addError(stateId, fmt.Sprintf("askText.matches[%d]", i), "required", "Exactly one of value or valueFromContext is required")
+		} else if m.Value() != "" && m.ValueFromContext() != "" {
+			result.addError(stateId, fmt.Sprintf("askText.matches[%d]", i), "invalid", "Exactly one of value or valueFromContext is required, not both")
+		}
+
+		if m.ValueFromContext() != "" {
+			if _, isContextRef, _ := ExtractContextValue(m.ValueFromContext(), nil); !isContextRef {
+				result.addError(stateId, fmt.Sprintf("askText.matches[%d].valueFromContext", i), "invalid", "valueFromContext must reference a context value in {context.xxx} format")
+			}
+		}
+
+		if m.NextState() != "" && !stateIds[m.NextState()] {
+			result.addError(stateId, fmt.Sprintf("askText.matches[%d].nextState", i), "invalid_reference", fmt.Sprintf("Next state '%s' does not exist", m.NextState()))
+		}
+	}
+}
+
 // validateAskStyle validates an ask style state
 func (v *Validator) validateAskStyle(stateId string, askStyle *AskStyleModel, stateIds map[string]bool, result *ValidationResult) {
 	if askStyle == nil {
@@ -547,6 +599,13 @@ func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 		case AskNumberType:
 			if askNumber := state.AskNumber(); askNumber != nil {
 				visit(askNumber.NextState())
+			}
+		case AskTextType:
+			if askText := state.AskText(); askText != nil {
+				for _, m := range askText.Matches() {
+					visit(m.NextState())
+				}
+				visit(askText.NextState())
 			}
 		case AskStyleType:
 			if askStyle := state.AskStyle(); askStyle != nil {
@@ -699,6 +758,13 @@ func (v *Validator) getNextStates(state StateModel) []string {
 	case AskNumberType:
 		if askNumber := state.AskNumber(); askNumber != nil {
 			nextStates = append(nextStates, askNumber.NextState())
+		}
+	case AskTextType:
+		if askText := state.AskText(); askText != nil {
+			for _, m := range askText.Matches() {
+				nextStates = append(nextStates, m.NextState())
+			}
+			nextStates = append(nextStates, askText.NextState())
 		}
 	case AskStyleType:
 		if askStyle := state.AskStyle(); askStyle != nil {

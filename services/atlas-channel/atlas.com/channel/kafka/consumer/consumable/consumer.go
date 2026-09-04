@@ -111,7 +111,48 @@ const (
 	actionPetCashFoodError
 	actionInventoryFull
 	actionVegaInvalid
+	// actionSolomonRejected announces one of the three Writ of Solomon
+	// rejection messages (solomonRejectionMessage), then unsticks. Ruled in
+	// by the user: unlike POTION_LOCKED, a Solomon rejection is never silent
+	// (task-277).
+	actionSolomonRejected
 )
+
+// Writ of Solomon (task-277) rejection texts. New player-facing copy with no
+// WZ/client-string source -- written in WaterOfLifeFailedMessage's register
+// and flagged for the user's approval rather than treated as verified game
+// text.
+const (
+	// SolomonNoExperienceMessage is announced for ErrorTypeSolomonNoExperience:
+	// the tenant's stored atlas-data document has no spec/exp for the item
+	// (docs/TODO.md task-277 follow-up). The Writ is never consumed.
+	SolomonNoExperienceMessage = "The Writ of Solomon has no effect."
+	// SolomonLevelExceededMessage is announced for
+	// ErrorTypeSolomonLevelExceeded: the character's level exceeds the item's
+	// maxLevel. The Writ is never consumed.
+	SolomonLevelExceededMessage = "Your level is too high to use the Writ of Solomon."
+	// SolomonBalanceNotEmptyMessage is announced for
+	// ErrorTypeSolomonBalanceNotEmpty: the character already has a non-zero
+	// stored EXP balance banked. The Writ is never consumed.
+	SolomonBalanceNotEmptyMessage = "You already have stored EXP banked. Use it before using another Writ of Solomon."
+)
+
+// solomonRejectionMessage resolves the player-facing text for a Solomon
+// rejection errorType. Kept separate from consumableErrorAction because the
+// three types share one errorAction (actionSolomonRejected) but each needs
+// its own message.
+func solomonRejectionMessage(errorType string) string {
+	switch errorType {
+	case consumable2.ErrorTypeSolomonNoExperience:
+		return SolomonNoExperienceMessage
+	case consumable2.ErrorTypeSolomonLevelExceeded:
+		return SolomonLevelExceededMessage
+	case consumable2.ErrorTypeSolomonBalanceNotEmpty:
+		return SolomonBalanceNotEmptyMessage
+	default:
+		return ""
+	}
+}
 
 func consumableErrorAction(errorType string) errorAction {
 	switch errorType {
@@ -126,6 +167,8 @@ func consumableErrorAction(errorType string) errorAction {
 		// free to change when a future error type needs a different one, and
 		// POTION_LOCKED must not silently inherit it.
 		return actionUnstick
+	case consumable2.ErrorTypeSolomonNoExperience, consumable2.ErrorTypeSolomonLevelExceeded, consumable2.ErrorTypeSolomonBalanceNotEmpty:
+		return actionSolomonRejected
 	default:
 		return actionUnstick
 	}
@@ -152,6 +195,13 @@ func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Han
 		case actionInventoryFull:
 			err = sp.IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
 				if aerr := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageDropPickUpInventoryFullBody())(s); aerr != nil {
+					return aerr
+				}
+				return unstick(s)
+			})
+		case actionSolomonRejected:
+			err = sp.IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
+				if aerr := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationSystemMessageBody(solomonRejectionMessage(e.Body.Error)))(s); aerr != nil {
 					return aerr
 				}
 				return unstick(s)

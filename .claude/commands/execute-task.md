@@ -172,7 +172,20 @@ split for why this split exists.
 A gate checks a commit, and commits are immutable — task N's verdict is equally
 valid whenever it lands. Blocking on it is pure wall clock.
 
-After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
+**Cadence: gate per range, not per task.** The implementer already ran the
+module-local build and tests; what `--quick` adds is `go vet`, the `libs/`
+reverse-dependency fan-out, the formatters, and the guards. That is worth
+running, but not after every task from every session on a shared host. Launch
+a gate when any of these is true, and otherwise let the task's commits join the
+next range:
+
+- two or more tasks have landed since the last gated commit;
+- the task touched `libs/` or `go.work` (the fan-out is the point);
+- the task is the last one before a handoff (Step 4e) or the end of the plan;
+- the implementer reported `DONE_WITH_CONCERNS`.
+
+After an implementer reports `DONE` / `DONE_WITH_CONCERNS` and the cadence
+rule says to gate:
 
 1. **Launch** the gate for the range `<last-gated-commit>..HEAD`:
 
@@ -242,8 +255,9 @@ as any review finding. It is not a reason to serialize.
 
 The flagless `tools/verify.sh` still runs exactly once, at branch end, in
 `superpowers:finishing-a-development-branch`, against the full merge base.
-`--quick --base` per task is the inner loop, not the gate — per CLAUDE.md only
-the flagless run counts as verified.
+`--quick --base` per range is the inner loop, not the gate — per CLAUDE.md only
+the flagless run counts as verified, and it is the run that executes the
+golangci linters and `-race`, which `--quick` skips.
 
 You may dispatch `task-verifier` (`model: haiku`) instead of launching the
 gate yourself when you want the verdict summarized rather than reading the log.

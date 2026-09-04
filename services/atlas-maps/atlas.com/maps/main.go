@@ -4,6 +4,7 @@ import (
 	characterClient "atlas-maps/character"
 	"atlas-maps/character/location"
 	"atlas-maps/character/warp"
+	mapField "atlas-maps/field"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	data2 "atlas-maps/kafka/consumer/data"
@@ -12,6 +13,8 @@ import (
 	"atlas-maps/kafka/consumer/monster"
 	sessionConsumer "atlas-maps/kafka/consumer/session"
 	_map "atlas-maps/map"
+	"atlas-maps/map/backeffect"
+	"atlas-maps/map/environment"
 	"atlas-maps/map/jukebox"
 	spawnMonster "atlas-maps/map/monster"
 	"atlas-maps/map/weather"
@@ -145,8 +148,11 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(_map.InitResource(GetServer())).
+		AddRouteInitializer(mapField.InitResource(GetServer())).
 		AddRouteInitializer(weather.InitResource(GetServer())).
 		AddRouteInitializer(jukebox.InitResource(GetServer())).
+		AddRouteInitializer(environment.InitResource(GetServer())).
+		AddRouteInitializer(backeffect.InitResource(GetServer())).
 		AddRouteInitializer(visit.InitResource(GetServer())(db)).
 		AddRouteInitializer(location.InitResource(GetServer())(db, func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) location.WarpProcessor {
 			return warp.NewProcessor(l, ctx, db)

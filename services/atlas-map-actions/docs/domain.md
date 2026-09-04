@@ -72,6 +72,8 @@ Executes operations by creating saga commands. Supported operation types:
 | `show_intro` | `ShowIntro` | `path` |
 | `spawn_monster` | `SpawnMonster` | `monsterId`; optional: `x`, `y`, `count`, `mapId` |
 | `drop_message` | `SendMessage` | `message`; optional: `messageType` |
+| `move_environment` | `MoveEnvironment` | `name`, `value` (uint32); optional: `kind` (`ENVIRONMENT` default, or `OBSTACLE`) |
+| `reset_environment` | `ResetEnvironment` | (none) |
 
 ### Seed Adapters
 

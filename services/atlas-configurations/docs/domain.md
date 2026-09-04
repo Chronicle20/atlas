@@ -114,6 +114,17 @@ Manages version-specific configuration templates that define schemas for game re
 
 ---
 
+## drift
+
+**drift**
+- The one definition of a comparable revision, shared by both sides of every tenant-vs-template comparison. Operates on marshaled JSON, never on either package's Go types, so structurally identical documents in distinct Go types hash identically
+- Sections: `properties` (every comparable key not otherwise named — today `usesPin`), `socket`, `characters`, `npcs`, `cashShop`, `mapleLife`
+- Excluded from every revision: `id`, `environment`, `region`, `majorVersion`, `minorVersion`, `worlds`, `diagnostics`
+- Empty values (`null`, `[]`, `{}`) are pruned recursively before hashing, so a document that omits a collection and one that carries an empty collection are the same document. `false`, `0` and `""` are values and are never pruned
+- A `drift` hash is not comparable with `templates.Revision`: one hashes a struct in field order, the other a map in key order
+
+---
+
 ## Tenants
 
 ### Responsibility
@@ -136,6 +147,11 @@ Manages tenant-specific configurations derived from templates. Maintains history
 - `MapleLife` - Maple Life character-sale dialog configuration
 - `Environment` - Execution environment the row belongs to; server-owned and read-only (always reflects the persisted row, never a client-supplied value)
 
+**ViewRestModel**
+- Embeds `RestModel` and adds five read-only computed attributes: `BaselineTemplateId`, `BaselineRevision`, `StoredRevision`, `TemplateDrift`, `SectionDrift`
+- `SectionDrift` is a map keyed by section name, always fully populated with all six keys
+- Read paths only. The write model bound by POST/PATCH is unchanged, so the computed attributes are ignored on write by omission
+
 ### Invariants
 
 - Updates and deletions create history records before modifying data
@@ -143,6 +159,11 @@ Manages tenant-specific configurations derived from templates. Maintains history
 - On create and update, the socket document is validated against the same rules described under the Templates domain's Invariants; violations prevent the write
 - A tenant row belongs to exactly one execution environment. Reads (list, by id, by region/version) are scoped to the caller's environment; a caller with no environment sees every row (legacy behavior)
 - A write (update or delete) is rejected unless the caller's environment matches the target row's environment; a caller with no environment is always authorized (legacy behavior)
+- A tenant's baseline is the template row matching its `(region, majorVersion, minorVersion)` as it stands at read time, resolved through the templates overlay/baseline environment fallback. No baseline resolves to the unknown state — empty revisions, empty baseline id, every drift flag `false` — never to `true`
+- Baseline resolution never fails a read: a missing or unreadable template yields the unknown state, not a 404 or 500
+- A reset writes only the `tenants` row. The tenant's `id`, `region`, `majorVersion`, `minorVersion`, `environment`, `worlds` and `diagnostics` survive verbatim at every scope
+- A reset records history before writing and enqueues the tenant status outbox message in the same transaction, identically to an update
+- A reset validates the merged document with the same validators an update runs, but discards the preset validator's id-assignment mutation, so the persisted document is byte-identical to the baseline's content
 
 ### Processors
 
@@ -153,6 +174,8 @@ Manages tenant-specific configurations derived from templates. Maintains history
 - `Create` - Creates a new tenant (accepts optional ID)
 - `UpdateById` - Updates an existing tenant (creates history record)
 - `DeleteById` - Deletes a tenant (creates history record)
+- `ResetById` - Replaces the tenant's stored content, for the requested sections, with its baseline template's (creates history record, enqueues status)
+- `AllViewProvider` / `ViewByIdProvider` - Read paths that additionally compute `BaselineTemplateId`, `BaselineRevision`, `StoredRevision`, `TemplateDrift` and `SectionDrift` against the resolved baseline template. The list resolves each distinct region/version baseline once per request
 
 ---
 

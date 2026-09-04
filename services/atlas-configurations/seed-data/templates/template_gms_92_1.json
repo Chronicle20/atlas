@@ -475,6 +475,34 @@
         ]
       },
       {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "NPCContinueConversationHandle",
+        "fname": "CScriptMan::OnAskSlideMenu",
+        "options": {
+          "messageType": {
+            "SAY": 0,
+            "SAY_IMAGE": 1,
+            "ASK_YES_NO": 2,
+            "ASK_TEXT": 3,
+            "ASK_NUMBER": 4,
+            "ASK_MENU": 5,
+            "ASK_QUIZ": 6,
+            "ASK_SPEED_QUIZ": 7,
+            "ASK_AVATAR": 8,
+            "ASK_MEMBER_SHOP_AVATAR": 9,
+            "ASK_PET": 10,
+            "ASK_PET_ALL": 11,
+            "ASK_YES_NO_QUEST": 13,
+            "ASK_BOX_TEXT": 14,
+            "ASK_SLIDE_MENU": 15
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x43",
         "validator": "LoggedInValidator",
         "handler": "NPCShopHandle",
@@ -859,6 +887,24 @@
         "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle",
         "fname": "CUIGuildBBS::SendLoadListRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB2",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSolomonHandle",
+        "fname": "CWvsContext::SendExpUpItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB3",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseStoredExperienceHandle",
+        "fname": "CWvsContext::SendTempExpUseRequest",
         "services": [
           "channel"
         ]
@@ -2469,6 +2515,22 @@
         "opCode": "0x8E",
         "writer": "CashShopOpen",
         "fname": "CStage::OnSetCashShop",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x8F",
+        "writer": "SetBackEffect",
+        "fname": "CMapLoadable::OnSetBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x91",
+        "writer": "ClearBackEffect",
+        "fname": "CMapLoadable::OnClearBackEffect",
         "services": [
           "channel"
         ]

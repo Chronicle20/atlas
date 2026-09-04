@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Atlas — Map Definition / Field prototype</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: #12151a;
+    --panel-2: #171b21;
+    --border: #262b33;
+    --text: #e6e9ee;
+    --muted: #8b95a5;
+    --dim: #5d6674;
+    /* semantic: definition = indigo, runtime = emerald */
+    --def: #7c8cf8;
+    --def-bg: rgba(124,140,248,.12);
+    --run: #34d399;
+    --run-bg: rgba(52,211,153,.12);
+    --warn: #f5b95c;
+    --danger: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: inherit; text-decoration: none; }
+  code, .mono { font-family: ui-monospace, "JetBrains Mono", Menlo, monospace; }
+
+  /* ---------- shell ---------- */
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  .sidebar { border-right: 1px solid var(--border); background: var(--panel); padding: 16px 12px; }
+  .brand { font-weight: 700; letter-spacing: .02em; padding: 4px 10px 18px; color: var(--muted); }
+  .nav a {
+    display: block; padding: 7px 10px; border-radius: 6px; color: var(--muted); font-size: 13.5px;
+  }
+  .nav a:hover { background: var(--panel-2); color: var(--text); }
+  .nav a.active { background: var(--panel-2); color: var(--text); box-shadow: inset 2px 0 0 var(--def); }
+  .nav a.active.runtime { box-shadow: inset 2px 0 0 var(--run); }
+  .nav .sep { height: 1px; background: var(--border); margin: 10px 6px; }
+  .main { padding: 22px 28px 80px; max-width: 1180px; }
+
+  /* ---------- primitives ---------- */
+  .crumbs { color: var(--dim); font-size: 12.5px; margin-bottom: 14px; }
+  .crumbs a:hover { color: var(--text); text-decoration: underline; }
+  .crumbs span { margin: 0 6px; color: #3a414c; }
+
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -.01em; }
+  h2 { font-size: 15px; margin: 0; letter-spacing: .01em; }
+  .sub { color: var(--muted); font-size: 13px; }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+  .card > header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .card > .body { padding: 16px; }
+  .card.flush > .body { padding: 0; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
+  }
+  .badge.def { color: var(--def); background: var(--def-bg); border-color: rgba(124,140,248,.28); }
+  .badge.run { color: var(--run); background: var(--run-bg); border-color: rgba(52,211,153,.28); }
+  .badge.flat { color: var(--muted); background: var(--panel-2); border-color: var(--border); text-transform: none; letter-spacing: 0; font-size: 12px; }
+  .badge.dead { color: var(--danger); background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.28); }
+  .badge.on { color: var(--run); background: var(--run-bg); border-color: rgba(52,211,153,.28); }
+  .badge.off { color: var(--muted); background: var(--panel-2); border-color: var(--border); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 12px; border-radius: 7px; font-size: 13px;
+  }
+  .btn:hover { border-color: #39414d; }
+  .btn.sm { padding: 3px 9px; font-size: 12px; }
+  .btn.primary { background: rgba(52,211,153,.14); border-color: rgba(52,211,153,.35); color: #7ff0c6; }
+  .btn.ghost { background: transparent; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; font-weight: 500; color: var(--dim); font-size: 11.5px;
+    text-transform: uppercase; letter-spacing: .05em; padding: 10px 16px; border-bottom: 1px solid var(--border);
+  }
+  td { padding: 10px 16px; border-bottom: 1px solid rgba(38,43,51,.6); }
+  tbody tr:last-child td { border-bottom: none; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover td { background: var(--panel-2); }
+  .link { color: var(--def); }
+  .link:hover { text-decoration: underline; }
+  .link.run { color: var(--run); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .empty { padding: 34px 16px; text-align: center; color: var(--muted); }
+  .empty strong { display: block; color: var(--text); font-size: 14px; margin-bottom: 6px; font-weight: 600; }
+  .empty p { margin: 0 auto; max-width: 460px; font-size: 13px; }
+  .empty .hint { margin-top: 10px; color: var(--dim); font-size: 12px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 22px 0 0; }
+  .tabs button {
+    background: none; border: none; color: var(--muted); cursor: pointer; font: inherit;
+    padding: 9px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tabs button:hover { color: var(--text); }
+  .tabs button.active { color: var(--text); border-bottom-color: var(--accent, var(--def)); }
+  .tabs.runtime button.active { border-bottom-color: var(--run); }
+
+  select, input[type=text] {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 10px; border-radius: 7px; font: inherit; min-width: 160px;
+  }
+  label.field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+
+  .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .grid-2 { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+  .kv { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+  .kv + .kv { border-top: 1px solid rgba(38,43,51,.6); }
+  .kv .k { color: var(--muted); }
+
+  .mapimg {
+    aspect-ratio: 16 / 9; width: 100%; border-radius: 8px; border: 1px solid var(--border);
+    background:
+      radial-gradient(120% 90% at 30% 10%, #1d2a3a 0%, #131a24 55%, #0f141b 100%);
+    position: relative; overflow: hidden;
+  }
+  .mapimg .ground { position: absolute; left: 6%; right: 6%; height: 6px; border-radius: 3px; background: #2c3746; }
+  .mapimg .label { position: absolute; left: 12px; top: 10px; font-size: 11.5px; color: var(--dim); letter-spacing: .04em; text-transform: uppercase; }
+  .pin {
+    position: absolute; transform: translate(-50%,-100%); font-size: 11px; white-space: nowrap;
+    padding: 2px 7px; border-radius: 999px; border: 1px solid; background: var(--panel);
+  }
+  .pin.char { color: var(--run); border-color: rgba(52,211,153,.5); background: rgba(6,26,20,.9); }
+  .pin.mob  { color: var(--warn); border-color: rgba(245,185,92,.45); background: rgba(30,22,8,.9); }
+  .pin.gate { color: #c4b5fd; border-color: rgba(196,181,253,.5); background: rgba(24,18,40,.92); }
+  .pin.def  { color: var(--def); border-color: rgba(124,140,248,.45); background: rgba(14,17,32,.9); border-style: dashed; }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+
+  .banner {
+    display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; color: var(--muted);
+    background: var(--def-bg); border: 1px solid rgba(124,140,248,.25); border-radius: 8px; padding: 10px 12px;
+  }
+  .banner.run { background: var(--run-bg); border-color: rgba(52,211,153,.25); }
+
+  .toast {
+    position: fixed; right: 22px; bottom: 22px; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-left: 3px solid var(--run); border-radius: 8px;
+    padding: 10px 14px; font-size: 13px; opacity: 0; transform: translateY(8px);
+    transition: .18s ease; pointer-events: none; max-width: 380px;
+  }
+  .toast.show { opacity: 1; transform: none; }
+  .toast .mono { color: var(--muted); font-size: 11.5px; display: block; margin-top: 3px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">ATLAS &nbsp;<span style="opacity:.5">admin</span></div>
+    <nav class="nav" id="nav">
+      <a href="#/maps" data-nav="maps">Maps</a>
+      <a href="#/fields" data-nav="fields" class="runtime">Fields</a>
+      <div class="sep"></div>
+      <a href="#/na">Marketplace</a>
+      <a href="#/na">Monsters</a>
+      <a href="#/na">Reactors</a>
+      <a href="#/na">NPCs</a>
+      <a href="#/na">Characters</a>
+    </nav>
+    <div class="sep"></div>
+    <div style="padding:6px 10px;font-size:11.5px;color:var(--dim);line-height:1.6">
+      <div><span class="badge def" style="font-size:10px">Definition</span></div>
+      <div style="margin:8px 0 0"><span class="badge run" style="font-size:10px">Runtime</span></div>
+    </div>
+  </aside>
+  <main class="main" id="view"></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Mock data — stands in for atlas-data (definition) and
+   atlas-maps (runtime). Shapes mirror the real REST payloads.
+   ============================================================ */
+
+const WORLDS = [{ id: 0, name: "Scania" }, { id: 1, name: "Bera" }];
+
+const MAPS = {
+  910340000: {
+    id: 910340000, name: "1st Accompaniment <1st Stage>", street: "Hidden Street",
+    spawns: 22, npcs: 2, portals: 3, reactors: 0,
+    spawnBreakdown: [{ name: "Ligator", template: 3230100, count: 22 }],
+    portalList: [
+      { name: "out00", type: "Regular", target: 910340001 },
+      { name: "st00",  type: "Regular", target: 910340000 },
+      { name: "sp",    type: "Spawn",   target: null },
+    ],
+    objects: [ // WZ obj[] entries carrying a `name` — the SetObjectState targets
+      { kind: "ENVIRONMENT", name: "gate", oS: "effect/quest", x: 640, y: 120 },
+      { kind: "ENVIRONMENT", name: "gate2", oS: "effect/quest", x: 300, y: 120 },
+    ],
+  },
+  103000800: {
+    id: 103000800, name: "Kerning PQ <1st Stage>", street: "Subway Depot",
+    spawns: 0, npcs: 1, portals: 2, reactors: 4,
+    spawnBreakdown: [],
+    portalList: [{ name: "out00", type: "Regular", target: 103000890 }, { name: "sp", type: "Spawn", target: null }],
+    objects: [{ kind: "ENVIRONMENT", name: "gate", oS: "effect/quest", x: 690, y: 130 }],
+  },
+  610030300: {
+    id: 610030300, name: "Crimsonwood Keep PQ <Menhir>", street: "Crimsonwood",
+    spawns: 6, npcs: 0, portals: 2, reactors: 0,
+    spawnBreakdown: [{ name: "Rombot", template: 4230125, count: 6 }],
+    portalList: [{ name: "out00", type: "Regular", target: 610030200 }, { name: "sp", type: "Spawn", target: null }],
+    objects: [0,1,2,3,4,5].map(i => ({ kind: "OBSTACLE", name: "menhir" + i, oS: "trapGL/ckPQ", x: 200 + i * 90, y: 140 })),
+  },
+  100000000: {
+    id: 100000000, name: "Henesys", street: "Henesys", spawns: 12, npcs: 9, portals: 6, reactors: 0,
+    spawnBreakdown: [{ name: "Snail", template: 100100, count: 12 }],
+    portalList: [], objects: [],
+  },
+};
+
+/* Runtime fields. `instance` is the atlas-maps instance UUID (abbreviated here). */
+const FIELDS = [
+  { worldId: 0, channelId: 1, mapId: 910340000, instance: "1", instanceId: "6f1c…a201", characters: 4, monsters: 18, age: "12m", state: "ACTIVE" },
+  { worldId: 0, channelId: 1, mapId: 910340000, instance: "2", instanceId: "b0d4…7e35", characters: 3, monsters: 21, age: "4m",  state: "ACTIVE" },
+  { worldId: 0, channelId: 4, mapId: 910340000, instance: "1", instanceId: "cc90…1f7a", characters: 0, monsters: 22, age: "51m", state: "DRAINING" },
+  { worldId: 0, channelId: 1, mapId: 100000000, instance: "1", instanceId: "0a11…9c02", characters: 12, monsters: 9, age: "3h",  state: "ACTIVE" },
+  { worldId: 0, channelId: 1, mapId: 103000800, instance: "1", instanceId: "44ef…30bb", characters: 5, monsters: 0,  age: "8m",  state: "ACTIVE" },
+  { worldId: 0, channelId: 2, mapId: 100000000, instance: "1", instanceId: "9931…c4d1", characters: 7, monsters: 11, age: "2h",  state: "ACTIVE" },
+  { worldId: 1, channelId: 1, mapId: 100000000, instance: "1", instanceId: "7710…be08", characters: 2, monsters: 12, age: "26m", state: "ACTIVE" },
+];
+
+const CHARACTERS = {
+  "0/1/910340000/1": [
+    { id: 12345, name: "Justin",        level: 71, job: "Dark Knight", x: 512, y: 83,  state: "Idle" },
+    { id: 12346, name: "CharacterTwo",  level: 68, job: "Bishop",      x: 618, y: 83,  state: "Moving" },
+    { id: 12347, name: "CharacterThree",level: 70, job: "Bowmaster",   x: 344, y: 83,  state: "Attacking" },
+    { id: 12348, name: "CharacterFour", level: 66, job: "Night Lord",  x: 720, y: 200, state: "Idle" },
+  ],
+  "0/1/103000800/1": [
+    { id: 22001, name: "PqLeader", level: 32, job: "Crusader", x: 400, y: 154, state: "Idle" },
+  ],
+};
+
+const MONSTERS = {
+  "0/1/910340000/1": [
+    { objectId: 124811, name: "Ligator", template: 3230100, hp: 118, maxHp: 120, x: 512, y: 83, spawn: 17, state: "Alive" },
+    { objectId: 124812, name: "Ligator", template: 3230100, hp: 0,   maxHp: 120, x: 620, y: 83, spawn: 18, state: "Dead"  },
+    { objectId: 124813, name: "Ligator", template: 3230100, hp: 120, maxHp: 120, x: 288, y: 83, spawn: 4,  state: "Alive" },
+    { objectId: 124814, name: "Ligator", template: 3230100, hp: 44,  maxHp: 120, x: 742, y: 200,spawn: 11, state: "Alive" },
+  ],
+};
+
+/* Live map-object state — GET /worlds/{w}/channels/{c}/maps/{m}/instances/{i}/environment
+   Entries absent from this map are at their WZ default (state 0). */
+const OBJECT_STATE = {
+  "0/1/910340000/1": [
+    { kind: "ENVIRONMENT", name: "gate",  state: 2, source: "Event occurrence 8af3…", changedAt: "2m ago" },
+    { kind: "ENVIRONMENT", name: "gate2", state: 0, source: "Character 12345",        changedAt: "9m ago" },
+  ],
+  "0/1/103000800/1": [
+    { kind: "ENVIRONMENT", name: "gate", state: 1, source: "Reactor script", changedAt: "40s ago" },
+  ],
+};
+
+/* ============================================================ helpers */
+const $ = (s, r = document) => r.querySelector(s);
+const worldName = id => (WORLDS.find(w => w.id === id) || {}).name || ("World " + id);
+const fkey = f => `${f.worldId}/${f.channelId}/${f.mapId}/${f.instance}`;
+const fieldsForMap = id => FIELDS.filter(f => f.mapId === id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function toast(msg, detail) {
+  const t = $("#toast");
+  t.innerHTML = esc(msg) + (detail ? `<span class="mono">${esc(detail)}</span>` : "");
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+function crumbs(parts) {
+  return `<div class="crumbs">` + parts.map(p =>
+    p.href ? `<a href="${p.href}">${esc(p.label)}</a>` : `<span style="color:var(--muted);margin:0">${esc(p.label)}</span>`
+  ).join(`<span>/</span>`) + `</div>`;
+}
+
+/* ============================================================ Map Definition */
+
+function viewMapList() {
+  setNav("maps");
+  const rows = Object.values(MAPS).map(m => `
+    <tr class="clickable" onclick="location.hash='#/maps/${m.id}'">
+      <td><span class="link">${esc(m.name)}</span><div class="sub mono" style="font-size:11.5px">${m.id}</div></td>
+      <td>${esc(m.street)}</td>
+      <td class="num">${m.spawns}</td>
+      <td class="num">${m.portals}</td>
+      <td class="num">${fieldsForMap(m.id).length
+        ? `<span class="badge run"><span class="dot"></span>${fieldsForMap(m.id).length}</span>` : `<span class="sub">—</span>`}</td>
+    </tr>`).join("");
+
+  return `
+    ${crumbs([{ label: "Maps" }])}
+    <h1>Maps</h1>
+    <div class="sub" style="margin-bottom:18px">Static map definitions. Counts describe configuration, not live state.</div>
+    <div class="card flush">
+      <table>
+        <thead><tr><th>Map</th><th>Street</th><th class="num">Monster spawns</th><th class="num">Portals</th><th class="num">Live fields</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function viewMapDefinition(mapId, tab) {
+  setNav("maps");
+  const m = MAPS[mapId];
+  if (!m) return `<h1>Unknown map</h1>`;
+  const live = fieldsForMap(m.id);
+  tab = tab || "portals";
+
+  const liveSection = live.length ? `
+    <div class="card flush">
+      <header>
+        <div style="display:flex;align-items:center;gap:10px">
+          <h2>Live Fields</h2><span class="badge run"><span class="dot"></span>${live.length} active</span>
+        </div>
+        <a class="btn sm ghost" href="#/fields?map=${m.id}">Open in Fields ↗</a>
+      </header>
+      <table>
+        <thead><tr><th>World</th><th>Channel</th><th>Instance</th><th class="num">Characters</th><th class="num">Monsters</th><th>Age</th><th>State</th></tr></thead>
+        <tbody>${live.map(f => `
+          <tr class="clickable" onclick="location.hash='#/fields/${fkey(f)}'">
+            <td>${esc(worldName(f.worldId))}</td>
+            <td>${f.channelId}</td>
+            <td><span class="link run">${f.instance}</span> <span class="sub mono" style="font-size:11px">${f.instanceId}</span></td>
+            <td class="num">${f.characters}</td>
+            <td class="num">${f.monsters}</td>
+            <td class="sub">${f.age}</td>
+            <td><span class="badge ${f.state === "ACTIVE" ? "on" : "off"}">${f.state}</span></td>
+          </tr>`).join("")}</tbody>
+      </table>
+    </div>` : `
+    <div class="card">
+      <header><h2>Live Fields</h2></header>
+      <div class="empty">
+        <strong>No active fields.</strong>
+        <p>This map is not currently instantiated in any world or channel.</p>
+        <div class="hint">Fields are created at runtime when a character enters the map. They cannot be created from this UI.</div>
+      </div>
+    </div>`;
+
+  const tabBody = {
+    portals: m.portalList.length ? table(
+      ["Name", "Type", "Target map"],
+      m.portalList.map(p => [`<span class="mono">${esc(p.name)}</span>`, p.type,
+        p.target ? `<a class="link" href="#/maps/${p.target}">${MAPS[p.target] ? esc(MAPS[p.target].name) : p.target}</a>` : `<span class="sub">—</span>`])
+    ) : emptyBlock("No portals configured."),
+
+    spawns: m.spawnBreakdown.length ? table(
+      ["Monster", "Template", "Configured spawn points"],
+      m.spawnBreakdown.map(s => [`<a class="link" href="#/na">${esc(s.name)}</a>`, `<span class="mono">${s.template}</span>`, `×${s.count}`])
+    ) : emptyBlock("No monster spawns configured."),
+
+    objects: m.objects.length ? table(
+      ["Kind", "Object name", "WZ source", "Default state", "Position"],
+      m.objects.map(o => [
+        `<span class="badge flat">${o.kind}</span>`,
+        `<span class="mono">${esc(o.name)}</span>`,
+        `<span class="sub mono">${esc(o.oS)}</span>`,
+        `<span class="sub">0</span>`,
+        `<span class="mono sub">(${o.x}, ${o.y})</span>`])
+    ) : emptyBlock("This map defines no named objects.", "Only named <code>obj</code> entries can be driven by SetObjectState / FieldObstacleOnOff."),
+
+    reactors: m.reactors ? emptyBlock(`${m.reactors} reactor definitions (not modelled in this prototype).`) : emptyBlock("No reactors configured."),
+  }[tab];
+
+  return `
+    ${crumbs([{ label: "Maps", href: "#/maps" }, { label: m.name }])}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+      <div>
+        <h1>${esc(m.name)}</h1>
+        <div class="sub">Map <span class="mono">${m.id}</span> &nbsp;·&nbsp; ${esc(m.street)}</div>
+      </div>
+      <span class="badge def">Definition</span>
+    </div>
+
+    <div class="grid-2" style="margin-top:18px">
+      <div class="card"><div class="body">
+        <div class="mapimg">
+          <div class="label">Map image · definition</div>
+          <div class="ground" style="bottom:24%"></div>
+          <div class="pin def" style="left:32%;bottom:26%">spawn ×22</div>
+          <div class="pin def" style="left:66%;bottom:26%">gate</div>
+          <div class="pin def" style="left:14%;bottom:26%">out00</div>
+        </div>
+        <div class="legend"><span><i style="background:var(--def)"></i>Configured placements (dashed)</span></div>
+      </div></div>
+      <div class="card"><div class="body">
+        <div class="kv"><span class="k">Monster spawns</span><b>${m.spawns}</b></div>
+        <div class="kv"><span class="k">NPC definitions</span><b>${m.npcs}</b></div>
+        <div class="kv"><span class="k">Portals</span><b>${m.portals}</b></div>
+        <div class="kv"><span class="k">Reactors</span><b>${m.reactors}</b></div>
+        <div class="kv"><span class="k">Named map objects</span><b>${m.objects.length}</b></div>
+        <div class="banner" style="margin-top:14px">
+          <span>ⓘ</span><span>Everything on this page is configuration. To see what exists right now, open a live field.</span>
+        </div>
+      </div></div>
+    </div>
+
+    <div style="margin-top:18px">${liveSection}</div>
+
+    <div class="tabs">
+      ${tabBtn("portals", `Portals (${m.portals})`, tab, `#/maps/${m.id}/portals`)}
+      ${tabBtn("spawns", `Monster Spawns (${m.spawns})`, tab, `#/maps/${m.id}/spawns`)}
+      ${tabBtn("objects", `Map Objects (${m.objects.length})`, tab, `#/maps/${m.id}/objects`)}
+      ${tabBtn("reactors", `Reactors (${m.reactors})`, tab, `#/maps/${m.id}/reactors`)}
+    </div>
+    <div class="card flush" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none">${tabBody}</div>`;
+}
+
+/* ============================================================ Fields locator */
+
+const filters = { world: 0, channel: "any", map: "" };
+
+function viewFieldsLocator(params) {
+  setNav("fields");
+  if (params.get("map")) filters.map = params.get("map");
+
+  const matches = FIELDS.filter(f =>
+    f.worldId === Number(filters.world) &&
+    (filters.channel === "any" || f.channelId === Number(filters.channel)) &&
+    (!filters.map || String(f.mapId) === filters.map ||
+      (MAPS[f.mapId] && MAPS[f.mapId].name.toLowerCase().includes(filters.map.toLowerCase()))));
+
+  const channels = [...new Set(FIELDS.filter(f => f.worldId === Number(filters.world)).map(f => f.channelId))].sort();
+
+  const results = matches.length ? `
+    <table>
+      <thead><tr><th>Map</th><th>Ch</th><th>Instance</th><th class="num">Characters</th><th class="num">Monsters</th><th>Age</th><th>State</th></tr></thead>
+      <tbody>${matches.map(f => `
+        <tr class="clickable" onclick="location.hash='#/fields/${fkey(f)}'">
+          <td><span class="link run">${MAPS[f.mapId] ? esc(MAPS[f.mapId].name) : f.mapId}</span>
+              <div class="sub mono" style="font-size:11.5px">${f.mapId}</div></td>
+          <td>${f.channelId}</td>
+          <td><span class="mono">${f.instance}</span> <span class="sub mono" style="font-size:11px">${f.instanceId}</span></td>
+          <td class="num">${f.characters}</td>
+          <td class="num">${f.monsters}</td>
+          <td class="sub">${f.age}</td>
+          <td><span class="badge ${f.state === "ACTIVE" ? "on" : "off"}">${f.state}</span></td>
+        </tr>`).join("")}</tbody>
+    </table>` : `
+    <div class="empty">
+      <strong>No active fields</strong>
+      <p>There are currently no instantiated fields matching
+         <b>${esc(worldName(Number(filters.world)))}</b>${filters.channel !== "any" ? ` / <b>Channel ${filters.channel}</b>` : ""}${filters.map ? ` / <b>${esc(mapLabel(filters.map))}</b>` : ""}.</p>
+      <div class="hint">The map definition still exists — only this runtime instantiation is absent.</div>
+      <div style="margin-top:14px"><button class="btn sm" onclick="clearFilters()">Clear filters</button></div>
+    </div>`;
+
+  return `
+    ${crumbs([{ label: "Fields" }])}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+      <div>
+        <h1>Fields</h1>
+        <div class="sub">Inspect the live state of a map within a world, channel, and instance.</div>
+      </div>
+      <span class="badge run"><span class="dot"></span>Runtime</span>
+    </div>
+
+    <div class="card" style="margin:18px 0">
+      <div class="body row">
+        <label class="field">World
+          <select onchange="setFilter('world', this.value)">
+            ${WORLDS.map(w => `<option value="${w.id}" ${Number(filters.world) === w.id ? "selected" : ""}>${esc(w.name)}</option>`).join("")}
+          </select></label>
+        <label class="field">Channel
+          <select onchange="setFilter('channel', this.value)">
+            <option value="any" ${filters.channel === "any" ? "selected" : ""}>Any channel</option>
+            ${channels.map(c => `<option value="${c}" ${String(filters.channel) === String(c) ? "selected" : ""}>Channel ${c}</option>`).join("")}
+            <option value="3" ${String(filters.channel) === "3" ? "selected" : ""}>Channel 3 (no fields)</option>
+          </select></label>
+        <label class="field" style="flex:1;min-width:240px">Map
+          <input type="text" placeholder="Search maps by name or id…" value="${esc(filters.map)}"
+                 oninput="setFilter('map', this.value)" style="width:100%">
+        </label>
+        <button class="btn ghost" onclick="clearFilters()">Reset</button>
+      </div>
+    </div>
+
+    <div class="card flush">
+      <header>
+        <h2>Active Fields</h2>
+        <span class="badge flat">${matches.length} result${matches.length === 1 ? "" : "s"}</span>
+      </header>
+      ${results}
+    </div>`;
+}
+
+function mapLabel(v) { return MAPS[v] ? MAPS[v].name : v; }
+function setFilter(k, v) { filters[k] = v; render(); }
+function clearFilters() { filters.channel = "any"; filters.map = ""; location.hash = "#/fields"; render(); }
+
+/* ============================================================ Field detail */
+
+function viewFieldDetail(w, c, mapId, inst, tab) {
+  setNav("fields");
+  const f = FIELDS.find(x => x.worldId === +w && x.channelId === +c && x.mapId === +mapId && x.instance === inst);
+  const m = MAPS[mapId];
+  if (!f || !m) return `<h1>Field not found</h1><p class="sub">This field may have been torn down. <a class="link" href="#/fields">Back to Fields</a></p>`;
+  const key = fkey(f);
+  tab = tab || "characters";
+
+  const chars = CHARACTERS[key] || [];
+  const mobs = MONSTERS[key] || [];
+  const objs = OBJECT_STATE[key] || [];
+  const mobCounts = mobs.reduce((a, x) => (a[x.name] = (a[x.name] || 0) + 1, a), {});
+
+  const tabBody = {
+    characters: chars.length ? table(
+      ["Name", "Character ID", "Level", "Job", "Position", "State"],
+      chars.map(ch => [
+        `<a class="link" href="#/na">${esc(ch.name)}</a>`,
+        `<span class="mono">${ch.id}</span>`, ch.level, esc(ch.job),
+        `<span class="mono sub">(${ch.x}, ${ch.y})</span>`,
+        `<span class="badge flat">${ch.state}</span>`])
+    ) : emptyBlock("No characters are currently in this field.", "This is a normal state — the field stays alive briefly after the last character leaves."),
+
+    monsters: mobs.length ? table(
+      ["Object ID", "Monster", "HP", "Position", "Spawn", "State"],
+      mobs.map(x => [
+        `<span class="mono">${x.objectId}</span>`,
+        `<a class="link" href="#/na">${esc(x.name)}</a>`,
+        `<span class="mono">${x.hp} / ${x.maxHp}</span>`,
+        `<span class="mono sub">(${x.x}, ${x.y})</span>`,
+        `<a class="link" href="#/maps/${m.id}/spawns">Spawn ${x.spawn}</a>`,
+        `<span class="badge ${x.state === "Dead" ? "dead" : "on"}">${x.state}</span>`])
+    ) : emptyBlock("No live monsters in this field."),
+
+    objects: objectsTab(key, m, objs),
+  }[tab];
+
+  return `
+    ${crumbs([
+      { label: "Fields", href: "#/fields" },
+      { label: worldName(f.worldId), href: "#/fields" },
+      { label: "Channel " + f.channelId, href: "#/fields" },
+      { label: m.name },
+      { label: "Instance " + f.instance }])}
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+      <div>
+        <h1>${esc(m.name)}</h1>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+          <span class="badge run"><span class="dot"></span>${esc(worldName(f.worldId))} / Channel ${f.channelId} / Instance ${f.instance}</span>
+          <span class="sub mono">${f.instanceId}</span>
+        </div>
+        <div class="sub" style="margin-top:6px">Map <span class="mono">${m.id}</span></div>
+      </div>
+      <a class="btn" href="#/maps/${m.id}">View Map Definition ↗</a>
+    </div>
+
+    <div class="grid-2" style="margin-top:18px">
+      <div class="card"><div class="body">
+        <div class="mapimg">
+          <div class="label">Map image · live overlay</div>
+          <div class="ground" style="bottom:24%"></div>
+          ${chars.map((ch, i) => `<div class="pin char" style="left:${18 + i * 19}%;bottom:${26 + (ch.y > 150 ? 22 : 0)}%">${esc(ch.name)}</div>`).join("")}
+          ${mobs.filter(x => x.state === "Alive").slice(0, 3).map((x, i) => `<div class="pin mob" style="left:${26 + i * 24}%;bottom:46%">${esc(x.name)} ${x.hp}/${x.maxHp}</div>`).join("")}
+          ${objs.map((o, i) => `<div class="pin gate" style="left:${70 - i * 34}%;bottom:62%">${esc(o.name)} · state ${o.state}</div>`).join("")}
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--run)"></i>Characters</span>
+          <span><i style="background:var(--warn)"></i>Monsters</span>
+          <span><i style="background:#c4b5fd"></i>Map objects</span>
+          <span class="sub">Overlay is illustrative; positions are not to scale.</span>
+        </div>
+      </div></div>
+
+      <div class="stack">
+        <div class="card"><div class="body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <h2>Live summary</h2><span class="badge run">Runtime</span>
+          </div>
+          <div class="kv"><span class="k">Characters</span><b>${chars.length}</b></div>
+          ${Object.entries(mobCounts).map(([n, ct]) => `<div class="kv"><span class="k">Live monsters · ${esc(n)}</span><b>×${ct}</b></div>`).join("")
+            || `<div class="kv"><span class="k">Live monsters</span><b>0</b></div>`}
+          <div class="kv"><span class="k">Map objects with state</span><b>${objs.length}</b></div>
+          <div class="kv"><span class="k">Drops</span><b>7</b></div>
+          <div class="kv"><span class="k">Field age</span><b>${f.age}</b></div>
+        </div></div>
+
+        <div class="card"><div class="body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <h2>Map</h2><span class="badge def">Definition</span>
+          </div>
+          <div class="sub" style="margin-bottom:8px">${esc(m.name)} · <span class="mono">${m.id}</span> · ${esc(m.street)}</div>
+          <div class="kv"><span class="k">Configured monster spawns</span><b>${m.spawns}</b></div>
+          <div class="kv"><span class="k">NPC definitions</span><b>${m.npcs}</b></div>
+          <div class="kv"><span class="k">Portals</span><b>${m.portals}</b></div>
+          <div style="margin-top:12px"><a class="btn sm ghost" href="#/maps/${m.id}">View Map Definition ↗</a></div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="tabs runtime">
+      ${tabBtn("characters", `Characters (${chars.length})`, tab, `#/fields/${key}/characters`)}
+      ${tabBtn("monsters", `Monsters (${mobs.length})`, tab, `#/fields/${key}/monsters`)}
+      ${tabBtn("objects", `Map Objects (${objs.length})`, tab, `#/fields/${key}/objects`)}
+    </div>
+    <div class="card flush" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none">${tabBody}</div>`;
+}
+
+/* The Map Objects tab is the one that carries write controls:
+   POST/DELETE .../instances/{i}/environment */
+function objectsTab(key, m, objs) {
+  const tracked = new Set(objs.map(o => o.kind + ":" + o.name));
+  const untracked = m.objects.filter(o => !tracked.has(o.kind + ":" + o.name));
+
+  const rows = objs.map(o => `
+    <tr>
+      <td><span class="badge flat">${o.kind}</span></td>
+      <td><span class="mono">${esc(o.name)}</span></td>
+      <td><span class="badge on">state ${o.state}</span></td>
+      <td class="sub">${esc(o.source)}</td>
+      <td class="sub">${esc(o.changedAt)}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <input type="text" value="${o.state}" style="width:56px;min-width:0;padding:3px 7px" id="st-${esc(o.name)}">
+        <button class="btn sm" onclick="setState('${esc(key)}','${esc(o.kind)}','${esc(o.name)}')">Set</button>
+      </td>
+    </tr>`).join("");
+
+  const untrackedRows = untracked.map(o => `
+    <tr>
+      <td><span class="badge flat">${o.kind}</span></td>
+      <td><span class="mono">${esc(o.name)}</span></td>
+      <td><span class="badge off">default</span></td>
+      <td class="sub">—</td><td class="sub">—</td>
+      <td style="text-align:right;white-space:nowrap">
+        <input type="text" value="1" style="width:56px;min-width:0;padding:3px 7px" id="st-${esc(o.name)}">
+        <button class="btn sm" onclick="setState('${esc(key)}','${esc(o.kind)}','${esc(o.name)}')">Set</button>
+      </td>
+    </tr>`).join("");
+
+  if (!objs.length && !untracked.length)
+    return emptyBlock("This map defines no named objects.",
+      "Named <code>obj</code> entries in the map's WZ data are the only valid targets.");
+
+  return `
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div class="sub">Object names come from the map definition; state is per-field and replays to characters entering later.</div>
+      <button class="btn sm" onclick="resetAll('${esc(key)}')">Reset all to default</button>
+    </div>
+    <table>
+      <thead><tr><th>Kind</th><th>Object</th><th>Current state</th><th>Last set by</th><th>Changed</th><th style="text-align:right">Actions</th></tr></thead>
+      <tbody>
+        ${rows}
+        ${untrackedRows ? `<tr><td colspan="6" class="sub" style="background:var(--panel-2);font-size:12px">Defined on the map, no state tracked in this field</td></tr>${untrackedRows}` : ""}
+      </tbody>
+    </table>`;
+}
+
+function setState(key, kind, name) {
+  const el = document.getElementById("st-" + name);
+  const state = Number(el && el.value) || 0;
+  const list = OBJECT_STATE[key] || (OBJECT_STATE[key] = []);
+  const found = list.find(o => o.name === name && o.kind === kind);
+  if (found) { found.state = state; found.source = "Operator (REST)"; found.changedAt = "just now"; }
+  else list.push({ kind, name, state, source: "Operator (REST)", changedAt: "just now" });
+  const [w, c, mid, i] = key.split("/");
+  toast(`${name} → state ${state}`, `POST /worlds/${w}/channels/${c}/maps/${mid}/instances/${i}/environment`);
+  render();
+}
+
+function resetAll(key) {
+  OBJECT_STATE[key] = [];
+  const [w, c, mid, i] = key.split("/");
+  toast("Field objects reset to default", `DELETE /worlds/${w}/channels/${c}/maps/${mid}/instances/${i}/environment`);
+  render();
+}
+
+/* ============================================================ small builders */
+
+function table(headers, rows) {
+  return `<table>
+    <thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table>`;
+}
+function emptyBlock(title, hint) {
+  return `<div class="empty"><strong>${title}</strong>${hint ? `<div class="hint">${hint}</div>` : ""}</div>`;
+}
+function tabBtn(id, label, active, href) {
+  return `<button class="${active === id ? "active" : ""}" onclick="location.hash='${href}'">${label}</button>`;
+}
+function setNav(which) {
+  document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("active", a.dataset.nav === which));
+}
+
+/* ============================================================ router */
+
+function render() {
+  const raw = location.hash.replace(/^#/, "") || "/maps";
+  const [path, qs] = raw.split("?");
+  const params = new URLSearchParams(qs || "");
+  const p = path.split("/").filter(Boolean);
+  let html;
+
+  if (p[0] === "fields" && p.length >= 5) html = viewFieldDetail(p[1], p[2], p[3], p[4], p[5]);
+  else if (p[0] === "fields") html = viewFieldsLocator(params);
+  else if (p[0] === "maps" && p[1]) html = viewMapDefinition(p[1], p[2]);
+  else if (p[0] === "maps") html = viewMapList();
+  else html = `<h1>Not in this prototype</h1><p class="sub">Only Maps and Fields are mocked. <a class="link" href="#/maps">Back to Maps</a></p>`;
+
+  $("#view").innerHTML = html;
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener("hashchange", render);
+render();
+</script>
+</body>
+</html>

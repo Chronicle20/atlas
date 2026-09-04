@@ -4,6 +4,7 @@ import (
 	_map "atlas-data/map"
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
+	"atlas-data/map/object"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	monstertpl "atlas-data/monster"
@@ -19,6 +20,7 @@ type ProcessorMock struct {
 	GetPortalsByNameFunc  func(s *_map.Storage, mapId mapconst.Id, name string) ([]portal.RestModel, error)
 	GetPortalByIdFunc     func(s *_map.Storage, mapId mapconst.Id, portalId uint32) (portal.RestModel, error)
 	GetReactorsFunc       func(s *_map.Storage, mapId mapconst.Id) ([]reactor.RestModel, error)
+	GetObjectsFunc        func(s *_map.Storage, mapId mapconst.Id) ([]object.RestModel, error)
 	GetNpcsFunc           func(s *_map.Storage, mapId mapconst.Id) ([]npc.RestModel, error)
 	GetNpcsByObjectIdFunc func(s *_map.Storage, mapId mapconst.Id, objectId uint32) ([]npc.RestModel, error)
 	GetNpcFunc            func(s *_map.Storage, mapId mapconst.Id, npcId uint32) (npc.RestModel, error)
@@ -65,6 +67,13 @@ func (m *ProcessorMock) GetPortalById(s *_map.Storage, mapId mapconst.Id, portal
 func (m *ProcessorMock) GetReactors(s *_map.Storage, mapId mapconst.Id) ([]reactor.RestModel, error) {
 	if m.GetReactorsFunc != nil {
 		return m.GetReactorsFunc(s, mapId)
+	}
+	return nil, nil
+}
+
+func (m *ProcessorMock) GetObjects(s *_map.Storage, mapId mapconst.Id) ([]object.RestModel, error) {
+	if m.GetObjectsFunc != nil {
+		return m.GetObjectsFunc(s, mapId)
 	}
 	return nil, nil
 }

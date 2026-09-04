@@ -34,6 +34,7 @@ const (
 	SpecTypeExperienceBuff       = SpecType("expBuff")
 	SpecTypeInc                  = SpecType("inc")
 	SpecTypeOnlyPickup           = SpecType("onlyPickup")
+	SpecTypeExperience           = SpecType("exp")
 )
 
 type Summons struct {
@@ -50,6 +51,7 @@ type RestModel struct {
 	TimeLimited     bool               `json:"timeLimited"`
 	NotSale         bool               `json:"notSale"`
 	ReqLevel        uint32             `json:"reqLevel"`
+	MaxLevel        uint32             `json:"maxLevel"`
 	Quest           bool               `json:"quest"`
 	Only            bool               `json:"only"`
 	ConsumeOnPickup bool               `json:"consumeOnPickup"`

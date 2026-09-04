@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,11 +14,13 @@ import {
 import { NpcImage } from "@/components/features/npc/NpcImage";
 import { MonsterTableRow } from "@/components/features/monsters/MonsterTableRow";
 import { MapCell } from "@/components/map-cell";
+import { MapObjectsTable } from "./MapObjectsTable";
 import { useTenant } from "@/context/tenant-context";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { cn } from "@/lib/utils";
 import type {
   MapMonsterData,
+  MapObjectData,
   MapPortalData,
   MapReactorData,
 } from "@/services/api/map-entities.service";
@@ -34,6 +36,8 @@ interface MapDetailTabsProps {
   monstersError?: unknown;
   reactors: MapReactorData[] | undefined;
   reactorsError?: unknown;
+  objects?: MapObjectData[] | undefined;
+  objectsError?: Error | null | undefined;
 }
 
 export function MapDetailTabs({
@@ -44,6 +48,8 @@ export function MapDetailTabs({
   monstersError,
   reactors,
   reactorsError,
+  objects,
+  objectsError,
 }: MapDetailTabsProps) {
   const sortedPortals = useMemo(() => {
     if (!portals) return portals;
@@ -81,17 +87,29 @@ export function MapDetailTabs({
     });
   }, [reactors]);
 
+  // FR-30: read-only `?tab=` support so a link from elsewhere (e.g. the
+  // field-detail Monsters tab's spawn cell) can land on this tab directly.
+  // Read once on mount — uncontrolled, no sync-back-to-URL; that's the
+  // fields page's own separate controlled `?tab=` requirement (FR-21).
+  const [searchParams] = useSearchParams();
+
   return (
-    <Tabs defaultValue="portals" className="flex flex-col">
+    <Tabs
+      defaultValue={searchParams.get("tab") ?? "portals"}
+      className="flex flex-col"
+    >
       <TabsList>
         <TabsTrigger value="portals">
           Portals {portals && `(${portals.length})`}
         </TabsTrigger>
         <TabsTrigger value="monsters">
-          Monsters {monsters && `(${monsters.length})`}
+          Monster Spawns {monsters && `(${monsters.length})`}
         </TabsTrigger>
         <TabsTrigger value="reactors">
           Reactors {reactors && `(${reactors.length})`}
+        </TabsTrigger>
+        <TabsTrigger value="objects">
+          Map Objects {objects && `(${objects.length})`}
         </TabsTrigger>
       </TabsList>
 
@@ -202,6 +220,17 @@ export function MapDetailTabs({
                 No reactors on this map.
               </p>
             )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="objects">
+        <Card>
+          <CardContent className="pt-6">
+            <MapObjectsTable
+              objects={objects}
+              error={objectsError ?? undefined}
+            />
           </CardContent>
         </Card>
       </TabsContent>

@@ -1210,6 +1210,24 @@
         ]
       },
       {
+        "opCode": "0x9B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSolomonHandle",
+        "fname": "CWvsContext::SendExpUpItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x9C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseStoredExperienceHandle",
+        "fname": "CWvsContext::SendTempExpUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x9F",
         "validator": "LoggedInValidator",
         "handler": "CashItemGachaponHandle",
@@ -2871,6 +2889,22 @@
         "opCode": "0x78",
         "writer": "CashShopOpen",
         "fname": "CStage::OnSetCashShop",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x79",
+        "writer": "SetBackEffect",
+        "fname": "CMapLoadable::OnSetBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x7A",
+        "writer": "ClearBackEffect",
+        "fname": "CMapLoadable::OnClearBackEffect",
         "services": [
           "channel"
         ]

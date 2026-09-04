@@ -596,7 +596,8 @@ Returns a specific map.
       "portals": {},
       "reactors": {},
       "npcs": {},
-      "monsters": {}
+      "monsters": {},
+      "objects": {}
     }
   }
 }
@@ -652,6 +653,46 @@ Returns all reactors in a map. Paginated (default 50, max 250).
 #### Response Model
 
 - 200: Array of reactors resources (map reactor sub-model)
+- 404: Map not found
+
+---
+
+### GET /api/data/maps/{mapId}/objects
+
+Returns all named WZ objects in a map. Paginated (default 50, max 250).
+
+Only `obj` entries carrying a non-empty `name` are exposed — these are the only objects addressable
+by `SetObjectState` / `FieldObstacleOnOff`. Sorted by `kind`, then `name`.
+
+#### Parameters
+
+- mapId (path): Map ID
+
+#### Response Model
+
+JSON:API collection of type `map-objects`, id `{kind}:{name}` (the same composite-key convention
+task-278's environment-object resource uses, so the UI can merge the two collections by id).
+
+Attributes: `kind` (`ENVIRONMENT` | `OBSTACLE`), `name`, `objectSource` (the WZ `oS`), `l0`, `l1`,
+`l2`, `x`, `y`, `z`, `layer`.
+
+```json
+{
+  "data": [{
+    "type": "map-objects",
+    "id": "ENVIRONMENT:gate",
+    "attributes": {
+      "kind": "ENVIRONMENT",
+      "name": "gate",
+      "objectSource": "effect",
+      "l0": "quest", "l1": "gate", "l2": "0",
+      "x": 640, "y": 120, "z": 0, "layer": 3
+    }
+  }]
+}
+```
+
+- 200: Array of map-objects resources (empty array for a map with no named objects)
 - 404: Map not found
 
 ---

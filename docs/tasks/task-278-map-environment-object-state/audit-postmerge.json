@@ -1,0 +1,117 @@
+{
+  "service": "task-278-map-environment-object-state (atlas-data, atlas-maps, atlas-channel)",
+  "path": "services/atlas-data, services/atlas-maps, services/atlas-channel",
+  "scope": "git diff 9b7817a13..5efddd01b -- *.go",
+  "date": "2026-09-02",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "services/atlas-data/atlas.com/data/map",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) in rest.go", "status": "n-a", "evidence": "rest.go's pre-existing Transform/TransformSlice untouched by this diff; only Objects field wiring added"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:306-317 new GetObjects/objectProvider on unchanged receiver"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "resource.go:275 NewProcessor(d.Logger(), d.Context(), db)"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks error", "status": "n-a", "evidence": "no new Transform call site introduced"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily", "status": "n-a", "evidence": "no provider.go changed; objectProvider wraps pre-existing lazy ByIdProvider"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "resource.go:260-286 handleGetMapObjectsRequest has none"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "resource.go:260-286"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, not providers", "status": "pass", "evidence": "resource.go:275 .GetObjects(s, mapId)"},
+        {"id": "DOM-15", "name": "No db.Create/Save/Delete in handlers", "status": "pass", "evidence": "resource.go:260-286 read-only"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "resource.go:264-267 400 on param error, 277-280 404 on provider error, same shape as sibling handleGetMapReactorsRequest"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "map/object/rest.go:12,16,20 GetName/GetID/SetID"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "n-a", "evidence": "GET only, no request body model"},
+        {"id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "object.RestModel carries no tenant field; handler uses d.Context()"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler wrapper", "status": "pass", "evidence": "resource.go:31 registerGet := rest.RegisterHandler(l)(si); resource.go:40 new route uses it"},
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) in map/object/rest.go", "status": "fail", "evidence": "services/atlas-data/atlas.com/data/map/object/rest.go:1-23 has rest.go but no Transform function, only GetName/GetID/SetID"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "object/rest.go holds only RestModel + JSON:API methods"}
+      ]
+    },
+    {
+      "name": "services/atlas-data/atlas.com/data/map/mock",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-33", "name": "Mock updated for interface change", "status": "pass", "evidence": "mock/processor.go:74-79 GetObjects added matching processor.go:33 interface addition"}
+      ]
+    },
+    {
+      "name": "services/atlas-data/atlas.com/data/map/object",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "fail", "evidence": "object/rest.go:1-23, no Transform function"},
+        {"id": "DOM-18", "name": "JSON:API interface", "status": "pass", "evidence": "rest.go:12-22"},
+        {"id": "FILE-02", "name": "RestModel/JSON:API methods live in rest.go", "status": "pass", "evidence": "all in rest.go, no catch-all"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "see _map package reader_object_test.go finding"}
+      ]
+    },
+    {
+      "name": "services/atlas-data/atlas.com/data/map (new tests)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-20", "name": "Table-driven pattern", "status": "fail", "evidence": "reader_object_test.go:29-70 TestGetObjects tests 3 parallel l2-parsing scenarios via sequential if-checks, not tests:=[]struct{...}+t.Run"},
+        {"id": "DOM-20", "name": "Table-driven pattern", "status": "warn", "evidence": "resource_object_test.go TestMapObjects_Endpoint single scenario, not table-driven"},
+        {"id": "DOM-10", "name": "Test DB setup calls RegisterTenantCallbacks", "status": "pass", "evidence": "storage_test.go:84 database.RegisterTenantCallbacks, reused by resource_object_test.go via setupStorageTestDB"},
+        {"id": "DOM-24", "name": "producertest stub for emit path", "status": "n-a", "evidence": "neither new test file reaches AndEmit/message.Emit/producer.Produce"}
+      ]
+    },
+    {
+      "name": "services/atlas-maps/atlas.com/maps/data/map/object",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go with NewBuilder()/Build()", "status": "fail", "evidence": "model.go:1-16 present, no builder.go file in package (ls: model.go processor.go requests.go rest.go)"},
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) in rest.go", "status": "fail", "evidence": "rest.go:32 only Extract(rm RestModel)(Model,error), no reverse Transform"},
+        {"id": "DOM-11", "name": "Providers lazy", "status": "n-a", "evidence": "no provider.go"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "n-a", "evidence": "read-only client, no writes"},
+        {"id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs present", "status": "pass", "evidence": "rest.go:24-30 both present as no-ops"},
+        {"id": "EXT-02", "name": "httptest-backed integration test asserting populated struct", "status": "fail", "evidence": "package has zero _test.go files; sibling monster/processor_drain_test.go has the equivalent test, object does not; environment/processor_default_test.go tests a different package indirectly"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "processor.go:44-52 bubbles provider errors unchanged; ErrUnknownObject only returned on successful fetch with no matching name (processor.go:53)"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "requests.go:16 requests.RootUrlFor(ctx, \"DATA\"), matches every sibling client in data/map/"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "model.go/processor.go/requests.go/rest.go split, no catch-all"},
+        {"id": "DOM-31", "name": "Tenant travels in context only", "status": "pass", "evidence": "processor.go:27 tenant.MustFromContext(ctx); RestModel carries no tenant field"}
+      ]
+    },
+    {
+      "name": "services/atlas-maps/atlas.com/maps/map/environment",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic in own/parent processor, not handler", "status": "pass", "evidence": "processor.go:52-66 defaultStateOf; resource.go unchanged"},
+        {"id": "SUB-02..04", "name": "writes/POST/manual-JSON in resource.go", "status": "n-a", "evidence": "resource.go unchanged in this commit range, out of review scope"},
+        {"id": "DOM-29", "name": "Cache is application-scoped singleton via accessor", "status": "pass", "evidence": "registry.go:31-39 getRegistry() sync.Once singleton; ProcessorImpl holds no cached field"},
+        {"id": "DOM-30", "name": "DB write + emit atomic via AndEmit/message.Buffer", "status": "pass", "evidence": "documented exception: Set/Reset operate over in-memory Registry, no DB write, per patterns-kafka.md 'Operations over non-DB state'"},
+        {"id": "DOM-33", "name": "Mock updated for interface change", "status": "n-a", "evidence": "Set/Reset signatures unchanged, only bodies changed"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "new logic added to processor.go/registry.go/producer.go matching existing responsibilities"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/kafka/consumer/map + kafka/message/map",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted bytes resolved from tenant writer-options, not literals", "status": "pass", "evidence": "consumer.go handleStatusEventEnvironmentReset selects state from the domain event, not a hardcoded opcode; wire encoding unchanged via fieldcb.SetObjectStateWriter"},
+        {"id": "DOM-24", "name": "producertest stub for emit path", "status": "n-a", "evidence": "handler emits via socket writer.Producer, not Kafka producer.Produce/message.Emit/AndEmit"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "consumer_test.go new TestHandleStatusEventEnvironmentReset_RestoresCarriedDefaultState is single-scenario, not table-driven"},
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "kafka.go in both services holds only message structs"},
+        {"id": "DOM-31", "name": "Tenant travels in context only", "status": "pass", "evidence": "EnvironmentObject/EnvironmentReset carry no tenant field"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "SUB-02/03/04: services/atlas-maps/atlas.com/maps/map/environment/resource.go is unchanged in this commit range; out of stated review surface",
+    "DOM-11: laziness of underlying s.ByIdProvider (storage.go) not independently re-verified, storage.go unchanged and outside the diff"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-maps/atlas.com/maps/data/map/object/model.go has model.go with no builder.go/NewBuilder()",
+    "DOM-04: services/atlas-maps/atlas.com/maps/data/map/object/rest.go has no Transform(Model)(RestModel,error)",
+    "DOM-04: services/atlas-data/atlas.com/data/map/object/rest.go has no Transform(Model)(RestModel,error)",
+    "EXT-02: services/atlas-maps/atlas.com/maps/data/map/object/ has zero test files, no httptest-backed integration test of the client",
+    "DOM-20: services/atlas-data/atlas.com/data/map/reader_object_test.go:29-70 TestGetObjects tests 3 parallel scenarios without table-driven pattern"
+  ],
+  "nonBlocking": [
+    "DOM-20 (warn): resource_object_test.go TestMapObjects_Endpoint single-scenario, not table-driven",
+    "DOM-20 (warn): consumer_test.go TestHandleStatusEventEnvironmentReset_RestoresCarriedDefaultState single-scenario, not table-driven",
+    "DOM-04 (pre-existing, out of scope): sibling portal/reactor rest.go in atlas-data have the same missing-Transform shape",
+    "EXT-02 (pre-existing, out of scope): sibling reactor/script clients in atlas-maps/data/map/ also lack their own httptest-backed test"
+  ]
+}

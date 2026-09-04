@@ -27,7 +27,7 @@ func StartConversationCommandProvider(f field.Model, npcId uint32, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ContinueConversationCommandProvider(characterId uint32, action byte, lastMessageType byte, selection int32) model.Provider[[]kafka.Message] {
+func ContinueConversationCommandProvider(characterId uint32, action byte, lastMessageType byte, selection int32, text string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.Command[npc2.ContinueConversationCommandBody]{
 		NpcId:       0, // TODO
@@ -37,6 +37,7 @@ func ContinueConversationCommandProvider(characterId uint32, action byte, lastMe
 			Action:          action,
 			LastMessageType: lastMessageType,
 			Selection:       selection,
+			Text:            text,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -20,6 +20,7 @@ type Processor interface {
 	ChangeMap(f field.Model, characterId uint32, portalId uint32) error
 	ChangeHP(f field.Model, characterId uint32, amount int16) error
 	ChangeMP(f field.Model, characterId uint32, amount int16) error
+	CreditStoredExperience(f field.Model, characterId uint32, amount uint32, reason string) error
 }
 
 type ProcessorImpl struct {
@@ -64,4 +65,8 @@ func (p *ProcessorImpl) ChangeHP(f field.Model, characterId uint32, amount int16
 
 func (p *ProcessorImpl) ChangeMP(f field.Model, characterId uint32, amount int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMPCommandProvider(f, characterId, amount))
+}
+
+func (p *ProcessorImpl) CreditStoredExperience(f field.Model, characterId uint32, amount uint32, reason string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(creditStoredExperienceCommandProvider(f, characterId, amount, reason))
 }

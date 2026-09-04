@@ -1,0 +1,11 @@
+packet: field/clientbound/FieldSetBackEffect
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CMapLoadable::OnSetBackEffect
+    address: "0x659e3c"
+    decompile_sha256: 0dba999c2b6a5e69d9c1fa3696968aa6af7c3e819904c66686716e5d6d71d2e7
+verifies:
+    - libs/atlas-packet/field/clientbound/set_back_effect_test.go#TestSetBackEffectGolden
+    - libs/atlas-packet/field/clientbound/set_back_effect_test.go#TestSetBackEffectRoundTrip

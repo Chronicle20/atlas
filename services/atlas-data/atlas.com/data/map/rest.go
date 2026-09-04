@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
+	"atlas-data/map/object"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	"atlas-data/point"
@@ -45,6 +46,7 @@ type RestModel struct {
 	Reactors          []reactor.RestModel       `json:"-"`
 	NPCs              []npc.RestModel           `json:"-"`
 	Monsters          []monster.RestModel       `json:"-"`
+	Objects           []object.RestModel        `json:"-"`
 }
 
 func (r RestModel) GetName() string {
@@ -76,6 +78,7 @@ func (r RestModel) GetReferences() []jsonapi.Reference {
 	rfs = append(rfs, jsonapi.Reference{Type: "reactors", Name: "reactors"})
 	rfs = append(rfs, jsonapi.Reference{Type: "npcs", Name: "npcs"})
 	rfs = append(rfs, jsonapi.Reference{Type: "monsters", Name: "monsters"})
+	rfs = append(rfs, jsonapi.Reference{Type: "map-objects", Name: "objects"})
 	return rfs
 }
 
@@ -109,6 +112,13 @@ func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 			Name: "monsters",
 		})
 	}
+	for _, x := range r.Objects {
+		rfs = append(rfs, jsonapi.ReferenceID{
+			ID:   x.Id,
+			Type: "map-objects",
+			Name: "objects",
+		})
+	}
 	return rfs
 }
 
@@ -124,6 +134,9 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 		rfs = append(rfs, x)
 	}
 	for _, x := range r.Monsters {
+		rfs = append(rfs, x)
+	}
+	for _, x := range r.Objects {
 		rfs = append(rfs, x)
 	}
 	return rfs
@@ -181,6 +194,18 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			res = append(res, rm)
 		}
 		r.Monsters = res
+	}
+	if name == "objects" {
+		res := make([]object.RestModel, 0)
+		for _, x := range IDs {
+			rm := object.RestModel{}
+			err := rm.SetID(x)
+			if err != nil {
+				return err
+			}
+			res = append(res, rm)
+		}
+		r.Objects = res
 	}
 	return nil
 }
@@ -249,6 +274,22 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 			}
 		}
 		r.Monsters = res
+	}
+	if refMap, ok := references["map-objects"]; ok {
+		res := make([]object.RestModel, 0)
+		for _, rid := range r.GetReferencedIDs() {
+			var data jsonapi.Data
+			if data, ok = refMap[rid.ID]; ok && data.Type == rid.Type {
+				var rm object.RestModel
+				err := jsonapi.ProcessIncludeData(&rm, data, references)
+				if err != nil {
+					return err
+				}
+				_ = rm.SetID(rid.ID)
+				res = append(res, rm)
+			}
+		}
+		r.Objects = res
 	}
 	return nil
 }

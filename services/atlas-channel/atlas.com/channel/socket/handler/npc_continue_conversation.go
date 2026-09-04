@@ -56,6 +56,12 @@ func bodyKindFor(l logrus.FieldLogger, readerOptions map[string]interface{}, msg
 	return bodyKindByMessageType[npcclient.NpcConversationMessageType(name)]
 }
 
+// npcProcessorFunc is the test seam over npc.NewProcessor (package-var
+// injection precedent: newFactoryProcessorFunc in maple_life_create.go). It
+// lets a test substitute a recording npc.Processor to assert what the
+// handler forwards to ContinueConversation without a live Kafka broker.
+var npcProcessorFunc = npc.NewProcessor
+
 func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := npc2.ContinueConversation{}
@@ -63,7 +69,6 @@ func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		lastMessageType := p.LastMessageType()
 		action := p.Action()
-		// returnText := ""
 		selection := int32(-1)
 
 		switch bodyKindFor(l, readerOptions, lastMessageType) {
@@ -73,27 +78,26 @@ func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context
 				sp.Decode(l, ctx)(r, readerOptions)
 				// TODO handle quest in progress, continue quest
 
-				// TODO set return text
-				_ = npc.NewProcessor(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection)
+				_ = npcProcessorFunc(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection, sp.Text())
 				return
 			}
 			// TODO handle quest in progress, dispose
-			_ = npc.NewProcessor(l, ctx).DisposeConversation(s.CharacterId())
+			_ = npcProcessorFunc(l, ctx).DisposeConversation(s.CharacterId())
 			return
 		case bodySelection:
 			sp := &npc2.ContinueConversationSelection{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			selection = sp.Selection()
 			// TODO handle quest in progress, continue quest
-			_ = npc.NewProcessor(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection)
+			_ = npcProcessorFunc(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection, "")
 		default: // bodyNone: Say/AskYesNo carry no trailing body
 			if action != 0 {
 				// TODO handle quest in progress, continue quest
-				_ = npc.NewProcessor(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection)
+				_ = npcProcessorFunc(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection, "")
 				return
 			}
 			// TODO handle quest in progress, dispose
-			_ = npc.NewProcessor(l, ctx).DisposeConversation(s.CharacterId())
+			_ = npcProcessorFunc(l, ctx).DisposeConversation(s.CharacterId())
 		}
 	}
 }

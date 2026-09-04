@@ -108,7 +108,8 @@ Executes reactor script operations via saga orchestration.
 - `spawn_monster`: Spawns monsters at reactor location via saga
 - `spray_items`: Sprays items with delay (delegates to drop_items with spray type)
 - `weaken_area_boss`: Weakens a boss monster (not yet implemented)
-- `move_environment`: Moves map environment object (not yet implemented)
+- `move_environment`: Sets the state of a named field object via saga; params: `name`, `value` (uint32); optional: `kind` (`ENVIRONMENT` default, or `OBSTACLE`)
+- `reset_environment`: Clears tracked field object state and restores default appearance via saga; takes no params
 - `kill_all_monsters`: Kills all monsters in map (not yet implemented)
 - `drop_message`: Sends message to character via saga
 - `update_pq_state`: Updates party quest custom data via saga; params: `updates` (comma-separated key=value pairs), `increments` (comma-separated key names to increment); queries atlas-party-quests for the character's PQ instance

@@ -62,6 +62,9 @@ func (e *OperationExecutor) ExecuteOperation(rc ReactorContext, characterId uint
 	case "move_environment":
 		return e.executeMoveEnvironment(rc, characterId, op)
 
+	case "reset_environment":
+		return e.executeResetEnvironment(rc, characterId, op)
+
 	case "kill_all_monsters":
 		return e.executeKillAllMonsters(rc, characterId, op)
 
@@ -266,21 +269,75 @@ func (e *OperationExecutor) executeWeakenAreaBoss(rc ReactorContext, characterId
 	return nil
 }
 
-// executeMoveEnvironment moves a map environment object
-// TODO: This needs a new saga action for environment manipulation
+// executeMoveEnvironment sets the state of one named field object via a saga.
+// Parameters: name (required, non-blank), value (required, uint32), kind
+// (optional, ENVIRONMENT or OBSTACLE; blank defaults to ENVIRONMENT).
 func (e *OperationExecutor) executeMoveEnvironment(rc ReactorContext, characterId uint32, op operation.Model) error {
 	params := op.Params()
 
-	name := params["name"]
-	value := params["value"]
+	name, ok := params["name"]
+	if !ok || strings.TrimSpace(name) == "" {
+		return fmt.Errorf("move_environment operation missing name parameter")
+	}
 
-	e.l.Infof("MOVE_ENVIRONMENT: reactor=%s, map=%d, name=%s, value=%s",
-		rc.Classification, rc.Field.MapId(), name, value)
+	valueStr, ok := params["value"]
+	if !ok || strings.TrimSpace(valueStr) == "" {
+		return fmt.Errorf("move_environment operation missing value parameter")
+	}
+	value, err := strconv.ParseUint(strings.TrimSpace(valueStr), 10, 32)
+	if err != nil {
+		return fmt.Errorf("move_environment operation has non-numeric value parameter [%s]: %w", valueStr, err)
+	}
 
-	// TODO: Create saga command for moving environment objects
-	// This will need to interface with atlas-channel or atlas-maps service
+	kind, err := field.ParseObjectKind(params["kind"])
+	if err != nil {
+		return err
+	}
 
-	return nil
+	e.l.Debugf("Moving environment object [%s] kind [%s] to state [%d] at reactor [%s].", name, kind, value, rc.Classification)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("reactor-action-move-environment").
+		AddStep(
+			fmt.Sprintf("move-environment-%s-%s", rc.Classification, name),
+			saga.Pending,
+			saga.MoveEnvironment,
+			saga.MoveEnvironmentPayload{
+				WorldId:   rc.Field.WorldId(),
+				ChannelId: rc.Field.ChannelId(),
+				MapId:     rc.Field.MapId(),
+				Instance:  rc.Field.Instance(),
+				Kind:      kind,
+				Name:      name,
+				State:     uint32(value),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeResetEnvironment clears every tracked field object and restores the
+// field's objects to their default state. Takes no parameters.
+func (e *OperationExecutor) executeResetEnvironment(rc ReactorContext, characterId uint32, op operation.Model) error {
+	e.l.Debugf("Resetting environment objects in map [%d] at reactor [%s].", rc.Field.MapId(), rc.Classification)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("reactor-action-reset-environment").
+		AddStep(
+			fmt.Sprintf("reset-environment-%s", rc.Classification),
+			saga.Pending,
+			saga.ResetEnvironment,
+			saga.ResetEnvironmentPayload{
+				WorldId:   rc.Field.WorldId(),
+				ChannelId: rc.Field.ChannelId(),
+				MapId:     rc.Field.MapId(),
+				Instance:  rc.Field.Instance(),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
 }
 
 // executeKillAllMonsters kills all monsters in the map

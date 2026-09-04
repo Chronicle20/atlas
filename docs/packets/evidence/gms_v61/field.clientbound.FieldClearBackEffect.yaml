@@ -1,0 +1,11 @@
+packet: field/clientbound/FieldClearBackEffect
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CMapLoadable::OnClearBackEffect
+    address: "0x5a871b"
+    decompile_sha256: 22afb3cc8a8a3d63b5423f2d2ae890a57ef3353155ead3916556854aaf00b97e
+verifies:
+    - libs/atlas-packet/field/clientbound/clear_back_effect_test.go#TestClearBackEffectGolden
+    - libs/atlas-packet/field/clientbound/clear_back_effect_test.go#TestClearBackEffectRoundTrip

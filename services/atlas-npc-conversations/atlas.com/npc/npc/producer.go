@@ -62,6 +62,27 @@ func numberConversationProvider(ch channel.Model, characterId uint32, npcId uint
 	return producer.SingleMessageProvider(key, value)
 }
 
+func textConversationProvider(ch channel.Model, characterId uint32, npcId uint32, message string, def string, min uint16, max uint16, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &npc2.ConversationCommand[npc2.CommandTextBody]{
+		WorldId:        ch.WorldId(),
+		ChannelId:      ch.Id(),
+		CharacterId:    characterId,
+		NpcId:          npcId,
+		Speaker:        speaker,
+		EndChat:        endChat,
+		SecondaryNpcId: secondaryNpcId,
+		Message:        message,
+		Type:           npc2.CommandTypeText,
+		Body: npc2.CommandTextBody{
+			DefaultValue: def,
+			MinLength:    min,
+			MaxLength:    max,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func styleConversationProvider(ch channel.Model, characterId uint32, npcId uint32, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &npc2.ConversationCommand[npc2.CommandStyleBody]{

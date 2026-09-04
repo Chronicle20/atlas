@@ -23,3 +23,6 @@ families:
   skill_macro:
     - SKILL_MACRO
     - MACRO_SYS_DATA_INIT
+  back_effect:
+    - SET_BACK_EFFECT
+    - CLEAR_BACK_EFFECT

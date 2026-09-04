@@ -750,6 +750,7 @@
   direction: clientbound
   opcode: 143
   fname: CMapLoadable::OnSetBackEffect
+  packet: field/clientbound/FieldSetBackEffect
   provenance: csv-import
   note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SET_MAP_OBJECT_VISIBLE
@@ -762,6 +763,7 @@
   direction: clientbound
   opcode: 145
   fname: CMapLoadable::OnClearBackEffect
+  packet: field/clientbound/FieldClearBackEffect
   provenance: csv-import
   note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: BLOCKED_MAP
@@ -3294,11 +3296,13 @@
   direction: serverbound
   opcode: 178
   fname: CWvsContext::SendExpUpItemUseRequest
+  packet: inventory/serverbound/InventorySolomonItemUse
   provenance: csv-import
 - op: USE_GACHA_EXP
   direction: serverbound
   opcode: 179
   fname: CWvsContext::SendTempExpUseRequest
+  packet: character/serverbound/StoredExperienceUse
   provenance: csv-import
 - op: NEW_YEAR_CARD_REQUEST
   direction: serverbound

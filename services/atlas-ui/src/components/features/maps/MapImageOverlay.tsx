@@ -9,10 +9,11 @@ import { cn } from "@/lib/utils";
 import { useMobData } from "@/lib/hooks/useMobData";
 import { worldToOverlayPercent, type MapBounds } from "@/lib/utils/map-overlay";
 import type {
-  MapMonsterData,
   MapNpcData,
   MapPortalData,
   MapReactorData,
+  PositionedCharacter,
+  PositionedMonster,
 } from "@/services/api/map-entities.service";
 import { useHoverHighlight, type HoverTarget } from "./HoverHighlightContext";
 
@@ -22,8 +23,9 @@ interface MapImageOverlayProps {
   bounds: MapBounds;
   portals?: MapPortalData[] | undefined;
   npcs?: MapNpcData[] | undefined;
-  monsters?: MapMonsterData[] | undefined;
+  monsters?: PositionedMonster[] | undefined;
   reactors?: MapReactorData[] | undefined;
+  characters?: PositionedCharacter[] | undefined;
   size?: MarkerSize;
 }
 
@@ -70,6 +72,7 @@ export function MapImageOverlay({
   npcs,
   monsters,
   reactors,
+  characters,
   size = "default",
 }: MapImageOverlayProps) {
   const sizing = MARKER_SIZES[size];
@@ -89,6 +92,10 @@ export function MapImageOverlay({
     () => computeMarkers(portals, bounds),
     [portals, bounds],
   );
+  const characterMarkers = useMemo(
+    () => computeMarkers(characters, bounds),
+    [characters, bounds],
+  );
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -101,10 +108,18 @@ export function MapImageOverlay({
       if (m.outOfBounds) oob.push(`npc:${m.entity.id}`);
     for (const m of portalMarkers)
       if (m.outOfBounds) oob.push(`portal:${m.entity.id}`);
+    for (const m of characterMarkers)
+      if (m.outOfBounds) oob.push(`character:${m.entity.id}`);
     if (oob.length > 0) {
       console.warn("[MapImageOverlay] entities outside bounds:", oob);
     }
-  }, [monsterMarkers, reactorMarkers, npcMarkers, portalMarkers]);
+  }, [
+    monsterMarkers,
+    reactorMarkers,
+    npcMarkers,
+    portalMarkers,
+    characterMarkers,
+  ]);
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -139,6 +154,14 @@ export function MapImageOverlay({
           <PortalMarker
             key={m.key}
             portal={m.entity}
+            pos={m.pos}
+            sizing={sizing}
+          />
+        ))}
+        {characterMarkers.map((m) => (
+          <CharacterMarker
+            key={m.key}
+            character={m.entity}
             pos={m.pos}
             sizing={sizing}
           />
@@ -271,7 +294,7 @@ function MonsterMarker({
   pos,
   sizing,
 }: {
-  monster: MapMonsterData;
+  monster: PositionedMonster;
   spawnIndex: number;
   pos: { left: string; top: string };
   sizing: MarkerSizing;
@@ -290,6 +313,30 @@ function MonsterMarker({
       className={cn(
         sizing.monster,
         "rounded-full bg-rose-500/70 border border-white",
+      )}
+      highlightRingColor="ring-yellow-400"
+    />
+  );
+}
+
+function CharacterMarker({
+  character,
+  pos,
+  sizing,
+}: {
+  character: PositionedCharacter;
+  pos: { left: string; top: string };
+  sizing: MarkerSizing;
+}) {
+  return (
+    <MarkerShell
+      pos={pos}
+      target={{ kind: "character", characterId: character.id }}
+      ariaLabel={`Character: ${character.attributes.name}`}
+      tooltip={character.attributes.name}
+      className={cn(
+        sizing.primary,
+        "rounded-full bg-indigo-500/70 border-2 border-white",
       )}
       highlightRingColor="ring-yellow-400"
     />

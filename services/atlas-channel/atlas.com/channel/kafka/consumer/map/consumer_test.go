@@ -2,11 +2,13 @@ package _map
 
 import (
 	"atlas-channel/door"
+	"atlas-channel/environment"
 	_map3 "atlas-channel/kafka/message/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -18,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -766,6 +769,779 @@ func TestAnnounceActiveJukebox_FailsOpenWhenMapsUnreachable(t *testing.T) {
 	defer restore()
 
 	announceActiveJukebox(l, ctx, nil, f, session.Model{})
+
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}
+
+// routed returns a writer.Producer stub that succeeds only for the given
+// writer names; any other name returns a "writer not found" error, matching
+// the behaviour of a real Producer for an opcode a tenant's version does not
+// route.
+func routed(names ...string) writer.Producer {
+	set := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		set[n] = struct{}{}
+	}
+	return func(name string) (writer.BodyFunc, error) {
+		if _, ok := set[name]; ok {
+			return nil, nil
+		}
+		return nil, errors.New("writer not found")
+	}
+}
+
+// stubDoorAnnounceCapture stubs doorAnnounce to record the writer name of
+// every call, in order, without touching a real socket.
+func stubDoorAnnounceCapture(t *testing.T) (restore func(), captured *[]string) {
+	t.Helper()
+	var names []string
+	orig := doorAnnounce
+	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+		names = append(names, writerName)
+		return nil
+	}
+	return func() { doorAnnounce = orig }, &names
+}
+
+func TestAnnounceObjectState_WriterSelection(t *testing.T) {
+	tests := []struct {
+		name    string
+		kind    field.ObjectKind
+		wp      writer.Producer
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "obstacle with obstacle writer routed",
+			kind: field.ObjectKindObstacle,
+			wp:   routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter),
+			want: []string{fieldcb.FieldObstacleOnOffWriter},
+		},
+		{
+			name: "obstacle with obstacle writer unrouted falls back",
+			kind: field.ObjectKindObstacle,
+			wp:   routed(fieldcb.SetObjectStateWriter),
+			want: []string{fieldcb.SetObjectStateWriter},
+		},
+		{
+			name: "environment always uses set object state",
+			kind: field.ObjectKindEnvironment,
+			wp:   routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter),
+			want: []string{fieldcb.SetObjectStateWriter},
+		},
+		{
+			name:    "environment with only obstacle writer routed still uses set object state",
+			kind:    field.ObjectKindEnvironment,
+			wp:      routed(fieldcb.FieldObstacleOnOffWriter),
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := logrus.New()
+			ctx := newTestCtx(t)
+
+			restore, captured := stubDoorAnnounceCapture(t)
+			defer restore()
+
+			err := announceObjectState(l, ctx, tt.wp, tt.kind, "obj", 1, session.Model{})
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(*captured) != len(tt.want) {
+				t.Fatalf("captured writer names = %v, want %v", *captured, tt.want)
+			}
+			for i, n := range tt.want {
+				if (*captured)[i] != n {
+					t.Fatalf("captured writer names = %v, want %v", *captured, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestHandleStatusEventEnvironmentStateChanged_Broadcasts(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.FieldObstacleOnOffWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentStateChanged]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentStateChanged,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.EnvironmentStateChanged{Kind: "OBSTACLE", Name: "obs3", State: 2},
+	}
+	handleStatusEventEnvironmentStateChanged(sc, wp)(l, ctx, e)
+
+	if len(*captured) != 1 || (*captured)[0] != fieldcb.FieldObstacleOnOffWriter {
+		t.Fatalf("captured writer names = %v, want [%s]", *captured, fieldcb.FieldObstacleOnOffWriter)
+	}
+}
+
+func TestHandleStatusEventEnvironmentStateChanged_WrongTypeIgnored(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.FieldObstacleOnOffWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentStateChanged]{
+		Type:      "WEATHER_START",
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.EnvironmentStateChanged{Kind: "OBSTACLE", Name: "obs3", State: 2},
+	}
+	handleStatusEventEnvironmentStateChanged(sc, wp)(l, ctx, e)
+
+	if len(*captured) != 0 {
+		t.Fatalf("captured writer names = %v, want none", *captured)
+	}
+}
+
+func TestHandleStatusEventEnvironmentStateChanged_BadKindIgnored(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.FieldObstacleOnOffWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentStateChanged]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentStateChanged,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.EnvironmentStateChanged{Kind: "GATE", Name: "obs3", State: 2},
+	}
+	handleStatusEventEnvironmentStateChanged(sc, wp)(l, ctx, e)
+
+	if len(*captured) != 0 {
+		t.Fatalf("captured writer names = %v, want none", *captured)
+	}
+}
+
+func TestHandleStatusEventEnvironmentReset_AllResetRouted(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleAllResetWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body: _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{
+			{Kind: "OBSTACLE", Name: "a"},
+			{Kind: "ENVIRONMENT", Name: "b"},
+		}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	// "b" is ENVIRONMENT and announces nothing: no state hides a named object
+	// client-side, so clearing tracking is already the correct reset.
+	want := []string{fieldcb.FieldObstacleAllResetWriter, fieldcb.FieldObstacleOnOffWriter}
+	if len(*captured) != len(want) {
+		t.Fatalf("captured writer names = %v, want %v", *captured, want)
+	}
+	for i, n := range want {
+		if (*captured)[i] != n {
+			t.Fatalf("captured writer names = %v, want %v", *captured, want)
+		}
+	}
+}
+
+func TestHandleStatusEventEnvironmentReset_AllResetUnrouted(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.SetObjectStateWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body: _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{
+			{Kind: "OBSTACLE", Name: "a"},
+			{Kind: "ENVIRONMENT", Name: "b"},
+		}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	// "b" is ENVIRONMENT and announces nothing regardless of routing.
+	want := []string{fieldcb.SetObjectStateWriter}
+	if len(*captured) != len(want) {
+		t.Fatalf("captured writer names = %v, want %v", *captured, want)
+	}
+	for i, n := range want {
+		if (*captured)[i] != n {
+			t.Fatalf("captured writer names = %v, want %v", *captured, want)
+		}
+	}
+}
+
+func TestHandleStatusEventEnvironmentReset_EmptyCleared(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	wp := routed(fieldcb.FieldObstacleAllResetWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	if len(*captured) != 1 || (*captured)[0] != fieldcb.FieldObstacleAllResetWriter {
+		t.Fatalf("captured writer names = %v, want [%s]", *captured, fieldcb.FieldObstacleAllResetWriter)
+	}
+}
+
+// envModel builds an environment.Model via environment.Extract, since Model's
+// fields are unexported and this package is outside environment.
+func envModel(t *testing.T, kind, name string, state uint32) environment.Model {
+	t.Helper()
+	m, err := environment.Extract(environment.RestModel{Kind: kind, Name: name, State: state})
+	if err != nil {
+		t.Fatalf("environment.Extract: %v", err)
+	}
+	return m
+}
+
+// assertWriterNames fails the test unless got exactly equals want, in order.
+func assertWriterNames(t *testing.T, got, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("captured writer names = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("captured writer names = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestAnnounceEnvironmentState_ObstaclesThenEnvironment(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.FieldObstacleOnOffListWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_ListWriterUnrouted(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_NoObstacleWritersAtAll(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "OBSTACLE", "a", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+		envModel(t, "OBSTACLE", "c", 3),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter, fieldcb.SetObjectStateWriter, fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_Empty(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, []environment.Model{}, session.Model{})
+
+	if len(*captured) != 0 {
+		t.Fatalf("captured writer names = %v, want none", *captured)
+	}
+}
+
+func TestAnnounceEnvironmentState_OnlyEnvironment(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "ENVIRONMENT", "b", 2),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter})
+}
+
+func TestAnnounceEnvironmentState_BadKindSkipped(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+
+	restore, captured := stubDoorAnnounceCapture(t)
+	defer restore()
+
+	entries := []environment.Model{
+		envModel(t, "GATE", "x", 1),
+		envModel(t, "ENVIRONMENT", "b", 2),
+	}
+	wp := routed(fieldcb.SetObjectStateWriter, fieldcb.FieldObstacleOnOffWriter, fieldcb.FieldObstacleOnOffListWriter)
+
+	announceEnvironmentState(l, ctx, wp, entries, session.Model{})
+
+	assertWriterNames(t, *captured, []string{fieldcb.SetObjectStateWriter})
+}
+
+// objectStateAnnounce is one captured announceObjectState call, decoded via
+// the real SetObjectState codec so the assertion sees the wire value the
+// client would.
+type objectStateAnnounce struct {
+	Writer string
+	Name   string
+	State  uint32
+}
+
+// stubDoorAnnounceForObjectState records the name/state of every
+// SetObjectState announcement, so a test can assert the value restored --
+// which the writer-name-only capture cannot see.
+func stubDoorAnnounceForObjectState(t *testing.T) (restore func(), captured *[]objectStateAnnounce) {
+	t.Helper()
+	var seen []objectStateAnnounce
+	orig := doorAnnounce
+	doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
+		a := objectStateAnnounce{Writer: writerName}
+		if writerName == fieldcb.SetObjectStateWriter {
+			body := enc(l, ctx)(nil)
+			req := request.Request(body)
+			reader := request.NewRequestReader(&req, 0)
+			var m fieldcb.SetObjectState
+			m.Decode(l, ctx)(&reader, nil)
+			a.Name, a.State = m.Name(), m.State()
+		}
+		seen = append(seen, a)
+		return nil
+	}
+	return func() { doorAnnounce = orig }, &seen
+}
+
+// TestHandleStatusEventEnvironmentReset_ObstacleOnlyRestore pins the
+// contract established by the "Fix" section of
+// docs/tasks/task-278-map-environment-object-state/diagnosis-l2-is-not-a-state.md:
+// a reset announces nothing for a cleared named (non-obstacle) object -- no
+// state hides it client-side, so clearing tracking is already the correct
+// reset -- while an obstacle still gets its explicit SetObjectState(name, 0).
+func TestHandleStatusEventEnvironmentReset_ObstacleOnlyRestore(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, captured := stubDoorAnnounceForObjectState(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	// The obstacle writer is deliberately unrouted so the obstacle also lands
+	// on SetObjectState and its restored state is observable.
+	wp := routed(fieldcb.SetObjectStateWriter)
+	e := _map3.StatusEvent[_map3.EnvironmentReset]{
+		Type:      _map3.EventTopicMapStatusTypeEnvironmentReset,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body: _map3.EnvironmentReset{Cleared: []_map3.EnvironmentObject{
+			{Kind: "ENVIRONMENT", Name: "gate"},
+			{Kind: "OBSTACLE", Name: "obs3"},
+		}},
+	}
+	handleStatusEventEnvironmentReset(sc, wp)(l, ctx, e)
+
+	want := []objectStateAnnounce{
+		{Writer: fieldcb.SetObjectStateWriter, Name: "obs3", State: 0},
+	}
+	if len(*captured) != len(want) {
+		t.Fatalf("captured announcements = %v, want %v", *captured, want)
+	}
+	for i, w := range want {
+		if (*captured)[i] != w {
+			t.Fatalf("captured announcements = %v, want %v", *captured, want)
+		}
+	}
+}
+
+// backEffectAnnounce records one doorAnnounce call made by a back-effect
+// handler, capturing the encoded body so the exact wire contract can be
+// asserted through the real codec.
+type backEffectAnnounce struct {
+	Writer string
+	Body   []byte
+}
+
+// backEffectAnnounceRecorder collects backEffectAnnounce invocations made
+// concurrently -- the back-effect handlers fan the announce out through
+// map.(*ProcessorImpl).ForSessionsInMap, which runs the operator on one
+// goroutine per session (libs/atlas-model ExecuteForEachSlice), so a bare
+// captured slice races.
+type backEffectAnnounceRecorder struct {
+	mu   sync.Mutex
+	seen []backEffectAnnounce
+}
+
+func (r *backEffectAnnounceRecorder) record(a backEffectAnnounce) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.seen = append(r.seen, a)
+}
+
+// snapshot returns a copy of every call recorded so far, so the test body
+// can range/index it without holding the lock itself.
+func (r *backEffectAnnounceRecorder) snapshot() []backEffectAnnounce {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]backEffectAnnounce, len(r.seen))
+	copy(out, r.seen)
+	return out
+}
+
+// stubDoorAnnounceForBackEffect swaps doorAnnounce for a recording stub and
+// returns a restore func plus the recorder it captured into.
+func stubDoorAnnounceForBackEffect(t *testing.T) (restore func(), rec *backEffectAnnounceRecorder) {
+	t.Helper()
+	rec = &backEffectAnnounceRecorder{}
+
+	orig := doorAnnounce
+	doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
+		rec.record(backEffectAnnounce{Writer: writerName, Body: enc(l, ctx)(nil)})
+		return nil
+	}
+
+	return func() { doorAnnounce = orig }, rec
+}
+
+// decodeSetBackEffect decodes a captured SetBackEffect wire body via the real
+// codec, so the assertion exercises the same decode path the client would --
+// this is the cross-service seam check: the body atlas-maps' event drives must
+// round-trip to the exact four fields the client reads.
+func decodeSetBackEffect(t *testing.T, body []byte) fieldcb.SetBackEffect {
+	t.Helper()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m fieldcb.SetBackEffect
+	m.Decode(logrus.New(), context.Background())(&reader, nil)
+	return m
+}
+
+func TestHandleStatusEventBackEffectSet_BroadcastsToField(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.BackEffectSet]{
+		Type:      _map3.EventTopicMapStatusTypeBackEffectSet,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.BackEffectSet{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000},
+	}
+	handleStatusEventBackEffectSet(sc, nil)(l, ctx, e)
+
+	calls := rec.snapshot()
+	if len(calls) != 2 {
+		t.Fatalf("announce count = %d, want 2", len(calls))
+	}
+	for _, c := range calls {
+		if c.Writer != fieldcb.SetBackEffectWriter {
+			t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.SetBackEffectWriter)
+		}
+		m := decodeSetBackEffect(t, c.Body)
+		if m.Effect() != fieldcb.BackEffectShow {
+			t.Fatalf("effect = %d, want %d", m.Effect(), fieldcb.BackEffectShow)
+		}
+		if m.FieldId() != 100000000 {
+			t.Fatalf("fieldId = %d, want 100000000", m.FieldId())
+		}
+		if m.PageId() != 1 {
+			t.Fatalf("pageId = %d, want 1", m.PageId())
+		}
+		if m.Duration() != 1000 {
+			t.Fatalf("duration = %d, want 1000", m.Duration())
+		}
+	}
+}
+
+func TestHandleStatusEventBackEffectSet_IgnoresOtherChannel(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.BackEffectSet]{
+		Type:      _map3.EventTopicMapStatusTypeBackEffectSet,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.BackEffectSet{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000},
+	}
+	handleStatusEventBackEffectSet(sc, nil)(l, ctx, e)
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}
+
+func TestHandleStatusEventBackEffectClear_BroadcastsToField(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.BackEffectClear]{
+		Type:      _map3.EventTopicMapStatusTypeBackEffectClear,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.BackEffectClear{},
+	}
+	handleStatusEventBackEffectClear(sc, nil)(l, ctx, e)
+
+	calls := rec.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("announce count = %d, want 1", len(calls))
+	}
+	if calls[0].Writer != fieldcb.ClearBackEffectWriter {
+		t.Fatalf("writer = %s, want %s", calls[0].Writer, fieldcb.ClearBackEffectWriter)
+	}
+	if len(calls[0].Body) != 0 {
+		t.Fatalf("body = % x, want zero-length", calls[0].Body)
+	}
+}
+
+// backEffectServer starts an httptest server that answers the atlas-maps
+// back-effects-in-map resource with body, and points MAPS_SERVICE_URL at it.
+func backEffectServer(t *testing.T, status int, body string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+			return
+		}
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("MAPS_SERVICE_URL", srv.URL+"/")
+}
+
+// TestAnnounceActiveBackEffects_ReplaysWithZeroDuration asserts that every
+// active back-effect atlas-maps reports for the field is replayed to the
+// entering session, in order, with Duration forced to 0 -- the fade already
+// happened for everyone else, so a late joiner lands on the end state
+// instead of re-running the tween.
+func TestAnnounceActiveBackEffects_ReplaysWithZeroDuration(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	backEffectServer(t, http.StatusOK, `{"data":[`+
+		`{"type":"backEffect","id":"1","attributes":{"effect":"SHOW","fieldId":100000000,"pageId":1,"duration":1000}},`+
+		`{"type":"backEffect","id":"2","attributes":{"effect":"HIDE","fieldId":100000000,"pageId":2,"duration":500}}`+
+		`]}`)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	announceActiveBackEffects(l, ctx, nil, f, session.Model{})
+
+	calls := rec.snapshot()
+	if len(calls) != 2 {
+		t.Fatalf("announce count = %d, want 2", len(calls))
+	}
+
+	first := decodeSetBackEffect(t, calls[0].Body)
+	if calls[0].Writer != fieldcb.SetBackEffectWriter {
+		t.Fatalf("writer = %s, want %s", calls[0].Writer, fieldcb.SetBackEffectWriter)
+	}
+	if first.Effect() != fieldcb.BackEffectShow || first.FieldId() != 100000000 || first.PageId() != 1 || first.Duration() != 0 {
+		t.Fatalf("first = %+v, want {Effect:show FieldId:100000000 PageId:1 Duration:0}", first)
+	}
+
+	second := decodeSetBackEffect(t, calls[1].Body)
+	if calls[1].Writer != fieldcb.SetBackEffectWriter {
+		t.Fatalf("writer = %s, want %s", calls[1].Writer, fieldcb.SetBackEffectWriter)
+	}
+	if second.Effect() != fieldcb.BackEffectHide || second.FieldId() != 100000000 || second.PageId() != 2 || second.Duration() != 0 {
+		t.Fatalf("second = %+v, want {Effect:hide FieldId:100000000 PageId:2 Duration:0}", second)
+	}
+}
+
+// TestAnnounceActiveBackEffects_EmptyAnnouncesNothing asserts that when
+// atlas-maps reports no active back-effects for the field, nothing is
+// announced to the entering session.
+func TestAnnounceActiveBackEffects_EmptyAnnouncesNothing(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	backEffectServer(t, http.StatusOK, `{"data":[]}`)
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	announceActiveBackEffects(l, ctx, nil, f, session.Model{})
+
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
+	}
+}
+
+// TestAnnounceActiveBackEffects_LookupFailureIsFailOpen asserts that when
+// atlas-maps is unreachable, announceActiveBackEffects announces nothing and
+// returns without panicking or otherwise disrupting the caller (PRD FR-5) --
+// map entry itself is unaffected.
+func TestAnnounceActiveBackEffects_LookupFailureIsFailOpen(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	backEffectServer(t, http.StatusNotFound, "")
+
+	restore, rec := stubDoorAnnounceForBackEffect(t)
+	defer restore()
+
+	announceActiveBackEffects(l, ctx, nil, f, session.Model{})
 
 	if calls := rec.snapshot(); len(calls) != 0 {
 		t.Fatalf("announce count = %d, want 0", len(calls))

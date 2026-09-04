@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskTextConversationDetail
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskText
+    address: "0x6cfcf0"
+    decompile_sha256: 3fe0cb0554965eb8dbc1a241f892babc6a3e4a66547f6e5f58a30d52ac4b0636
+verifies:
+    - npc/clientbound/conversation_test.go#TestAskTextConversationDetailEncodeV92

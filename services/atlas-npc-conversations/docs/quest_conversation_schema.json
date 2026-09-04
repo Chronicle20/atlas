@@ -83,6 +83,7 @@
             "craftAction",
             "listSelection",
             "askNumber",
+            "askText",
             "askStyle"
           ]
         },
@@ -100,6 +101,9 @@
         },
         "askNumber": {
           "$ref": "#/$defs/askNumber"
+        },
+        "askText": {
+          "$ref": "#/$defs/askText"
         },
         "askStyle": {
           "$ref": "#/$defs/askStyle"
@@ -386,6 +390,80 @@
         "nextState": {
           "type": "string",
           "description": "ID of the next state to transition to after number is entered"
+        }
+      }
+    },
+    "askText": {
+      "type": "object",
+      "description": "Ask text state configuration - prompts the player to enter free-form text, optionally branching on an ordered, first-match-wins table of exact, case-sensitive, whitespace-trimmed matches",
+      "required": [
+        "text",
+        "maxLength",
+        "nextState"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Prompt text asking for free-text input"
+        },
+        "defaultText": {
+          "type": "string",
+          "description": "Default text shown to the player"
+        },
+        "minLength": {
+          "type": "integer",
+          "description": "Minimum accepted text length",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "description": "Maximum accepted text length",
+          "minimum": 1
+        },
+        "contextKey": {
+          "type": "string",
+          "description": "Key to store the entered text in context (defaults to 'answer' if not specified)",
+          "default": "answer"
+        },
+        "matches": {
+          "type": "array",
+          "description": "Ordered, first-match-wins branch table evaluated against the entered text; falls through to nextState if no match applies",
+          "items": {
+            "type": "object",
+            "required": [
+              "nextState"
+            ],
+            "oneOf": [
+              {
+                "required": [
+                  "value"
+                ]
+              },
+              {
+                "required": [
+                  "valueFromContext"
+                ]
+              }
+            ],
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "Literal value to match against the entered text (exact, case-sensitive, whitespace-trimmed). Exactly one of value / valueFromContext must be set."
+              },
+              "valueFromContext": {
+                "type": "string",
+                "description": "Context key whose value is matched against the entered text (exact, case-sensitive, whitespace-trimmed). Exactly one of value / valueFromContext must be set."
+              },
+              "nextState": {
+                "type": "string",
+                "description": "ID of the next state to transition to when this match applies"
+              }
+            }
+          }
+        },
+        "nextState": {
+          "type": "string",
+          "description": "ID of the next state to transition to after text is entered (used when no match in matches applies, or if matches is empty)"
         }
       }
     },

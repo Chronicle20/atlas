@@ -1,0 +1,85 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-02T19:44:32Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	42c47c9fa	-	-	-	-
+2026-09-02T19:51:35Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	42c47c9fa	APPROVED	no	-	-
+2026-09-02T19:51:36Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	ec27e22d8	-	-	-	-
+2026-09-02T19:53:55Z	agent	Task 3	task-implementer	haiku	-	-	-	-	DONE	dc6bbd4c9	-	-	-	-
+2026-09-02T19:58:56Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	3d0d50fcb	-	-	-	-
+2026-09-02T19:58:56Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	3d0d50fcb	APPROVED	no	-	-
+2026-09-02T19:58:56Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	90000
+2026-09-02T20:00:30Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	0a1d71a12	APPROVED	yes	-	-
+2026-09-02T20:00:30Z	agent	Task 3	task-reviewer	haiku	-	-	-	-	DONE	fe8177449	APPROVED	yes	-	-
+2026-09-02T20:04:54Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-02T20:06:48Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	d8640cf9f	-	-	-	-
+2026-09-02T20:06:48Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-02T20:07:22Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	d8640cf9f	APPROVED	no	-	-
+2026-09-02T20:13:02Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	69227f6ba	-	-	-	-
+2026-09-02T20:13:02Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-02T20:15:33Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	69227f6ba	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T20:16:07Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE	bf3ffb772	-	-	-	-
+2026-09-02T20:17:30Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	bf3ffb772	APPROVED	no	-	-
+2026-09-02T20:18:25Z	handoff	after Task 7	-	-	-	-	-	-	-	-	-	-	-	95000
+2026-09-02T20:25:42Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE	1360c785b	-	-	-	-
+2026-09-02T20:26:56Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	1360c785b	APPROVED	no	-	-
+2026-09-02T20:28:30Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DONE	642602613	-	-	-	-
+2026-09-02T20:32:34Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	642602613	APPROVED	no	-	-
+2026-09-02T20:32:34Z	agent	Task 8 fix 1	task-implementer	sonnet	-	-	-	-	DONE	98549c072	-	-	-	-
+2026-09-02T20:33:19Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE	709bd51f4	-	-	-	-
+2026-09-02T20:34:47Z	agent	Task 8-9 range	task-verifier	haiku	-	-	-	-	PASS	98549c072	-	-	-	-
+2026-09-02T20:35:16Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	709bd51f4	APPROVED	no	-	-
+2026-09-02T20:35:17Z	handoff	after Task 10	-	-	-	-	-	-	-	-	-	-	-	80000
+2026-09-02T20:47:14Z	agent	Task 10	gate	-	-	-	-	-	PASS	709bd51f4	-	-	-	-
+2026-09-02T20:49:00Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DONE	936316a26	-	-	-	-
+2026-09-02T20:50:21Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	DONE	936316a26	APPROVED	no	-	-
+2026-09-02T20:50:21Z	agent	Task 11	gate	-	-	-	-	-	PASS	936316a26	-	-	-	-
+2026-09-02T20:51:58Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	DONE	b3da3661e	-	-	-	-
+2026-09-02T20:52:09Z	agent	Task 12	gate	-	-	-	-	-	PASS	b3da3661e	-	-	-	-
+2026-09-02T20:52:32Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	DONE	b3da3661e	APPROVED	no	-	-
+2026-09-02T20:54:18Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	DONE	546498926	-	-	-	-
+2026-09-02T20:54:46Z	agent	Task 13	gate	-	-	-	-	-	PASS	546498926	-	-	-	-
+2026-09-02T20:55:49Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	DONE	546498926	APPROVED	no	-	-
+2026-09-02T20:55:49Z	handoff	after Task 13	-	-	-	-	-	-	-	-	-	-	-	100000
+2026-09-02T21:02:46Z	agent	Task 14	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-02T21:06:27Z	agent	Task 14	task-implementer	sonnet	-	-	-	-	DONE	ba7bb71ed	-	-	-	-
+2026-09-02T21:06:27Z	agent	Task 14	task-reviewer	sonnet	-	-	-	-	DISPATCHED	ba7bb71ed	-	-	-	-
+2026-09-02T21:06:28Z	agent	Task 15	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-02T21:06:43Z	agent	Task 14	gate	-	-	-	-	-	PASS	ba7bb71ed	-	-	-	-
+2026-09-02T21:09:16Z	agent	Task 14	task-reviewer	sonnet	-	-	-	-	DONE	ba7bb71ed	APPROVED	no	.superpowers/sdd/plan/task-14-review.md	-
+2026-09-02T21:09:51Z	agent	Task 15	task-implementer	sonnet	-	-	-	-	DONE	f69119b52	-	-	-	-
+2026-09-02T21:09:54Z	agent	Task 15	task-reviewer	sonnet	-	-	-	-	DISPATCHED	f69119b52	-	-	-	-
+2026-09-02T21:11:20Z	agent	Task 15	gate	-	-	-	-	-	PASS	f69119b52	-	-	-	-
+2026-09-02T21:11:20Z	agent	Task 16	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-02T21:11:55Z	agent	Task 15	task-reviewer	sonnet	-	-	-	-	DONE	f69119b52	APPROVED	no	.superpowers/sdd/plan/task-15-review.md	-
+2026-09-02T21:21:45Z	agent	Task 16	task-implementer	sonnet	-	-	-	-	DONE	b33b5b464	-	-	-	-
+2026-09-02T21:21:45Z	agent	Task 16	task-reviewer	sonnet	-	-	-	-	DISPATCHED	b33b5b464	-	-	-	-
+2026-09-02T21:22:00Z	agent	Task 16	gate	-	-	-	-	-	PASS	b33b5b464	-	-	-	-
+2026-09-02T21:26:28Z	agent	Task 16	task-reviewer	sonnet	-	-	-	-	DONE	b33b5b464	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/task-16-review.md	-
+2026-09-02T21:26:28Z	agent	Task 16 fix 1	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-02T21:29:20Z	agent	Task 16 fix 1	task-implementer	sonnet	-	-	-	-	DONE	deea38046	-	-	-	-
+2026-09-02T21:29:20Z	handoff	after Task 16	-	-	-	-	-	-	-	-	-	-	-	105000
+2026-09-03T09:31:38Z	agent	Task 17	task-implementer	sonnet	-	-	-	-	DONE	d413c176a	-	-	-	-
+2026-09-03T09:44:11Z	agent	Task 18	task-implementer	sonnet	-	-	-	-	DONE	e91d1028a	-	-	-	-
+2026-09-03T09:44:12Z	agent	Task 18	task-reviewer	sonnet	-	-	-	-	DONE	e91d1028a	APPROVED	no	-	-
+2026-09-03T09:49:55Z	agent	Task 19	task-implementer	sonnet	-	-	-	-	DONE	c1dd5c2e3	-	-	-	-
+2026-09-03T09:49:56Z	agent	Task 19	task-reviewer	sonnet	-	-	-	-	DONE	c1dd5c2e3	APPROVED	no	-	-
+2026-09-03T09:56:23Z	agent	Task 20	task-implementer	sonnet	-	-	-	-	DONE	57485113a	-	-	-	-
+2026-09-03T09:56:23Z	agent	Task 20	task-reviewer	sonnet	-	-	-	-	DONE	57485113a	APPROVED	no	-	-
+2026-09-03T09:56:24Z	handoff	after Task 20	-	-	-	-	-	-	-	-	-	-	-	-
+2026-09-03T10:09:12Z	agent	Task 21	task-implementer	sonnet	-	-	-	-	DONE	a47f63a2a	-	-	-	-
+2026-09-03T10:10:40Z	agent	Task 21	task-reviewer	sonnet	-	-	-	-	DONE	a47f63a2a	APPROVED	no	-	-
+2026-09-03T10:19:40Z	agent	Task 21 fix	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	9f6679907	-	-	-	-
+2026-09-03T10:22:37Z	agent	Task 21 fix	task-reviewer	sonnet	-	-	-	-	DONE	9f6679907	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T10:23:28Z	agent	final gate	gate	-	-	-	-	-	PASS	9f6679907	-	-	-	-
+2026-09-03T10:49:16Z	agent	Fix round: frontend	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-03T10:49:16Z	agent	Fix round: backend	task-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-09-03T10:54:08Z	agent	Fix round: backend	task-implementer	sonnet	-	-	-	-	DONE	379839b3e	-	-	-	-
+2026-09-03T10:55:23Z	agent	Fix round: frontend	task-implementer	sonnet	-	-	-	-	DONE	dafc01a56	-	-	-	-
+2026-09-03T10:56:07Z	agent	Fix round: backend	task-reviewer	sonnet	-	-	-	-	DONE	379839b3e	APPROVED	no	-	-
+2026-09-03T11:00:19Z	agent	Fix round: frontend	task-reviewer	sonnet	-	-	-	-	DONE	dafc01a56	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-03T11:01:01Z	agent	final gate	gate	-	-	-	-	-	PASS	dafc01a56	-	-	-	-
+2026-09-03T11:02:50Z	agent	Refresh fix	task-implementer	sonnet	-	-	-	-	DONE	ed3ea27	-	-	-	-
+2026-09-03T11:18:37Z	agent	post-rebase gate	gate	-	-	-	-	-	PASS	570d8bd2a	-	-	-	-
+2026-09-03T22:02:01Z	agent	bug-fields-ui	task-implementer	sonnet	-	-	-	-	DONE	e25b083f1	-	-	-	-
+2026-09-03T22:02:02Z	agent	bug-maps-ui	task-implementer	sonnet	-	-	-	-	DONE	947013114	-	-	-	-
+2026-09-03T22:02:03Z	agent	bug-fields-ui	task-reviewer	sonnet	-	-	-	-	DONE	947013114	APPROVED_WITH_FINDINGS	true	-	-
+2026-09-03T22:03:44Z	agent	bug-fields-ui-review-findings	task-implementer	sonnet	-	-	-	-	DONE	f29dde41a	-	-	-	-
+2026-09-04T09:52:34Z	agent	bug-fields-ui-round2	task-implementer	sonnet	-	-	-	-	DONE	a73aaaf3b	-	-	-	-

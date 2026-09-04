@@ -115,6 +115,9 @@ class OnboardingService {
         ...(template.attributes.cashShop !== undefined && {
           cashShop: template.attributes.cashShop,
         }),
+        ...(template.attributes.mapleLife !== undefined && {
+          mapleLife: template.attributes.mapleLife,
+        }),
       };
 
       // Pass tenant ID to ensure configuration uses the same UUID

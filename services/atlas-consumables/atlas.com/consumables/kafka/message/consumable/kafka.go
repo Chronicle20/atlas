@@ -132,6 +132,16 @@ const (
 	// See task-280 FR-6.
 	ErrorTypePotionLocked = "POTION_LOCKED"
 
+	// Writ of Solomon (task-277) rejection reasons -- consumable/solomon.go's
+	// ErrSolomonNoExperience / ErrSolomonLevelExceeded /
+	// ErrSolomonBalanceNotEmpty classified by consumeErrorType. Each gets a
+	// distinct client message rather than the silent CONSUME_FAILED unstick;
+	// atlas-channel's kafka/message/consumable/kafka.go hand-mirrors these
+	// three literals byte-for-byte -- see that file's comment.
+	ErrorTypeSolomonNoExperience    = "SOLOMON_NO_EXPERIENCE"
+	ErrorTypeSolomonLevelExceeded   = "SOLOMON_LEVEL_EXCEEDED"
+	ErrorTypeSolomonBalanceNotEmpty = "SOLOMON_BALANCE_NOT_EMPTY"
+
 	// Catch failure causes reported by atlas-consumables' pre-reserve gates.
 	// The wire byte is NOT chosen here — atlas-channel maps cause to reason
 	// (DOM-25), because 0/1 is a client-interpreted value.

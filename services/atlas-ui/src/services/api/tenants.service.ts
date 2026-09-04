@@ -73,6 +73,15 @@ interface CharacterPreset {
   attributes: CharacterPresetAttributes;
 }
 
+/**
+ * The section names the reset endpoint accepts. `properties` is the
+ * residual section — every comparable top-level key not claimed by one of
+ * the five named sections, which today is exactly `usesPin`. The server
+ * rejects `usesPin` as a name: there is no alias.
+ */
+export type TenantResetSection =
+  "properties" | "socket" | "characters" | "npcs" | "cashShop" | "mapleLife";
+
 interface TenantConfigAttributes {
   region: string;
   majorVersion: number;
@@ -132,6 +141,17 @@ interface TenantConfigAttributes {
   };
   mapleLife?: MapleLifeConfig;
   diagnostics?: { tracePackets: boolean };
+  /**
+   * Computed server-side (task-289); never persisted and ignored on write.
+   * Optional so a response from an older backend still type-checks — read
+   * `templateDrift === true`, never a truthy check.
+   */
+  baselineTemplateId?: string;
+  baselineRevision?: string;
+  storedRevision?: string;
+  templateDrift?: boolean;
+  /** Always fully populated by a current backend: all six section keys. */
+  sectionDrift?: Record<string, boolean>;
 }
 
 interface TenantConfig {
@@ -308,11 +328,25 @@ export const tenantsService = {
     updatedAttributes: Partial<TenantConfigAttributes>,
     options?: ServiceOptions,
   ): Promise<TenantConfig> {
+    // The five computed attributes are read-only and server-owned. The
+    // server ignores them (they are absent from the bound write model),
+    // so this is hygiene rather than a fix — it keeps request bodies
+    // honest instead of echoing a hash of the document back at the
+    // service that produced it.
+    const {
+      baselineTemplateId: _baselineTemplateId,
+      baselineRevision: _baselineRevision,
+      storedRevision: _storedRevision,
+      templateDrift: _templateDrift,
+      sectionDrift: _sectionDrift,
+      ...writable
+    } = tenant.attributes;
+
     const input: UpdateTenantConfigInput = {
       data: {
         id: tenant.id,
         type: "tenants",
-        attributes: { ...tenant.attributes, ...updatedAttributes },
+        attributes: { ...writable, ...updatedAttributes },
       },
     };
     await api.patch<void>(`${CONFIG_PATH}/${tenant.id}`, input, options);
@@ -320,6 +354,31 @@ export const tenantsService = {
       ...tenant,
       attributes: { ...tenant.attributes, ...updatedAttributes },
     };
+  },
+
+  /**
+   * Resets a tenant configuration to its baseline template. Omit
+   * `sections` for the whole document.
+   *
+   * Unlike templatesService.reseed this does NOT set
+   * `skipTenantHeaders` — templates are global, tenant configurations are
+   * not, and the reset must carry the ordinary tenant headers.
+   */
+  async reset(
+    id: string,
+    sections?: TenantResetSection[],
+    options?: ServiceOptions,
+  ): Promise<TenantConfig> {
+    const body =
+      sections && sections.length > 0
+        ? { data: { type: "tenants", attributes: { sections } } }
+        : undefined;
+    const response = await api.post<ApiSingleResponse<TenantConfig>>(
+      `${CONFIG_PATH}/${id}/reset`,
+      body,
+      options,
+    );
+    return sortTenantConfig(response.data);
   },
 
   createTenantFromTemplate(template: {

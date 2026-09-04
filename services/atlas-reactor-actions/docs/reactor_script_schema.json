@@ -117,6 +117,7 @@
             "spray_items",
             "weaken_area_boss",
             "move_environment",
+            "reset_environment",
             "kill_all_monsters",
             "drop_message",
             "update_pq_state",
@@ -275,8 +276,26 @@
                   "value": {
                     "type": "string",
                     "description": "New environment state value"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["ENVIRONMENT", "OBSTACLE"],
+                    "description": "Which clientbound opcode carries the change; defaults to ENVIRONMENT"
                   }
                 }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "reset_environment" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "properties": {}
               }
             }
           }

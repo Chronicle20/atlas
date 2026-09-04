@@ -16,29 +16,31 @@ const (
 )
 
 const (
-	CommandCreateCharacter     = "CREATE_CHARACTER"
-	CommandChangeMap           = "CHANGE_MAP"
-	CommandChangeJob           = "CHANGE_JOB"
-	CommandChangeHair          = "CHANGE_HAIR"
-	CommandChangeFace          = "CHANGE_FACE"
-	CommandChangeSkin          = "CHANGE_SKIN"
-	CommandAwardExperience     = "AWARD_EXPERIENCE"
-	CommandAwardLevel          = "AWARD_LEVEL"
-	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
-	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
-	CommandRequestChangeFame   = "REQUEST_CHANGE_FAME"
-	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
-	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
-	CommandChangeHP            = "CHANGE_HP"
-	CommandChangeMP            = "CHANGE_MP"
-	CommandSetHP               = "SET_HP"
-	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
-	CommandResetStats          = "RESET_STATS"
-	CommandRebalanceAP         = "REBALANCE_AP"
-	CommandTransferAP          = "TRANSFER_AP"
-	CommandClampHP             = "CLAMP_HP"
-	CommandClampMP             = "CLAMP_MP"
-	CommandDeleteCharacter     = "DELETE_CHARACTER"
+	CommandCreateCharacter        = "CREATE_CHARACTER"
+	CommandChangeMap              = "CHANGE_MAP"
+	CommandChangeJob              = "CHANGE_JOB"
+	CommandChangeHair             = "CHANGE_HAIR"
+	CommandChangeFace             = "CHANGE_FACE"
+	CommandChangeSkin             = "CHANGE_SKIN"
+	CommandAwardExperience        = "AWARD_EXPERIENCE"
+	CommandAwardLevel             = "AWARD_LEVEL"
+	CommandRequestChangeMeso      = "REQUEST_CHANGE_MESO"
+	CommandRequestDropMeso        = "REQUEST_DROP_MESO"
+	CommandRequestChangeFame      = "REQUEST_CHANGE_FAME"
+	CommandRequestDistributeAp    = "REQUEST_DISTRIBUTE_AP"
+	CommandRequestDistributeSp    = "REQUEST_DISTRIBUTE_SP"
+	CommandChangeHP               = "CHANGE_HP"
+	CommandChangeMP               = "CHANGE_MP"
+	CommandSetHP                  = "SET_HP"
+	CommandDeductExperience       = "DEDUCT_EXPERIENCE"
+	CommandResetStats             = "RESET_STATS"
+	CommandRebalanceAP            = "REBALANCE_AP"
+	CommandTransferAP             = "TRANSFER_AP"
+	CommandClampHP                = "CLAMP_HP"
+	CommandClampMP                = "CLAMP_MP"
+	CommandDeleteCharacter        = "DELETE_CHARACTER"
+	CommandCreditStoredExperience = "CREDIT_STORED_EXPERIENCE"
+	CommandRedeemStoredExperience = "REDEEM_STORED_EXPERIENCE"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -193,6 +195,23 @@ type ClampMPBody struct {
 type DeductExperienceCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    uint32     `json:"amount"`
+}
+
+// CreditStoredExperienceCommandBody banks EXP into the stored-EXP counter
+// (GW_CharacterStat::nTempEXP, persisted as `gachapon_experience`). It does NOT
+// award character EXP — REDEEM_STORED_EXPERIENCE does that.
+type CreditStoredExperienceCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    uint32     `json:"amount"`
+	Reason    string     `json:"reason"`
+}
+
+// RedeemStoredExperienceCommandBody redeems the WHOLE stored-EXP counter
+// (`gachapon_experience`, the client's GW_CharacterStat::nTempEXP) into real
+// character EXP and zeroes it. There is no amount: the client's
+// CUIStatusBar::TryUseTempExp charges the entire balance or nothing.
+type RedeemStoredExperienceCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type ResetStatsCommandBody struct {

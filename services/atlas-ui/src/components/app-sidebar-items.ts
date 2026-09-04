@@ -44,6 +44,7 @@ export const sidebarItems: SidebarGroupItem[] = [
       { title: "Marketplace", url: "/marketplace" },
       { title: "Rankings", url: "/rankings" },
       { title: "Maps", url: "/maps" },
+      { title: "Fields", url: "/fields" },
       { title: "Reactors", url: "/reactors" },
       { title: "Reward Pools", url: "/reward-pools" },
       { title: "Coupons", url: "/coupons" },

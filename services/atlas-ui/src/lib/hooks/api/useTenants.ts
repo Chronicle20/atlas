@@ -21,6 +21,7 @@ import {
   type TenantBasicAttributes,
   type TenantConfig,
   type TenantConfigAttributes,
+  type TenantResetSection,
 } from "@/services/api/tenants.service";
 import { socketKeys } from "@/lib/hooks/api/socketKeys";
 import type { ServiceOptions, QueryOptions } from "@/lib/api/query-params";
@@ -343,6 +344,34 @@ export function useUpdateTenantConfiguration(): UseMutationResult<
   });
 }
 
+/**
+ * Resets a tenant configuration to its baseline template — whole
+ * document when `sections` is omitted, otherwise exactly those sections.
+ *
+ * Invalidates on SUCCESS ONLY: a failed reset changed nothing
+ * server-side, so there is nothing stale to refetch. Mirrors
+ * useReseedTemplate (useTemplates.ts:351-373).
+ *
+ * socketKeys.all is invalidated because a socket reset changes what the
+ * socket matrix and the handlers/writers grids show, and none of those
+ * clear on their own.
+ */
+export function useResetTenantConfiguration(): UseMutationResult<
+  TenantConfig,
+  Error,
+  { id: string; sections?: TenantResetSection[] }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, sections }) => tenantsService.reset(id, sections),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: tenantKeys.configDetail(id) });
+      queryClient.invalidateQueries({ queryKey: tenantKeys.configLists() });
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
+    },
+  });
+}
+
 // ============================================================================
 // UTILITY HOOKS
 // ============================================================================
@@ -384,4 +413,5 @@ export type {
   TenantBasicAttributes,
   TenantConfig,
   TenantConfigAttributes,
+  TenantResetSection,
 };

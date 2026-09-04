@@ -41,8 +41,14 @@ You verify exactly one (packet, version) cell. You are working in the task
 worktree given in your prompt — `cd` there first and verify the branch.
 
 **Procedure: follow `docs/packets/audits/VERIFYING_A_PACKET.md` §0–10 verbatim.**
-Read it FIRST, in full, and execute it — do not paraphrase or work from a
-remembered version. That playbook owns every rule below:
+On a first dispatch, read it FIRST, in full, and execute it — do not
+paraphrase or work from a remembered version. On a **continuation** dispatch
+(your brief says a prior agent hit the cap and carries forward its rules), do
+NOT re-read the playbook whole: the brief's carried-forward rules are the
+contract, and you re-read only the sections the brief names as still open.
+The playbook is ~14.5 KB; re-reading it at call #2 of a 110-turn continuation
+was carried on every one of those turns, for rules the brief already stated.
+That playbook owns every rule below:
 Verification-Over-Memory (no fabricated bytes/opcodes/read orders — every byte
 cites a decompile line or export entry), IDA-instance resolution by loaded IDB
 (`idb_list`, match the EXACT binary filename, pass it as the `database`
@@ -59,6 +65,25 @@ Anchor on invariants (opcode construction, itemId/class gates, the family's
 receive handler + data structures), cross-check the family's other cells, and
 record any family-inconsistent `n-a` in docs/packets/feature-na-evidence.yaml.
 See VERIFYING_A_PACKET.md "Is this cell n-a?".
+
+## Batches: at most 6 cells, tooling once per batch
+
+A batch brief may hand you several cells of one family × one version. **Six
+cells is the ceiling.** Twelve-cell batches measured in the task-270 campaign
+ran 110–130 turns at 200–340k peak context; the 120-call cap fired only after
+the context had already ballooned, and the last half of every such agent cost
+roughly twice the first half. If your brief lists more than six cells, verify
+the first six, commit, and report PARTIAL naming the rest — that is the
+contracted outcome, not a failure.
+
+Within a batch, follow VERIFYING_A_PACKET.md "Batched cells": one
+`packet-audit matrix` + `matrix --check` after the batch's fixtures and pins
+are in, not one per cell; `evidence pin` stays per cell because a record is
+per cell. Do not re-derive repo layout per cell — the first cell's
+`grep`/`find` across `libs/atlas-packet` tells you where the family's structs,
+tests, and templates live; reuse that for the siblings. Do not probe
+`status.json` with ad hoc `python3 -c` one-liners; `packet-audit matrix
+--check` and the STATUS.md cell are the readouts.
 
 ## `packet-audit export` — bounded, and usually the wrong tool
 

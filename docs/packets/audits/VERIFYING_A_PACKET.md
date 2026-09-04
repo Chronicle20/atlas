@@ -97,6 +97,20 @@ automatically.
 The cell must now be ✅. Commit test + evidence + STATUS.md/status.json
 together.
 
+### Batched cells
+When one agent is handed several cells of the same family × version (a
+campaign batch), the cap is **six cells per agent** — see
+`.claude/agents/packet-verifier.md` "Batches". Within the batch:
+
+- §3–§7 run per cell (decompile, derive, byte-test, pin — a record is per cell).
+- §8 runs **once for the batch**: regenerate, `matrix --check`, and commit the
+  batch's tests + evidence + STATUS.md/status.json together. Re-run §8 only if
+  the check fails, after fixing the cell it names. Per-cell regeneration in a
+  12-cell batch was measured at 10–20 extra tool calls per agent, each
+  re-reading the agent's whole context, for no additional information.
+- Repo discovery (where the family's structs, tests, templates live) is done
+  once on the first cell and reused; do not `grep`/`find` it again per cell.
+
 `matrix --check` is a **hard, blocking CI gate** (`.github/workflows/packet-matrix.yml`):
 the registry-seed conflict backlog was burned to zero (task-085), so a clean tree
 exits 0 — there is no grandfathering or `continue-on-error`. Your bar is a clean

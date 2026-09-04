@@ -1,6 +1,12 @@
 ---
 description: Phase 4 — invoke superpowers:subagent-driven-development to implement a planned task in its existing worktree
 argument-hint: Task identifier — accepts "task-054-effect-duration-units", "task-054", "054", or "54"
+# The controller narrates and delegates; every judgment-heavy unit already runs
+# in an explicitly pinned subagent (Step 4a). Two consecutive weekly audits
+# measured every Phase-4 controller running Opus by default — ~950M main-thread
+# input tokens in one week, 95% Opus — for dispatch-loop work. Pin it. Escalate
+# a specific dispatch with `model: opus` on that dispatch, not the controller.
+model: sonnet
 ---
 
 You are starting Phase 4 of the Atlas four-phase development workflow. Argument: **$ARGUMENTS**

@@ -19,6 +19,9 @@
 # hook stays silent, which is the correct failure mode.
 #
 # Silent on the happy path. Always exits 0 — a nag must never break a session.
+# The ESCALATE tier below is advisory here; context-handoff-guard.sh reads the
+# same ESCALATE value and DENIES new-unit Agent dispatches past it. Change the
+# threshold in this file only.
 #
 # Referenced from CLAUDE.md "Context Handoff". The floor lives in this file
 # only; change it here.

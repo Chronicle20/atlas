@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -1433,48 +1434,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.AwardLevel, payload, nil
 
 	case "warp_to_map":
-		// Format: warp_to_map
-		// Context: mapId (uint32), portalId (uint32) OR portalName (string)
-		mapIdInt := 0
-		mapIdValue, exists := operation.Params()["mapId"]
-		if exists {
-			var err error
-			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
+		st, err := ops.WarpToPortal(operation.Params(), e.resolver(), e.target(f), characterId)
+		if err != nil {
+			return "", "", "", nil, err
 		}
-
-		portalIdInt := 0
-		portalIdValue, exists := operation.Params()["portalId"]
-		if exists {
-			var err error
-			portalIdInt, err = e.evaluateContextValueAsInt(characterId, "portalId", portalIdValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		var portalName string
-		portalNameValue, exists := operation.Params()["portalName"]
-		if exists {
-			var err error
-			portalName, err = e.evaluateContextValue(characterId, "portalName", portalNameValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		payload := saga.WarpToPortalPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
-			MapId:       _map.Id(mapIdInt),
-			PortalId:    uint32(portalIdInt),
-			PortalName:  portalName,
-		}
-
-		return stepId, saga.Pending, saga.WarpToPortal, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "warp_to_random_portal":
 		// Format: warp_to_random_portal
@@ -1550,48 +1514,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "update_skill":
-		// Format: update_skill
-		// Context: skillId (uint32), level (byte), masterLevel (byte), expiration (time.Time)
-		skillIdValue, exists := operation.Params()["skillId"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing skillId parameter for update_skill operation")
-		}
-
-		// Evaluate the skillId value
-		skillIdInt, err := e.evaluateContextValueAsInt(characterId, "skillId", skillIdValue)
+		st, err := ops.UpdateSkill(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		// Level is optional with default 1
-		levelInt := 1
-		levelValue, exists := operation.Params()["level"]
-		if exists {
-			levelInt, err = e.evaluateContextValueAsInt(characterId, "level", levelValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		// Master level is optional with default 1
-		masterLevelInt := 1
-		masterLevelValue, exists := operation.Params()["masterLevel"]
-		if exists {
-			masterLevelInt, err = e.evaluateContextValueAsInt(characterId, "masterLevel", masterLevelValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		payload := saga.UpdateSkillPayload{
-			CharacterId: characterId,
-			SkillId:     uint32(skillIdInt),
-			Level:       byte(levelInt),
-			MasterLevel: byte(masterLevelInt),
-			Expiration:  time.Now().Add(365 * 24 * time.Hour), // Default to 1 year from now
-		}
-
-		return stepId, saga.Pending, saga.UpdateSkill, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "destroy_item":
 		// Format: destroy_item
@@ -1877,56 +1804,29 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.CompleteQuest, payload, nil
 
 	case "start_quest":
-		// Format: start_quest
-		// Params: questId (uint32, optional - defaults to context questId for quest conversations),
-		//         npcId (uint32, optional - defaults to conversation NPC)
-		var questIdInt int
-		var err error
-		if questIdValue, exists := operation.Params()["questId"]; exists {
-			questIdInt, err = e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		} else {
-			// Check context for questId (set by quest conversations)
+		var d ops.QuestDefaults
+		_, hasQuestId := operation.Params()["questId"]
+		_, hasNpcId := operation.Params()["npcId"]
+		if !hasQuestId || !hasNpcId {
 			ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 			if err != nil {
-				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
+				return "", "", "", nil, fmt.Errorf("failed to get conversation context for start_quest: %w", err)
 			}
-			if contextQuestId, exists := ctx.Context()["questId"]; exists {
-				questIdInt, err = strconv.Atoi(contextQuestId)
+			if v, exists := ctx.Context()["questId"]; exists {
+				parsed, err := strconv.Atoi(v)
 				if err != nil {
 					return "", "", "", nil, fmt.Errorf("invalid questId in context: %w", err)
 				}
-			} else {
-				return "", "", "", nil, errors.New("missing questId parameter for start_quest operation")
+				d.QuestId = uint32(parsed)
 			}
+			d.NpcId = ctx.NpcId()
 		}
 
-		// NpcId is optional - if not provided, get from conversation context
-		var npcIdInt int
-		if npcIdValue, exists := operation.Params()["npcId"]; exists {
-			npcIdInt, err = e.evaluateContextValueAsInt(characterId, "npcId", npcIdValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		} else {
-			// Get NPC ID from conversation context
-			ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
-			if err != nil {
-				return "", "", "", nil, fmt.Errorf("failed to get conversation context for NPC ID: %w", err)
-			}
-			npcIdInt = int(ctx.NpcId())
+		st, err := ops.StartQuest(operation.Params(), e.resolver(), e.target(f), characterId, d)
+		if err != nil {
+			return "", "", "", nil, err
 		}
-
-		payload := saga.StartQuestPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			QuestId:     uint32(questIdInt),
-			NpcId:       uint32(npcIdInt),
-		}
-
-		return stepId, saga.Pending, saga.StartQuest, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "forfeit_quest":
 		// Format: forfeit_quest
@@ -2315,94 +2215,25 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.RebalanceAP, payload, nil
 
 	case "start_instance_transport":
-		// Format: start_instance_transport
-		// Params: routeName (string, required) - the transport route name (e.g., "kerning-square-subway-in")
-		// Starts an instance-based transport for the character
-		// Used by transport ticket NPCs (e.g., NPC 1052007 for Kerning Square subway)
-		routeNameValue, exists := operation.Params()["routeName"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing routeName parameter for start_instance_transport operation")
-		}
-
-		routeName, err := e.evaluateContextValue(characterId, "routeName", routeNameValue)
+		st, err := ops.StartInstanceTransport(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		payload := saga.StartInstanceTransportPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
-			RouteName:   routeName,
-		}
-
-		return stepId, saga.Pending, saga.StartInstanceTransport, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "save_location":
-		// Format: save_location
-		// Params: locationType (string, required), mapId (uint32, optional - defaults to current map), portalId (uint32, optional - defaults to 0)
-		// Saves the character's current location for later retrieval
-		locationTypeValue, exists := operation.Params()["locationType"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing locationType parameter for save_location operation")
-		}
-
-		locationType, err := e.evaluateContextValue(characterId, "locationType", locationTypeValue)
+		st, err := ops.SaveLocation(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		// MapId is optional, defaults to character's current map
-		mapIdInt := int(f.MapId())
-		if mapIdValue, exists := operation.Params()["mapId"]; exists {
-			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		// PortalId is optional, defaults to 0
-		portalIdInt := 0
-		if portalIdValue, exists := operation.Params()["portalId"]; exists {
-			portalIdInt, err = e.evaluateContextValueAsInt(characterId, "portalId", portalIdValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		payload := saga.SaveLocationPayload{
-			CharacterId:  characterId,
-			WorldId:      f.WorldId(),
-			ChannelId:    f.ChannelId(),
-			LocationType: locationType,
-			MapId:        _map.Id(mapIdInt),
-			PortalId:     uint32(portalIdInt),
-		}
-
-		return stepId, saga.Pending, saga.SaveLocation, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "warp_to_saved_location":
-		// Format: warp_to_saved_location
-		// Params: locationType (string, required)
-		// Warps the character back to a previously saved location (pop semantics: get + warp + delete)
-		locationTypeValue, exists := operation.Params()["locationType"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing locationType parameter for warp_to_saved_location operation")
-		}
-
-		locationType, err := e.evaluateContextValue(characterId, "locationType", locationTypeValue)
+		st, err := ops.WarpToSavedLocation(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		payload := saga.WarpToSavedLocationPayload{
-			CharacterId:  characterId,
-			WorldId:      f.WorldId(),
-			ChannelId:    f.ChannelId(),
-			LocationType: locationType,
-		}
-
-		return stepId, saga.Pending, saga.WarpToSavedLocation, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "leave_party_quest":
 		// Format: leave_party_quest
@@ -2449,13 +2280,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.WarpPartyQuestMembersToMap, payload, nil
 
 	case "stage_clear_attempt_pq":
-		// Format: stage_clear_attempt_pq
-		// No params required - attempts to clear the current PQ stage for the character's instance.
-		payload := saga.StageClearAttemptPqPayload{
-			CharacterId: characterId,
+		st, err := ops.StageClearAttemptPq(e.target(f), characterId, uuid.Nil)
+		if err != nil {
+			return "", "", "", nil, err
 		}
-
-		return stepId, saga.Pending, saga.StageClearAttemptPq, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "evolve_pet":
 		// Format: evolve_pet

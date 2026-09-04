@@ -1341,3 +1341,213 @@ func TestCreateStepCreateSkillHonoursExpiration(t *testing.T) {
 		t.Errorf("Expiration = %s, want after %s", p.Expiration, minExpiration)
 	}
 }
+
+// TestCreateStepWarpToMapRequiresMapId verifies that warp_to_map now delegates
+// to ops.WarpToPortal (FR-18), which requires mapId — operation_executor.go
+// previously defaulted a missing mapId to 0 (saga.WarpToPortalPayload{MapId: 0})
+// instead of erroring.
+func TestCreateStepWarpToMapRequiresMapId(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(83)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	t.Run("missing mapId errors", func(t *testing.T) {
+		op, err := NewOperationBuilder().SetType("warp_to_map").Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+		_, _, _, _, err = executor.createStepForOperation(f, characterId, op)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "warp_to_portal") || !strings.Contains(err.Error(), "mapId") {
+			t.Errorf("error = %q, want it to name warp_to_portal and mapId", err.Error())
+		}
+	})
+
+	t.Run("portalId without mapId errors", func(t *testing.T) {
+		op, err := NewOperationBuilder().SetType("warp_to_map").AddParamValue("portalId", "3").Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+		_, _, _, _, err = executor.createStepForOperation(f, characterId, op)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "warp_to_portal") || !strings.Contains(err.Error(), "mapId") {
+			t.Errorf("error = %q, want it to name warp_to_portal and mapId", err.Error())
+		}
+	})
+
+	t.Run("mapId and portalName still produce a valid step", func(t *testing.T) {
+		op, err := NewOperationBuilder().
+			SetType("warp_to_map").
+			AddParamValue("mapId", "104000000").
+			AddParamValue("portalName", "west00").
+			Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+		_, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+		if err != nil {
+			t.Fatalf("createStepForOperation returned error: %v", err)
+		}
+		if status != saga.Pending {
+			t.Fatalf("expected status Pending, got %q", status)
+		}
+		if action != saga.WarpToPortal {
+			t.Fatalf("expected action WarpToPortal, got %q", action)
+		}
+		p, ok := payload.(saga.WarpToPortalPayload)
+		if !ok {
+			t.Fatalf("expected WarpToPortalPayload, got %T", payload)
+		}
+		if p.MapId != _map.Id(104000000) {
+			t.Errorf("MapId = %d, want %d", p.MapId, _map.Id(104000000))
+		}
+		if p.PortalName != "west00" {
+			t.Errorf("PortalName = %q, want %q", p.PortalName, "west00")
+		}
+	})
+}
+
+// TestCreateStepStartQuestUsesContextDefaults verifies that start_quest reads
+// the conversation context at most once (design OQ-4), passing questId/npcId
+// context defaults into ops.StartQuest rather than the old two separate
+// GetPreviousContext lookups.
+func TestCreateStepStartQuestUsesContextDefaults(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(84)
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	t.Run("no questId param uses context questId and npcId", func(t *testing.T) {
+		GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().
+			SetCharacterId(characterId).
+			SetNpcId(9010000).
+			AddContextValue("questId", "2000").
+			Build())
+		defer GetRegistry().ClearContext(tctx, characterId)
+
+		op, err := NewOperationBuilder().SetType("start_quest").Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+		_, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+		if err != nil {
+			t.Fatalf("createStepForOperation returned error: %v", err)
+		}
+		if status != saga.Pending {
+			t.Fatalf("expected status Pending, got %q", status)
+		}
+		if action != saga.StartQuest {
+			t.Fatalf("expected action StartQuest, got %q", action)
+		}
+		p, ok := payload.(saga.StartQuestPayload)
+		if !ok {
+			t.Fatalf("expected StartQuestPayload, got %T", payload)
+		}
+		if p.QuestId != 2000 || p.NpcId != 9010000 {
+			t.Errorf("QuestId/NpcId = %d/%d, want 2000/9010000", p.QuestId, p.NpcId)
+		}
+	})
+
+	t.Run("explicit questId overrides context but npcId still defaults", func(t *testing.T) {
+		GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().
+			SetCharacterId(characterId).
+			SetNpcId(9010000).
+			AddContextValue("questId", "2000").
+			Build())
+		defer GetRegistry().ClearContext(tctx, characterId)
+
+		op, err := NewOperationBuilder().SetType("start_quest").AddParamValue("questId", "3000").Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+		_, _, _, payload, err := executor.createStepForOperation(f, characterId, op)
+		if err != nil {
+			t.Fatalf("createStepForOperation returned error: %v", err)
+		}
+		p, ok := payload.(saga.StartQuestPayload)
+		if !ok {
+			t.Fatalf("expected StartQuestPayload, got %T", payload)
+		}
+		if p.QuestId != 3000 || p.NpcId != 9010000 {
+			t.Errorf("QuestId/NpcId = %d/%d, want 3000/9010000", p.QuestId, p.NpcId)
+		}
+	})
+
+	t.Run("empty context and no questId param errors", func(t *testing.T) {
+		GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+		defer GetRegistry().ClearContext(tctx, characterId)
+
+		op, err := NewOperationBuilder().SetType("start_quest").Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+		_, _, _, _, err = executor.createStepForOperation(f, characterId, op)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "start_quest") || !strings.Contains(err.Error(), "questId") {
+			t.Errorf("error = %q, want it to name start_quest and questId", err.Error())
+		}
+	})
+}
+
+// TestCreateStepStageClearAttemptPq verifies that stage_clear_attempt_pq now
+// delegates to ops.StageClearAttemptPq (FR-17), passing uuid.Nil for the
+// instance to route the orchestrator to the character-lookup branch.
+func TestCreateStepStageClearAttemptPq(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(85)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	op, err := NewOperationBuilder().SetType("stage_clear_attempt_pq").Build()
+	if err != nil {
+		t.Fatalf("build op: %v", err)
+	}
+	_, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+	if err != nil {
+		t.Fatalf("createStepForOperation returned error: %v", err)
+	}
+	if status != saga.Pending {
+		t.Fatalf("expected status Pending, got %q", status)
+	}
+	if action != saga.StageClearAttemptPq {
+		t.Fatalf("expected action StageClearAttemptPq, got %q", action)
+	}
+	p, ok := payload.(saga.StageClearAttemptPqPayload)
+	if !ok {
+		t.Fatalf("expected StageClearAttemptPqPayload, got %T", payload)
+	}
+	if p.CharacterId != characterId {
+		t.Errorf("CharacterId = %d, want %d", p.CharacterId, characterId)
+	}
+	if p.InstanceId != uuid.Nil {
+		t.Errorf("InstanceId = %s, want uuid.Nil", p.InstanceId)
+	}
+}

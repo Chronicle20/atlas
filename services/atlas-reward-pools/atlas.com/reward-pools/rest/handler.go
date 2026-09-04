@@ -2,9 +2,7 @@ package rest
 
 import (
 	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 
@@ -26,31 +24,9 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 }
 
 func ParseGachaponId(l logrus.FieldLogger, next func(gachaponId string) http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		gachaponId, ok := mux.Vars(r)["gachaponId"]
-		if !ok || gachaponId == "" {
-			l.Errorf("Unable to properly parse gachaponId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(gachaponId)(w, r)
-	}
+	return server.ParseStringId(l, "gachaponId", next)
 }
 
 func ParseItemId(l logrus.FieldLogger, next func(itemId uint32) http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		itemIdStr, ok := mux.Vars(r)["itemId"]
-		if !ok {
-			l.Errorf("Unable to properly parse itemId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		itemId, err := strconv.Atoi(itemIdStr)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse itemId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(itemId))(w, r)
-	}
+	return server.ParseIntId[uint32](l, "itemId", next)
 }

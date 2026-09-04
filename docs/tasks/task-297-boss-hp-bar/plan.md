@@ -39,7 +39,7 @@ nil-guarded delegation).
 
 Module root: `services/atlas-channel/atlas.com/channel`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Extend `data/monster/rest_test.go`. `TestExtract` and `TestTransformRoundTrip` already
 exist (`rest_test.go:7`, `:29`) — widen them in place rather than adding new functions.
@@ -61,7 +61,7 @@ shape, including fields the channel projection deliberately drops:
 Expected after `Extract`: `Boss() == true`, `FixedDamage() == 0`, `TagColor() == 6`,
 `TagBackgroundColor() == 1`. The dropped keys must not cause an unmarshal error.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Add the two fields to `RestModel` and to `Model`, wire both directions of
 `Extract`/`Transform`, add the two accessors. Then write `data/monster/mock/processor.go`
@@ -78,7 +78,7 @@ var _ monster.Processor = (*ProcessorMock)(nil)
 with `GetById` delegating when the func is non-nil and returning `(monster.Model{}, nil)`
 otherwise.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 `go build ./... && go test ./data/monster/...` from
 `services/atlas-channel/atlas.com/channel`.
@@ -119,7 +119,7 @@ Env names (design D2): `MONSTER_DATA_CACHE_ENABLED` (default `true`),
 `MONSTER_DATA_CACHE_TTL` (default `5m`), `MONSTER_DATA_CACHE_NEGATIVE_TTL` (default `30s`).
 Bounds as in `data/skill`: TTL `[1s, 24h]`, negative TTL `[0s, 5m]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `TestMonsterDataCache` — table-driven, one `run func(t *testing.T)` per case, setup and
 helper shape copied verbatim from `data/skill/cache_test.go:1-52` (`resetSkillCache`,
@@ -140,7 +140,7 @@ Each case swaps the `upstreamFn` package var for a counting stub and restores it
 | `TenantIsolation` | two distinct tenants via `newTestTenant`; call once per tenant for the same id | fetch count `== 2`; each tenant's entry is its own |
 | `ConcurrentAccess` | 50 goroutines calling `getByIdCached` for the same id under a `sync.WaitGroup` | no panic; every returned model equals the seeded one (run under `-race`) |
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Copy `data/skill/cache.go` into `data/monster/cache.go`, package `monster`. Rename:
 `skillCache` → `monsterCache`, `skillCacheOnce`/`skillCachePtr` → `monsterCacheOnce`/
@@ -164,7 +164,7 @@ In `main.go`, add the import `datamonster "atlas-channel/data/monster"` (alias r
 `monsterDomain` and `monsterinfo` already occupy the obvious names) and add
 `datamonster.EvictTenant(tid)` next to `dataskill.EvictTenant(tid)` at `main.go:318`.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 `go build ./... && go test -race ./data/monster/... ./socket/handler/...` from the module
 root. The `socket/handler` run guards the one pre-existing `data/monster` consumer against
@@ -195,7 +195,7 @@ shape), and `services/atlas-channel/atlas.com/channel/kafka/consumer/event/consu
 
 Module root: `services/atlas-channel/atlas.com/channel`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `TestResolve` — table-driven over `(boss, tagColor, tagBackgroundColor, lookupErr)`, using
 `mock.ProcessorMock` from Task 1 and `bosshp.NewResolverFrom(p)`.
@@ -235,7 +235,7 @@ Second sub-case in the same function: with `options` set to
 first byte is the `99` sentinel from `atlas_packet.ResolveCode` — assert `b[0] == 99` to
 prove the mode is table-driven and never a literal.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `bosshp.go`, package `bosshp`:
 
@@ -282,7 +282,7 @@ NFR-3 needs no code: on a template with no `FieldEffect` writer (`gms_12`, `gms_
 (`session/processor.go:265-270`) and returns the error before encoding; every call site
 below logs and continues.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 `go build ./... && go test ./monster/bosshp/...` from the module root.
 
@@ -305,7 +305,7 @@ Pure addition: a new field with a zero default; no existing reader changes (desi
 
 Module root: `services/atlas-channel/atlas.com/channel`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `TestLiveEntryFromModel_SeedsMaxHp` — build a `monster.Model` with the package builder
 (`monster/builder.go:30` `NewBuilder(uniqueId, field, monsterId)`, then `.SetHp(...)`,
@@ -318,13 +318,13 @@ Module root: `services/atlas-channel/atlas.com/channel`.
 Setup shape copied from the existing seed assertion in
 `services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer_test.go:291-325`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Add `MaxHp uint32` to `LiveEntry` next to `MaxMp`, and `MaxHp: mo.MaxHp(),` to
 `LiveEntryFromModel`. Nothing else writes it — max HP does not change over a monster's
 life, so no per-damage mirror write is added to the hot path.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 `go build ./... && go test ./monster/...` from the module root.
 
@@ -347,7 +347,7 @@ Patterns to copy:
 
 Module root: `services/atlas-channel/atlas.com/channel`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add `withRecordingBossHp(t)` next to `withRecordingBroadcasters` (`consumer_test.go:31`),
 returning a restore func and a `*[]bossHpRecord` where
@@ -389,7 +389,7 @@ The pre-existing `TestShouldEchoDamagePacket` (`consumer_test.go:617`) is unchan
 must still pass. Wire-level FR-5 coverage is the live smoke (AC-13), which is where the
 "both bars coexist" claim is actually observable.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Add the seam. `routine.Go` lives **inside** the default body so the handler's call is
 synchronous (and therefore assertable) while production stays non-blocking (FR-7):
@@ -431,7 +431,7 @@ if e.Body.Boss {
 
 Do not touch the existing `announcer` goroutine or the `MonsterDamage` goroutine.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 `go build ./... && go test -race ./kafka/consumer/monster/...` from the module root.
 
@@ -456,7 +456,7 @@ Both envelopes carry `MonsterId` (`kafka/message/monster/kafka.go:214`; populate
 
 Module root: `services/atlas-channel/atlas.com/channel`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `TestHandleStatusEventDeath_BossHpGaugeEmpties` — table-driven, reusing
 `withRecordingBossHp` from Task 5 and the mirror-seeding shape at
@@ -472,7 +472,7 @@ Module root: `services/atlas-channel/atlas.com/channel`.
 The existing `TestHandleStatusEventDestroyedAndKilled_RemoveMirrorEntry`
 (`consumer_test.go:413`) must still pass unchanged.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 In both handlers, insert the sequence **before** the existing eviction calls
 (`GetNextSkillInbox().Evict` / `GetStatusMirror().OnMonsterGone` / `GetLiveMirror().Remove`),
@@ -498,7 +498,7 @@ cached lookup and sends nothing. `DESTROYED`'s body carries no `Boss` flag, whic
 
 Double-send is not possible: a kill emits `KILLED` only, a despawn `DESTROYED` only.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 `go build ./... && go test -race ./kafka/consumer/monster/...` from the module root.
 
@@ -528,7 +528,7 @@ Patterns to copy:
 
 Module root: `services/atlas-channel/atlas.com/channel`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Ordering (FR-12) is assertable only if both the spawn announce and the gauge write into
 the same recorder. `spawnMonsterForSession` currently calls `session.Announce` inline;
@@ -559,7 +559,7 @@ Restore both with `defer`. Swap-and-restore shape copied from
 Writer names: `monsterpkt.MonsterSpawnWriter`, `monsterpkt.MonsterControlWriter`
 (`libs/atlas-packet/monster/clientbound`), already imported by `consumer.go`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 ```go
 // bossHpSenderFn sends the current BOSS_HP gauge for one already-spawned
@@ -607,7 +607,7 @@ return nil
 The error is logged and swallowed so a tag-colour lookup or announce failure never aborts
 the spawn enumeration for the remaining monsters (FR-17).
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 `go build ./... && go test -race ./kafka/consumer/map/...` from the module root.
 
@@ -625,7 +625,7 @@ its evidence, not left in the design doc alone.
 - `services/atlas-configurations/seed-data/templates/template_gms_92_1.json` — read-only; evidence
 - `docs/packets/dispatchers/field_effect.yaml` — read-only; evidence
 
-- [ ] **Step 1: Confirm the evidence before writing it down**
+- [x] **Step 1: Confirm the evidence before writing it down**
 
 Do not restate the design's claim — re-verify it:
 
@@ -640,7 +640,7 @@ mode; `template_gms_12_1.json` and `template_gms_92_1.json` carry only
 `FieldEffectWeather`; `field_effect.yaml` has no `gms_v92` mode column. If any of that does
 not hold, write down what is actually true.
 
-- [ ] **Step 2: Write the follow-up**
+- [x] **Step 2: Write the follow-up**
 
 The document states: the gap (no `CField::OnFieldEffect` writer on those two templates),
 the file:line evidence from Step 1, the blast radius (boss HP gauge, background music,
@@ -650,7 +650,7 @@ IDB derivation and `packet-audit` verification), and how the feature degrades on
 tenants today (NFR-3: `session.Announce` fails at `writerProducer(writerName)`,
 `session/processor.go:265-270`, is logged, and nothing else is affected).
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 `tools/plan-lint.sh` and the doc guards run under `tools/verify.sh`; confirm no absolute
 paths and repo-relative references only.
@@ -659,9 +659,9 @@ paths and repo-relative references only.
 
 ## Final verification
 
-- [ ] Flagless `tools/verify.sh` exits 0 (AC-14). Dispatch `task-verifier` for this —
+- [x] Flagless `tools/verify.sh` exits 0 (AC-14). Dispatch `task-verifier` for this —
       never run it inside a large implementer context.
-- [ ] Code review before the PR (`task-reviewer` per unit; `backend-guidelines-reviewer`
+- [x] Code review before the PR (`task-reviewer` per unit; `backend-guidelines-reviewer`
       over the changed Go packages).
 - [ ] Live smoke (AC-12, AC-13), design §4: Zakum (`8800002`) on the gms_v83 tenant —
       the gauge appears on first hit, tracks damage, empties on kill, and is visible to a

@@ -1,0 +1,42 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-04T12:02:58Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	88dc77803	-	-	-	-
+2026-09-04T12:03:46Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	88dc77803	APPROVED	no	-	-
+2026-09-04T12:06:57Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	ee733852d	-	-	-	-
+2026-09-04T12:08:51Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	ee733852d	APPROVED	no	-	-
+2026-09-04T12:09:28Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	b6ca5a412	-	-	-	-
+2026-09-04T12:11:08Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	b6ca5a412	APPROVED	no	-	-
+2026-09-04T12:11:38Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	4a0b5db09	-	-	-	-
+2026-09-04T12:12:48Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	4a0b5db09	APPROVED	no	-	-
+2026-09-04T12:12:49Z	handoff	after Task 4	controller	opus	-	-	-	-	DONE	4a0b5db09	-	-	-	-
+2026-09-04T12:13:04Z	agent	Tasks 1-2 gate	verify.sh	-	-	-	-	-	PASS	ee733852d	-	-	-	-
+2026-09-04T12:13:52Z	agent	Tasks 1-2 gate (supersedes prior PASS row)	verify.sh	-	-	-	-	-	ERROR	ee733852d	-	-	-	-
+2026-09-04T12:15:40Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T12:17:32Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE	f87cc202d	-	-	-	-
+2026-09-04T12:18:33Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	f87cc202d	APPROVED	no	.superpowers/sdd/plan/task-8-review.md	-
+2026-09-04T12:19:35Z	agent	Tasks 1-4 gate (re-run)	verify.sh	-	-	-	-	-	PASS	4a0b5db09	-	-	-	-
+2026-09-04T12:19:36Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T12:23:47Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	de91e8461	-	-	-	-
+2026-09-04T12:23:47Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T12:28:44Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	de91e8461	APPROVED	no	.superpowers/sdd/plan/task-5-review.md	-
+2026-09-04T12:28:44Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T12:29:10Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE	85427a634	-	-	-	-
+2026-09-04T12:31:10Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	85427a634	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan/task-7-review.md	-
+2026-09-04T12:31:46Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	5b6ed61a1	-	-	-	-
+2026-09-04T12:34:21Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	5b6ed61a1	APPROVED	no	.superpowers/sdd/plan/task-6-review.md	-
+2026-09-04T12:34:22Z	handoff	after Task 6	controller	opus	-	-	-	-	DONE	5b6ed61a1	-	-	-	-
+2026-09-04T12:36:46Z	agent	Tasks 8,5,7,6 gate	verify.sh	-	-	-	-	-	ERROR	5b6ed61a1	-	-	-	-
+2026-09-04T12:37:55Z	agent	branch	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T12:37:55Z	agent	branch (tasks 1-8)	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T12:39:31Z	agent	Tasks 8,5,7,6 gate (supersedes ERROR row)	verify.sh	-	-	-	-	-	PASS	5b6ed61a1	-	-	-	-
+2026-09-04T12:42:47Z	agent	branch (tasks 1-8)	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	5b6ed61a1	CHANGES_REQUIRED	yes	docs/tasks/task-297-boss-hp-bar/plan-audit.md	-
+2026-09-04T12:51:44Z	agent	branch (flagless)	verify.sh	-	-	-	-	-	FAIL	5b6ed61a1	-	-	-	-
+2026-09-04T12:54:25Z	agent	branch	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	5b6ed61a1	CHANGES_REQUIRED	yes	docs/tasks/task-297-boss-hp-bar/audit.md	-
+2026-09-04T12:54:26Z	agent	Fix 1 (race + DOM-28)	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T12:54:26Z	agent	Fix 2 (EXT-01/02)	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T12:56:21Z	agent	Fix 2 (EXT-01/02)	task-implementer	sonnet	-	-	-	-	DONE	155594d18	-	-	-	-
+2026-09-04T12:56:22Z	agent	Fix 2 (EXT-01/02)	task-reviewer	sonnet	-	-	-	-	dispatched	155594d18	-	-	-	-
+2026-09-04T12:57:34Z	agent	Fix 1 (race + DOM-28)	task-implementer	sonnet	-	-	-	-	DONE	a5cfc423b	-	-	-	-
+2026-09-04T12:57:35Z	agent	Fix 1 (race + DOM-28)	task-reviewer	sonnet	-	-	-	-	dispatched	a5cfc423b	-	-	-	-
+2026-09-04T13:00:06Z	agent	Fix 1 (race + DOM-28)	task-reviewer	sonnet	-	-	-	-	DONE	a5cfc423b	APPROVED	no	.superpowers/sdd/plan/fix-1-review.md	-
+2026-09-04T13:00:29Z	agent	Fix 2 (EXT-01/02)	task-reviewer	sonnet	-	-	-	-	DONE	155594d18	APPROVED	no	.superpowers/sdd/plan/fix-2-review.md	-
+2026-09-04T13:08:55Z	agent	branch (flagless, post-fix)	verify.sh	-	-	-	-	-	PASS	a5cfc423b	-	-	-	-

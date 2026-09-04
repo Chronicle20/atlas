@@ -3,7 +3,6 @@ package conversation
 import (
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/petdata"
-	"atlas-npc-conversations/saga"
 	"context"
 	"testing"
 
@@ -17,6 +16,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 

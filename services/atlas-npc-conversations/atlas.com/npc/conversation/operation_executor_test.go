@@ -2,7 +2,6 @@ package conversation
 
 import (
 	"atlas-npc-conversations/conversation/quest/progress"
-	"atlas-npc-conversations/saga"
 	"context"
 	"errors"
 	"strings"
@@ -20,7 +19,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -486,7 +485,7 @@ func TestCreateSagaForOperations_DeduplicatesStepIds(t *testing.T) {
 	}
 }
 
-func stepIds(steps []sharedsaga.Step[any]) []string {
+func stepIds(steps []saga.Step[any]) []string {
 	out := make([]string, len(steps))
 	for i, s := range steps {
 		out[i] = s.StepId
@@ -623,7 +622,7 @@ func TestCreateStepForOperation_RebalanceAP_SingleTarget(t *testing.T) {
 	if len(p.Targets) != 1 {
 		t.Fatalf("expected 1 target, got %d", len(p.Targets))
 	}
-	if p.Targets[0].Stat != sharedsaga.RebalanceStatDexterity || p.Targets[0].Floor != 20 {
+	if p.Targets[0].Stat != saga.RebalanceStatDexterity || p.Targets[0].Floor != 20 {
 		t.Errorf("unexpected target: %+v", p.Targets[0])
 	}
 }
@@ -660,10 +659,10 @@ func TestCreateStepForOperation_RebalanceAP_MultiTarget(t *testing.T) {
 	if len(p.Targets) != 2 {
 		t.Fatalf("expected 2 targets, got %d", len(p.Targets))
 	}
-	if p.Targets[0].Stat != sharedsaga.RebalanceStatStrength || p.Targets[0].Floor != 20 {
+	if p.Targets[0].Stat != saga.RebalanceStatStrength || p.Targets[0].Floor != 20 {
 		t.Errorf("target[0] unexpected: %+v", p.Targets[0])
 	}
-	if p.Targets[1].Stat != sharedsaga.RebalanceStatDexterity || p.Targets[1].Floor != 20 {
+	if p.Targets[1].Stat != saga.RebalanceStatDexterity || p.Targets[1].Floor != 20 {
 		t.Errorf("target[1] unexpected: %+v", p.Targets[1])
 	}
 }

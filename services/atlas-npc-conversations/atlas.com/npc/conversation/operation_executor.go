@@ -6,7 +6,7 @@ import (
 	npcMap "atlas-npc-conversations/map"
 	"atlas-npc-conversations/pet"
 	"atlas-npc-conversations/petdata"
-	"atlas-npc-conversations/saga"
+	npcsaga "atlas-npc-conversations/saga"
 	savedlocation "atlas-npc-conversations/saved_location"
 	"atlas-npc-conversations/validation"
 	"context"
@@ -24,6 +24,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	scriptctx "github.com/Chronicle20/atlas/libs/atlas-script-core/context"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/ops"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -43,7 +44,7 @@ type OperationExecutorImpl struct {
 	l              logrus.FieldLogger
 	ctx            context.Context
 	t              tenant.Model
-	sagaP          saga.Processor
+	sagaP          npcsaga.Processor
 	petP           pet.Processor
 	petdataP       petdata.Processor
 	cosmeticP      cosmetic.Processor
@@ -61,7 +62,7 @@ func NewOperationExecutor(l logrus.FieldLogger, ctx context.Context) OperationEx
 		l:              l,
 		ctx:            ctx,
 		t:              t,
-		sagaP:          saga.NewProcessor(l, ctx),
+		sagaP:          npcsaga.NewProcessor(l, ctx),
 		petP:           pet.NewProcessor(l, ctx),
 		petdataP:       petdata.NewProcessor(l, ctx),
 		cosmeticP:      cosmetic.NewProcessor(l, ctx, appearanceProvider),

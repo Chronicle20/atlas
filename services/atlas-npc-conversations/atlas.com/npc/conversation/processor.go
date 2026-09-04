@@ -3,7 +3,7 @@ package conversation
 import (
 	"atlas-npc-conversations/message"
 	npcSender "atlas-npc-conversations/npc"
-	"atlas-npc-conversations/saga"
+	npcsaga "atlas-npc-conversations/saga"
 	"atlas-npc-conversations/validation"
 	"context"
 	"errors"
@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -76,18 +77,18 @@ func SetNpcConversationProviderFactory(factory NewProcessorFactory) {
 	npcConversationProviderFactory = factory
 }
 
-// SagaProcessorFactory is the factory function type for creating a saga.Processor.
-type SagaProcessorFactory func(l logrus.FieldLogger, ctx context.Context) saga.Processor
+// SagaProcessorFactory is the factory function type for creating a npcsaga.Processor.
+type SagaProcessorFactory func(l logrus.FieldLogger, ctx context.Context) npcsaga.Processor
 
-// sagaProcessorFactory defaults to saga.NewProcessor; tests may override via
-// SetSagaProcessorFactory to substitute a mock saga.Processor.
-var sagaProcessorFactory SagaProcessorFactory = saga.NewProcessor
+// sagaProcessorFactory defaults to npcsaga.NewProcessor; tests may override via
+// SetSagaProcessorFactory to substitute a mock npcsaga.Processor.
+var sagaProcessorFactory SagaProcessorFactory = npcsaga.NewProcessor
 
 // SetSagaProcessorFactory overrides the saga processor factory (for tests).
-// Passing nil restores the default (saga.NewProcessor).
+// Passing nil restores the default (npcsaga.NewProcessor).
 func SetSagaProcessorFactory(factory SagaProcessorFactory) {
 	if factory == nil {
-		sagaProcessorFactory = saga.NewProcessor
+		sagaProcessorFactory = npcsaga.NewProcessor
 		return
 	}
 	sagaProcessorFactory = factory
@@ -869,7 +870,7 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 	}
 
 	if len(conditions) > 0 {
-		validatePayload := saga.ValidateCharacterStatePayload{
+		validatePayload := npcsaga.ValidateCharacterStatePayload{
 			CharacterId: ctx.CharacterId(),
 			Conditions:  conditions,
 		}
@@ -913,7 +914,7 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 	s := sagaBuilder.Build()
 
 	// Send saga to orchestrator
-	err = saga.NewProcessor(p.l, p.ctx).Create(s)
+	err = npcsaga.NewProcessor(p.l, p.ctx).Create(s)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create crafting saga")
 		return craftAction.FailureState(), nil
@@ -975,7 +976,7 @@ func (p *ProcessorImpl) processTransportActionState(ctx ConversationContext, sta
 	s := sagaBuilder.Build()
 
 	// Send saga to orchestrator
-	err := saga.NewProcessor(p.l, p.ctx).Create(s)
+	err := npcsaga.NewProcessor(p.l, p.ctx).Create(s)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create transport saga")
 		return transportAction.FailureState(), nil
@@ -1043,7 +1044,7 @@ func (p *ProcessorImpl) processPartyQuestActionState(ctx ConversationContext, st
 	s := sagaBuilder.Build()
 
 	// Send saga to orchestrator
-	err := saga.NewProcessor(p.l, p.ctx).Create(s)
+	err := npcsaga.NewProcessor(p.l, p.ctx).Create(s)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create party quest saga")
 		return partyQuestAction.FailureState(), nil
@@ -1104,7 +1105,7 @@ func (p *ProcessorImpl) processPartyQuestBonusActionState(ctx ConversationContex
 	s := sagaBuilder.Build()
 
 	// Send saga to orchestrator
-	err := saga.NewProcessor(p.l, p.ctx).Create(s)
+	err := npcsaga.NewProcessor(p.l, p.ctx).Create(s)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create party quest bonus saga")
 		return bonusAction.FailureState(), nil
@@ -1169,7 +1170,7 @@ func (p *ProcessorImpl) processGachaponActionState(ctx ConversationContext, stat
 
 	s := sagaBuilder.Build()
 
-	err := saga.NewProcessor(p.l, p.ctx).Create(s)
+	err := npcsaga.NewProcessor(p.l, p.ctx).Create(s)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create gachapon saga")
 		return gachaponAction.FailureState(), nil

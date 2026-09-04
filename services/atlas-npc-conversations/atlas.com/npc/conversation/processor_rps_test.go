@@ -1,7 +1,7 @@
 package conversation
 
 import (
-	sharedsaga "atlas-npc-conversations/saga"
+	npcsaga "atlas-npc-conversations/saga"
 	"context"
 	"errors"
 	"testing"
@@ -15,10 +15,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// capturingSagaProcessor is a test double for sharedsaga.Processor that
+// capturingSagaProcessor is a test double for npcsaga.Processor that
 // records the Saga passed to Create and returns a canned error (nil for success).
 type capturingSagaProcessor struct {
 	created []sharedsaga.Saga
@@ -73,7 +74,7 @@ func TestProcessRPSActionState_BuildsEntrySagaAndParks(t *testing.T) {
 	p, tctx := newRPSTestProcessor(t)
 
 	mock := &capturingSagaProcessor{}
-	SetSagaProcessorFactory(func(l logrus.FieldLogger, ctx context.Context) sharedsaga.Processor {
+	SetSagaProcessorFactory(func(l logrus.FieldLogger, ctx context.Context) npcsaga.Processor {
 		return mock
 	})
 	defer SetSagaProcessorFactory(nil)
@@ -173,7 +174,7 @@ func TestProcessRPSActionState_SagaCreateFailureRoutesToFailureState(t *testing.
 	p, _ := newRPSTestProcessor(t)
 
 	mock := &capturingSagaProcessor{err: errors.New("orchestrator unreachable")}
-	SetSagaProcessorFactory(func(l logrus.FieldLogger, ctx context.Context) sharedsaga.Processor {
+	SetSagaProcessorFactory(func(l logrus.FieldLogger, ctx context.Context) npcsaga.Processor {
 		return mock
 	})
 	defer SetSagaProcessorFactory(nil)

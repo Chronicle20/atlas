@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"atlas-query-aggregator/area_info"
 	"atlas-query-aggregator/buddy"
 	"atlas-query-aggregator/buff"
 	"atlas-query-aggregator/character"
@@ -55,6 +56,7 @@ type ValidationContext struct {
 	partyQuestP party_quest.Processor
 	mbP         monsterbook.Processor
 	playerNpcP  playernpc.Processor
+	areaInfoP   area_info.Processor
 	l           logrus.FieldLogger
 	ctx         context.Context
 }
@@ -78,6 +80,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		partyQuestP: nil,
 		mbP:         nil,
 		playerNpcP:  nil,
+		areaInfoP:   nil,
 		l:           nil,
 		ctx:         nil,
 	}
@@ -102,6 +105,7 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 		partyQuestP: party_quest.NewProcessor(l, ctx),
 		mbP:         monsterbook.NewProcessor(l, ctx),
 		playerNpcP:  playernpc.NewProcessor(l, ctx),
+		areaInfoP:   area_info.NewProcessor(l, ctx),
 		l:           l,
 		ctx:         ctx,
 	}
@@ -364,6 +368,28 @@ func (ctx ValidationContext) GetTransportState(mapId _map.Id) string {
 	return route.State()
 }
 
+// GetAreaInfo returns the character's stored area-info string for area, or ""
+// when unset or unavailable. Degrades to "" rather than erroring, matching
+// GetTransportState's posture.
+func (ctx ValidationContext) GetAreaInfo(area uint16) string {
+	if ctx.areaInfoP == nil {
+		if ctx.l != nil {
+			ctx.l.Warnf("Area info processor not available, returning '' for area [%d]", area)
+		}
+		return ""
+	}
+
+	m, err := ctx.areaInfoP.GetByArea(ctx.character.Id(), area)
+	if err != nil {
+		if ctx.l != nil {
+			ctx.l.WithError(err).Debugf("Failed to get area info for area [%d], using ''", area)
+		}
+		return ""
+	}
+
+	return m.Info()
+}
+
 // GetPlayerNpcEligibility returns the canSpawnPlayerNpc predicate (design
 // §9.1) for the context's character on the given map, calling
 // atlas-player-npcs' eligibility endpoint through the injected playernpc
@@ -421,6 +447,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
 		playerNpcP:  ctx.playerNpcP,
+		areaInfoP:   ctx.areaInfoP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -452,6 +479,7 @@ func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
 		playerNpcP:  ctx.playerNpcP,
+		areaInfoP:   ctx.areaInfoP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -477,6 +505,7 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
 		playerNpcP:  ctx.playerNpcP,
+		areaInfoP:   ctx.areaInfoP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -502,6 +531,7 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
 		playerNpcP:  ctx.playerNpcP,
+		areaInfoP:   ctx.areaInfoP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -527,6 +557,7 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		partyQuestP: ctx.partyQuestP,
 		mbP:         ctx.mbP,
 		playerNpcP:  ctx.playerNpcP,
+		areaInfoP:   ctx.areaInfoP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}

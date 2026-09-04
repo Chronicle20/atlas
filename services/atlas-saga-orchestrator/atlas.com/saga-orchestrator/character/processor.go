@@ -25,6 +25,8 @@ type Processor interface {
 	WarpRandom(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model) error
 	WarpToPortalAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 	WarpToPortal(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
+	WarpToMapAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error
+	WarpToMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error
 	AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
 	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
 	DeductExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error
@@ -100,6 +102,24 @@ func (p *ProcessorImpl) WarpToPortal(mb *message.Buffer) func(transactionId uuid
 			return err
 		}
 		return mb.Put(character2.EnvCommandTopic, ChangeMapProvider(transactionId, characterId, field, portalId))
+	}
+}
+
+// WarpToMapAndEmit warps a character to a map without naming a portal. The
+// destination is resolved as a random player spawn point of that map, matching
+// Cosmic's warpAhead/getRandomPlayerSpawnpoint (task-290 G1a) — WarpRandom
+// already does exactly this via portal.Processor's spawn-point filter, so
+// WarpToMap only rebuilds the field from its components and delegates to it.
+func (p *ProcessorImpl) WarpToMapAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.WarpToMap(mb)(transactionId, characterId, worldId, channelId, mapId)
+	})
+}
+
+func (p *ProcessorImpl) WarpToMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+	return func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+		f := field.NewBuilder(worldId, channelId, mapId).Build()
+		return p.WarpRandom(mb)(transactionId, characterId, f)
 	}
 }
 

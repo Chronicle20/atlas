@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Boss map 677000009 - spawns Valefor (9400613) at (251, -841) and announces it",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "spawn_boss",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9400613",
+                "spawnIfAbsent": "true",
+                "x": "251",
+                "y": "-841"
+              },
+              "type": "spawn_monster"
+            },
+            {
+              "params": {
+                "message": "Valefor has appeared!"
+              },
+              "type": "drop_message"
+            }
+          ]
+        }
+      ],
+      "scriptName": "677000009"
+    },
+    "id": "677000009",
+    "type": "map-action"
+  }
+}

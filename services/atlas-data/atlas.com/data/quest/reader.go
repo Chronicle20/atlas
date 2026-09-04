@@ -156,6 +156,15 @@ func readRequirements(n *xml.Node) RequirementsRestModel {
 		}
 	}
 
+	// Read infoEx. Unlike dayOfWeek's flat string list, each entry is its own
+	// indexed imgdir holding a "value" string node (Cosmic
+	// InfoExRequirement#processData: infoEx.getChildByPath("value")).
+	if infoExNode, err := n.ChildByName("infoEx"); err == nil {
+		for _, en := range infoExNode.ChildNodes {
+			req.InfoEx = append(req.InfoEx, en.GetString("value", ""))
+		}
+	}
+
 	// Read job requirements
 	if jobNode, err := n.ChildByName("job"); err == nil {
 		for _, jn := range jobNode.IntegerNodes {

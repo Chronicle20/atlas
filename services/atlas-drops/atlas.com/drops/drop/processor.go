@@ -57,6 +57,10 @@ type Processor interface {
 	// ExpireAndEmit expires a drop and emits a Kafka message
 	ExpireAndEmit(m Model) error
 
+	// ClearForField removes every drop on the given field, emitting the same
+	// removal event Expire would for each one, and returns the number removed.
+	ClearForField(f field.Model) (int, error)
+
 	// GetById gets a drop by ID
 	GetById(dropId uint32) (Model, error)
 	// GetForMap gets all drops for a map
@@ -305,6 +309,35 @@ func (p *ProcessorImpl) ExpireAndEmit(m Model) error {
 	return message.Emit(producerProvider)(func(mb *message.Buffer) error {
 		return p.Expire(mb)(m)
 	})
+}
+
+// ClearForField removes every drop on the given field. Cosmic's no-arg
+// MapleMap.clearDrops() is whole-map, not owner-filtered (task-290 G5); this
+// mirrors that by removing every drop through the same path Expire uses, so
+// each removal still emits the client-facing event.
+func (p *ProcessorImpl) ClearForField(f field.Model) (int, error) {
+	ds, err := p.GetForMap(f)
+	if err != nil {
+		return 0, err
+	}
+
+	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
+	count := 0
+	var firstErr error
+	_ = message.Emit(producerProvider)(func(mb *message.Buffer) error {
+		for _, d := range ds {
+			if err := p.Expire(mb)(d); err != nil {
+				p.l.WithError(err).Errorf("Unable to clear drop [%d] from field.", d.Id())
+				if firstErr == nil {
+					firstErr = err
+				}
+				continue
+			}
+			count++
+		}
+		return nil
+	})
+	return count, firstErr
 }
 
 // GetById gets a drop by ID

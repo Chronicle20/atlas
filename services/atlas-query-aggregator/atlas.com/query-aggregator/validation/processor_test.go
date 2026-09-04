@@ -16,6 +16,10 @@ import (
 	questMock "atlas-query-aggregator/quest/mock"
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -807,5 +811,64 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 				t.Errorf("Validation details count = %v, want %v", len(result.Details()), tt.wantDetailsCount)
 			}
 		})
+	}
+}
+
+// TestProcessorValidateStructuredAreaInfo enters through ValidateStructured — the
+// only entry point atlas-map-actions' REST client reaches via POST /validations —
+// rather than calling Condition.EvaluateWithContext directly. It pins that
+// requiresContextPath routes an areaInfo condition to the ValidationContext path
+// instead of falling into Evaluate's context-less default branch, which
+// unconditionally fails every areaInfo condition with "Unsupported condition
+// type: areaInfo" regardless of the character's stored area-info state.
+func TestProcessorValidateStructuredAreaInfo(t *testing.T) {
+	logger := testLogger()
+	const characterId = uint32(123)
+	const area = uint16(1010)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, fmt.Sprintf("/characters/%d/area-info/%d", characterId, area)) {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = io.WriteString(w, fmt.Sprintf(`{"data":{"type":"area-infos","id":"1","attributes":{"characterId":%d,"area":%d,"info":"miss=o;arr=o"}}}`, characterId, area))
+	}))
+	t.Cleanup(srv.Close)
+	// area_info's getBaseRequest resolves via requests.RootUrlFor(ctx, "CHARACTER_URL"),
+	// which env-var-overrides on strings.ToUpper(domain)+"_SERVICE_URL". Trailing
+	// slash matters: area_info requests.go formats "<base>characters/%d/area-info/%d".
+	t.Setenv("CHARACTER_URL_SERVICE_URL", srv.URL+"/")
+
+	mockCharProcessor := &mock.ProcessorImpl{}
+	mockCharProcessor.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+		return func(characterId uint32) (character.Model, error) {
+			return character.NewBuilder().SetId(characterId).Build()
+		}
+	}
+
+	processor := &ProcessorImpl{
+		l:                  logger,
+		ctx:                context.Background(),
+		characterProcessor: mockCharProcessor,
+	}
+
+	conditions := []ConditionInput{
+		{Type: string(AreaInfoCondition), Operator: "=", Value: 1, ReferenceId: uint32(area), ValueString: "miss=o"},
+	}
+
+	result, err := processor.ValidateStructured()(characterId, conditions)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if len(result.Details()) != 1 {
+		t.Fatalf("Validation details count = %v, want 1", len(result.Details()))
+	}
+	if strings.Contains(result.Details()[0], "Unsupported condition type") {
+		t.Fatalf("areaInfo condition fell through to the context-less default branch: %q", result.Details()[0])
+	}
+	if !result.Passed() {
+		t.Errorf("Validation passed = %v, want true (stored area-info %q contains %q); details: %v", result.Passed(), "miss=o;arr=o", "miss=o", result.Details())
 	}
 }

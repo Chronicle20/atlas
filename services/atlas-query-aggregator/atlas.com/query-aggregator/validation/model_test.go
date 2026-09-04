@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"atlas-query-aggregator/area_info"
 	"atlas-query-aggregator/asset"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/compartment"
@@ -12,6 +13,7 @@ import (
 	"atlas-query-aggregator/monsterbook"
 	"atlas-query-aggregator/playernpc"
 	"atlas-query-aggregator/quest"
+	"atlas-query-aggregator/transport"
 	"context"
 	"errors"
 	"fmt"
@@ -101,6 +103,26 @@ func (f *fakePlayerNpcProcessor) GetEligibility(characterId uint32, mapId _map.I
 		return playernpc.EligibilityModel{}, f.err
 	}
 	return playernpc.NewEligibilityModel(f.eligible, f.reason), nil
+}
+
+// fakeTransportProcessor satisfies the transport.Processor interface for
+// tests. Tests set state to simulate the route state atlas-transports would
+// report for the given start map.
+type fakeTransportProcessor struct {
+	state string
+	err   error
+}
+
+func (f *fakeTransportProcessor) GetRouteByStartMap(mapId _map.Id) (transport.Model, error) {
+	if f.err != nil {
+		return transport.Model{}, f.err
+	}
+	return transport.Extract(transport.RestModel{
+		Id:         "00000000-0000-0000-0000-000000000001",
+		Name:       "test-route",
+		State:      f.state,
+		StartMapId: mapId,
+	})
 }
 
 func TestCondition_Evaluate(t *testing.T) {
@@ -2382,4 +2404,248 @@ func TestCanSpawnPlayerNpcCondition(t *testing.T) {
 			t.Errorf("err = %q, want the referenceId-required message", err.Error())
 		}
 	})
+}
+
+// TestTransportInTransitCondition exercises the transportInTransit condition
+// (G1b) against all five route states. It is true only for in_transit — the
+// takeoff..arrived window — and deliberately not the negation of
+// transportAvailable, which is also false for out_of_service and
+// awaiting_return (task-290 design F2).
+func TestTransportInTransitCondition(t *testing.T) {
+	char, err := character.NewBuilder().SetId(123).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
+
+	states := []struct {
+		name  string
+		state string
+	}{
+		{"out_of_service", "out_of_service"},
+		{"awaiting_return", "awaiting_return"},
+		{"open_entry", "open_entry"},
+		{"locked_entry", "locked_entry"},
+		{"in_transit", "in_transit"},
+		{"unknown", "unknown"},
+	}
+
+	t.Run("value=1 (in transit)", func(t *testing.T) {
+		expectPassed := map[string]bool{
+			"out_of_service":  false,
+			"awaiting_return": false,
+			"open_entry":      false,
+			"locked_entry":    false,
+			"in_transit":      true,
+			"unknown":         false,
+		}
+
+		for _, tc := range states {
+			t.Run(tc.name, func(t *testing.T) {
+				ctx := ValidationContext{
+					character:  char,
+					transportP: &fakeTransportProcessor{state: tc.state},
+				}
+
+				cond := Condition{
+					conditionType: TransportInTransitCondition,
+					operator:      Equals,
+					value:         1,
+					referenceId:   200090000,
+				}
+
+				result := cond.EvaluateWithContext(ctx)
+				if result.Passed != expectPassed[tc.name] {
+					t.Errorf("state %q: Passed = %v, want %v (%s)", tc.state, result.Passed, expectPassed[tc.name], result.Description)
+				}
+			})
+		}
+	})
+
+	t.Run("value=0 (not in transit, i.e. Cosmic's docked==false predicate)", func(t *testing.T) {
+		expectPassed := map[string]bool{
+			"out_of_service":  true,
+			"awaiting_return": true,
+			"open_entry":      true,
+			"locked_entry":    true,
+			"in_transit":      false,
+			"unknown":         true,
+		}
+
+		for _, tc := range states {
+			t.Run(tc.name, func(t *testing.T) {
+				ctx := ValidationContext{
+					character:  char,
+					transportP: &fakeTransportProcessor{state: tc.state},
+				}
+
+				cond := Condition{
+					conditionType: TransportInTransitCondition,
+					operator:      Equals,
+					value:         0,
+					referenceId:   200090000,
+				}
+
+				result := cond.EvaluateWithContext(ctx)
+				if result.Passed != expectPassed[tc.name] {
+					t.Errorf("state %q: Passed = %v, want %v (%s)", tc.state, result.Passed, expectPassed[tc.name], result.Description)
+				}
+			})
+		}
+	})
+}
+
+// TestTransportInTransitRequiresReferenceId ensures the builder rejects a
+// transportInTransit condition with no referenceId, mirroring
+// transportAvailable's validation.
+func TestTransportInTransitRequiresReferenceId(t *testing.T) {
+	_, err := NewConditionBuilder().FromInput(ConditionInput{
+		Type:     string(TransportInTransitCondition),
+		Operator: "=",
+		Value:    1,
+	}).Build()
+	if err == nil {
+		t.Fatal("expected an error when referenceId is missing")
+	}
+	if err.Error() != "referenceId is required for transportInTransit conditions" {
+		t.Errorf("err = %q, want the referenceId-required message", err.Error())
+	}
+}
+
+// TestTransportInTransitAcceptedBySetType catches the builder.go:210
+// accepted-type omission design §3.6 warns about.
+func TestTransportInTransitAcceptedBySetType(t *testing.T) {
+	b := NewConditionBuilder().SetType("transportInTransit")
+	if err := b.err; err != nil {
+		t.Errorf("SetType(\"transportInTransit\") returned an error: %v", err)
+	}
+}
+
+// fakeAreaInfoProcessor is a test double for area_info.Processor, mirroring
+// fakeTransportProcessor's shape.
+type fakeAreaInfoProcessor struct {
+	info string
+	err  error
+}
+
+func (f *fakeAreaInfoProcessor) GetByArea(characterId uint32, area uint16) (area_info.Model, error) {
+	if f.err != nil {
+		return area_info.Model{}, f.err
+	}
+	return area_info.Extract(area_info.RestModel{
+		CharacterId: characterId,
+		Area:        area,
+		Info:        f.info,
+	})
+}
+
+// TestAreaInfoCondition pins Cosmic's containsAreaInfo semantics: a
+// substring test against the stored area-info string, not equality and not
+// a parse of "k=v;" pairs into a set (task-290 gap G12).
+func TestAreaInfoCondition(t *testing.T) {
+	char, err := character.NewBuilder().SetId(123).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		stored      string
+		valueString string
+		expect      bool
+	}{
+		{"exact match", "miss=o", "miss=o", true},
+		{"substring match within a larger stored string", "miss=o;arr=o;helper=clear", "miss=o", true},
+		{"no match", "miss=x", "miss=o", false},
+		{"empty stored", "", "miss=o", false},
+		{
+			// rienArrow guard after rienArrow ran: the stored string no
+			// longer contains "arr=o" (it's been cleared), so a substring
+			// check against "miss=o;helper=clear" must fail even though
+			// every individual key=value pair in valueString would be
+			// present if evaluated as a set membership test. Pins
+			// substring-not-parse.
+			"rienArrow guard after rienArrow ran",
+			"miss=o;arr=o;helper=clear",
+			"miss=o;helper=clear",
+			false,
+		},
+		{"partial substring across separator boundary", "miss=o;arr=o", "o;arr", true},
+		{"stored equals valueString with different case does not match (case sensitive)", "MISS=O", "miss=o", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := ValidationContext{
+				character: char,
+				areaInfoP: &fakeAreaInfoProcessor{info: tc.stored},
+			}
+
+			cond := Condition{
+				conditionType: AreaInfoCondition,
+				operator:      Equals,
+				value:         1,
+				referenceId:   101000000,
+				valueString:   tc.valueString,
+			}
+
+			result := cond.EvaluateWithContext(ctx)
+			if result.Passed != tc.expect {
+				t.Errorf("stored=%q valueString=%q: Passed = %v, want %v (%s)", tc.stored, tc.valueString, result.Passed, tc.expect, result.Description)
+			}
+
+			// Equality would also pass "exact match" and fail every
+			// substring-only case identically to expect here, so this
+			// table alone doesn't distinguish substring from equality.
+			// The "substring match within a larger stored string" and
+			// "partial substring across separator boundary" cases would
+			// FAIL under a strict `stored == valueString` implementation,
+			// which is the pin this test exists to provide.
+		})
+	}
+}
+
+// TestAreaInfoRequiresReferenceIdAndValueString ensures the builder rejects
+// an areaInfo condition missing either required field, with the exact
+// message design/plan specify.
+func TestAreaInfoRequiresReferenceIdAndValueString(t *testing.T) {
+	const wantMsg = "referenceId and valueString are required for areaInfo conditions"
+
+	t.Run("missing referenceId", func(t *testing.T) {
+		_, err := NewConditionBuilder().FromInput(ConditionInput{
+			Type:        string(AreaInfoCondition),
+			Operator:    "=",
+			Value:       1,
+			ValueString: "miss=o",
+		}).Build()
+		if err == nil {
+			t.Fatal("expected an error when referenceId is missing")
+		}
+		if err.Error() != wantMsg {
+			t.Errorf("err = %q, want %q", err.Error(), wantMsg)
+		}
+	})
+
+	t.Run("missing valueString", func(t *testing.T) {
+		_, err := NewConditionBuilder().FromInput(ConditionInput{
+			Type:        string(AreaInfoCondition),
+			Operator:    "=",
+			Value:       1,
+			ReferenceId: 101000000,
+		}).Build()
+		if err == nil {
+			t.Fatal("expected an error when valueString is missing")
+		}
+		if err.Error() != wantMsg {
+			t.Errorf("err = %q, want %q", err.Error(), wantMsg)
+		}
+	})
+}
+
+// TestAreaInfoAcceptedBySetType catches the builder.go accepted-type
+// omission design §3.6 warns about.
+func TestAreaInfoAcceptedBySetType(t *testing.T) {
+	b := NewConditionBuilder().SetType("areaInfo")
+	if err := b.err; err != nil {
+		t.Errorf("SetType(\"areaInfo\") returned an error: %v", err)
+	}
 }

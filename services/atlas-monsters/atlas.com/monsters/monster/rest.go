@@ -35,6 +35,7 @@ type RestModel struct {
 	NextEligibleRepickAtMs int64               `json:"nextEligibleRepickAtMs,omitempty"`
 	SpawnSourceType        string              `json:"spawnSourceType,omitempty"`
 	SpawnSourceId          string              `json:"spawnSourceId,omitempty"`
+	SpawnIfAbsent          bool                `json:"spawnIfAbsent,omitempty"`
 }
 
 type StatusEffectEntry struct {

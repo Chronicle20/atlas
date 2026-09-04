@@ -1,0 +1,113 @@
+{
+  "service": "task-290-cosmic-map-action-parity-shard1-recheck",
+  "path": "services/atlas-saga-orchestrator, libs/atlas-saga, services/atlas-quest, services/atlas-character",
+  "date": "2026-09-03",
+  "priorAudit": "docs/tasks/task-290-cosmic-map-action-parity/backend-audit-shard1/audit.md",
+  "priorRange": "3f37fe6da..9c2b9be13",
+  "recheckRange": "9c2b9be13..HEAD",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "findings": [
+    {
+      "id": "DOM-01",
+      "target": "services/atlas-character/atlas.com/character/area_info/builder.go:41-49",
+      "status": "closed",
+      "evidence": "Build() now returns (Model, error) and enforces characterId != 0."
+    },
+    {
+      "id": "DOM-01",
+      "target": "services/atlas-quest/atlas.com/quest/medal_map/builder.go:44-49",
+      "status": "still-open",
+      "evidence": "Build() unchanged, still non-validating. New BuildWithValidation() (builder.go:54-61) is dead code (only caller is entity.go:31 Make(), which itself has no caller). Write path administrator.go:14-28 recordIfAbsent builds entity{} directly, bypassing the builder entirely."
+    },
+    {
+      "id": "DOM-02/DOM-03",
+      "target": "services/atlas-character/atlas.com/character/area_info/entity.go:26-42",
+      "status": "closed",
+      "evidence": "Make() and ToEntity() added and used by provider.go/administrator.go."
+    },
+    {
+      "id": "DOM-02/DOM-03",
+      "target": "services/atlas-quest/atlas.com/quest/medal_map/entity.go:31-48",
+      "status": "closed-but-dead-code",
+      "evidence": "Make()/ToEntity() added but unused (pre-triaged non-regression per task brief)."
+    },
+    {
+      "id": "FILE-05",
+      "target": "services/atlas-character/atlas.com/character/area_info/administrator.go, provider.go",
+      "status": "closed",
+      "evidence": "administrator.go now write-only (upsert); readers moved to provider.go:8-30."
+    },
+    {
+      "id": "FILE-05",
+      "target": "services/atlas-quest/atlas.com/quest/medal_map/administrator.go, provider.go",
+      "status": "closed",
+      "evidence": "administrator.go now write-only (recordIfAbsent); provider.go:9-16 added holding countByCharacterAndQuest."
+    },
+    {
+      "id": "FILE-02/FILE-03/FILE-06",
+      "target": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/field/",
+      "status": "closed",
+      "evidence": "processor.go/rest.go/requests.go now cleanly split; verified by full read of all three files."
+    },
+    {
+      "id": "FILE-02/FILE-03/FILE-06",
+      "target": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/reactor/",
+      "status": "closed",
+      "evidence": "processor.go/rest.go/requests.go now cleanly split; verified by full read of all three files."
+    },
+    {
+      "id": "EXT-01",
+      "target": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/area_info/rest.go:26-30",
+      "status": "closed",
+      "evidence": "SetToOneReferenceID/SetToManyReferenceIDs added."
+    },
+    {
+      "id": "EXT-01",
+      "target": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/quest/medal_map_rest.go:50-54, quest_data_rest.go:36-40",
+      "status": "closed",
+      "evidence": "SetToOneReferenceID/SetToManyReferenceIDs added on both models."
+    },
+    {
+      "id": "EXT-01",
+      "target": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/npc_spawn/rest.go:55-60",
+      "status": "closed",
+      "evidence": "Stubs present; git blame attributes to c35e9e446, an ancestor of the prior audit's own reviewed commit 9c2b9be13 -- likely a prior-audit false positive, not a fix landed in this range. Current state closed either way."
+    },
+    {
+      "id": "EXT-02",
+      "target": "area_info, quest, field, npc_spawn, reactor (saga-orchestrator)",
+      "status": "closed",
+      "evidence": "All five packages gained top-level *_test.go using httptest.NewServer; all pass go test."
+    },
+    {
+      "id": "no-rule-id",
+      "target": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/handler.go With* methods (34 total)",
+      "status": "closed",
+      "evidence": "All 34 With* methods use shallow-copy form (c := *h; c.field = val; return &c); grep for &HandlerImpl{ in With* bodies returns zero. New 34-case regression test TestHandlerImpl_WithProcessorMethods_PreserveOtherFields (handler_test.go:2092+) covers all of them."
+    },
+    {
+      "id": "no-rule-id",
+      "target": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/event_acceptance_test.go:14-64 allActions",
+      "status": "closed",
+      "evidence": "All 11 new/changed Action constants now present in allActions."
+    },
+    {
+      "id": "DOM-20",
+      "target": "area_info/processor_test.go (character), medal_map/processor_test.go (quest), drops/drops_test.go, saga/handler_test.go (4 funcs), libs/atlas-saga/unmarshal_test.go (54 funcs)",
+      "status": "closed",
+      "evidence": "All now use tests := []struct{...} + t.Run; unmarshal_test.go verified programmatically 54/54."
+    }
+  ],
+  "newBlockingFromFixCommits": [],
+  "notEvaluable": [
+    "quest.processor.go strconv.Atoi(InfoEx[0]) fallback vs atlas-data's actual wire format: requires reading atlas-data, outside shard scope, unchanged by this range's commits",
+    "Repo-wide grep confirming no external caller relied on the pre-fix struct-copy behavior: moot now that the bug is closed, not independently re-verified"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-quest/atlas.com/quest/medal_map/builder.go:44-49 -- Build() itself still non-validating; BuildWithValidation() added instead is dead code, and the real write path bypasses the builder entirely."
+  ],
+  "nonBlocking": []
+}

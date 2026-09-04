@@ -6,6 +6,7 @@ import (
 	"atlas-query-aggregator/quest"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -48,6 +49,7 @@ const (
 	MapCapacityCondition            ConditionType = ConditionType(sharedsaga.MapCapacityCondition)
 	InventorySpaceCondition         ConditionType = ConditionType(sharedsaga.InventorySpaceCondition)
 	TransportAvailableCondition     ConditionType = ConditionType(sharedsaga.TransportAvailableCondition)
+	TransportInTransitCondition     ConditionType = ConditionType(sharedsaga.TransportInTransitCondition)
 	SkillLevelCondition             ConditionType = ConditionType(sharedsaga.SkillLevelCondition)
 	HpCondition                     ConditionType = ConditionType(sharedsaga.HpCondition)
 	MaxHpCondition                  ConditionType = ConditionType(sharedsaga.MaxHpCondition)
@@ -60,6 +62,7 @@ const (
 	MonsterBookCountCondition       ConditionType = ConditionType(sharedsaga.MonsterBookCountCondition)
 	PetTamenessCondition            ConditionType = ConditionType(sharedsaga.PetTamenessCondition)
 	CanSpawnPlayerNpcCondition      ConditionType = ConditionType(sharedsaga.CanSpawnPlayerNpcCondition)
+	AreaInfoCondition               ConditionType = ConditionType(sharedsaga.AreaInfoCondition)
 )
 
 // Operator represents the comparison operator in a condition
@@ -100,6 +103,7 @@ type Condition struct {
 	worldId         world.Id   // Used for mapCapacity conditions
 	channelId       channel.Id // Used for mapCapacity conditions
 	includeEquipped bool       // For item conditions: also check equipped items
+	valueString     string     // Used for areaInfo conditions
 }
 
 // Evaluate evaluates the condition against a character model
@@ -342,6 +346,16 @@ func (c Condition) Evaluate(l logrus.FieldLogger, ctx context.Context, character
 		if c.includeEquipped {
 			description = fmt.Sprintf("Item %d quantity (including equipped) %s %d", c.referenceId, c.operator, c.value)
 		}
+	case AreaInfoCondition:
+		// Area info validation requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Area %d Info validation requires ValidationContext", c.referenceId),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	default:
 		return ConditionResult{
 			Passed:      false,
@@ -539,6 +553,36 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			}
 			return "not available"
 		}(), state)
+
+	case TransportInTransitCondition:
+		// Get transport state for the specified start map
+		state := ctx.GetTransportState(_map.Id(c.referenceId))
+
+		// Map state to numeric value (in_transit=1, other=0)
+		if state == "in_transit" {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+
+		description = fmt.Sprintf("Transport for map %d is %s (state: %s)", c.referenceId, func() string {
+			if actualValue == 1 {
+				return "in transit"
+			}
+			return "not in transit"
+		}(), state)
+
+	case AreaInfoCondition:
+		// Cosmic's containsAreaInfo is a substring test against the stored
+		// area-info string, not equality and not a k=v pair parse.
+		stored := ctx.GetAreaInfo(uint16(c.referenceId))
+		if strings.Contains(stored, c.valueString) {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+
+		description = fmt.Sprintf("Area %d info contains %q (stored: %q)", c.referenceId, c.valueString, stored)
 
 	case CanSpawnPlayerNpcCondition:
 		// Delegate to the single eligibility predicate atlas-player-npcs

@@ -45,10 +45,16 @@ type jsonRule struct {
 
 // jsonCondition represents a condition in JSON format
 type jsonCondition struct {
-	Type        string `json:"type"`
-	Operator    string `json:"operator"`
-	Value       string `json:"value"`
-	ReferenceId string `json:"referenceId,omitempty"`
+	Type            string   `json:"type"`
+	Operator        string   `json:"operator"`
+	Value           string   `json:"value,omitempty"`
+	Values          []string `json:"values,omitempty"`
+	ReferenceId     string   `json:"referenceId,omitempty"`
+	Step            string   `json:"step,omitempty"`
+	WorldId         string   `json:"worldId,omitempty"`
+	ChannelId       string   `json:"channelId,omitempty"`
+	IncludeEquipped bool     `json:"includeEquipped,omitempty"`
+	ValueString     string   `json:"valueString,omitempty"`
 }
 
 // jsonOperation represents an operation in JSON format
@@ -108,10 +114,26 @@ func convertJsonCondition(jc jsonCondition) (condition.Model, error) {
 	builder := condition.NewBuilder().
 		SetType(jc.Type).
 		SetOperator(jc.Operator).
-		SetValue(jc.Value)
+		SetValue(jc.Value).
+		SetIncludeEquipped(jc.IncludeEquipped)
 
+	if len(jc.Values) > 0 {
+		builder.SetValues(jc.Values)
+	}
 	if jc.ReferenceId != "" {
 		builder.SetReferenceId(jc.ReferenceId)
+	}
+	if jc.Step != "" {
+		builder.SetStep(jc.Step)
+	}
+	if jc.WorldId != "" {
+		builder.SetWorldId(jc.WorldId)
+	}
+	if jc.ChannelId != "" {
+		builder.SetChannelId(jc.ChannelId)
+	}
+	if jc.ValueString != "" {
+		builder.SetValueString(jc.ValueString)
 	}
 
 	return builder.Build()
@@ -161,10 +183,16 @@ func convertRuleToJson(rule Rule) jsonRule {
 	conditions := make([]jsonCondition, 0, len(rule.Conditions()))
 	for _, cond := range rule.Conditions() {
 		conditions = append(conditions, jsonCondition{
-			Type:        cond.Type(),
-			Operator:    cond.Operator(),
-			Value:       cond.Value(),
-			ReferenceId: cond.ReferenceIdRaw(),
+			Type:            cond.Type(),
+			Operator:        cond.Operator(),
+			Value:           cond.Value(),
+			Values:          cond.Values(),
+			ReferenceId:     cond.ReferenceIdRaw(),
+			Step:            cond.Step(),
+			WorldId:         cond.WorldId(),
+			ChannelId:       cond.ChannelId(),
+			IncludeEquipped: cond.IncludeEquipped(),
+			ValueString:     cond.ValueString(),
 		})
 	}
 

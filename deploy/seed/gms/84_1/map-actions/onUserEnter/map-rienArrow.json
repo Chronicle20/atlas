@@ -1,0 +1,39 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Rien arrow tutorial - once the miss=o;helper=clear area info is present, records arr=o and shows the tutorialArrow3 guide effect",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "21019",
+              "type": "areaInfo",
+              "value": "1",
+              "valueString": "miss=o;helper=clear"
+            }
+          ],
+          "id": "advance_arrow_tutorial",
+          "operations": [
+            {
+              "params": {
+                "area": "21019",
+                "info": "miss=o;arr=o;helper=clear"
+              },
+              "type": "update_area_info"
+            },
+            {
+              "params": {
+                "path": "Effect/OnUserEff.img/guideEffect/aranTutorial/tutorialArrow3"
+              },
+              "type": "show_info"
+            }
+          ]
+        }
+      ],
+      "scriptName": "rienArrow"
+    },
+    "id": "rienArrow",
+    "type": "map-action"
+  }
+}

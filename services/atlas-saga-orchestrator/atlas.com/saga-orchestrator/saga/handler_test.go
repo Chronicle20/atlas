@@ -1,14 +1,20 @@
 package saga
 
 import (
+	areaInfoMock "atlas-saga-orchestrator/area_info/mock"
 	"atlas-saga-orchestrator/character/mock"
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
+	dataportal "atlas-saga-orchestrator/data/portal"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	"atlas-saga-orchestrator/map_command"
 	notemock "atlas-saga-orchestrator/note/mock"
+	"atlas-saga-orchestrator/npc_spawn"
 	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
+	questp "atlas-saga-orchestrator/quest"
+	questmock "atlas-saga-orchestrator/quest/mock"
+	systemMessageMock "atlas-saga-orchestrator/system_message/mock"
 	"atlas-saga-orchestrator/validation"
 	mock3 "atlas-saga-orchestrator/validation/mock"
 	"encoding/json"
@@ -344,6 +350,221 @@ func TestHandleWarpToRandomPortal(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestHandleWarpToMap(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       WarpToMapPayload
+		mockError     error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case",
+			payload: WarpToMapPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   1,
+				// Deliberately distinct from the map the character is
+				// standing in (100000000, used elsewhere in this file) so a
+				// payload.MapId/source-field mixup would fail this assertion
+				// (task-290 FIX-SEAM1 item 1).
+				MapId: 200000000,
+			},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Warp error",
+			payload: WarpToMapPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   1,
+				MapId:       200000000,
+			},
+			mockError:     errors.New("failed to warp"),
+			expectError:   true,
+			errorContains: "failed to warp",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup
+
+			charP := &mock.ProcessorMock{}
+
+			logger, _ := test.NewNullLogger()
+			logger.SetLevel(logrus.DebugLevel)
+
+			_, ctx := setupContext()
+
+			// Configure mock
+			charP.WarpToMapAndEmitFunc = func(transactionId uuid.UUID, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id) error {
+				// Verify parameters: the destination map reaching the
+				// character processor is the payload's target, not the map
+				// the character is already standing in.
+				assert.Equal(t, tt.payload.CharacterId, characterId)
+				assert.Equal(t, tt.payload.WorldId, worldId)
+				assert.Equal(t, tt.payload.ChannelId, channelId)
+				assert.Equal(t, tt.payload.MapId, mapId)
+
+				return tt.mockError
+			}
+
+			// Create test saga and step
+			transactionId := uuid.New()
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
+
+			step := NewStep[any]("test-step", Pending, WarpToMap, tt.payload)
+
+			// Execute
+			err = NewHandler(logger, ctx).WithCharacterProcessor(charP).handleWarpToMap(saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// footholdProcessorStub is a minimal hand-written foothold.Processor test
+// double; unlike the other collaborators in this file, foothold has no
+// moq-generated mock package.
+type footholdProcessorStub struct {
+	fh  uint32
+	err error
+}
+
+func (s footholdProcessorStub) GetFootholdBelow(_ _map.Id, _, _ int16) (uint32, error) {
+	return s.fh, s.err
+}
+
+// npcSpawnProcessorStub is a minimal hand-written npc_spawn.Processor test
+// double; unlike the other collaborators in this file, npc_spawn has no
+// moq-generated mock package.
+type npcSpawnProcessorStub struct {
+	fn func(f field.Model, req npc_spawn.SpawnRequest) error
+}
+
+func (s npcSpawnProcessorStub) SpawnNpc(f field.Model, req npc_spawn.SpawnRequest) error {
+	return s.fn(f, req)
+}
+
+func TestHandleSpawnNpc(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       SpawnNpcPayload
+		footholdId    uint32
+		footholdErr   error
+		spawnErr      error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case",
+			payload: SpawnNpcPayload{
+				CharacterId:   12345,
+				WorldId:       0,
+				ChannelId:     1,
+				MapId:         100000000,
+				Instance:      uuid.New(),
+				NpcId:         9010000,
+				X:             100,
+				Y:             200,
+				SpawnIfAbsent: true,
+			},
+			footholdId:  7,
+			expectError: false,
+		},
+		{
+			name: "Spawn error",
+			payload: SpawnNpcPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   1,
+				MapId:       100000000,
+				Instance:    uuid.New(),
+				NpcId:       9010000,
+				X:           100,
+				Y:           200,
+			},
+			footholdId:    7,
+			spawnErr:      errors.New("failed to spawn npc"),
+			expectError:   true,
+			errorContains: "failed to spawn npc",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			logger.SetLevel(logrus.DebugLevel)
+
+			_, ctx := setupContext()
+
+			footholdP := footholdProcessorStub{fh: tt.footholdId, err: tt.footholdErr}
+
+			var capturedField field.Model
+			var capturedReq npc_spawn.SpawnRequest
+			npcSpawnP := npcSpawnProcessorStub{fn: func(f field.Model, req npc_spawn.SpawnRequest) error {
+				capturedField = f
+				capturedReq = req
+				return tt.spawnErr
+			}}
+
+			// Create test saga and step
+			transactionId := uuid.New()
+			saga, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
+
+			step := NewStep[any]("test-step", Pending, SpawnNpc, tt.payload)
+
+			// Execute
+			err = NewHandler(logger, ctx).
+				WithFootholdProcessor(footholdP).
+				WithNpcSpawnProcessor(npcSpawnP).
+				handleSpawnNpc(saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// The payload's npc identity and position must reach the
+			// downstream call unchanged (task-290 FIX-SEAM1 item 2).
+			assert.Equal(t, tt.payload.WorldId, capturedField.WorldId())
+			assert.Equal(t, tt.payload.ChannelId, capturedField.ChannelId())
+			assert.Equal(t, tt.payload.MapId, capturedField.MapId())
+			assert.Equal(t, tt.payload.Instance, capturedField.Instance())
+			assert.Equal(t, tt.payload.NpcId, capturedReq.NpcId)
+			assert.Equal(t, tt.payload.X, capturedReq.X)
+			assert.Equal(t, tt.payload.Y, capturedReq.Y)
+			assert.Equal(t, int16(tt.footholdId), capturedReq.Fh)
+			assert.Equal(t, tt.payload.SpawnIfAbsent, capturedReq.SpawnIfAbsent)
 		})
 	}
 }
@@ -2035,6 +2256,348 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "atlas-maps unreachable")
 	})
+}
+
+// TestHandleUpdateAreaInfo asserts handleUpdateAreaInfo persists the area
+// info through areaInfoP before announcing it through systemMessageP
+// (task-290 G12) -- a client that re-reads the value immediately after the
+// packet must see the stored one.
+func TestHandleUpdateAreaInfo(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "handle update area info persists then announces"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			_, ctx := setupContext()
+
+			var calls []string
+
+			areaInfoP := &areaInfoMock.ProcessorMock{
+				PutFunc: func(characterId uint32, area uint16, info string) error {
+					calls = append(calls, "persist")
+					assert.Equal(t, uint32(12345), characterId)
+					assert.Equal(t, uint16(21019), area)
+					assert.Equal(t, "miss=o;helper=clear", info)
+					return nil
+				},
+			}
+			systemMessageP := &systemMessageMock.ProcessorMock{
+				UpdateAreaInfoFunc: func(transactionId uuid.UUID, ch channel.Model, characterId uint32, area uint16, info string) error {
+					calls = append(calls, "announce")
+					assert.Equal(t, uint32(12345), characterId)
+					assert.Equal(t, uint16(21019), area)
+					assert.Equal(t, "miss=o;helper=clear", info)
+					return nil
+				},
+			}
+
+			s, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
+
+			step := NewStep[any]("update-area-info", Pending, UpdateAreaInfo, UpdateAreaInfoPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   0,
+				Area:        21019,
+				Info:        "miss=o;helper=clear",
+			})
+
+			// WithAreaInfoProcessor is applied last: it uses the shallow-copy form
+			// (see its doc comment), which preserves every field already set, unlike
+			// the field-by-field With* siblings.
+			err = NewHandler(logger, ctx).
+				WithSystemMessageProcessor(systemMessageP).
+				WithAreaInfoProcessor(areaInfoP).
+				handleUpdateAreaInfo(s, step)
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"persist", "announce"}, calls)
+		})
+	}
+}
+
+// TestHandleExplorerQuest_Routing verifies ExplorerQuest is registered in
+// GetHandler's routing table and, entering through that table (not by
+// calling handleExplorerQuest directly), that it invokes
+// quest.Processor.RequestExplorerQuest with the payload's fields (task-290
+// G14). This is the C20 defect class check: a routing-table omission builds
+// and unit-tests clean while being unreachable in production.
+func TestHandleExplorerQuest_Routing(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "explorer quest is routed through GetHandler"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			_, ctx := setupContext()
+
+			var calls []string
+			questP := &questmock.ProcessorMock{
+				RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
+					calls = append(calls, "explorer")
+					assert.Equal(t, world.Id(1), worldId)
+					assert.Equal(t, uint32(12345), characterId)
+					assert.Equal(t, uint32(29700), questId)
+					assert.Equal(t, uint32(101000000), mapId)
+					return questp.ExplorerQuestResult{}, nil
+				},
+			}
+
+			s, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
+
+			step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+				CharacterId: 12345,
+				WorldId:     1,
+				ChannelId:   0,
+				QuestId:     29700,
+				MapId:       _map.Id(101000000),
+				AreaName:    "Ellinia",
+			})
+
+			h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+
+			actionHandler, ok := h.GetHandler(ExplorerQuest)
+			require.True(t, ok, "ExplorerQuest handler not registered")
+
+			err = actionHandler(s, step)
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"explorer"}, calls)
+		})
+	}
+}
+
+// TestHandleExplorerQuest_WritesProgressWhenNewlyRecorded verifies that when
+// RequestExplorerQuest reports the medal map was newly recorded, the handler
+// writes the resulting count as quest progress under the resolved
+// infoNumber (task-290 C22b, mirroring Cosmic's
+// `getPlayer().setQuestProgress(quest.getId(), (int)quest.getInfoNumber(qs.getStatus()), status)`,
+// MapScriptMethods.java:124).
+func TestHandleExplorerQuest_WritesProgressWhenNewlyRecorded(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "writes progress when newly recorded"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			_, ctx := setupContext()
+
+			var calls []string
+			questP := &questmock.ProcessorMock{
+				RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
+					calls = append(calls, "explorer")
+					return questp.ExplorerQuestResult{Count: 3, NewlyRecorded: true, InfoNumber: 10024, Threshold: 5}, nil
+				},
+				RequestUpdateProgressFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error {
+					calls = append(calls, "progress")
+					assert.Equal(t, world.Id(1), worldId)
+					assert.Equal(t, uint32(12345), characterId)
+					assert.Equal(t, uint32(29700), questId)
+					assert.Equal(t, uint32(10024), infoNumber)
+					assert.Equal(t, "3", progress)
+					return nil
+				},
+			}
+
+			s, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
+
+			step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+				CharacterId: 12345,
+				WorldId:     1,
+				ChannelId:   0,
+				QuestId:     29700,
+				MapId:       _map.Id(101000000),
+				AreaName:    "Ellinia",
+			})
+
+			h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+
+			actionHandler, ok := h.GetHandler(ExplorerQuest)
+			require.True(t, ok, "ExplorerQuest handler not registered")
+
+			err = actionHandler(s, step)
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"explorer", "progress"}, calls)
+		})
+	}
+}
+
+// TestHandleExplorerQuest_SkipsProgressWhenNotNewlyRecorded verifies that
+// re-entering an already-recorded map (RequestExplorerQuest reports
+// NewlyRecorded=false) does not write quest progress, mirroring Cosmic's
+// `if (!qs.addMedalMap(...)) return;` early return (MapScriptMethods.java:
+// 116-118).
+func TestHandleExplorerQuest_SkipsProgressWhenNotNewlyRecorded(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "skips progress when not newly recorded"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := test.NewNullLogger()
+			_, ctx := setupContext()
+
+			var calls []string
+			questP := &questmock.ProcessorMock{
+				RequestExplorerQuestFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, mapId uint32) (questp.ExplorerQuestResult, error) {
+					calls = append(calls, "explorer")
+					return questp.ExplorerQuestResult{Count: 3, NewlyRecorded: false}, nil
+				},
+				RequestUpdateProgressFunc: func(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, infoNumber uint32, progress string) error {
+					calls = append(calls, "progress")
+					return nil
+				},
+			}
+
+			s, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(QuestReward).
+				SetInitiatedBy("test").
+				Build()
+			require.NoError(t, err)
+
+			step := NewStep[any]("explorer-quest", Pending, ExplorerQuest, ExplorerQuestPayload{
+				CharacterId: 12345,
+				WorldId:     1,
+				ChannelId:   0,
+				QuestId:     29700,
+				MapId:       _map.Id(101000000),
+				AreaName:    "Ellinia",
+			})
+
+			h := NewHandler(logger, ctx).WithQuestProcessor(questP)
+
+			actionHandler, ok := h.GetHandler(ExplorerQuest)
+			require.True(t, ok, "ExplorerQuest handler not registered")
+
+			err = actionHandler(s, step)
+			require.NoError(t, err)
+
+			require.Equal(t, []string{"explorer"}, calls)
+		})
+	}
+}
+
+// TestHandlerImpl_WithProcessorMethods_PreserveOtherFields is a regression test
+// for the struct-copy bug fixed in task-290 FIX-BE1A: several With*Processor
+// builder methods constructed a fresh HandlerImpl containing only the field
+// they set, silently dropping every other field of the receiver. Every
+// With*Processor method is exercised here by chaining two builder calls and
+// asserting the field set by the first call is still present after the
+// second call runs.
+func TestHandlerImpl_WithProcessorMethods_PreserveOtherFields(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx1 := setupContext()
+	_, ctx2 := setupContext()
+
+	base := NewHandler(logger, ctx1).(*HandlerImpl)
+	other := NewHandler(logger, ctx2).(*HandlerImpl)
+	// portalP is not populated by NewHandler, so build a distinct value for it directly.
+	portalOther := dataportal.NewProcessor(logger, ctx2)
+
+	type withCase struct {
+		name   string
+		apply  func(h *HandlerImpl) *HandlerImpl
+		get    func(h *HandlerImpl) interface{}
+		want   interface{}
+		anchor string // field preset by a prior builder call, other than the target field
+	}
+
+	cases := []withCase{
+		{"WithCharacterProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithCharacterProcessor(other.charP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.charP }, other.charP, "areaInfoP"},
+		{"WithCompartmentProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithCompartmentProcessor(other.compP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.compP }, other.compP, "areaInfoP"},
+		{"WithSkillProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithSkillProcessor(other.skillP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.skillP }, other.skillP, "areaInfoP"},
+		{"WithValidationProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithValidationProcessor(other.validP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.validP }, other.validP, "areaInfoP"},
+		{"WithGuildProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithGuildProcessor(other.guildP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.guildP }, other.guildP, "areaInfoP"},
+		{"WithInviteProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithInviteProcessor(other.inviteP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.inviteP }, other.inviteP, "areaInfoP"},
+		{"WithBuddyListProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithBuddyListProcessor(other.buddyListP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.buddyListP }, other.buddyListP, "areaInfoP"},
+		{"WithPetProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithPetProcessor(other.petP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.petP }, other.petP, "areaInfoP"},
+		{"WithFootholdProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithFootholdProcessor(other.footholdP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.footholdP }, other.footholdP, "areaInfoP"},
+		{"WithMonsterProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithMonsterProcessor(other.monsterP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.monsterP }, other.monsterP, "areaInfoP"},
+		{"WithConsumableProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithConsumableProcessor(other.consumableP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.consumableP }, other.consumableP, "areaInfoP"},
+		{"WithPortalProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithPortalProcessor(portalOther).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.portalP }, portalOther, "areaInfoP"},
+		{"WithPortalBlockingProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithPortalBlockingProcessor(other.portalBlockingP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.portalBlockingP }, other.portalBlockingP, "areaInfoP"},
+		{"WithCashshopProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithCashshopProcessor(other.cashshopP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.cashshopP }, other.cashshopP, "areaInfoP"},
+		{"WithMtsProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithMtsProcessor(other.mtsP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.mtsP }, other.mtsP, "areaInfoP"},
+		{"WithParcelProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithParcelProcessor(other.parcelP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.parcelP }, other.parcelP, "areaInfoP"},
+		{"WithTradeProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithTradeProcessor(other.tradeP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.tradeP }, other.tradeP, "areaInfoP"},
+		{"WithSystemMessageProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithSystemMessageProcessor(other.systemMessageP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.systemMessageP }, other.systemMessageP, "areaInfoP"},
+		{"WithQuestProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithQuestProcessor(other.questP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.questP }, other.questP, "areaInfoP"},
+		{"WithStorageProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithStorageProcessor(other.storageP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.storageP }, other.storageP, "areaInfoP"},
+		{"WithBuffProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithBuffProcessor(other.buffP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.buffP }, other.buffP, "areaInfoP"},
+		{"WithTransportProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithTransportProcessor(other.transportP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.transportP }, other.transportP, "areaInfoP"},
+		{"WithSavedLocationProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithSavedLocationProcessor(other.savedLocationP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.savedLocationP }, other.savedLocationP, "areaInfoP"},
+		{"WithGachaponProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithGachaponProcessor(other.gachaponP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.gachaponP }, other.gachaponP, "areaInfoP"},
+		{"WithPartyQuestProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithPartyQuestProcessor(other.partyQuestP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.partyQuestP }, other.partyQuestP, "areaInfoP"},
+		{"WithReactorProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithReactorProcessor(other.reactorP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.reactorP }, other.reactorP, "areaInfoP"},
+		{"WithPartyProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithPartyProcessor(other.partyP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.partyP }, other.partyP, "areaInfoP"},
+		{"WithPendingChangeProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithPendingChangeProcessor(other.pendingChangeP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.pendingChangeP }, other.pendingChangeP, "areaInfoP"},
+		{"WithNoteProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithNoteProcessor(other.noteP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.noteP }, other.noteP, "areaInfoP"},
+		{"WithPlayerNpcLocationProcessor", func(h *HandlerImpl) *HandlerImpl {
+			return h.WithPlayerNpcLocationProcessor(other.playerNpcLocationP).(*HandlerImpl)
+		}, func(h *HandlerImpl) interface{} { return h.playerNpcLocationP }, other.playerNpcLocationP, "areaInfoP"},
+		{"WithNpcSpawnProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithNpcSpawnProcessor(other.npcSpawnP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.npcSpawnP }, other.npcSpawnP, "areaInfoP"},
+		{"WithDropsProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithDropsProcessor(other.dropsP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.dropsP }, other.dropsP, "areaInfoP"},
+		{"WithFieldProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithFieldProcessor(other.fieldP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.fieldP }, other.fieldP, "areaInfoP"},
+		{"WithAreaInfoProcessor", func(h *HandlerImpl) *HandlerImpl { return h.WithAreaInfoProcessor(other.areaInfoP).(*HandlerImpl) }, func(h *HandlerImpl) interface{} { return h.areaInfoP }, other.areaInfoP, "charP"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var seeded *HandlerImpl
+			var anchorWant interface{}
+			var getAnchor func(h *HandlerImpl) interface{}
+			if c.anchor == "charP" {
+				seeded = base.WithCharacterProcessor(other.charP).(*HandlerImpl)
+				anchorWant = other.charP
+				getAnchor = func(h *HandlerImpl) interface{} { return h.charP }
+			} else {
+				seeded = base.WithAreaInfoProcessor(other.areaInfoP).(*HandlerImpl)
+				anchorWant = other.areaInfoP
+				getAnchor = func(h *HandlerImpl) interface{} { return h.areaInfoP }
+			}
+
+			result := c.apply(seeded)
+
+			assert.Same(t, anchorWant, getAnchor(result), "%s must preserve the %s field set by a prior builder call", c.name, c.anchor)
+			assert.Same(t, c.want, c.get(result), "%s must set its own target field", c.name)
+		})
+	}
 }
 
 // TestHandleSetBackEffect_InvalidPayload proves handleSetBackEffect rejects a

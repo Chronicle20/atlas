@@ -96,6 +96,7 @@ const (
 	WarpToPortal        = sharedsaga.WarpToPortal
 	WarpToSavedLocation = sharedsaga.WarpToSavedLocation
 	SaveLocation        = sharedsaga.SaveLocation
+	WarpToMap           = sharedsaga.WarpToMap
 
 	// Character state actions
 	ChangeJob              = sharedsaga.ChangeJob
@@ -127,12 +128,14 @@ const (
 	// Skill actions
 	CreateSkill = sharedsaga.CreateSkill
 	UpdateSkill = sharedsaga.UpdateSkill
+	ClearSkill  = sharedsaga.ClearSkill
 
 	// Quest actions
 	CompleteQuest    = sharedsaga.CompleteQuest
 	StartQuest       = sharedsaga.StartQuest
 	SetQuestProgress = sharedsaga.SetQuestProgress
 	ForfeitQuest     = sharedsaga.ForfeitQuest
+	ExplorerQuest    = sharedsaga.ExplorerQuest
 
 	// Consumable effect actions
 	ApplyConsumableEffect  = sharedsaga.ApplyConsumableEffect
@@ -147,6 +150,9 @@ const (
 	PlayPortalSound = sharedsaga.PlayPortalSound
 	UpdateAreaInfo  = sharedsaga.UpdateAreaInfo
 	ShowInfo        = sharedsaga.ShowInfo
+	PlaySound       = sharedsaga.PlaySound
+	ChangeMusic     = sharedsaga.ChangeMusic
+	BoatEffect      = sharedsaga.BoatEffect
 	ShowInfoText    = sharedsaga.ShowInfoText
 	ShowIntro       = sharedsaga.ShowIntro
 	ShowHint        = sharedsaga.ShowHint
@@ -158,10 +164,30 @@ const (
 	SpawnMonster      = sharedsaga.SpawnMonster
 	SpawnReactorDrops = sharedsaga.SpawnReactorDrops
 
+	// SpawnNpc places a scripted NPC on a field (task-290 G2). Distinct from
+	// DeployPlayerNpc, which deploys a character's own player-NPC.
+	SpawnNpc = sharedsaga.SpawnNpc
+
 	// DeployPlayerNpc deploys the character's own player NPC (FR-6.2). Not a
 	// local operation in atlas-npc-conversations: it mutates cross-service
 	// state, so it dispatches through the saga orchestrator.
 	DeployPlayerNpc = sharedsaga.DeployPlayerNpc
+
+	// ClearDrops removes every drop from a field (task-290 G5). Cosmic's
+	// no-arg MapleMap's no-arg drop clear is whole-map, not owner-filtered.
+	ClearDrops = sharedsaga.ClearDrops
+
+	// ResetReactors resets reactors on a field to state 0, with an optional
+	// minimum-state filter (task-290 G5). See sharedsaga.ResetReactors.
+	ResetReactors = sharedsaga.ResetReactors
+
+	// ShuffleReactors randomly permutes the positions of every reactor on a
+	// field (task-290 G5). See sharedsaga.ShuffleReactors.
+	ShuffleReactors = sharedsaga.ShuffleReactors
+
+	// ResetField clears a field's objects and restores its spawn points --
+	// Cosmic's MapleMap resetPQ (task-290 G5). See sharedsaga.ResetField.
+	ResetField = sharedsaga.ResetField
 
 	// Storage actions
 	ShowStorage          = sharedsaga.ShowStorage
@@ -295,6 +321,7 @@ type (
 	ItemPayload                         = sharedsaga.ItemPayload
 	WarpToRandomPortalPayload           = sharedsaga.WarpToRandomPortalPayload
 	WarpToPortalPayload                 = sharedsaga.WarpToPortalPayload
+	WarpToMapPayload                    = sharedsaga.WarpToMapPayload
 	AwardExperiencePayload              = sharedsaga.AwardExperiencePayload
 	AwardLevelPayload                   = sharedsaga.AwardLevelPayload
 	AwardMesosPayload                   = sharedsaga.AwardMesosPayload
@@ -333,11 +360,15 @@ type (
 	StartQuestPayload                   = sharedsaga.StartQuestPayload
 	ForfeitQuestPayload                 = sharedsaga.ForfeitQuestPayload
 	SetQuestProgressPayload             = sharedsaga.SetQuestProgressPayload
+	ExplorerQuestPayload                = sharedsaga.ExplorerQuestPayload
 	SendMessagePayload                  = sharedsaga.SendMessagePayload
 	FieldEffectPayload                  = sharedsaga.FieldEffectPayload
 	UiLockPayload                       = sharedsaga.UiLockPayload
 	PlayPortalSoundPayload              = sharedsaga.PlayPortalSoundPayload
 	ShowInfoPayload                     = sharedsaga.ShowInfoPayload
+	PlaySoundPayload                    = sharedsaga.PlaySoundPayload
+	ChangeMusicPayload                  = sharedsaga.ChangeMusicPayload
+	BoatEffectPayload                   = sharedsaga.BoatEffectPayload
 	ShowInfoTextPayload                 = sharedsaga.ShowInfoTextPayload
 	UpdateAreaInfoPayload               = sharedsaga.UpdateAreaInfoPayload
 	ShowHintPayload                     = sharedsaga.ShowHintPayload
@@ -346,7 +377,12 @@ type (
 	BlockPortalPayload                  = sharedsaga.BlockPortalPayload
 	UnblockPortalPayload                = sharedsaga.UnblockPortalPayload
 	SpawnMonsterPayload                 = sharedsaga.SpawnMonsterPayload
+	SpawnNpcPayload                     = sharedsaga.SpawnNpcPayload
 	DeployPlayerNpcPayload              = sharedsaga.DeployPlayerNpcPayload
+	ClearDropsPayload                   = sharedsaga.ClearDropsPayload
+	ResetReactorsPayload                = sharedsaga.ResetReactorsPayload
+	ShuffleReactorsPayload              = sharedsaga.ShuffleReactorsPayload
+	ResetFieldPayload                   = sharedsaga.ResetFieldPayload
 	SpawnReactorDropsPayload            = sharedsaga.SpawnReactorDropsPayload
 	ShowStoragePayload                  = sharedsaga.ShowStoragePayload
 	OpenNpcShopPayload                  = sharedsaga.OpenNpcShopPayload
@@ -417,6 +453,7 @@ type (
 	IncubatorResultPayload              = sharedsaga.IncubatorResultPayload
 	CreateNotePayload                   = sharedsaga.CreateNotePayload
 	ExtendAssetExpirationPayload        = sharedsaga.ExtendAssetExpirationPayload
+	ClearSkillPayload                   = sharedsaga.ClearSkillPayload
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
 	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
@@ -1139,6 +1176,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case WarpToMap:
+		var payload WarpToMapPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case DestroyAsset:
 		var payload DestroyAssetPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1201,6 +1244,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case UpdateSkill:
 		var payload UpdateSkillPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ClearSkill:
+		var payload ClearSkillPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
@@ -1271,6 +1320,36 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case SpawnNpc:
+		var payload SpawnNpcPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ClearDrops:
+		var payload ClearDropsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ResetReactors:
+		var payload ResetReactorsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ShuffleReactors:
+		var payload ShuffleReactorsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ResetField:
+		var payload ResetFieldPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case SpawnReactorDrops:
 		var payload SpawnReactorDropsPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1301,6 +1380,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case ExplorerQuest:
+		var payload ExplorerQuestPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case ApplyConsumableEffect:
 		var payload ApplyConsumableEffectPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1321,6 +1406,24 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ShowInfo:
 		var payload ShowInfoPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case PlaySound:
+		var payload PlaySoundPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ChangeMusic:
+		var payload ChangeMusicPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case BoatEffect:
+		var payload BoatEffectPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

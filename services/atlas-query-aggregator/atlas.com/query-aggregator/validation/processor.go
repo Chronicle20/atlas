@@ -165,7 +165,7 @@ func (p *ProcessorImpl) ValidateWithContext(decorators ...model.Decorator[Valida
 // requiresContextPath reports whether a condition type can only be evaluated through the
 // ValidationContext path. The non-context Evaluate falls back to character-only evaluation,
 // so any condition reading quests, marriage, buddy/pet/party, lazy processors (map capacity,
-// inventory space, transports, skills, buffs), or PQ data must take the context route.
+// inventory space, transports, skills, buffs), PQ data, or area info must take the context route.
 func requiresContextPath(t ConditionType) bool {
 	switch t {
 	case QuestStatusCondition, QuestProgressCondition,
@@ -175,7 +175,8 @@ func requiresContextPath(t ConditionType) bool {
 		TransportAvailableCondition, SkillLevelCondition,
 		BuffCondition,
 		PartyIdCondition, PartyLeaderCondition, PartySizeCondition,
-		PqCustomDataCondition, CanSpawnPlayerNpcCondition:
+		PqCustomDataCondition, CanSpawnPlayerNpcCondition,
+		AreaInfoCondition:
 		return true
 	}
 	return false

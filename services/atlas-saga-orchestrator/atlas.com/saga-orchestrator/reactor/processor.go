@@ -3,7 +3,6 @@ package reactor
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -31,6 +30,14 @@ const (
 type Processor interface {
 	// HitReactorByName resolves a reactor by name in a field, then produces a HIT command
 	HitReactorByName(f field.Model, characterId uint32, reactorName string) error
+	// ResetReactors resets every reactor on the field to state 0 via
+	// atlas-reactors' POST .../reactors/reset. minState is optional: nil
+	// resets every reactor; non-nil resets only reactors whose state is at
+	// least *minState (task-290 G5).
+	ResetReactors(f field.Model, minState *int8) error
+	// ShuffleReactors randomly permutes the positions of every reactor on
+	// the field via atlas-reactors' POST .../reactors/shuffle (task-290 G5).
+	ShuffleReactors(f field.Model) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -82,6 +89,26 @@ func (p *ProcessorImpl) getReactorsByName(worldId world.Id, channelId channel.Id
 	)()
 }
 
+// ResetReactors resets every reactor on the field to state 0 (optionally
+// filtered by a minimum state) via atlas-reactors' POST .../reactors/reset.
+func (p *ProcessorImpl) ResetReactors(f field.Model, minState *int8) error {
+	_, err := requestResetReactors(p.ctx, f, minState)(p.l, p.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to reset reactors: %w", err)
+	}
+	return nil
+}
+
+// ShuffleReactors randomly permutes the positions of every reactor on the
+// field via atlas-reactors' POST .../reactors/shuffle.
+func (p *ProcessorImpl) ShuffleReactors(f field.Model) error {
+	_, err := requestShuffleReactors(p.ctx, f)(p.l, p.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to shuffle reactors: %w", err)
+	}
+	return nil
+}
+
 // produceHitCommand produces a HIT command to COMMAND_TOPIC_REACTOR
 func (p *ProcessorImpl) produceHitCommand(f field.Model, reactorId uint32, characterId uint32) error {
 	key := producer.CreateKey(int(reactorId))
@@ -124,47 +151,4 @@ type HitCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	Stance      uint16 `json:"stance"`
 	SkillId     uint32 `json:"skillId"`
-}
-
-// ReactorRestModel represents a reactor from the atlas-reactors REST API
-type ReactorRestModel struct {
-	Id   uint32 `json:"-"`
-	Name string `json:"name"`
-}
-
-func (r ReactorRestModel) GetName() string {
-	return "reactors"
-}
-
-func (r ReactorRestModel) GetID() string {
-	return strconv.FormatUint(uint64(r.Id), 10)
-}
-
-func (r *ReactorRestModel) SetID(idStr string) error {
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		return err
-	}
-	r.Id = uint32(id)
-	return nil
-}
-
-// ExtractReactor is a pass-through extractor for ReactorRestModel
-func ExtractReactor(r ReactorRestModel) (ReactorRestModel, error) {
-	return r, nil
-}
-
-func getReactorsBaseRequest(ctx context.Context) (string, error) {
-	return requests.RootUrlFor(ctx, "REACTORS")
-}
-
-func requestReactorsByName(ctx context.Context, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, name string) requests.Request[[]ReactorRestModel] {
-	root, err := getReactorsBaseRequest(ctx)
-	if err != nil {
-		return requests.ErrorRequest[[]ReactorRestModel](err)
-	}
-	return requests.GetRequest[[]ReactorRestModel](fmt.Sprintf(
-		root+"worlds/%d/channels/%d/maps/%d/instances/%s/reactors?name=%s",
-		worldId, channelId, mapId, instance.String(), name,
-	))
 }

@@ -27,6 +27,7 @@ type ProcessorMock struct {
 	GetForMapFunc                func(field field.Model) ([]drop.Model, error)
 	ByIdProviderFunc             func(dropId uint32) model.Provider[drop.Model]
 	ForMapProviderFunc           func(field field.Model) model.Provider[[]drop.Model]
+	ClearForFieldFunc            func(f field.Model) (int, error)
 }
 
 func (m *ProcessorMock) Spawn(mb *message.Buffer) func(mb *drop.Builder) (drop.Model, error) {
@@ -151,4 +152,11 @@ func (m *ProcessorMock) ForMapProvider(field field.Model) model.Provider[[]drop.
 		return m.ForMapProviderFunc(field)
 	}
 	return model.FixedProvider([]drop.Model{})
+}
+
+func (m *ProcessorMock) ClearForField(f field.Model) (int, error) {
+	if m.ClearForFieldFunc != nil {
+		return m.ClearForFieldFunc(f)
+	}
+	return 0, nil
 }

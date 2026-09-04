@@ -1,0 +1,27 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Pepe King map - spawns one of 3300005/3300006/3300007 at (-28, -67), chosen uniformly",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "spawn_random_pepe",
+          "operations": [
+            {
+              "params": {
+                "monsterIds": "3300005,3300006,3300007",
+                "spawnIfAbsent": "true",
+                "x": "-28",
+                "y": "-67"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "scriptName": "pepeking_effect"
+    },
+    "id": "pepeking_effect",
+    "type": "map-action"
+  }
+}

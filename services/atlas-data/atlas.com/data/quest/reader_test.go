@@ -76,6 +76,14 @@ const testCheckXML = `
       <string name="end" value="2009082600"/>
       <int name="normalAutoStart" value="1"/>
       <int name="infoNumber" value="10024"/>
+      <imgdir name="infoEx">
+        <imgdir name="0">
+          <string name="value" value="5"/>
+        </imgdir>
+        <imgdir name="1">
+          <string name="value" value="10"/>
+        </imgdir>
+      </imgdir>
     </imgdir>
     <imgdir name="1">
       <int name="npc" value="9000021"/>
@@ -269,6 +277,9 @@ func TestReadQuestCheck(t *testing.T) {
 	q10000 := quests[10000]
 	if q10000.StartRequirements.InfoNumber != 10024 {
 		t.Fatalf("expected infoNumber 10024, got %d", q10000.StartRequirements.InfoNumber)
+	}
+	if len(q10000.StartRequirements.InfoEx) != 2 || q10000.StartRequirements.InfoEx[0] != "5" || q10000.StartRequirements.InfoEx[1] != "10" {
+		t.Fatalf("expected infoEx [5 10], got %v", q10000.StartRequirements.InfoEx)
 	}
 	if !q10000.StartRequirements.NormalAutoStart {
 		t.Fatal("expected normalAutoStart true")

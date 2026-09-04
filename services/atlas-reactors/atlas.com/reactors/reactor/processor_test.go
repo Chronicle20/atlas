@@ -623,3 +623,242 @@ func TestSpot_ClaimIsExclusivePerPosition(t *testing.T) {
 		t.Fatalf("claim after release should succeed")
 	}
 }
+
+// TestResetInFieldResetsEveryReactor verifies ResetInField(f, nil) resets
+// every reactor on the field to state 0 and reports how many it reset.
+func TestResetInFieldResetsEveryReactor(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "ResetInField(f, nil) resets every reactor to state 0"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			setupTestRegistry(t)
+			l := setupTestLogger()
+			ten := setupTestTenant()
+			ctx := setupTestContext(ten)
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
+			for _, state := range []int8{2, 5, 8} {
+				builder := NewBuilder(ten, f, 2000000, "reset-reactor").
+					SetState(state).SetPosition(100, 200).SetDelay(0).SetDirection(0).SetData(data.Model{})
+				if _, err := GetRegistry().Create(ten, builder); err != nil {
+					t.Fatalf("Create failed: %v", err)
+				}
+			}
+
+			count, err := NewProcessor(l, ctx).ResetInField(f, nil)
+			assert.NoError(t, err)
+			assert.Equal(t, 3, count)
+
+			reactors, err := NewProcessor(l, ctx).GetInField(f)
+			assert.NoError(t, err)
+			assert.Len(t, reactors, 3)
+			for _, r := range reactors {
+				assert.Equal(t, int8(0), r.State())
+			}
+		})
+	}
+}
+
+// TestResetInFieldHonorsMinState verifies the optional minState filter
+// mirrors 926120300.js's getInactiveReactors predicate (state >= 7).
+func TestResetInFieldHonorsMinState(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "minState filter mirrors 926120300.js's getInactiveReactors predicate (state >= 7)"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			setupTestRegistry(t)
+			l := setupTestLogger()
+			ten := setupTestTenant()
+			ctx := setupTestContext(ten)
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
+			states := []int8{2, 5, 8}
+			for _, state := range states {
+				builder := NewBuilder(ten, f, 2000000, "reset-reactor").
+					SetState(state).SetPosition(100, 200).SetDelay(0).SetDirection(0).SetData(data.Model{})
+				if _, err := GetRegistry().Create(ten, builder); err != nil {
+					t.Fatalf("Create failed: %v", err)
+				}
+			}
+
+			minState := int8(7)
+			count, err := NewProcessor(l, ctx).ResetInField(f, &minState)
+			assert.NoError(t, err)
+			assert.Equal(t, 1, count)
+
+			reactors, err := NewProcessor(l, ctx).GetInField(f)
+			assert.NoError(t, err)
+			assert.Len(t, reactors, 3)
+			byOriginalState := map[int8]int8{}
+			for _, r := range reactors {
+				// The state-8 reactor should now be 0; the others unchanged. Since
+				// state has already been mutated for the reset reactor, identify it
+				// as the one now at 0 and assert exactly one reactor changed.
+				byOriginalState[r.State()]++
+			}
+			assert.Equal(t, int8(1), byOriginalState[0])
+			assert.Equal(t, int8(1), byOriginalState[2])
+			assert.Equal(t, int8(1), byOriginalState[5])
+		})
+	}
+}
+
+// TestResetInFieldIsFieldScoped verifies a reset on one instance leaves
+// another instance of the same map untouched.
+func TestResetInFieldIsFieldScoped(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "a reset on one instance leaves another instance untouched"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			setupTestRegistry(t)
+			l := setupTestLogger()
+			ten := setupTestTenant()
+			ctx := setupTestContext(ten)
+
+			instanceA := uuid.New()
+			instanceB := uuid.New()
+			fA := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(instanceA).Build()
+			fB := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).SetInstance(instanceB).Build()
+
+			builderA := NewBuilder(ten, fA, 2000000, "reset-reactor-a").
+				SetState(8).SetPosition(100, 200).SetDelay(0).SetDirection(0).SetData(data.Model{})
+			if _, err := GetRegistry().Create(ten, builderA); err != nil {
+				t.Fatalf("Create failed: %v", err)
+			}
+			builderB := NewBuilder(ten, fB, 2000000, "reset-reactor-b").
+				SetState(8).SetPosition(100, 200).SetDelay(0).SetDirection(0).SetData(data.Model{})
+			if _, err := GetRegistry().Create(ten, builderB); err != nil {
+				t.Fatalf("Create failed: %v", err)
+			}
+
+			count, err := NewProcessor(l, ctx).ResetInField(fA, nil)
+			assert.NoError(t, err)
+			assert.Equal(t, 1, count)
+
+			reactorsB, err := NewProcessor(l, ctx).GetInField(fB)
+			assert.NoError(t, err)
+			assert.Len(t, reactorsB, 1)
+			assert.Equal(t, int8(8), reactorsB[0].State())
+		})
+	}
+}
+
+// TestShuffleInFieldPermutesPositionsOnly verifies ShuffleInField reassigns
+// only (x,y) -- ids and states are untouched -- and actually permutes.
+func TestShuffleInFieldPermutesPositionsOnly(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "ShuffleInField reassigns only (x,y) and actually permutes"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			setupTestRegistry(t)
+			l := setupTestLogger()
+			ten := setupTestTenant()
+			ctx := setupTestContext(ten)
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
+			positions := [][2]int16{{10, 20}, {30, 40}, {50, 60}, {70, 80}}
+			ids := make([]uint32, 0, len(positions))
+			for i, pos := range positions {
+				builder := NewBuilder(ten, f, 2000000+uint32(i), "shuffle-reactor").
+					SetState(3).SetPosition(pos[0], pos[1]).SetDelay(0).SetDirection(0).SetData(data.Model{})
+				created, err := GetRegistry().Create(ten, builder)
+				if err != nil {
+					t.Fatalf("Create failed: %v", err)
+				}
+				ids = append(ids, created.Id())
+			}
+
+			changed := false
+			for attempt := 0; attempt < 50; attempt++ {
+				err := NewProcessor(l, ctx).ShuffleInField(f)
+				assert.NoError(t, err)
+
+				reactors, err := NewProcessor(l, ctx).GetInField(f)
+				assert.NoError(t, err)
+				assert.Len(t, reactors, 4)
+
+				gotIds := make(map[uint32]bool)
+				gotPositions := make([][2]int16, 0, len(reactors))
+				mapping := make(map[uint32][2]int16)
+				for _, r := range reactors {
+					gotIds[r.Id()] = true
+					gotPositions = append(gotPositions, [2]int16{r.X(), r.Y()})
+					mapping[r.Id()] = [2]int16{r.X(), r.Y()}
+					assert.Equal(t, int8(3), r.State())
+				}
+				for _, id := range ids {
+					assert.True(t, gotIds[id], "reactor id [%d] should still exist after shuffle", id)
+				}
+
+				expected := make(map[[2]int16]int)
+				for _, pos := range positions {
+					expected[pos]++
+				}
+				actual := make(map[[2]int16]int)
+				for _, pos := range gotPositions {
+					actual[pos]++
+				}
+				assert.Equal(t, expected, actual, "shuffle must permute the same multiset of positions")
+
+				for i, id := range ids {
+					if mapping[id] != positions[i] {
+						changed = true
+						break
+					}
+				}
+			}
+			assert.True(t, changed, "at least one shuffle run should have produced a different id-to-position mapping")
+		})
+	}
+}
+
+// TestShuffleInFieldWithOneReactorIsANoOp verifies a single reactor keeps
+// its position and no error is returned.
+func TestShuffleInFieldWithOneReactorIsANoOp(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "a single reactor keeps its position and no error is returned"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			setupTestRegistry(t)
+			l := setupTestLogger()
+			ten := setupTestTenant()
+			ctx := setupTestContext(ten)
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(922000000)).Build()
+			builder := NewBuilder(ten, f, 2000000, "lone-reactor").
+				SetState(1).SetPosition(15, 25).SetDelay(0).SetDirection(0).SetData(data.Model{})
+			created, err := GetRegistry().Create(ten, builder)
+			if err != nil {
+				t.Fatalf("Create failed: %v", err)
+			}
+
+			err = NewProcessor(l, ctx).ShuffleInField(f)
+			assert.NoError(t, err)
+
+			reloaded, err := GetRegistry().Get(ten, created.Id())
+			assert.NoError(t, err)
+			assert.Equal(t, int16(15), reloaded.X())
+			assert.Equal(t, int16(25), reloaded.Y())
+		})
+	}
+}

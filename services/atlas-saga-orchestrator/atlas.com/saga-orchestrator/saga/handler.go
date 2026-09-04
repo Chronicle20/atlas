@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/area_info"
 	"atlas-saga-orchestrator/buddylist"
 	"atlas-saga-orchestrator/buff"
 	"atlas-saga-orchestrator/cashshop"
@@ -9,6 +10,8 @@ import (
 	"atlas-saga-orchestrator/consumable"
 	"atlas-saga-orchestrator/data/foothold"
 	"atlas-saga-orchestrator/data/portal"
+	"atlas-saga-orchestrator/drops"
+	fieldclient "atlas-saga-orchestrator/field"
 	"atlas-saga-orchestrator/gachapon"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
@@ -27,6 +30,7 @@ import (
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/note"
+	"atlas-saga-orchestrator/npc_spawn"
 	"atlas-saga-orchestrator/parcel"
 	"atlas-saga-orchestrator/party"
 	party_quest "atlas-saga-orchestrator/party_quest"
@@ -49,6 +53,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -103,6 +108,18 @@ type Handler interface {
 	// WithPlayerNpcLocationProcessor is the injector seam for
 	// handleDeployPlayerNpc's atlas-maps location lookup (FR-6.2).
 	WithPlayerNpcLocationProcessor(playernpc.Processor) Handler
+	// WithNpcSpawnProcessor is the injector seam for handleSpawnNpc's
+	// atlas-maps NPC placement call (task-290 G2).
+	WithNpcSpawnProcessor(npc_spawn.Processor) Handler
+	// WithDropsProcessor is the injector seam for handleClearDrops's
+	// atlas-drops field-clear call (task-290 G5).
+	WithDropsProcessor(drops.Processor) Handler
+	// WithFieldProcessor is the injector seam for handleResetField's
+	// atlas-maps field-reset call (task-290 G5).
+	WithFieldProcessor(fieldclient.Processor) Handler
+	// WithAreaInfoProcessor is the injector seam for handleUpdateAreaInfo's
+	// atlas-character area-info persist call (task-290 G12).
+	WithAreaInfoProcessor(area_info.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -110,6 +127,7 @@ type Handler interface {
 	handleAwardAsset(s Saga, st Step[any]) error
 	handleWarpToRandomPortal(s Saga, st Step[any]) error
 	handleWarpToPortal(s Saga, st Step[any]) error
+	handleWarpToMap(s Saga, st Step[any]) error
 	handleAwardExperience(s Saga, st Step[any]) error
 	handleAwardLevel(s Saga, st Step[any]) error
 	handleAwardMesos(s Saga, st Step[any]) error
@@ -124,6 +142,7 @@ type Handler interface {
 	handleChangeSkin(s Saga, st Step[any]) error
 	handleCreateSkill(s Saga, st Step[any]) error
 	handleUpdateSkill(s Saga, st Step[any]) error
+	handleClearSkill(s Saga, st Step[any]) error
 	handleValidateCharacterState(s Saga, st Step[any]) error
 	handleRequestGuildName(s Saga, st Step[any]) error
 	handleRequestGuildEmblem(s Saga, st Step[any]) error
@@ -138,11 +157,17 @@ type Handler interface {
 	handleRevivePet(s Saga, st Step[any]) error
 	handleRenamePet(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
+	handleSpawnNpc(s Saga, st Step[any]) error
+	handleClearDrops(s Saga, st Step[any]) error
+	handleResetReactors(s Saga, st Step[any]) error
+	handleShuffleReactors(s Saga, st Step[any]) error
+	handleResetField(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
 	handleSetQuestProgress(s Saga, st Step[any]) error
 	handleForfeitQuest(s Saga, st Step[any]) error
+	handleExplorerQuest(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
 	handleSendMessage(s Saga, st Step[any]) error
 	handleDepositToStorage(s Saga, st Step[any]) error
@@ -166,6 +191,9 @@ type Handler interface {
 	handleMtsBidEscrow(s Saga, st Step[any]) error
 	handlePlayPortalSound(s Saga, st Step[any]) error
 	handleShowInfo(s Saga, st Step[any]) error
+	handlePlaySound(s Saga, st Step[any]) error
+	handleChangeMusic(s Saga, st Step[any]) error
+	handleBoatEffect(s Saga, st Step[any]) error
 	handleShowInfoText(s Saga, st Step[any]) error
 	handleUpdateAreaInfo(s Saga, st Step[any]) error
 	handleShowHint(s Saga, st Step[any]) error
@@ -254,6 +282,10 @@ type HandlerImpl struct {
 	partyP             party.Processor
 	pendingChangeP     pending_change.Processor
 	playerNpcLocationP playernpc.Processor
+	npcSpawnP          npc_spawn.Processor
+	dropsP             drops.Processor
+	fieldP             fieldclient.Processor
+	areaInfoP          area_info.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -293,250 +325,146 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		partyP:             party.NewProcessor(l, ctx),
 		pendingChangeP:     pending_change.NewProcessor(l, ctx),
 		playerNpcLocationP: playernpc.NewProcessor(l, ctx),
+		npcSpawnP:          npc_spawn.NewProcessor(l, ctx),
+		dropsP:             drops.NewProcessor(l, ctx),
+		fieldP:             fieldclient.NewProcessor(l, ctx),
+		areaInfoP:          area_info.NewProcessor(l, ctx),
 	}
 }
 
+// WithAreaInfoProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
+func (h *HandlerImpl) WithAreaInfoProcessor(areaInfoP area_info.Processor) Handler {
+	c := *h
+	c.areaInfoP = areaInfoP
+	return &c
+}
+
+// WithCharacterProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithCharacterProcessor(charP character.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.charP = charP
+	return &c
 }
 
+// WithCompartmentProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithCompartmentProcessor(compP compartment.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.compP = compP
+	return &c
 }
 
+// WithSkillProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithSkillProcessor(skillP skill.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  skillP,
-		validP:  h.validP,
-		guildP:  h.guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.skillP = skillP
+	return &c
 }
 
+// WithValidationProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithValidationProcessor(validP validation.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  validP,
-		guildP:  h.guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.validP = validP
+	return &c
 }
 
+// WithGuildProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithGuildProcessor(guildP guild.Processor) Handler {
-	return &HandlerImpl{
-		l:       h.l,
-		ctx:     h.ctx,
-		t:       h.t,
-		charP:   h.charP,
-		compP:   h.compP,
-		skillP:  h.skillP,
-		validP:  h.validP,
-		guildP:  guildP,
-		inviteP: h.inviteP,
-	}
+	c := *h
+	c.guildP = guildP
+	return &c
 }
 
+// WithInviteProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithInviteProcessor(inviteP invite.Processor) Handler {
-	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    inviteP,
-		buddyListP: h.buddyListP,
-	}
+	c := *h
+	c.inviteP = inviteP
+	return &c
 }
 
+// WithBuddyListProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithBuddyListProcessor(buddyListP buddylist.Processor) Handler {
-	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    h.inviteP,
-		buddyListP: buddyListP,
-		petP:       h.petP,
-	}
+	c := *h
+	c.buddyListP = buddyListP
+	return &c
 }
 
+// WithPetProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithPetProcessor(petP pet.Processor) Handler {
-	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    h.inviteP,
-		buddyListP: h.buddyListP,
-		petP:       petP,
-		footholdP:  h.footholdP,
-		monsterP:   h.monsterP,
-	}
+	c := *h
+	c.petP = petP
+	return &c
 }
 
+// WithFootholdProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithFootholdProcessor(footholdP foothold.Processor) Handler {
-	return &HandlerImpl{
-		l:          h.l,
-		ctx:        h.ctx,
-		t:          h.t,
-		charP:      h.charP,
-		compP:      h.compP,
-		skillP:     h.skillP,
-		validP:     h.validP,
-		guildP:     h.guildP,
-		inviteP:    h.inviteP,
-		buddyListP: h.buddyListP,
-		petP:       h.petP,
-		footholdP:  footholdP,
-		monsterP:   h.monsterP,
-	}
+	c := *h
+	c.footholdP = footholdP
+	return &c
 }
 
+// WithMonsterProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithMonsterProcessor(monsterP monster.Processor) Handler {
-	return &HandlerImpl{
-		l:           h.l,
-		ctx:         h.ctx,
-		t:           h.t,
-		charP:       h.charP,
-		compP:       h.compP,
-		skillP:      h.skillP,
-		validP:      h.validP,
-		guildP:      h.guildP,
-		inviteP:     h.inviteP,
-		buddyListP:  h.buddyListP,
-		petP:        h.petP,
-		footholdP:   h.footholdP,
-		monsterP:    monsterP,
-		consumableP: h.consumableP,
-		portalP:     h.portalP,
-	}
+	c := *h
+	c.monsterP = monsterP
+	return &c
 }
 
+// WithConsumableProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithConsumableProcessor(consumableP consumable.Processor) Handler {
-	return &HandlerImpl{
-		l:           h.l,
-		ctx:         h.ctx,
-		t:           h.t,
-		charP:       h.charP,
-		compP:       h.compP,
-		skillP:      h.skillP,
-		validP:      h.validP,
-		guildP:      h.guildP,
-		inviteP:     h.inviteP,
-		buddyListP:  h.buddyListP,
-		petP:        h.petP,
-		footholdP:   h.footholdP,
-		monsterP:    h.monsterP,
-		consumableP: consumableP,
-		portalP:     h.portalP,
-	}
+	c := *h
+	c.consumableP = consumableP
+	return &c
 }
 
+// WithPortalProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithPortalProcessor(portalP portal.Processor) Handler {
-	return &HandlerImpl{
-		l:               h.l,
-		ctx:             h.ctx,
-		t:               h.t,
-		charP:           h.charP,
-		compP:           h.compP,
-		skillP:          h.skillP,
-		validP:          h.validP,
-		guildP:          h.guildP,
-		inviteP:         h.inviteP,
-		buddyListP:      h.buddyListP,
-		petP:            h.petP,
-		footholdP:       h.footholdP,
-		monsterP:        h.monsterP,
-		consumableP:     h.consumableP,
-		portalP:         portalP,
-		portalBlockingP: h.portalBlockingP,
-		cashshopP:       h.cashshopP,
-	}
+	c := *h
+	c.portalP = portalP
+	return &c
 }
 
+// WithPortalBlockingProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithPortalBlockingProcessor(portalBlockingP portalBlocking.Processor) Handler {
-	return &HandlerImpl{
-		l:               h.l,
-		ctx:             h.ctx,
-		t:               h.t,
-		charP:           h.charP,
-		compP:           h.compP,
-		skillP:          h.skillP,
-		validP:          h.validP,
-		guildP:          h.guildP,
-		inviteP:         h.inviteP,
-		buddyListP:      h.buddyListP,
-		petP:            h.petP,
-		footholdP:       h.footholdP,
-		monsterP:        h.monsterP,
-		consumableP:     h.consumableP,
-		portalP:         h.portalP,
-		portalBlockingP: portalBlockingP,
-		cashshopP:       h.cashshopP,
-	}
+	c := *h
+	c.portalBlockingP = portalBlockingP
+	return &c
 }
 
+// WithCashshopProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      cashshopP,
-		systemMessageP: h.systemMessageP,
-	}
+	c := *h
+	c.cashshopP = cashshopP
+	return &c
 }
 
 func (h *HandlerImpl) WithMtsProcessor(mtsP mts.Processor) Handler {
@@ -569,245 +497,85 @@ func (h *HandlerImpl) WithTradeProcessor(tradeP tradesvc.Processor) Handler {
 	return &c
 }
 
+// WithSystemMessageProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithSystemMessageProcessor(systemMessageP system_message.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: systemMessageP,
-	}
+	c := *h
+	c.systemMessageP = systemMessageP
+	return &c
 }
 
+// WithQuestProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithQuestProcessor(questP quest.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         questP,
-		storageP:       h.storageP,
-	}
+	c := *h
+	c.questP = questP
+	return &c
 }
 
+// WithStorageProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithStorageProcessor(storageP storage.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       storageP,
-		buffP:          h.buffP,
-	}
+	c := *h
+	c.storageP = storageP
+	return &c
 }
 
+// WithBuffProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithBuffProcessor(buffP buff.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          buffP,
-		transportP:     h.transportP,
-	}
+	c := *h
+	c.buffP = buffP
+	return &c
 }
 
+// WithTransportProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithTransportProcessor(transportP transport.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     transportP,
-		savedLocationP: h.savedLocationP,
-	}
+	c := *h
+	c.transportP = transportP
+	return &c
 }
 
+// WithSavedLocationProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithSavedLocationProcessor(savedLocationP saved_location.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     h.transportP,
-		savedLocationP: savedLocationP,
-		gachaponP:      h.gachaponP,
-	}
+	c := *h
+	c.savedLocationP = savedLocationP
+	return &c
 }
 
+// WithGachaponProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithGachaponProcessor(gachaponP gachapon.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     h.transportP,
-		savedLocationP: h.savedLocationP,
-		gachaponP:      gachaponP,
-		partyQuestP:    h.partyQuestP,
-	}
+	c := *h
+	c.gachaponP = gachaponP
+	return &c
 }
 
+// WithPartyQuestProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithPartyQuestProcessor(partyQuestP party_quest.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     h.transportP,
-		savedLocationP: h.savedLocationP,
-		gachaponP:      h.gachaponP,
-		partyQuestP:    partyQuestP,
-		reactorP:       h.reactorP,
-	}
+	c := *h
+	c.partyQuestP = partyQuestP
+	return &c
 }
 
+// WithReactorProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithReactorProcessor(reactorP reactor.Processor) Handler {
-	return &HandlerImpl{
-		l:              h.l,
-		ctx:            h.ctx,
-		t:              h.t,
-		charP:          h.charP,
-		compP:          h.compP,
-		skillP:         h.skillP,
-		validP:         h.validP,
-		guildP:         h.guildP,
-		inviteP:        h.inviteP,
-		buddyListP:     h.buddyListP,
-		petP:           h.petP,
-		footholdP:      h.footholdP,
-		monsterP:       h.monsterP,
-		consumableP:    h.consumableP,
-		portalP:        h.portalP,
-		cashshopP:      h.cashshopP,
-		systemMessageP: h.systemMessageP,
-		questP:         h.questP,
-		storageP:       h.storageP,
-		buffP:          h.buffP,
-		transportP:     h.transportP,
-		savedLocationP: h.savedLocationP,
-		gachaponP:      h.gachaponP,
-		partyQuestP:    h.partyQuestP,
-		reactorP:       reactorP,
-	}
+	c := *h
+	c.reactorP = reactorP
+	return &c
 }
 
 func (h *HandlerImpl) WithPartyProcessor(partyP party.Processor) Handler {
@@ -822,13 +590,13 @@ func (h *HandlerImpl) WithPendingChangeProcessor(pendingChangeP pending_change.P
 	return &c
 }
 
+// WithNoteProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
 func (h *HandlerImpl) WithNoteProcessor(noteP note.Processor) Handler {
-	return &HandlerImpl{
-		l:     h.l,
-		ctx:   h.ctx,
-		t:     h.t,
-		noteP: noteP,
-	}
+	c := *h
+	c.noteP = noteP
+	return &c
 }
 
 func (h *HandlerImpl) WithMapCommandProcessor(mapCommandP map_command.Processor) Handler {
@@ -841,12 +609,33 @@ func (h *HandlerImpl) WithMapCommandProcessor(mapCommandP map_command.Processor)
 // location processor substituted; used by tests to fake atlas-maps'
 // GetCurrentLocation lookup without hitting the network.
 func (h *HandlerImpl) WithPlayerNpcLocationProcessor(playerNpcLocationP playernpc.Processor) Handler {
-	return &HandlerImpl{
-		l:                  h.l,
-		ctx:                h.ctx,
-		t:                  h.t,
-		playerNpcLocationP: playerNpcLocationP,
-	}
+	c := *h
+	c.playerNpcLocationP = playerNpcLocationP
+	return &c
+}
+
+// WithNpcSpawnProcessor returns a Handler with the given npc-spawn processor
+// substituted, for use by handleSpawnNpc (task-290 G2).
+func (h *HandlerImpl) WithNpcSpawnProcessor(npcSpawnP npc_spawn.Processor) Handler {
+	c := *h
+	c.npcSpawnP = npcSpawnP
+	return &c
+}
+
+// WithDropsProcessor returns a Handler with the given drops processor
+// substituted, for use by handleClearDrops (task-290 G5).
+func (h *HandlerImpl) WithDropsProcessor(dropsP drops.Processor) Handler {
+	c := *h
+	c.dropsP = dropsP
+	return &c
+}
+
+// WithFieldProcessor returns a Handler with the given field processor
+// substituted, for use by handleResetField (task-290 G5).
+func (h *HandlerImpl) WithFieldProcessor(fieldP fieldclient.Processor) Handler {
+	c := *h
+	c.fieldP = fieldP
+	return &c
 }
 
 // ActionHandler is a function type for handling different saga action types
@@ -860,6 +649,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleWarpToRandomPortal, true
 	case WarpToPortal:
 		return h.handleWarpToPortal, true
+	case WarpToMap:
+		return h.handleWarpToMap, true
 	case AwardExperience:
 		return h.handleAwardExperience, true
 	case AwardLevel:
@@ -890,6 +681,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCreateSkill, true
 	case UpdateSkill:
 		return h.handleUpdateSkill, true
+	case ClearSkill:
+		return h.handleClearSkill, true
 	case ValidateCharacterState:
 		return h.handleValidateCharacterState, true
 	case RequestGuildName:
@@ -930,6 +723,16 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleRenamePet, true
 	case SpawnMonster:
 		return h.handleSpawnMonster, true
+	case SpawnNpc:
+		return h.handleSpawnNpc, true
+	case ClearDrops:
+		return h.handleClearDrops, true
+	case ResetReactors:
+		return h.handleResetReactors, true
+	case ShuffleReactors:
+		return h.handleShuffleReactors, true
+	case ResetField:
+		return h.handleResetField, true
 	case SpawnReactorDrops:
 		return h.handleSpawnReactorDrops, true
 	case CompleteQuest:
@@ -940,6 +743,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetQuestProgress, true
 	case ForfeitQuest:
 		return h.handleForfeitQuest, true
+	case ExplorerQuest:
+		return h.handleExplorerQuest, true
 	case ApplyConsumableEffect:
 		return h.handleApplyConsumableEffect, true
 	case SendMessage:
@@ -1000,6 +805,12 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handlePlayPortalSound, true
 	case ShowInfo:
 		return h.handleShowInfo, true
+	case PlaySound:
+		return h.handlePlaySound, true
+	case ChangeMusic:
+		return h.handleChangeMusic, true
+	case BoatEffect:
+		return h.handleBoatEffect, true
 	case ShowInfoText:
 		return h.handleShowInfoText, true
 	case UpdateAreaInfo:
@@ -1162,6 +973,25 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 	err := h.charP.WarpToPortalAndEmit(s.TransactionId(), payload.CharacterId, f, portalProvider)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to specific portal.")
+		return err
+	}
+
+	return nil
+}
+
+// handleWarpToMap handles the WarpToMap action. Unlike WarpToPortal and
+// WarpToRandomPortal, no portal is named — the destination service picks the
+// character's spawn point, matching Cosmic's warpAhead/getRandomPlayerSpawnpoint
+// (task-290 G1a).
+func (h *HandlerImpl) handleWarpToMap(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(WarpToMapPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.charP.WarpToMapAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, payload.ChannelId, payload.MapId)
+	if err != nil {
+		h.logActionError(s, st, err, fmt.Sprintf("Failed to warp character %d to map %d", payload.CharacterId, payload.MapId))
 		return err
 	}
 
@@ -1626,6 +1456,25 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 	err := h.skillP.RequestUpdateAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
+		return err
+	}
+
+	return nil
+}
+
+// handleClearSkill handles the ClearSkill action: the Cosmic
+// teachSkill(id, -1, 0, -1) path removes the skill outright rather than
+// changing its level (task-290 G13). It reuses the REQUEST_DELETE command
+// atlas-skills already accepts, which is idempotent on an absent row.
+func (h *HandlerImpl) handleClearSkill(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ClearSkillPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.skillP.RequestDeleteSkill(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId)
+	if err != nil {
+		h.logActionError(s, st, err, fmt.Sprintf("Unable to clear skill %d.", payload.SkillId))
 		return err
 	}
 
@@ -2109,9 +1958,19 @@ func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
 		Build()
 
 	// Spawn monsters
+	req := monster.SpawnRequest{
+		WorldId:       payload.WorldId,
+		ChannelId:     payload.ChannelId,
+		MapId:         payload.MapId,
+		MonsterId:     payload.MonsterId,
+		X:             payload.X,
+		Y:             payload.Y,
+		Fh:            int16(fh),
+		Team:          payload.Team,
+		SpawnIfAbsent: payload.SpawnIfAbsent,
+	}
 	for i := 0; i < count; i++ {
-		err := h.monsterP.SpawnMonster(f, payload.MonsterId, payload.X, payload.Y, int16(fh), payload.Team)
-		if err != nil {
+		if err := h.monsterP.SpawnMonster(f, req); err != nil {
 			h.logActionError(s, st, err, fmt.Sprintf("Failed to spawn monster %d/%d", i+1, count))
 			return err
 		}
@@ -2119,6 +1978,147 @@ func (h *HandlerImpl) handleSpawnMonster(s Saga, st Step[any]) error {
 
 	h.l.Debugf("Successfully spawned %d monsters (id=%d) at (%d, %d, fh=%d) in world %d, channel %d, map %d",
 		count, payload.MonsterId, payload.X, payload.Y, fh, payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleSpawnNpc handles the SpawnNpc action, mirroring Cosmic's
+// AbstractPlayerInteraction.spawnNpc: it resolves a foothold below the
+// requested position the same way handleSpawnMonster does, and places the
+// NPC on the field via atlas-maps' field NPC registry (task-290 G2).
+func (h *HandlerImpl) handleSpawnNpc(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SpawnNpcPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Look up foothold from atlas-data
+	fh, err := h.footholdP.GetFootholdBelow(payload.MapId, payload.X, payload.Y)
+	if err != nil {
+		h.l.WithError(err).Warnf("Failed to get foothold for map %d at (%d, %d), using fh=0", payload.MapId, payload.X, payload.Y)
+		fh = 0
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	req := npc_spawn.SpawnRequest{
+		WorldId:       payload.WorldId,
+		ChannelId:     payload.ChannelId,
+		MapId:         payload.MapId,
+		NpcId:         payload.NpcId,
+		X:             payload.X,
+		Y:             payload.Y,
+		Fh:            int16(fh),
+		SpawnIfAbsent: payload.SpawnIfAbsent,
+	}
+	if err := h.npcSpawnP.SpawnNpc(f, req); err != nil {
+		h.logActionError(s, st, err, fmt.Sprintf("Failed to spawn npc %d", payload.NpcId))
+		return err
+	}
+
+	h.l.Debugf("Successfully spawned npc %d at (%d, %d, fh=%d) in world %d, channel %d, map %d",
+		payload.NpcId, payload.X, payload.Y, fh, payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleClearDrops handles the ClearDrops action, mirroring Cosmic's no-arg
+// MapleMap.clearDrops(): removes every drop from the field, not just the
+// caller's own (task-290 G5).
+func (h *HandlerImpl) handleClearDrops(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ClearDropsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	if err := h.dropsP.ClearDrops(f); err != nil {
+		h.logActionError(s, st, err, "Failed to clear drops")
+		return err
+	}
+
+	h.l.Debugf("Successfully cleared drops in world %d, channel %d, map %d",
+		payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleResetReactors handles the ResetReactors action, mirroring Cosmic's
+// MapleMap.resetReactors(List<Reactor>) (MapleMap.java:1563). There is no
+// state-filtered Java overload -- 926120300.js computes an inactive-reactor
+// filter (state >= 7) in script and passes the resulting list to the same
+// single-overload reset -- so MinState is an optional filter, not a
+// separate action (task-290 G5).
+func (h *HandlerImpl) handleResetReactors(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ResetReactorsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	if err := h.reactorP.ResetReactors(f, payload.MinState); err != nil {
+		h.logActionError(s, st, err, "Failed to reset reactors")
+		return err
+	}
+
+	h.l.Debugf("Successfully reset reactors in world %d, channel %d, map %d",
+		payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleShuffleReactors handles the ShuffleReactors action, mirroring
+// Cosmic's MapleMap.shuffleReactors() (MapleMap.java:1580): only reactor
+// positions move, not ids, states or identities (task-290 G5).
+func (h *HandlerImpl) handleShuffleReactors(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShuffleReactorsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	if err := h.reactorP.ShuffleReactors(f); err != nil {
+		h.logActionError(s, st, err, "Failed to shuffle reactors")
+		return err
+	}
+
+	h.l.Debugf("Successfully shuffled reactors in world %d, channel %d, map %d",
+		payload.WorldId, payload.ChannelId, payload.MapId)
+
+	return nil
+}
+
+// handleResetField handles the ResetField action, mirroring Cosmic's
+// MapleMap.resetPQ(difficulty): clears the field's monsters and restores
+// its spawn points (task-290 G5).
+func (h *HandlerImpl) handleResetField(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ResetFieldPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	if err := h.fieldP.ResetField(f, payload.Difficulty); err != nil {
+		h.logActionError(s, st, err, "Failed to reset field")
+		return err
+	}
+
+	h.l.Debugf("Successfully reset field in world %d, channel %d, map %d",
+		payload.WorldId, payload.ChannelId, payload.MapId)
 
 	return nil
 }
@@ -2213,6 +2213,55 @@ func (h *HandlerImpl) handleForfeitQuest(s Saga, st Step[any]) error {
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to forfeit quest.")
 		return err
+	}
+
+	return nil
+}
+
+// handleExplorerQuest handles the ExplorerQuest action (task-290 G14/C22b),
+// mirroring Cosmic's MapScriptMethods.explorerQuest: force-start the quest,
+// synchronously record the current map on atlas-quest's medal-map set, and
+// -- when the map was newly recorded -- write the resulting visited-map
+// count as quest progress under the quest's infoNumber, exactly as
+// handleSetQuestProgress does.
+func (h *HandlerImpl) handleExplorerQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ExplorerQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	result, err := h.questP.RequestExplorerQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, uint32(payload.MapId))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to credit explorer quest.")
+		return err
+	}
+
+	// Cosmic returns early on a duplicate map
+	// (`if (!qs.addMedalMap(...)) return;`, MapScriptMethods.java:116-118)
+	// and never writes progress in that case.
+	if !result.NewlyRecorded {
+		return nil
+	}
+
+	progress := strconv.Itoa(int(result.Count))
+	if err := h.questP.RequestUpdateProgress(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, result.InfoNumber, progress); err != nil {
+		h.logActionError(s, st, err, "Unable to write explorer quest progress.")
+		return err
+	}
+
+	// Cosmic's explorerQuest then compares the visited count against the
+	// quest's infoEx(0) threshold to choose between
+	// getShowQuestCompletion(questId) and
+	// earnTitleMessage("<n>/<m> regions explored.") (MapScriptMethods.java:
+	// 128-136). Both are client packets with no existing writer/action in
+	// this service, so sending them is out of scope here (see
+	// ExplorerQuestResult's doc comment); the comparison is logged instead.
+	if result.Threshold > 0 {
+		if int(result.Count) >= result.Threshold {
+			h.l.Infof("Character [%d] met explorer quest [%d] threshold: [%d]/[%d] regions explored.", payload.CharacterId, payload.QuestId, result.Count, result.Threshold)
+		} else {
+			h.l.Debugf("Character [%d] progressed explorer quest [%d]: [%d]/[%d] regions explored.", payload.CharacterId, payload.QuestId, result.Count, result.Threshold)
+		}
 	}
 
 	return nil
@@ -2872,6 +2921,77 @@ func (h *HandlerImpl) handleShowInfo(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handlePlaySound handles the PlaySound action. Fire-and-forget: a sound
+// cannot be un-played, so this action registers no compensator.
+// This is a synchronous action - we send the command and immediately mark complete
+func (h *HandlerImpl) handlePlaySound(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(PlaySoundPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.PlaySound(s.TransactionId(), ch, payload.CharacterId, payload.Path)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to play sound.")
+		return err
+	}
+
+	// PlaySound is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleChangeMusic handles the ChangeMusic action. Fire-and-forget: the
+// previous track cannot be un-played, so this action registers no
+// compensator. This is a synchronous action - we send the command and
+// immediately mark complete.
+func (h *HandlerImpl) handleChangeMusic(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ChangeMusicPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.ChangeMusic(s.TransactionId(), ch, payload.CharacterId, payload.Path)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to change music.")
+		return err
+	}
+
+	// ChangeMusic is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleBoatEffect handles the BoatEffect action. Fire-and-forget: the
+// visual cannot be un-shown by a compensator without a corresponding hide
+// step of its own, so this action registers no compensator. This is a
+// synchronous action - we send the command and immediately mark complete.
+func (h *HandlerImpl) handleBoatEffect(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(BoatEffectPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.BoatEffect(s.TransactionId(), ch, payload.CharacterId, payload.Show)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show boat effect.")
+		return err
+	}
+
+	// BoatEffect is a synchronous command with no async response event
+	// Mark the step as completed immediately after successfully sending the command
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
 // handleShowInfoText handles the ShowInfoText action
 // This is a synchronous action - we send the command and immediately mark complete
 func (h *HandlerImpl) handleShowInfoText(s Saga, st Step[any]) error {
@@ -2900,6 +3020,13 @@ func (h *HandlerImpl) handleUpdateAreaInfo(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(UpdateAreaInfoPayload)
 	if !ok {
 		return errors.New("invalid payload")
+	}
+
+	// Persist before announcing, so a client that re-reads the value
+	// immediately after the packet sees the stored one (task-290 G12).
+	if err := h.areaInfoP.Put(payload.CharacterId, payload.Area, payload.Info); err != nil {
+		h.logActionError(s, st, err, "Unable to persist area info.")
+		return err
 	}
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)

@@ -34,6 +34,8 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case UpdateSkillPayload:
 		return p.CharacterId
+	case ClearSkillPayload:
+		return p.CharacterId
 	case ValidateCharacterStatePayload:
 		return p.CharacterId
 	case CreateAndEquipAssetPayload:
@@ -42,15 +44,29 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case WarpToPortalPayload:
 		return p.CharacterId
+	case WarpToMapPayload:
+		return p.CharacterId
 	case WarpToSavedLocationPayload:
 		return p.CharacterId
 	case SpawnMonsterPayload:
 		return p.CharacterId
+	case SpawnNpcPayload:
+		return p.CharacterId
 	case DeployPlayerNpcPayload:
+		return p.CharacterId
+	case ClearDropsPayload:
+		return p.CharacterId
+	case ResetReactorsPayload:
+		return p.CharacterId
+	case ShuffleReactorsPayload:
+		return p.CharacterId
+	case ResetFieldPayload:
 		return p.CharacterId
 	case CompleteQuestPayload:
 		return p.CharacterId
 	case StartQuestPayload:
+		return p.CharacterId
+	case ExplorerQuestPayload:
 		return p.CharacterId
 	case ApplyConsumableEffectPayload:
 		return uint32(p.CharacterId)
@@ -115,6 +131,12 @@ func ExtractCharacterId(step Step[any]) uint32 {
 	case SeverBuddiesForTransferPayload:
 		return p.CharacterId
 	case ChangeCharacterWorldPayload:
+		return p.CharacterId
+	case PlaySoundPayload:
+		return p.CharacterId
+	case ChangeMusicPayload:
+		return p.CharacterId
+	case BoatEffectPayload:
 		return p.CharacterId
 	default:
 		return 0

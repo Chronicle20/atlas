@@ -14,6 +14,8 @@ type Builder struct {
 	worldId         string
 	channelId       string
 	includeEquipped bool
+	values          []string
+	valueString     string
 }
 
 // NewBuilder creates a new Builder
@@ -69,6 +71,24 @@ func (b *Builder) SetIncludeEquipped(includeEquipped bool) *Builder {
 	return b
 }
 
+// SetValues sets the candidate set for the `in` operator, replacing any prior set.
+func (b *Builder) SetValues(values []string) *Builder {
+	b.values = values
+	return b
+}
+
+// AddValue appends one candidate to the `in` operator's set.
+func (b *Builder) AddValue(value string) *Builder {
+	b.values = append(b.values, value)
+	return b
+}
+
+// SetValueString sets the string value used by areaInfo conditions.
+func (b *Builder) SetValueString(valueString string) *Builder {
+	b.valueString = valueString
+	return b
+}
+
 // Build builds the Model
 func (b *Builder) Build() (Model, error) {
 	if b.conditionType == "" {
@@ -77,8 +97,8 @@ func (b *Builder) Build() (Model, error) {
 	if b.operator == "" {
 		return Model{}, errors.New("operator is required")
 	}
-	if b.value == "" {
-		return Model{}, errors.New("value is required")
+	if b.value == "" && len(b.values) == 0 {
+		return Model{}, errors.New("value or values is required")
 	}
 
 	return Model{
@@ -90,5 +110,7 @@ func (b *Builder) Build() (Model, error) {
 		worldId:         b.worldId,
 		channelId:       b.channelId,
 		includeEquipped: b.includeEquipped,
+		values:          b.values,
+		valueString:     b.valueString,
 	}, nil
 }

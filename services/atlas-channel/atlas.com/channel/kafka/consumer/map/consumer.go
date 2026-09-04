@@ -19,6 +19,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	event2 "atlas-channel/kafka/message/event"
 	_map3 "atlas-channel/kafka/message/map"
+	npcKafka "atlas-channel/kafka/message/npc"
 	"atlas-channel/kite"
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
@@ -78,6 +79,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("map_status_event")(_map3.EnvEventTopicMapStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("npc_status_event")(npcKafka.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -128,6 +130,17 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+
+				npcT, err := topic.EnvProvider(l)(npcKafka.EnvEventTopicStatus)()
+				if err != nil {
+					return nil, err
+				}
+				id, err = rf(npcT, message.AdaptHandler(message.PersistentConfig(handleStatusEventNpcCreated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: npcT, Id: id})
+
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventEnvironmentStateChanged(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -273,6 +286,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		routine.Go(l, ctx, func(_ context.Context) {
 			if err := spawnPlayerNpcsForSession(l, ctx, wp, s, f); err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to spawn player npcs for character [%d].", s.CharacterId())
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			if err := spawnScriptedNpcsForSession(l, ctx, wp, s, f); err != nil {
+				l.WithError(err).Errorf("SpawnForSelf: unable to spawn scripted npcs for character [%d].", s.CharacterId())
 			}
 		})
 

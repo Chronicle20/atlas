@@ -81,6 +81,7 @@ type RequirementsRestModel struct {
 	StartScript     string             `json:"startScript,omitempty"`
 	EndScript       string             `json:"endScript,omitempty"`
 	InfoNumber      uint32             `json:"infoNumber,omitempty"`
+	InfoEx          []string           `json:"infoEx,omitempty"`
 	NormalAutoStart bool               `json:"normalAutoStart,omitempty"`
 	CompletionCount uint32             `json:"completionCount,omitempty"`
 }

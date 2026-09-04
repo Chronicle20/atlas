@@ -780,6 +780,22 @@
   ida:
     address: 5152419
   note: 'base case ''n''(110) -> vtable+0x20 (CField::OnClock). address = dispatcher; vtable-resolved. Δ-25 vs v72 (135).'
+- op: CONTI_MOVE
+  direction: clientbound
+  opcode: 111
+  fname: CField_ContiMove::OnContiMove
+  provenance: ida-discovered
+  ida:
+    address: 5229972
+  note: 'task-290 C9b: CField_ContiMove::OnPacket @0x4fcd60 routes case 111 -> CField_ContiMove::OnContiMove @0x4fcd94 (was sub_4FCD94), case 112 -> OnContiState @0x4fcdf9; default falls through to CField::OnPacket @0x4e9ea3. OnContiMove reads Decode1(state) and dispatches on (state-7) across 6 arms (nullsub_8/sub_4FCE81/nullsub_9/sub_4FCEA6/nullsub_10/sub_4FCEDC); the state==10 arm (sub_4FCEA6) is the OnMoveField twin of the named gms_v92 CField_ContiMove::OnMoveField @0x546f60. Δ-25 vs v72 (136).'
+- op: CONTI_STATE
+  direction: clientbound
+  opcode: 112
+  fname: CField_ContiMove::OnContiState
+  provenance: ida-discovered
+  ida:
+    address: 5230073
+  note: 'task-290 C9b: CField_ContiMove::OnPacket @0x4fcd60 case 112 -> CField_ContiMove::OnContiState @0x4fcdf9 (was sub_4FCDF9). Δ-25 vs v72 (137).'
 - op: SET_QUEST_CLEAR
   direction: clientbound
   opcode: 113

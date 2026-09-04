@@ -244,6 +244,7 @@ topics:
       - atlas-channel/kafka/message/monster
       - atlas-consumables/kafka/message/monster
       - atlas-events/kafka/message/monster
+      - atlas-maps/kafka/message/monster
       - atlas-maps/tasks
       - atlas-messages/kafka/message/monster
       - atlas-monsters/kafka/consumer/monster
@@ -843,6 +844,11 @@ topics:
       - atlas-channel/kafka/message/npc/shop
       - atlas-npc/kafka/message/shops
       - atlas-saga-orchestrator/kafka/message/npcshop
+  - token: EVENT_TOPIC_NPC_STATUS
+    cleanup: delete
+    packages:
+      - atlas-channel/kafka/message/npc
+      - atlas-maps/kafka/message/npc
   - token: EVENT_TOPIC_PARCEL_CUSTODY_STATUS
     cleanup: delete
     packages:

@@ -31,6 +31,8 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("create_in_map", handleCreateInMap)).Methods(http.MethodPost)
 		r.HandleFunc("", registerGet("get_in_map", handleGetInMap)).Methods(http.MethodGet)
 		r.HandleFunc("/{reactorId}", registerGet("get_by_id", handleGetByIdInMap)).Methods(http.MethodGet)
+		r.HandleFunc("/reset", rest.RegisterInputHandler[ResetInputRestModel](l)(si)("reset_reactors_in_map", handleResetReactorsInMap)).Methods(http.MethodPost)
+		r.HandleFunc("/shuffle", rest.RegisterInputHandler[ShuffleInputRestModel](l)(si)("shuffle_reactors_in_map", handleShuffleReactorsInMap)).Methods(http.MethodPost)
 	}
 }
 
@@ -152,6 +154,50 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 						}
 
 						server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
+					}
+				})
+			})
+		})
+	})
+}
+
+func handleResetReactorsInMap(d *rest.HandlerDependency, _ *rest.HandlerContext, i ResetInputRestModel) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
+						_, err := NewProcessor(d.Logger(), d.Context()).ResetInField(f, i.MinState)
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Unable to reset reactors for field.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+
+						w.WriteHeader(http.StatusNoContent)
+					}
+				})
+			})
+		})
+	})
+}
+
+func handleShuffleReactorsInMap(d *rest.HandlerDependency, _ *rest.HandlerContext, _ ShuffleInputRestModel) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
+						err := NewProcessor(d.Logger(), d.Context()).ShuffleInField(f)
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Unable to shuffle reactors for field.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+
+						w.WriteHeader(http.StatusNoContent)
 					}
 				})
 			})

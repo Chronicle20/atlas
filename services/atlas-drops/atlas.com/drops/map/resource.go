@@ -23,8 +23,10 @@ import (
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		registerGet := rest.RegisterHandler(l)(si)
+		registerDelete := rest.RegisterHandler(l)(si)
 		r := router.PathPrefix("/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/drops").Subrouter()
 		r.HandleFunc("", registerGet("get_drops_in_map", handleGetDropsInMap)).Methods(http.MethodGet)
+		r.HandleFunc("", registerDelete("clear_drops_in_map", handleClearDropsInMap)).Methods(http.MethodDelete)
 	}
 }
 
@@ -63,6 +65,29 @@ func handleGetDropsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http
 						query := r.URL.Query()
 						queryParams := jsonapi.ParseQueryFields(&query)
 						server.MarshalPaginatedResponse[[]drop.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
+					}
+				})
+			})
+		})
+	})
+}
+
+func handleClearDropsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
+						p := drop.NewProcessor(d.Logger(), d.Context())
+						_, err := p.ClearForField(f)
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Unable to clear drops for field.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+
+						w.WriteHeader(http.StatusNoContent)
 					}
 				})
 			})

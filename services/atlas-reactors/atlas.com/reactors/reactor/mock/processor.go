@@ -22,6 +22,8 @@ type ProcessorMock struct {
 	TouchFunc             func(reactorId uint32, characterId uint32, touching bool) error
 	TriggerFunc           func(r reactor.Model, characterId uint32)
 	TriggerAndDestroyFunc func(r reactor.Model, characterId uint32) error
+	ResetInFieldFunc      func(f field.Model, minState *int8) (int, error)
+	ShuffleInFieldFunc    func(f field.Model) error
 }
 
 var _ reactor.Processor = (*ProcessorMock)(nil)
@@ -108,6 +110,20 @@ func (m *ProcessorMock) Trigger(r reactor.Model, characterId uint32) {
 func (m *ProcessorMock) TriggerAndDestroy(r reactor.Model, characterId uint32) error {
 	if m.TriggerAndDestroyFunc != nil {
 		return m.TriggerAndDestroyFunc(r, characterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ResetInField(f field.Model, minState *int8) (int, error) {
+	if m.ResetInFieldFunc != nil {
+		return m.ResetInFieldFunc(f, minState)
+	}
+	return 0, nil
+}
+
+func (m *ProcessorMock) ShuffleInField(f field.Model) error {
+	if m.ShuffleInFieldFunc != nil {
+		return m.ShuffleInFieldFunc(f)
 	}
 	return nil
 }

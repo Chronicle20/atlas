@@ -1,0 +1,119 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map 910510000 - spawns the Cygnus (9300285) or Explorer (9300344) quest monster at (680, 258) depending on job family and quest progress",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "jobId",
+              "value": "1000"
+            },
+            {
+              "operator": "<=",
+              "type": "jobId",
+              "value": "1999"
+            },
+            {
+              "operator": "=",
+              "referenceId": "20730",
+              "type": "questStatus",
+              "value": "2"
+            },
+            {
+              "operator": "=",
+              "referenceId": "20730",
+              "step": "9300285",
+              "type": "questProgress",
+              "value": "0"
+            }
+          ],
+          "id": "spawn_cygnus",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9300285",
+                "spawnIfAbsent": "true",
+                "x": "680",
+                "y": "258"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "<",
+              "type": "jobId",
+              "value": "1000"
+            },
+            {
+              "operator": "=",
+              "referenceId": "21731",
+              "type": "questStatus",
+              "value": "2"
+            },
+            {
+              "operator": "=",
+              "referenceId": "21731",
+              "step": "9300344",
+              "type": "questProgress",
+              "value": "0"
+            }
+          ],
+          "id": "spawn_explorer_below",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9300344",
+                "spawnIfAbsent": "true",
+                "x": "680",
+                "y": "258"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">",
+              "type": "jobId",
+              "value": "1999"
+            },
+            {
+              "operator": "=",
+              "referenceId": "21731",
+              "type": "questStatus",
+              "value": "2"
+            },
+            {
+              "operator": "=",
+              "referenceId": "21731",
+              "step": "9300344",
+              "type": "questProgress",
+              "value": "0"
+            }
+          ],
+          "id": "spawn_explorer_above",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9300344",
+                "spawnIfAbsent": "true",
+                "x": "680",
+                "y": "258"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "scriptName": "910510000"
+    },
+    "id": "910510000",
+    "type": "map-action"
+  }
+}

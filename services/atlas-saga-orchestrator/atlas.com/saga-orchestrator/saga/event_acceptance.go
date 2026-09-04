@@ -203,6 +203,10 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Skills.
 	sharedsaga.CreateSkill: {EventKindSkillCreated},
 	sharedsaga.UpdateSkill: {EventKindSkillUpdated},
+	// ClearSkill emits REQUEST_DELETE, which atlas-skills answers with a
+	// DELETED status event even when the row was already absent
+	// (DeleteForSagaCompensation is idempotent), so the step always advances.
+	sharedsaga.ClearSkill: {EventKindSkillDeleted},
 
 	// Note.
 	sharedsaga.CreateNote: {EventKindNoteCreated, EventKindNoteCreateFailed},
@@ -212,6 +216,9 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.StartQuest:       {EventKindQuestStarted},
 	sharedsaga.SetQuestProgress: {EventKindQuestStarted},
 	sharedsaga.ForfeitQuest:     {EventKindQuestForfeited},
+	// ExplorerQuest composes a StartQuest command with a synchronous
+	// medal-map REST record; it does not itself wait on a downstream event.
+	sharedsaga.ExplorerQuest: {},
 
 	// Consumable.
 	sharedsaga.ApplyConsumableEffect:  {EventKindConsumableEffectApplied},
@@ -287,7 +294,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
 	sharedsaga.AwaitInventoryCreated: {EventKindInventoryCreated, EventKindInventoryCreationFailed},
 
-	// All three warp actions advance on character.map_changed, tagged with the
+	// All four warp actions advance on character.map_changed, tagged with the
 	// saga transactionId. atlas-maps warp.ProcessorImpl.ChangeMap
 	// (services/atlas-maps/atlas.com/maps/character/warp/processor.go) emits
 	// MAP_CHANGED *unconditionally* — there is no same-map short-circuit there
@@ -326,6 +333,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.WarpToRandomPortal:  {EventKindCharacterMapChanged},
 	sharedsaga.WarpToPortal:        {EventKindCharacterMapChanged},
 	sharedsaga.WarpToSavedLocation: {EventKindCharacterMapChanged},
+	sharedsaga.WarpToMap:           {EventKindCharacterMapChanged},
 
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
 	sharedsaga.SaveLocation:               {},
@@ -341,6 +349,9 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.PlayPortalSound:            {},
 	sharedsaga.UpdateAreaInfo:             {},
 	sharedsaga.ShowInfo:                   {},
+	sharedsaga.PlaySound:                  {},
+	sharedsaga.ChangeMusic:                {},
+	sharedsaga.BoatEffect:                 {},
 	sharedsaga.ShowInfoText:               {},
 	sharedsaga.ShowIntro:                  {},
 	sharedsaga.ShowHint:                   {},
@@ -348,6 +359,11 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.BlockPortal:                {},
 	sharedsaga.UnblockPortal:              {},
 	sharedsaga.SpawnMonster:               {},
+	sharedsaga.SpawnNpc:                   {},
+	sharedsaga.ClearDrops:                 {},
+	sharedsaga.ResetReactors:              {},
+	sharedsaga.ShuffleReactors:            {},
+	sharedsaga.ResetField:                 {},
 	sharedsaga.SpawnReactorDrops:          {},
 	sharedsaga.HitReactor:                 {},
 	sharedsaga.BroadcastPqMessage:         {},

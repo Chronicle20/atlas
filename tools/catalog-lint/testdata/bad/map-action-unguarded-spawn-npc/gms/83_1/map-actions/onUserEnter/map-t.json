@@ -1,0 +1,17 @@
+{
+  "data": {
+    "attributes": {
+      "description": "fixture",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "r1",
+          "operations": [{"params": {"npcId": "1", "x": "0", "y": "0"}, "type": "spawn_npc"}]
+        }
+      ],
+      "scriptName": "t"
+    },
+    "id": "t",
+    "type": "map-action"
+  }
+}

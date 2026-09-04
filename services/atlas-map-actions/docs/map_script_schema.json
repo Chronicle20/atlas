@@ -68,16 +68,61 @@
           "description": "Type of condition",
           "enum": [
             "map_id",
+            "areaInfo",
+            "buddyCapacity",
+            "buff",
+            "canSpawnPlayerNpc",
+            "dexterity",
+            "dojoPoints",
+            "excessSp",
+            "fame",
             "gender",
-            "job",
+            "gmLevel",
+            "guildId",
+            "guildLeader",
+            "guildRank",
+            "hasUnclaimedMarriageGifts",
+            "hp",
+            "intelligence",
+            "inventorySpace",
+            "item",
+            "jobId",
             "level",
-            "quest_status"
+            "luck",
+            "mapCapacity",
+            "mapId",
+            "maxHp",
+            "meso",
+            "monsterBookCount",
+            "partyId",
+            "partyLeader",
+            "partySize",
+            "petCount",
+            "petTameness",
+            "pqCustomData",
+            "questProgress",
+            "questStatus",
+            "reborns",
+            "skillLevel",
+            "strength",
+            "transportAvailable",
+            "transportInTransit",
+            "vanquisherKills"
           ]
         },
         "operator": {
           "type": "string",
           "description": "Comparison operator",
-          "enum": ["=", ">", "<", ">=", "<=", "!="]
+          "enum": [
+            "=",
+            ">",
+            "<",
+            ">=",
+            "<=",
+            "in",
+            "==",
+            "!="
+          ]
         },
         "value": {
           "type": "string",
@@ -86,6 +131,10 @@
         "referenceId": {
           "type": "string",
           "description": "Reference identifier (e.g., quest ID for quest_status conditions)"
+        },
+        "valueString": {
+          "type": "string",
+          "description": "Substring to test for in the stored areaInfo string (areaInfo conditions only)"
         }
       }
     },
@@ -101,13 +150,29 @@
           "description": "Type of operation",
           "enum": [
             "field_effect",
-            "lock_ui",
-            "unlock_ui",
-            "spawn_monster",
             "show_intro",
+            "spawn_monster",
             "drop_message",
             "move_environment",
-            "reset_environment"
+            "reset_environment",
+            "lock_ui",
+            "unlock_ui",
+            "set_quest_progress",
+            "start_quest",
+            "explorer_quest",
+            "open_npc",
+            "update_area_info",
+            "show_info",
+            "play_sound",
+            "change_music",
+            "boat_effect",
+            "clear_skill",
+            "warp_to_map",
+            "spawn_npc",
+            "clear_drops",
+            "reset_reactors",
+            "shuffle_reactors",
+            "reset_field"
           ]
         },
         "params": {
@@ -121,13 +186,19 @@
       "allOf": [
         {
           "if": {
-            "properties": { "type": { "const": "field_effect" } }
+            "properties": {
+              "type": {
+                "const": "field_effect"
+              }
+            }
           },
           "then": {
             "properties": {
               "params": {
                 "type": "object",
-                "required": ["path"],
+                "required": [
+                  "path"
+                ],
                 "properties": {
                   "path": {
                     "type": "string",
@@ -140,13 +211,19 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "show_intro" } }
+            "properties": {
+              "type": {
+                "const": "show_intro"
+              }
+            }
           },
           "then": {
             "properties": {
               "params": {
                 "type": "object",
-                "required": ["path"],
+                "required": [
+                  "path"
+                ],
                 "properties": {
                   "path": {
                     "type": "string",
@@ -159,17 +236,54 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "spawn_monster" } }
+            "properties": {
+              "type": {
+                "const": "spawn_monster"
+              }
+            }
           },
           "then": {
             "properties": {
               "params": {
                 "type": "object",
-                "required": ["monsterId"],
+                "oneOf": [
+                  {
+                    "required": [
+                      "monsterId"
+                    ],
+                    "not": {
+                      "required": [
+                        "monsterIds"
+                      ]
+                    }
+                  },
+                  {
+                    "required": [
+                      "monsterIds"
+                    ],
+                    "not": {
+                      "required": [
+                        "monsterId"
+                      ]
+                    }
+                  }
+                ],
                 "properties": {
                   "monsterId": {
                     "type": "string",
-                    "description": "Monster ID to spawn"
+                    "description": "Monster ID to spawn. Mutually exclusive with monsterIds."
+                  },
+                  "monsterIds": {
+                    "type": "string",
+                    "description": "Comma-separated monster IDs; one is chosen uniformly at execution. Mutually exclusive with monsterId."
+                  },
+                  "spawnIfAbsent": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false"
+                    ],
+                    "description": "When \"true\", atlas-monsters suppresses the spawn if a monster of this template is already on the field instance."
                   },
                   "x": {
                     "type": "string",
@@ -194,13 +308,19 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "drop_message" } }
+            "properties": {
+              "type": {
+                "const": "drop_message"
+              }
+            }
           },
           "then": {
             "properties": {
               "params": {
                 "type": "object",
-                "required": ["message"],
+                "required": [
+                  "message"
+                ],
                 "properties": {
                   "messageType": {
                     "type": "string",
@@ -217,13 +337,478 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "move_environment" } }
+            "properties": {
+              "type": {
+                "const": "lock_ui"
+              }
+            }
           },
           "then": {
             "properties": {
               "params": {
                 "type": "object",
-                "required": ["name", "value"],
+                "description": "lock_ui takes no parameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "unlock_ui"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "description": "unlock_ui takes no parameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "set_quest_progress"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "questId",
+                  "infoNumber",
+                  "progress"
+                ],
+                "properties": {
+                  "questId": {
+                    "type": "string",
+                    "description": "Quest ID whose progress is being set"
+                  },
+                  "infoNumber": {
+                    "type": "string",
+                    "description": "Quest info-number sub-key"
+                  },
+                  "progress": {
+                    "type": "string",
+                    "description": "Progress value, passed through verbatim"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "start_quest"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "questId"
+                ],
+                "properties": {
+                  "questId": {
+                    "type": "string",
+                    "description": "Quest ID to force-start"
+                  },
+                  "npcId": {
+                    "type": "string",
+                    "description": "NPC credited with starting the quest (default 0)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "explorer_quest"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "questId",
+                  "areaName"
+                ],
+                "properties": {
+                  "questId": {
+                    "type": "string",
+                    "description": "Quest ID to credit with the current map as a visited exploration region"
+                  },
+                  "areaName": {
+                    "type": "string",
+                    "description": "Human-readable region label (currently unused; the getShowQuestCompletion/earnTitleMessage completion packets are not sent)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "open_npc"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "npcId"
+                ],
+                "properties": {
+                  "npcId": {
+                    "type": "string",
+                    "description": "NPC template ID whose conversation the server starts"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "update_area_info"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "area",
+                  "info"
+                ],
+                "properties": {
+                  "area": {
+                    "type": "string",
+                    "description": "Area/info number (questId in the protocol)"
+                  },
+                  "info": {
+                    "type": "string",
+                    "description": "Semicolon-delimited k=v info string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "show_info"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "OnUserEff path (e.g. Effect/OnUserEff.img/guideEffect/...)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "play_sound"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "WZ sound path (e.g. cannonshooter/flying)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "change_music"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "WZ background music path (e.g. Bgm04/ArabPirate)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "boat_effect"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "show"
+                ],
+                "properties": {
+                  "show": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false"
+                    ],
+                    "description": "Whether to show or hide the boat-arrival visual"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "clear_skill"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "skillId"
+                ],
+                "properties": {
+                  "skillId": {
+                    "type": "string",
+                    "description": "Skill ID to remove from the character entirely"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "warp_to_map"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "mapId"
+                ],
+                "properties": {
+                  "mapId": {
+                    "type": "string",
+                    "description": "Destination map ID; the destination service picks the spawn point"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "spawn_npc"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "npcId",
+                  "x",
+                  "y"
+                ],
+                "properties": {
+                  "npcId": {
+                    "type": "string",
+                    "description": "NPC template ID to spawn"
+                  },
+                  "x": {
+                    "type": "string",
+                    "description": "X coordinate for spawn position"
+                  },
+                  "y": {
+                    "type": "string",
+                    "description": "Y coordinate for spawn position"
+                  },
+                  "spawnIfAbsent": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false"
+                    ],
+                    "description": "When \"true\", atlas-maps suppresses the spawn if an NPC of this template is already on the field instance."
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "clear_drops"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "description": "clear_drops takes no parameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "reset_reactors"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "properties": {
+                  "minState": {
+                    "type": "string",
+                    "description": "Reset only reactors whose state is at least this value; omit to reset all"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "shuffle_reactors"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "description": "shuffle_reactors takes no parameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "reset_field"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "properties": {
+                  "difficulty": {
+                    "type": "string",
+                    "description": "Spawn difficulty bucket for the post-reset first spawn (default 1)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "move_environment"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "value"
+                ],
                 "properties": {
                   "name": {
                     "type": "string",
@@ -235,7 +820,10 @@
                   },
                   "kind": {
                     "type": "string",
-                    "enum": ["ENVIRONMENT", "OBSTACLE"],
+                    "enum": [
+                      "ENVIRONMENT",
+                      "OBSTACLE"
+                    ],
                     "description": "Which clientbound opcode carries the change; defaults to ENVIRONMENT"
                   }
                 }
@@ -245,7 +833,11 @@
         },
         {
           "if": {
-            "properties": { "type": { "const": "reset_environment" } }
+            "properties": {
+              "type": {
+                "const": "reset_environment"
+              }
+            }
           },
           "then": {
             "properties": {

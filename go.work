@@ -96,6 +96,7 @@ use (
 	./services/atlas-world/atlas.com/world
 	./tools/catalog-lint
 	./tools/cideps
+	./tools/gen-map-action-schema
 	./tools/packet-audit
 	./tools/reactor-seed-gen
 	./tools/reactor-seed-lint

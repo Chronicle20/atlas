@@ -1,0 +1,24 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Cannoneer tutorial - plays the cannonshooter/flying sound. Cosmic's remaining calls in this script (sendDirectionInfo/setDirectionStatus) are unresolved methods that abort the script; see plan-c.md section 0.",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "play_sound",
+          "operations": [
+            {
+              "params": {
+                "path": "cannonshooter/flying"
+              },
+              "type": "play_sound"
+            }
+          ]
+        }
+      ],
+      "scriptName": "cannon_tuto_direction1"
+    },
+    "id": "cannon_tuto_direction1",
+    "type": "map-action"
+  }
+}

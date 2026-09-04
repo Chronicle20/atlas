@@ -1,0 +1,170 @@
+{
+  "service": "task-290-cosmic-map-action-parity-shard2",
+  "path": "services/atlas-maps, services/atlas-channel, services/atlas-query-aggregator, services/atlas-map-actions, services/atlas-reactors, services/atlas-drops, services/atlas-data, services/atlas-configurations, services/atlas-monsters, libs/atlas-script-core, tools/catalog-lint, tools/gen-map-action-schema",
+  "date": "2026-09-03",
+  "range": "3f37fe6da..9c2b9be13",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "map/npc (atlas-maps)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go with NewBuilder()/Build()", "status": "fail", "evidence": "services/atlas-maps/atlas.com/maps/map/npc/ has model.go but no builder.go"},
+        {"id": "DOM-02/03", "name": "entity.go ToEntity/Make", "status": "n-a", "evidence": "no entity.go; Model is session-scoped, never persisted"},
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) in rest.go", "status": "pass", "evidence": "map/npc/rest.go:26"},
+        {"id": "DOM-05", "name": "TransformSlice in rest.go, used by list handler", "status": "fail", "evidence": "map/npc/resource.go:48 uses model.SliceMap(Transform) inline; no TransformSlice in rest.go"},
+        {"id": "DOM-16", "name": "administrator.go for create/update/delete", "status": "n-a", "evidence": "Create writes to in-memory Registry, not a DB entity"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "map/npc/processor.go:25"},
+        {"id": "DOM-08", "name": "POST via RegisterInputHandler[T]", "status": "pass", "evidence": "map/npc/resource.go:29"},
+        {"id": "DOM-09", "name": "Transform call sites check error", "status": "pass", "evidence": "map/npc/resource.go:48-52,75-79"},
+        {"id": "DOM-13/14/15", "name": "No cross-domain orchestration/provider calls/direct writes in handler", "status": "pass", "evidence": "map/npc/resource.go delegates to Processor only"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "warn", "evidence": "map/npc/resource.go:70 maps every p.Create error to 400 regardless of cause"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "map/npc/rest.go:5-11"},
+        {"id": "DOM-27", "name": "DB-backed service uses WriteErrorResponse", "status": "fail", "evidence": "map/npc/resource.go:44,88 write http.StatusInternalServerError directly; atlas-maps calls database.Connect (main.go:74)"},
+        {"id": "DOM-30", "name": "AndEmit+Buffer for DB writes; direct emit OK for non-DB state", "status": "pass", "evidence": "map/npc/processor.go:56 emits directly; Create only writes an in-memory Registry (documented DOM-30 exception)"},
+        {"id": "DOM-23", "name": "New topic env var wired everywhere", "status": "pass", "evidence": "EVENT_TOPIC_NPC_STATUS in deploy/k8s/base/env-configmap.yaml:163, kafka-topics-configmap.yaml:284, both overlays' kustomization.yaml"},
+        {"id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "pass", "evidence": "map/npc/processor_test.go:33-51 stubNpcEmit"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "processor_test.go 6/6 new funcs standalone; registry_test.go 4/4 new funcs standalone"},
+        {"id": "DOM-31", "name": "Tenant/trace only in context", "status": "pass", "evidence": "no TenantId/TraceId field in rest.go/resource.go"}
+      ]
+    },
+    {
+      "name": "map (atlas-maps)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-08", "name": "POST via RegisterInputHandler[T]", "status": "pass", "evidence": "map/resource.go:34"},
+        {"id": "DOM-27", "name": "WriteErrorResponse for 500 in DB-backed service", "status": "pass", "evidence": "map/resource.go:129"},
+        {"id": "DOM-19", "name": "Request model flat", "status": "pass", "evidence": "map/rest.go:29-32"}
+      ]
+    },
+    {
+      "name": "monster (atlas-maps, external client)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "fail", "evidence": "monster/processor.go:79-84 (DeleteInMap) builds URL inline instead of via requests.go"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "monster/requests.go:23"},
+        {"id": "EXT-03", "name": "Only genuine 404 -> not-found", "status": "pass", "evidence": "monster/processor.go:84 returns error verbatim"}
+      ]
+    },
+    {
+      "name": "map/monster (atlas-maps)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic in processor, not handler", "status": "pass", "evidence": "map/monster/processor.go ResetField composed from DeleteInMap + RestoreSpawnPoints"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "map/monster/processor_test.go 3/3 new funcs standalone (:1166,:1222,:1283)"}
+      ]
+    },
+    {
+      "name": "drop (atlas-drops)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-30", "name": "AndEmit+Buffer for the write's events", "status": "pass", "evidence": "drop/processor.go:322-336 ClearForField wraps Expire calls in message.Emit"},
+        {"id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "pass", "evidence": "drop/processor_test.go:16-27 TestMain installs producertest.InstallNoop()"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "fail", "evidence": "drop.Processor gains ClearForField; drop/mock/processor.go not updated"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "drop/processor_test.go 4/4 new funcs standalone (:1009,:1042,:1079,:1096)"}
+      ]
+    },
+    {
+      "name": "drops/map (atlas-drops)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic in parent processor", "status": "pass", "evidence": "drops/map/resource.go delegates to drop.Processor"},
+        {"id": "SUB-02", "name": "No db.Create/db.Save in resource.go", "status": "pass", "evidence": "zero matches"},
+        {"id": "SUB-03", "name": "POST uses RegisterInputHandler[T]", "status": "n-a", "evidence": "package registers only GET and DELETE"},
+        {"id": "SUB-04", "name": "No manual JSON parsing", "status": "pass", "evidence": "zero matches"},
+        {"id": "DOM-27", "name": "WriteErrorResponse in DB-backed service", "status": "n-a", "evidence": "atlas-drops does not call database.Connect"}
+      ]
+    },
+    {
+      "name": "reactor (atlas-reactors)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-30", "name": "Direct emit for non-DB registry state", "status": "pass", "evidence": "reactor/processor.go:385,412 ResetInField/ShuffleInField mutate only in-memory Registry"},
+        {"id": "DOM-08", "name": "POST via RegisterInputHandler[T]", "status": "fail", "evidence": "reactor/resource.go:33 shuffle route registered via RegisterHandler (registerPost), not RegisterInputHandler[T]"},
+        {"id": "DOM-27", "name": "WriteErrorResponse in DB-backed service", "status": "n-a", "evidence": "atlas-reactors does not call database.Connect"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "reactor/mock/processor.go:25-26,116-129 adds ResetInField/ShuffleInField"},
+        {"id": "DOM-19", "name": "Request model flat", "status": "pass", "evidence": "reactor/rest.go:47-50"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "reactor/processor_test.go 5/5 new funcs standalone (:629,:658,:696,:730,:793)"}
+      ]
+    },
+    {
+      "name": "area_info (atlas-query-aggregator)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "pass", "evidence": "area_info/requests.go:12-19"},
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) in rest.go", "status": "fail", "evidence": "area_info/rest.go defines only reverse Extract; no Transform; sibling transport package has both"},
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "area_info/rest.go RestModel has neither method; sibling transport/rest.go:50,55 has both"},
+        {"id": "EXT-02", "name": "httptest-backed integration test with representative fixture", "status": "pass", "evidence": "validation/processor_test.go:824 TestProcessorValidateStructuredAreaInfo, real httptest server + populated Model assertion"},
+        {"id": "EXT-03", "name": "Only genuine 404 -> not-found", "status": "pass", "evidence": "area_info/processor.go:31-34 verbatim error"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "area_info/requests.go:13"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "area_info.Processor is new; mock/processor.go implements it in same diff"}
+      ]
+    },
+    {
+      "name": "validation (atlas-query-aggregator)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "Constants reuse", "status": "pass", "evidence": "validation/model.go:62,49 casts sharedsaga constants"},
+        {"id": "DOM-19", "name": "Request model flat", "status": "pass", "evidence": "ConditionInput.ValueString scalar field"},
+        {"id": "DOM-31", "name": "Tenant/trace only in context", "status": "pass", "evidence": "no tenant/trace field added"}
+      ]
+    },
+    {
+      "name": "script (atlas-map-actions)",
+      "type": "domain",
+      "checks": [
+        {"id": "carried-forward", "name": "mapId override + field instance mismatch (prior shard)", "status": "pass", "evidence": "executor.go:319-330 sets instance=uuid.Nil on mapId override; TestExecuteSpawnMonsterMapIdOverrideClearsInstance covers it"},
+        {"id": "DOM-30", "name": "Saga-emission pattern", "status": "pass", "evidence": "every new execute* op follows saga.NewBuilder()...Create(s)"},
+        {"id": "DOM-31", "name": "Domain routing fields not tenant/trace", "status": "pass", "evidence": "no tenant/trace field threaded through new payloads"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "rest.go:41-42, entity.go:54-55 ValueString scalar"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "executor_test.go: 22 of 37 new funcs standalone"},
+        {"id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "pass", "evidence": "executor_test.go:19-36 recordingSagaProcessor"}
+      ]
+    },
+    {
+      "name": "condition (libs/atlas-script-core)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "Build() still validates invariants", "status": "pass", "evidence": "condition/builder.go unchanged validation, additive valueString field"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "condition/model_test.go:8 TestBuilderBuild now table-driven (resolved from prior shard)"}
+      ]
+    },
+    {
+      "name": "atlas-channel (kafka/consumer/map, kafka/consumer/system_message, kafka/message/npc, kafka/message/system_message)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted bytes from tenant writer-options table", "status": "pass", "evidence": "consumer.go:395-403,449-457 changeMusicConfigured/boatEffectConfigured use writer.TenantWriterOptions+CodeConfigured; seed template opcodes added"},
+        {"id": "DOM-23", "name": "New topic env var wired", "status": "pass", "evidence": "kafka/consumer/map/consumer.go:75,126-137 topic.EnvProvider(EnvEventTopicStatus)"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "kafka/consumer/map/consumer.go:265"},
+        {"id": "DOM-31", "name": "Tenant/trace only in context", "status": "pass", "evidence": "Command/StatusEvent carry domain routing fields only; tenant read via tenant.MustFromContext"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "n-a", "evidence": "not fully evaluated within review budget, see Not evaluable"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-20: atlas-channel kafka/consumer/map/npc_test.go and kafka/consumer/system_message/consumer_test.go (649 combined new lines) not swept function-by-function",
+    "DOM-17: map/npc/resource.go 400-for-every-error precision not traced against every Processor.Create error path",
+    "DOM-33: whether any module outside atlas-drops holds another stale mock of drop.Processor was asserted from the import graph, not verified by reading every module"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-maps/atlas.com/maps/map/npc/ - new domain package with model.go but no builder.go",
+    "DOM-05: services/atlas-maps/atlas.com/maps/map/npc/resource.go:48 - list handler uses model.SliceMap(Transform) inline, no TransformSlice in rest.go",
+    "DOM-27: services/atlas-maps/atlas.com/maps/map/npc/resource.go:44,88 - raw StatusInternalServerError instead of server.WriteErrorResponse in DB-backed service",
+    "FILE-03: services/atlas-maps/atlas.com/maps/monster/processor.go:79-84 - cross-service URL construction inlined in processor.go instead of requests.go",
+    "DOM-08: services/atlas-reactors/atlas.com/reactors/reactor/resource.go:33 - new POST /reactors/shuffle registered via RegisterHandler, not RegisterInputHandler[T]",
+    "DOM-33: services/atlas-drops/atlas.com/drops/drop/mock/processor.go - not updated for new drop.Processor.ClearForField method",
+    "DOM-04/EXT-01: services/atlas-query-aggregator/atlas.com/query-aggregator/area_info/rest.go - no Transform func, RestModel has no SetToOneReferenceID/SetToManyReferenceIDs",
+    "DOM-20: services/atlas-maps/atlas.com/maps/map/npc/processor_test.go - 6/6 new funcs standalone",
+    "DOM-20: services/atlas-maps/atlas.com/maps/map/npc/registry_test.go - 4/4 new funcs standalone",
+    "DOM-20: services/atlas-maps/atlas.com/maps/map/monster/processor_test.go - 3/3 new funcs standalone",
+    "DOM-20: services/atlas-drops/atlas.com/drops/drop/processor_test.go - 4/4 new funcs standalone",
+    "DOM-20: services/atlas-reactors/atlas.com/reactors/reactor/processor_test.go - 5/5 new funcs standalone",
+    "DOM-20: services/atlas-map-actions/atlas.com/map-actions/script/executor_test.go - 22 of 37 new funcs standalone"
+  ],
+  "nonBlocking": [
+    "DOM-17 (WARN): services/atlas-maps/atlas.com/maps/map/npc/resource.go:70 maps every p.Create error to 400 regardless of cause"
+  ]
+}

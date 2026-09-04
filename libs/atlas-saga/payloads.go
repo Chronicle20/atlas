@@ -49,6 +49,15 @@ type WarpToPortalPayload struct {
 	PortalName  string     `json:"portalName,omitempty"` // PortalName specifies the name of the portal (resolved to ID if provided)
 }
 
+// WarpToMapPayload represents the payload required to warp a character to a
+// map without naming a portal. The destination service picks the spawn point.
+type WarpToMapPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       _map.Id    `json:"mapId"`       // MapId specifies the destination map to warp to
+}
+
 // AwardExperiencePayload represents the payload required to award experience to a character.
 type AwardExperiencePayload struct {
 	CharacterId   uint32                    `json:"characterId"`   // CharacterId associated with the action
@@ -303,6 +312,15 @@ type UpdateSkillPayload struct {
 	Expiration  time.Time `json:"expiration"`  // New skill expiration time
 }
 
+// ClearSkillPayload represents the payload required to remove a skill entirely.
+// WorldId is carried because the downstream REQUEST_DELETE command and its
+// DELETED status event are world-scoped.
+type ClearSkillPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	SkillId     uint32   `json:"skillId"`     // SkillId to remove
+}
+
 // IncreaseBuddyCapacityPayload represents the payload required to increase a character's buddy list capacity.
 type IncreaseBuddyCapacityPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
@@ -387,6 +405,27 @@ type SetQuestProgressPayload struct {
 	Progress    string   `json:"progress"`    // Progress value to set
 }
 
+// ExplorerQuestPayload represents the payload required to credit one
+// exploration region for a medal-style quest (task-290 G14).
+//
+// AreaName is the human-readable region label Cosmic passes to
+// earnTitleMessage("<n>/<m> regions explored."). It is carried on the
+// payload because the seed supplies it and it is the only human-readable
+// label of the region, but it is currently unused: atlas-data now serves the
+// quest's infoNumber and infoEx(0) threshold, and the handler writes the
+// visited-map count as quest progress via RequestUpdateProgress when the map
+// is newly recorded, but Cosmic's getShowQuestCompletion/earnTitleMessage
+// packets are still not sent -- see ExplorerQuestResult's doc comment in
+// atlas-saga-orchestrator for why.
+type ExplorerQuestPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	QuestId     uint32     `json:"questId"`     // QuestId being credited
+	MapId       _map.Id    `json:"mapId"`       // MapId being recorded as visited
+	AreaName    string     `json:"areaName"`    // AreaName is the human-readable region label (currently unused; see doc comment)
+}
+
 // ForfeitQuestPayload represents the payload required to forfeit a quest for a character.
 type ForfeitQuestPayload struct {
 	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
@@ -460,6 +499,30 @@ type ShowInfoPayload struct {
 	Path        string     `json:"path"`        // Path to the info effect
 }
 
+// PlaySoundPayload represents the payload required to play a sound for a character.
+type PlaySoundPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to play the sound for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the sound (e.g., "cannonshooter/flying")
+}
+
+// ChangeMusicPayload represents the payload required to change the background music for a character.
+type ChangeMusicPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to change the music for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the music (e.g., "Bgm04/ArabPirate")
+}
+
+// BoatEffectPayload represents the payload required to show or hide the boat-arrival visual for a character.
+type BoatEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show/hide the boat effect for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Show        bool       `json:"show"`        // true to show the boat visual, false to hide it
+}
+
 // ShowInfoTextPayload represents the payload for showing a text message to a player.
 type ShowInfoTextPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId to show text to
@@ -511,16 +574,80 @@ type UnblockPortalPayload struct {
 
 // SpawnMonsterPayload represents the payload required to spawn monsters.
 type SpawnMonsterPayload struct {
-	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
-	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
-	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
-	MapId       _map.Id    `json:"mapId"`       // MapId where monsters should spawn
+	CharacterId   uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId       world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId     channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId         _map.Id    `json:"mapId"`       // MapId where monsters should spawn
+	Instance      uuid.UUID  `json:"instance"`
+	MonsterId     uint32     `json:"monsterId"`               // MonsterId to spawn
+	X             int16      `json:"x"`                       // X coordinate for spawn
+	Y             int16      `json:"y"`                       // Y coordinate for spawn
+	Team          int8       `json:"team"`                    // Team assignment (optional, defaults to 0)
+	Count         int        `json:"count"`                   // Number of monsters to spawn (optional, defaults to 1)
+	SpawnIfAbsent bool       `json:"spawnIfAbsent,omitempty"` // FR-2.1: suppress the spawn when a monster of this template is already on the field. The decision is made by atlas-monsters against its own registry, not here.
+}
+
+// SpawnNpcPayload represents the payload required to place a scripted NPC
+// on a field.
+type SpawnNpcPayload struct {
+	CharacterId   uint32     `json:"characterId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+	NpcId         uint32     `json:"npcId"`
+	X             int16      `json:"x"`
+	Y             int16      `json:"y"`
+	SpawnIfAbsent bool       `json:"spawnIfAbsent,omitempty"`
+}
+
+// ClearDropsPayload represents the payload required to remove every drop
+// from a field. Cosmic's no-arg MapleMap.clearDrops() is whole-map, not
+// owner-filtered (task-290 G5).
+type ClearDropsPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
 	Instance    uuid.UUID  `json:"instance"`
-	MonsterId   uint32     `json:"monsterId"` // MonsterId to spawn
-	X           int16      `json:"x"`         // X coordinate for spawn
-	Y           int16      `json:"y"`         // Y coordinate for spawn
-	Team        int8       `json:"team"`      // Team assignment (optional, defaults to 0)
-	Count       int        `json:"count"`     // Number of monsters to spawn (optional, defaults to 1)
+}
+
+// ResetReactorsPayload represents the payload required to reset reactors on
+// a field to state 0. MinState is a pointer so "reset every reactor" (nil)
+// and "reset only reactors at state 0" (pointer to 0) are distinguishable;
+// a non-nil value mirrors 926120300.js's getInactiveReactors filter
+// (state >= 7) computed in script before calling Java's single
+// resetReactors(List) overload (task-290 G5).
+type ResetReactorsPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	Instance    uuid.UUID  `json:"instance"`
+	MinState    *int8      `json:"minState,omitempty"`
+}
+
+// ShuffleReactorsPayload represents the payload required to randomly
+// permute the positions of every reactor on a field (task-290 G5).
+type ShuffleReactorsPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	Instance    uuid.UUID  `json:"instance"`
+}
+
+// ResetFieldPayload represents the payload required to reset a field --
+// Cosmic's MapleMap.resetPQ(difficulty): clear the field's monsters and
+// restore its spawn points. Difficulty is carried for wire parity with
+// resetPQ(int difficulty); every G5 script passes 1 today (task-290 G5).
+type ResetFieldPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	Instance    uuid.UUID  `json:"instance"`
+	Difficulty  int        `json:"difficulty"`
 }
 
 // DeployPlayerNpcPayload represents the payload required to deploy a

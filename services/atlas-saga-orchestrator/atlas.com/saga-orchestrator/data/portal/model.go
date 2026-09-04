@@ -29,8 +29,10 @@ func (p Model) Type() uint8 {
 	return p.portalType
 }
 
+// SpawnPoint mirrors Cosmic's MapleMap.getRandomPlayerSpawnpoint(), which accepts
+// portal types 0 and 1 (getType() >= 0 && getType() <= 1).
 func SpawnPoint(m Model) bool {
-	return m.Type() == 0
+	return m.Type() == 0 || m.Type() == 1
 }
 
 func NoTarget(m Model) bool {

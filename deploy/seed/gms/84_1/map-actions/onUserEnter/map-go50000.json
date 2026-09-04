@@ -1,0 +1,24 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map entry effect for map 50000 - plays maplemap/enter/50000",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "enter_effect",
+          "operations": [
+            {
+              "params": {
+                "path": "maplemap/enter/50000"
+              },
+              "type": "field_effect"
+            }
+          ]
+        }
+      ],
+      "scriptName": "go50000"
+    },
+    "id": "go50000",
+    "type": "map-action"
+  }
+}

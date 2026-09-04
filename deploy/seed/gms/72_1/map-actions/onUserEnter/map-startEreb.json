@@ -1,0 +1,32 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Ereve arrival - unlocks the UI for a Noblesse (jobId 1000) at level 10 or above",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "jobId",
+              "value": "1000"
+            },
+            {
+              "operator": ">=",
+              "type": "level",
+              "value": "10"
+            }
+          ],
+          "id": "unlock_for_noblesse",
+          "operations": [
+            {
+              "type": "unlock_ui"
+            }
+          ]
+        }
+      ],
+      "scriptName": "startEreb"
+    },
+    "id": "startEreb",
+    "type": "map-action"
+  }
+}

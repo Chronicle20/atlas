@@ -10,6 +10,7 @@
             {
               "params": {
                 "monsterId": "9300331",
+                "spawnIfAbsent": "true",
                 "x": "-28",
                 "y": "0"
               },

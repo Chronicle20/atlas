@@ -1,0 +1,24 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Resistance tutorial - opens NPC 2159012 conversation on entry",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "open_npc",
+          "operations": [
+            {
+              "params": {
+                "npcId": "2159012"
+              },
+              "type": "open_npc"
+            }
+          ]
+        }
+      ],
+      "scriptName": "Resi_tutor40"
+    },
+    "id": "Resi_tutor40",
+    "type": "map-action"
+  }
+}

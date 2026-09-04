@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Boss map 677000003 - spawns Amdusias (9400610) at (467, 0) and announces it",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "spawn_boss",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9400610",
+                "spawnIfAbsent": "true",
+                "x": "467",
+                "y": "0"
+              },
+              "type": "spawn_monster"
+            },
+            {
+              "params": {
+                "message": "Amdusias has appeared!"
+              },
+              "type": "drop_message"
+            }
+          ]
+        }
+      ],
+      "scriptName": "677000003"
+    },
+    "id": "677000003",
+    "type": "map-action"
+  }
+}

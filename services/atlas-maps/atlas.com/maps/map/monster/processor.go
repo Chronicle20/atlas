@@ -39,6 +39,7 @@ const defaultSpawnCooldown = 5 * time.Second
 
 type Processor interface {
 	SpawnMonsters(transactionId uuid.UUID, field field.Model) error
+	ResetField(f field.Model, difficulty int) error
 }
 
 type ProcessorImpl struct {
@@ -189,4 +190,55 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) er
 func (p *ProcessorImpl) getMonsterMax(characterCount int, spawnPointCount int) int {
 	spawnRate := 0.70 + (0.05 * math.Min(6, float64(characterCount)))
 	return int(math.Ceil(spawnRate * float64(spawnPointCount)))
+}
+
+// ResetField is the atlas-maps composition of Cosmic's
+// MapleMap.resetPQ(difficulty) / resetMapObjects(difficulty, true)
+// (MapleMap.java:3962-3975): clearMapObjects() + restoreMapSpawnPoints() +
+// instanceMapFirstSpawn(difficulty, isPq=true).
+//
+// Object-class scope of "clear" (Cosmic's clearMapObjects removes monsters,
+// drops, reactors, and NPCs): this composes only the monster clear (via
+// atlas-monsters' existing DELETE .../monsters) plus the spawn-point
+// restore. Drops, reactors, and NPCs are NOT cleared here -- they have
+// their own dedicated reset actions (clear_drops, reset_reactors,
+// shuffle_reactors) landed by sibling tasks in this plan, and a map script
+// composes whichever subset it needs rather than this method silently
+// reaching across those domains.
+//
+// difficulty is accepted for parity with Cosmic's resetPQ(int difficulty)
+// but is otherwise unused: atlas-maps' spawn-point/spawn-data model has no
+// difficulty-bucket concept, so there is nothing for it to select between.
+// Every G5 script passes 1 today. Recording that explicitly here rather
+// than dropping the parameter, since dropping it would silently lose the
+// only signal Cosmic gives.
+//
+// There is no Atlas equivalent of instanceMapFirstSpawn: restoring the
+// spawn points to "eligible" is sufficient to let the existing
+// character-enter/periodic SpawnMonsters passes repopulate the field on
+// their normal cadence, so no additional spawn pass is triggered here.
+//
+// Accepted trade-off: the monster-clear leg is not compensated if the
+// spawn-point restore leg fails afterward. That window is reachable today
+// only for a map with no spawn-point data; TestResetFieldOnUnknownMapErrors
+// pins that path.
+func (p *ProcessorImpl) ResetField(f field.Model, difficulty int) error {
+	_ = difficulty
+
+	if err := p.mp.DeleteInMap(f); err != nil {
+		p.l.WithError(err).Errorf("Unable to clear monsters for field [%s] during reset.", f.Id())
+		return err
+	}
+
+	mapKey := character.MapKey{
+		Tenant: p.t,
+		Field:  f,
+	}
+
+	if _, err := GetRegistry().RestoreSpawnPoints(p.ctx, mapKey); err != nil {
+		p.l.WithError(err).Errorf("Unable to restore spawn points for field [%s] during reset.", f.Id())
+		return err
+	}
+
+	return nil
 }

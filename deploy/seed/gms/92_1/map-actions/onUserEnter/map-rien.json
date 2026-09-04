@@ -1,0 +1,51 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Rien - records ck=1 once quest 21101 is complete and the arrow tutorial has run; always unlocks the UI",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "21101",
+              "type": "questStatus",
+              "value": "2"
+            },
+            {
+              "operator": "=",
+              "referenceId": "21019",
+              "type": "areaInfo",
+              "value": "1",
+              "valueString": "miss=o;arr=o;helper=clear"
+            }
+          ],
+          "id": "record_checkpoint",
+          "operations": [
+            {
+              "params": {
+                "area": "21019",
+                "info": "miss=o;arr=o;ck=1;helper=clear"
+              },
+              "type": "update_area_info"
+            },
+            {
+              "type": "unlock_ui"
+            }
+          ]
+        },
+        {
+          "conditions": [],
+          "id": "unlock",
+          "operations": [
+            {
+              "type": "unlock_ui"
+            }
+          ]
+        }
+      ],
+      "scriptName": "rien"
+    },
+    "id": "rien",
+    "type": "map-action"
+  }
+}

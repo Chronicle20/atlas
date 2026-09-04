@@ -1,0 +1,33 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Boss map 677000005 - spawns Andras (9400609) at (201, 80) and announces it",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "spawn_boss",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9400609",
+                "spawnIfAbsent": "true",
+                "x": "201",
+                "y": "80"
+              },
+              "type": "spawn_monster"
+            },
+            {
+              "params": {
+                "message": "Andras has appeared!"
+              },
+              "type": "drop_message"
+            }
+          ]
+        }
+      ],
+      "scriptName": "677000005"
+    },
+    "id": "677000005",
+    "type": "map-action"
+  }
+}

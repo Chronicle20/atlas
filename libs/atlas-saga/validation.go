@@ -33,21 +33,30 @@ const (
 	MapCapacityCondition            = "mapCapacity"
 	InventorySpaceCondition         = "inventorySpace"
 	TransportAvailableCondition     = "transportAvailable"
-	SkillLevelCondition             = "skillLevel"
-	HpCondition                     = "hp"
-	MaxHpCondition                  = "maxHp"
-	BuffCondition                   = "buff"
-	ExcessSPCondition               = "excessSp"
-	PartyIdCondition                = "partyId"
-	PartyLeaderCondition            = "partyLeader"
-	PartySizeCondition              = "partySize"
-	PqCustomDataCondition           = "pqCustomData"
-	MonsterBookCountCondition       = "monsterBookCount"
-	PetTamenessCondition            = "petTameness"
+	// TransportInTransitCondition is true only while the route is sailing
+	// (state == in_transit) — the takeoff..arrived window. It is deliberately
+	// NOT the negation of transportAvailable, which is also false for
+	// out_of_service and awaiting_return (task-290 design F2).
+	TransportInTransitCondition = "transportInTransit"
+	SkillLevelCondition         = "skillLevel"
+	HpCondition                 = "hp"
+	MaxHpCondition              = "maxHp"
+	BuffCondition               = "buff"
+	ExcessSPCondition           = "excessSp"
+	PartyIdCondition            = "partyId"
+	PartyLeaderCondition        = "partyLeader"
+	PartySizeCondition          = "partySize"
+	PqCustomDataCondition       = "pqCustomData"
+	MonsterBookCountCondition   = "monsterBookCount"
+	PetTamenessCondition        = "petTameness"
 	// CanSpawnPlayerNpcCondition asks whether the character's own player-NPC
 	// could be spawned right now — the same eligibility predicate FR-1.1's
 	// automatic check uses, exposed to a conversation script (FR-6.1).
 	CanSpawnPlayerNpcCondition = "canSpawnPlayerNpc"
+	// AreaInfoCondition tests Cosmic's containsAreaInfo(area, info) — a
+	// substring test against a character's stored per-area info string
+	// (task-290 G12).
+	AreaInfoCondition = "areaInfo"
 )
 
 // Operator constants for validation conditions
@@ -63,10 +72,15 @@ const (
 // ValidationConditionInput represents a condition for character state validation.
 // This is the canonical wire format for condition inputs sent between services.
 type ValidationConditionInput struct {
-	Type            string     `json:"type"`
-	Operator        string     `json:"operator"`
-	Value           int        `json:"value"`
-	Values          []int      `json:"values,omitempty"`
+	Type     string `json:"type"`
+	Operator string `json:"operator"`
+	Value    int    `json:"value"`
+	Values   []int  `json:"values,omitempty"`
+	// ValueString carries a string operand for conditions whose comparand is
+	// not numeric. Its only user today is areaInfo, whose Cosmic semantics are
+	// a substring test against a free-form per-character string (task-290 G12).
+	// Numeric conditions continue to use Value/Values and never set this.
+	ValueString     string     `json:"valueString,omitempty"`
 	ReferenceId     uint32     `json:"referenceId,omitempty"`
 	Step            string     `json:"step,omitempty"`
 	WorldId         world.Id   `json:"worldId,omitempty"`

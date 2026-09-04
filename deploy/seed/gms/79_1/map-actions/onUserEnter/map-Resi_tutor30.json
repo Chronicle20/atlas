@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Resistance tutorial - forces area info 23007 and shows the userTalk guide effect",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "force_area_info",
+          "operations": [
+            {
+              "params": {
+                "area": "23007",
+                "info": "exp1=1;exp2=1;exp3=1;exp4=1"
+              },
+              "type": "update_area_info"
+            },
+            {
+              "params": {
+                "path": "Effect/OnUserEff.img/guideEffect/resistanceTutorial/userTalk"
+              },
+              "type": "show_info"
+            }
+          ]
+        }
+      ],
+      "scriptName": "Resi_tutor30"
+    },
+    "id": "Resi_tutor30",
+    "type": "map-action"
+  }
+}

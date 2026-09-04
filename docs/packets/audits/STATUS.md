@@ -173,8 +173,10 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | FAMILY_JOIN_REQUEST | CWvsContext::OnFamilyJoinRequest |  |  | ⬜ |  | ⬜ | 0x05A | ❌ | 0x05B | ❌ | 0x061 | ❌ | 0x064 | ❌ | 0x064 | ❌ | 0x066 | ❌ | 0x065 | ❌ | 0x068 | ❌ |
 | SESSION_VALUE | CWvsContext::OnSessionValue |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05A | ❌ | 0x05C | ❌ | 0x05C | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x061 | ❌ |
 | SUCCESS_IN_USE_GACHAPON_BOX | CWvsContext::OnSuccessInUsegachaponBox |  |  | ⬜ | 0x05A | ❌ | 0x06D | ❌ | 0x06F | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x078 | ❌ | 0x07A | ❌ | 0x079 | ❌ | 0x075 | ❌ |
+| CONTI_MOVE | CField_ContiMove::OnContiMove | field/clientbound/FieldContiMove (T1) | 0x05B | ❌ | 0x06F | ❌ | 0x088 | ❌ | 0x08C | ✅ | 0x094 | ✅ | 0x097 | ✅ | 0x09C | ✅ | 0x0A3 | ❌ | 0x0A4 | ✅ | 0x091 | ✅ |
 | FAMILY_JOIN_REQUEST_RESULT | CWvsContext::OnFamilyJoinRequestResult |  |  | ⬜ |  | ⬜ | 0x05B | ❌ | 0x05C | ❌ | 0x062 | ❌ | 0x065 | ❌ | 0x065 | ❌ | 0x067 | ❌ | 0x066 | ❌ | 0x069 | ❌ |
 | MACRO_SYS_DATA_INIT | CWvsContext::OnMacroSysDataInit | character/clientbound/CharacterSkillMacro (T1) |  | ⬜ | 0x05B | ✅ | 0x071 | ✅ | 0x075 | ✅ | 0x07C | ✅ | 0x07F | ✅ | 0x084 | ✅ | 0x08B | ✅ | 0x08C | ✅ | 0x07A | ✅ |
+| CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) | 0x05C | ❌ | 0x070 | ❌ | 0x089 | ❌ | 0x08D | ✅ | 0x095 | ✅ | 0x098 | ✅ | 0x09D | ✅ | 0x0A4 | 🟡ᶠ | 0x0A5 | ✅ | 0x092 | ✅ |
 | FAMILY_JOIN_ACCEPTED | CWvsContext::OnFamilyJoinAccepted |  |  | ⬜ |  | ⬜ | 0x05C | ❌ | 0x05D | ❌ | 0x063 | ❌ | 0x066 | ❌ | 0x066 | ❌ | 0x068 | ❌ | 0x067 | ❌ | 0x06A | ❌ |
 | IDA_0X05C | sub_AEC8D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05C | ❌ |
 | SET_FIELD | CStage::OnSetField | field/clientbound/FieldSetField (T1) |  | ⬜ | 0x05C | ✅ | 0x072 | ✅ | 0x076 | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x085 | ✅ | 0x08C | ❌ | 0x08D | ✅ | 0x07B | ✅ |
@@ -243,8 +245,6 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ | 0x08A | ❌ |  | ⬜ |
 | DAMAGE_SUMMON | CSummonedPool::OnHit; sub_67C936; sub_6E9839 | summon/clientbound/SummonDamage |  | ⬜ | 0x08B | ✅ | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x0CF | ❌ | 0x11B | ✅ | 0x0B9 | ✅ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
-| CONTI_MOVE | CField_ContiMove::OnContiMove | field/clientbound/FieldContiMove (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x08C | ✅ | 0x094 | ✅ | 0x097 | ✅ | 0x09C | ✅ | 0x0A3 | ❌ | 0x0A4 | ✅ | 0x091 | ✅ |
-| CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x08D | ✅ | 0x095 | ✅ | 0x098 | ✅ | 0x09D | ✅ | 0x0A4 | 🟡ᶠ | 0x0A5 | ✅ | 0x092 | ✅ |
 | MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) |  | ⬜ | 0x08D | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D5 | ❌ | 0x0D2 | ✅ | 0x0BF | ✅ |
 | CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) |  | ⬜ | 0x08E | ✅ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D6 | ❌ | 0x0D3 | ✅ | 0x0C0 | ✅ |
 | RANGED_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) |  | ⬜ | 0x08F | ✅ | 0x0A9 | ✅ | 0x0AD | ✅ | 0x0BB | ✅ | 0x0BF | ✅ | 0x0C8 | ✅ | 0x0D7 | ❌ | 0x0D4 | ✅ | 0x0C1 | ✅ |
@@ -1061,9 +1061,9 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 215 | 0 | 19 | 198 | 593 | 0 | 49.8% |
-| v61 | 284 | 0 | 56 | 229 | 456 | 0 | 49.9% |
-| v72 | 311 | 0 | 69 | 238 | 407 | 0 | 50.3% |
+| v48 | 215 | 0 | 19 | 200 | 591 | 0 | 49.5% |
+| v61 | 284 | 0 | 56 | 231 | 454 | 0 | 49.7% |
+| v72 | 311 | 0 | 69 | 240 | 405 | 0 | 50.2% |
 | v79 | 357 | 0 | 68 | 234 | 366 | 0 | 54.2% |
 | v83 | 486 | 0 | 0 | 313 | 226 | 0 | 60.8% |
 | v84 | 461 | 0 | 0 | 319 | 245 | 0 | 59.1% |

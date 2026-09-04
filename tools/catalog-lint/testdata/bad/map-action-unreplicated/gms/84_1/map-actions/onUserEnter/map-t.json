@@ -1,0 +1,17 @@
+{
+  "data": {
+    "attributes": {
+      "description": "drifted",
+      "rules": [
+        {
+          "conditions": [{"operator": "=", "type": "map_id", "value": "100"}],
+          "id": "r1",
+          "operations": [{"params": {"monsterId": "1", "spawnIfAbsent": "true", "x": "0", "y": "0"}, "type": "spawn_monster"}]
+        }
+      ],
+      "scriptName": "t"
+    },
+    "id": "t",
+    "type": "map-action"
+  }
+}

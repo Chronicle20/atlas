@@ -1,0 +1,248 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Exploration Point medal - credits an exploration region's explorer quest on entering any map in that region; map 104000000 also fires Cosmic's enter field effect",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "map_id",
+              "value": "104000000"
+            }
+          ],
+          "id": "map_104000000",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Beginner Explorer",
+                "questId": "29005"
+              },
+              "type": "explorer_quest"
+            },
+            {
+              "params": {
+                "path": "maplemap/enter/104000000"
+              },
+              "type": "field_effect"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "map_id",
+              "value": "110000000"
+            }
+          ],
+          "id": "beginner_exact",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Beginner Explorer",
+                "questId": "29005"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "map_id",
+              "value": "100000000"
+            },
+            {
+              "operator": "<",
+              "type": "map_id",
+              "value": "105040300"
+            }
+          ],
+          "id": "beginner_range",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Beginner Explorer",
+                "questId": "29005"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "map_id",
+              "value": "105040300"
+            },
+            {
+              "operator": "<=",
+              "type": "map_id",
+              "value": "105090900"
+            }
+          ],
+          "id": "sleepywood",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Sleepywood Explorer",
+                "questId": "29014"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "map_id",
+              "value": "200000000"
+            },
+            {
+              "operator": "<=",
+              "type": "map_id",
+              "value": "211041800"
+            }
+          ],
+          "id": "el_nath",
+          "operations": [
+            {
+              "params": {
+                "areaName": "El Nath Mts. Explorer",
+                "questId": "29006"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "map_id",
+              "value": "220000000"
+            },
+            {
+              "operator": "<=",
+              "type": "map_id",
+              "value": "222020000"
+            }
+          ],
+          "id": "ludus_lake",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Ludus Lake Explorer",
+                "questId": "29007"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "map_id",
+              "value": "230000000"
+            },
+            {
+              "operator": "<=",
+              "type": "map_id",
+              "value": "230040401"
+            }
+          ],
+          "id": "undersea",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Undersea Explorer",
+                "questId": "29008"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "map_id",
+              "value": "250000000"
+            },
+            {
+              "operator": "<=",
+              "type": "map_id",
+              "value": "251010500"
+            }
+          ],
+          "id": "mu_lung",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Mu Lung Explorer",
+                "questId": "29009"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "map_id",
+              "value": "260000000"
+            },
+            {
+              "operator": "<=",
+              "type": "map_id",
+              "value": "261030000"
+            }
+          ],
+          "id": "nihal_desert",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Nihal Desert Explorer",
+                "questId": "29010"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": ">=",
+              "type": "map_id",
+              "value": "240000000"
+            },
+            {
+              "operator": "<=",
+              "type": "map_id",
+              "value": "240050000"
+            }
+          ],
+          "id": "minar_forest",
+          "operations": [
+            {
+              "params": {
+                "areaName": "Minar Forest Explorer",
+                "questId": "29011"
+              },
+              "type": "explorer_quest"
+            }
+          ]
+        }
+      ],
+      "scriptName": "explorationPoint"
+    },
+    "id": "explorationPoint",
+    "type": "map-action"
+  }
+}

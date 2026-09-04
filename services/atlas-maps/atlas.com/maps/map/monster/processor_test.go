@@ -677,6 +677,8 @@ type mockMonsterProcessor struct {
 	monstersInMap   map[character.MapKey]int
 	countErr        error
 	createdMonsters []MockCreatedMonster
+	deletedInMap    []field.Model
+	deleteInMapErr  error
 	mu              sync.Mutex
 }
 
@@ -717,6 +719,26 @@ func (m *mockMonsterProcessor) CreateMonster(_ uuid.UUID, f field.Model, monster
 
 func (m *mockMonsterProcessor) GetInMapRect(_ field.Model, _, _, _, _ int16, _ uint32, _ ...requests.Configurator) ([]monster.RestModel, error) {
 	return nil, nil
+}
+
+func (m *mockMonsterProcessor) DeleteInMap(f field.Model) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.deleteInMapErr != nil {
+		return m.deleteInMapErr
+	}
+	m.deletedInMap = append(m.deletedInMap, f)
+	return nil
+}
+
+func (m *mockMonsterProcessor) GetDeletedInMap() []field.Model {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	result := make([]field.Model, len(m.deletedInMap))
+	copy(result, m.deletedInMap)
+	return result
 }
 
 func (m *mockMonsterProcessor) GetCreatedMonsters() []MockCreatedMonster {
@@ -1134,6 +1156,179 @@ func TestSpawnMonsters_AllSpawnPointsOnCooldown(t *testing.T) {
 	createdMonsters := mockMonsterProc.GetCreatedMonsters()
 	if len(createdMonsters) != 0 {
 		t.Errorf("Expected 0 monsters to be created when all spawn points on cooldown, got %d", len(createdMonsters))
+	}
+}
+
+func TestResetFieldRestoresSpawnPointsAndClearsMonsters(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "ResetField restores spawn points and clears monsters"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			tctx := tenant.WithContext(ctx, te)
+
+			registry := GetRegistry()
+			registry.Reset(ctx)
+
+			mockMonsterProc := &mockMonsterProcessor{
+				monstersInMap: make(map[character.MapKey]int),
+			}
+
+			processor := &ProcessorImpl{
+				l:   logrus.New(),
+				ctx: tctx,
+				t:   te,
+				mp:  mockMonsterProc,
+			}
+
+			inst := uuid.New()
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(inst).Build()
+			mapKey := character.MapKey{Tenant: te, Field: f}
+
+			futureTime := time.Now().Add(30 * time.Second)
+			spawnPoints := []*CooldownSpawnPoint{
+				{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: futureTime},
+				{SpawnPoint: monster2.SpawnPoint{Id: 2, Template: 100101}, NextSpawnAt: futureTime},
+			}
+			if err := registry.SetSpawnPointsForMap(ctx, mapKey, spawnPoints); err != nil {
+				t.Fatalf("SetSpawnPointsForMap seed: %v", err)
+			}
+
+			if err := processor.ResetField(f, 1); err != nil {
+				t.Fatalf("ResetField: %v", err)
+			}
+
+			after, exists := registry.GetSpawnPointsForMap(ctx, mapKey)
+			if !exists {
+				t.Fatalf("expected spawn points to still exist after reset")
+			}
+			now := time.Now()
+			for _, csp := range after {
+				if csp.NextSpawnAt.After(now) {
+					t.Errorf("spawn point [%d] still reserved after ResetField: NextSpawnAt %v is after now %v", csp.Id, csp.NextSpawnAt, now)
+				}
+			}
+
+			deleted := mockMonsterProc.GetDeletedInMap()
+			if len(deleted) != 1 {
+				t.Fatalf("expected monster clear to be invoked once, got %d", len(deleted))
+			}
+			if deleted[0].Id() != f.Id() {
+				t.Errorf("expected monster clear for field [%s], got [%s]", f.Id(), deleted[0].Id())
+			}
+		})
+	}
+}
+
+func TestResetFieldIsFieldScoped(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "ResetField only affects the targeted field instance"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			tctx := tenant.WithContext(ctx, te)
+
+			registry := GetRegistry()
+			registry.Reset(ctx)
+
+			mockMonsterProc := &mockMonsterProcessor{
+				monstersInMap: make(map[character.MapKey]int),
+			}
+
+			processor := &ProcessorImpl{
+				l:   logrus.New(),
+				ctx: tctx,
+				t:   te,
+				mp:  mockMonsterProc,
+			}
+
+			instA := uuid.New()
+			instB := uuid.New()
+			fA := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(instA).Build()
+			fB := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(926000000)).SetInstance(instB).Build()
+			mapKeyA := character.MapKey{Tenant: te, Field: fA}
+			mapKeyB := character.MapKey{Tenant: te, Field: fB}
+
+			futureTime := time.Now().Add(30 * time.Second)
+			seed := func(mk character.MapKey) {
+				_ = registry.SetSpawnPointsForMap(ctx, mk, []*CooldownSpawnPoint{
+					{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: futureTime},
+				})
+			}
+			seed(mapKeyA)
+			seed(mapKeyB)
+
+			if err := processor.ResetField(fA, 1); err != nil {
+				t.Fatalf("ResetField: %v", err)
+			}
+
+			afterB, exists := registry.GetSpawnPointsForMap(ctx, mapKeyB)
+			if !exists || len(afterB) != 1 {
+				t.Fatalf("expected instance B's spawn points to still exist")
+			}
+			if !afterB[0].NextSpawnAt.After(time.Now()) {
+				t.Errorf("expected instance B's spawn point to remain reserved, got NextSpawnAt %v", afterB[0].NextSpawnAt)
+			}
+
+			deleted := mockMonsterProc.GetDeletedInMap()
+			if len(deleted) != 1 {
+				t.Fatalf("expected monster clear invoked once (for field A only), got %d", len(deleted))
+			}
+			if deleted[0].Id() != fA.Id() {
+				t.Errorf("expected monster clear for field A [%s], got [%s]", fA.Id(), deleted[0].Id())
+			}
+			for _, f := range deleted {
+				if f.Id() == fB.Id() {
+					t.Errorf("monster clear must not touch instance B")
+				}
+			}
+		})
+	}
+}
+
+func TestResetFieldOnUnknownMapErrors(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "ResetField errors for a map with no spawn-point data"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			tctx := tenant.WithContext(ctx, te)
+
+			registry := GetRegistry()
+			registry.Reset(ctx)
+
+			mockMonsterProc := &mockMonsterProcessor{
+				monstersInMap: make(map[character.MapKey]int),
+			}
+
+			processor := &ProcessorImpl{
+				l:   logrus.New(),
+				ctx: tctx,
+				t:   te,
+				mp:  mockMonsterProc,
+			}
+
+			f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(999999999)).SetInstance(uuid.New()).Build()
+
+			if err := processor.ResetField(f, 1); err == nil {
+				t.Fatalf("expected ResetField to error for a map with no spawn-point data")
+			}
+		})
 	}
 }
 

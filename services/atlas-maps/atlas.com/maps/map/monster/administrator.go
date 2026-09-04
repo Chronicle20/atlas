@@ -156,6 +156,24 @@ end
 return entries
 `)
 
+// restoreSpawnPointsScript unreserves every spawn point in the hash by
+// setting NextSpawnAt to now, regardless of template or current cooldown.
+//
+// KEYS[1] = recurring hash
+// ARGV[1] = nowMilli
+// Returns: the number of points restored.
+var restoreSpawnPointsScript = goredis.NewScript(`
+local entries = redis.call('HGETALL', KEYS[1])
+local nowMilli = tonumber(ARGV[1])
+for i = 1, #entries, 2 do
+    local field = entries[i]
+    local data = cjson.decode(entries[i+1])
+    data.nextSpawnAt = nowMilli
+    redis.call('HSET', KEYS[1], field, cjson.encode(data))
+end
+return math.floor(#entries / 2)
+`)
+
 // rearmOneTimeScript atomically clears the meta hash's "onetimeFired" field and
 // reports whether it was present in the same round trip.
 //
@@ -336,6 +354,37 @@ func (r *SpawnPointRegistry) RearmOneTime(ctx context.Context, mapKey character.
 		return false, fmt.Errorf("unexpected rearmOneTimeScript result type %T", result)
 	}
 	return deleted > 0, nil
+}
+
+// RestoreSpawnPoints unreserves every recurring spawn point registered for
+// mapKey -- the Redis-backed analogue of Cosmic's
+// MapleMap.restoreMapSpawnPoints(), making every point immediately eligible
+// for the next spawn pass. Unlike Reset, this is field-scoped: it never
+// touches any other map, instance, or tenant.
+//
+// Scope is the recurring hash only. One-time points carry no cooldown to
+// restore -- their re-arm is the meta hash's fired marker, which RearmOneTime
+// owns.
+//
+// Returns an error if the map has no recurring spawn-point data registered at
+// all (never initialized via InitializeForMap), so a reset against an unknown
+// map fails loudly instead of silently reporting success on an empty hash.
+func (r *SpawnPointRegistry) RestoreSpawnPoints(ctx context.Context, mapKey character.MapKey) (int, error) {
+	n, err := r.hashes.Len(ctx, mapKey.Tenant, mapKey)
+	if err != nil {
+		return 0, err
+	}
+	if n == 0 {
+		return 0, fmt.Errorf("no spawn point data registered for map key")
+	}
+
+	nowMilli := time.Now().UnixMilli()
+	res, err := restoreSpawnPointsScript.Run(ctx, r.client, []string{r.recurringKey(mapKey)}, nowMilli).Result()
+	if err != nil {
+		return 0, err
+	}
+	count, _ := res.(int64)
+	return int(count), nil
 }
 
 // Reset clears all spawn point registries, across every tenant. Primarily

@@ -1,0 +1,21 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Evan dragon-tutorial exit map - unlocks the UI",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "unlock",
+          "operations": [
+            {
+              "type": "unlock_ui"
+            }
+          ]
+        }
+      ],
+      "scriptName": "evanleaveD"
+    },
+    "id": "evanleaveD",
+    "type": "map-action"
+  }
+}

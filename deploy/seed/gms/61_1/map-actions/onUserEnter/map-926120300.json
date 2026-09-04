@@ -1,0 +1,24 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map 926120300 - resets only reactors whose state is 7 or higher",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "reset_inactive_reactors",
+          "operations": [
+            {
+              "params": {
+                "minState": "7"
+              },
+              "type": "reset_reactors"
+            }
+          ]
+        }
+      ],
+      "scriptName": "926120300"
+    },
+    "id": "926120300",
+    "type": "map-action"
+  }
+}

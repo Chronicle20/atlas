@@ -658,6 +658,22 @@
   ida:
     address: 5007090
   note: "base case 'Z'(90) -> vtable+28 (CField::OnClock). address = dispatcher; vtable-resolved."
+- op: CONTI_MOVE
+  direction: clientbound
+  opcode: 91
+  fname: CField_ContiMove::OnContiMove
+  provenance: ida-discovered
+  ida:
+    address: 5059761
+  note: 'task-290 C9b: CField_ContiMove::OnPacket @0x4d347d (was sub_4D347D) routes case 91 -> CField_ContiMove::OnContiMove @0x4d34b1 (was sub_4D34B1), case 92 -> OnContiState @0x4d3516; default falls through to CField::OnPacket @0x4c66f2. OnContiMove reads Decode1(state) and dispatches on (state-7) across 6 arms (nullsub_7/sub_4D359E/nullsub_8/sub_4D35C3/nullsub_9/sub_4D35F9); the state==10 arm (sub_4D35C3) is the OnMoveField twin of the named gms_v92 CField_ContiMove::OnMoveField @0x546f60. Structure identical to v72/v79/v83/v92. Δ-49 vs v61 (111).'
+- op: CONTI_STATE
+  direction: clientbound
+  opcode: 92
+  fname: CField_ContiMove::OnContiState
+  provenance: ida-discovered
+  ida:
+    address: 5059862
+  note: 'task-290 C9b: CField_ContiMove::OnPacket @0x4d347d case 92 -> CField_ContiMove::OnContiState @0x4d3516 (was sub_4D3516); reads Decode1(state)+Decode1(overrideAppear), body byte-identical to the v72 twin @0x52aafa. Δ-49 vs v61 (112).'
 - op: IDA_0X05D
   direction: clientbound
   opcode: 93

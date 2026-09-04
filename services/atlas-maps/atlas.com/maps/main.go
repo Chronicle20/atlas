@@ -17,6 +17,7 @@ import (
 	"atlas-maps/map/environment"
 	"atlas-maps/map/jukebox"
 	spawnMonster "atlas-maps/map/monster"
+	"atlas-maps/map/npc"
 	"atlas-maps/map/weather"
 	"atlas-maps/tasks"
 	"atlas-maps/visit"
@@ -151,6 +152,7 @@ func main() {
 		AddRouteInitializer(mapField.InitResource(GetServer())).
 		AddRouteInitializer(weather.InitResource(GetServer())).
 		AddRouteInitializer(jukebox.InitResource(GetServer())).
+		AddRouteInitializer(npc.InitResource(GetServer())).
 		AddRouteInitializer(environment.InitResource(GetServer())).
 		AddRouteInitializer(backeffect.InitResource(GetServer())).
 		AddRouteInitializer(visit.InitResource(GetServer())(db)).

@@ -1,0 +1,27 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Map 922000000 - clears drops, resets every reactor and shuffles reactor positions on entry",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "reset_stage",
+          "operations": [
+            {
+              "type": "clear_drops"
+            },
+            {
+              "type": "reset_reactors"
+            },
+            {
+              "type": "shuffle_reactors"
+            }
+          ]
+        }
+      ],
+      "scriptName": "922000000"
+    },
+    "id": "922000000",
+    "type": "map-action"
+  }
+}

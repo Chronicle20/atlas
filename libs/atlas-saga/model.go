@@ -118,6 +118,11 @@ const (
 	WarpToPortal        Action = "warp_to_portal"
 	WarpToSavedLocation Action = "warp_to_saved_location"
 	SaveLocation        Action = "save_location"
+	// WarpToMap warps a character to a map, letting the destination service
+	// pick the spawn point. Distinct from WarpToPortal/WarpToRandomPortal,
+	// both of which target a portal — Cosmic's warpAhead resolves
+	// getRandomPlayerSpawnpoint(), which is not a portal (task-290 G1a).
+	WarpToMap Action = "warp_to_map"
 
 	// Character state actions
 	ChangeJob              Action = "change_job"
@@ -141,12 +146,23 @@ const (
 	// Skill actions
 	CreateSkill Action = "create_skill"
 	UpdateSkill Action = "update_skill"
+	// ClearSkill removes a skill from a character outright — the Cosmic
+	// teachSkill(id, -1, ...) path, which deletes the skill row rather than
+	// changing its level (task-290 G13).
+	ClearSkill Action = "clear_skill"
 
 	// Quest actions
 	CompleteQuest    Action = "complete_quest"
 	StartQuest       Action = "start_quest"
 	SetQuestProgress Action = "set_quest_progress"
 	ForfeitQuest     Action = "forfeit_quest"
+
+	// ExplorerQuest credits one exploration region: force-start the quest if
+	// needed, append the current map to the quest's deduplicated visited-map
+	// set, and write the resulting count as quest progress. Not reducible to
+	// StartQuest + SetQuestProgress, because the dedup and the count are
+	// server-side state neither of those carries (task-290 G14).
+	ExplorerQuest Action = "explorer_quest"
 
 	// Consumable effect actions
 	ApplyConsumableEffect  Action = "apply_consumable_effect"
@@ -161,22 +177,64 @@ const (
 	PlayPortalSound Action = "play_portal_sound"
 	UpdateAreaInfo  Action = "update_area_info"
 	ShowInfo        Action = "show_info"
-	ShowInfoText    Action = "show_info_text"
-	ShowIntro       Action = "show_intro"
-	ShowHint        Action = "show_hint"
-	ShowGuideHint   Action = "show_guide_hint"
-	BlockPortal     Action = "block_portal"
-	UnblockPortal   Action = "unblock_portal"
+	// PlaySound plays a WZ sound path for one character. Cosmic's
+	// AbstractPlayerInteraction.playSound is FIELD_EFFECT mode 4; the mode
+	// byte is resolved per tenant by FieldEffectSoundBody, never carried here.
+	PlaySound     Action = "play_sound"
+	ShowInfoText  Action = "show_info_text"
+	ShowIntro     Action = "show_intro"
+	ShowHint      Action = "show_hint"
+	ShowGuideHint Action = "show_guide_hint"
+	BlockPortal   Action = "block_portal"
+	UnblockPortal Action = "unblock_portal"
+	// ChangeMusic changes the background music for one character. Cosmic's
+	// PacketCreator.musicChange(song) is environmentChange(song, 6) --
+	// FIELD_EFFECT mode 6; the mode byte is resolved per tenant by
+	// FieldEffectBackgroundMusicBody, never carried here.
+	ChangeMusic Action = "change_music"
+	// BoatEffect shows or hides the boat-arrival visual for one character.
+	// Cosmic's PacketCreator.crogBoatPacket(show) is CONTI_MOVE; state and
+	// subState are resolved per tenant by writer.ContiMoveBody, never
+	// carried here.
+	BoatEffect Action = "boat_effect"
 
 	// Spawn actions
 	SpawnMonster      Action = "spawn_monster"
 	SpawnReactorDrops Action = "spawn_reactor_drops"
+
+	// SpawnNpc places a scripted NPC on a field. Distinct from DeployPlayerNpc,
+	// which deploys a character's own player-NPC (task-290 G2).
+	SpawnNpc Action = "spawn_npc"
 
 	// DeployPlayerNpc deploys the character's player NPC (FR-6.2). It is not a
 	// local operation in atlas-npc-conversations: it mutates cross-service state
 	// (atlas-player-npcs), so it is dispatched through the saga orchestrator like
 	// StartNpcConversation.
 	DeployPlayerNpc Action = "deploy_player_npc"
+
+	// ClearDrops removes every drop from a field. Cosmic's no-arg
+	// MapleMap's no-arg drop clear is whole-map, not owner-filtered (task-290 G5).
+	ClearDrops Action = "clear_drops"
+
+	// ResetReactors resets reactors on a field to state 0, mirroring
+	// Cosmic's MapleMap.resetReactors(List<Reactor>) (MapleMap.java:1563).
+	// There is no state-filtered Java overload -- 926120300.js computes an
+	// inactive-reactor filter (state >= 7) in script and passes the
+	// resulting list to the same single-overload reset -- so this is
+	// modelled as one reset with an optional minimum-state filter, not two
+	// actions (task-290 G5).
+	ResetReactors Action = "reset_reactors"
+
+	// ShuffleReactors randomly permutes the positions of every reactor on a
+	// field, mirroring Cosmic's MapleMap.shuffleReactors() (MapleMap.java:1580).
+	// Only positions move; ids, states and identities are untouched
+	// (task-290 G5).
+	ShuffleReactors Action = "shuffle_reactors"
+
+	// ResetField clears a field's objects and restores its spawn points --
+	// Cosmic's MapleMap resetPQ, which despite the name is a field
+	// reset and not a party-quest state reset (task-290 G5).
+	ResetField Action = "reset_field"
 
 	// Storage actions
 	ShowStorage          Action = "show_storage"

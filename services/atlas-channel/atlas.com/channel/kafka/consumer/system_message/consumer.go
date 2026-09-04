@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
@@ -88,6 +89,21 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleFieldEffect(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handlePlaySound(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMusic(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleBoatEffect(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -333,6 +349,149 @@ func handleFieldEffect(sc server.Model, wp writer.Producer) message.Handler[syst
 			session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectScreenBody(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show field effect for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+func handlePlaySound(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.PlaySoundBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.PlaySoundBody]) {
+		if cmd.Type != system_message2.CommandPlaySound {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
+			session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectSoundBody(cmd.Body.Path)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to play sound for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+// changeMusicConfigured reports whether this tenant's FieldEffect writer
+// binds the BACKGROUND_MUSIC operation, i.e. whether the client version has
+// that dispatcher arm at all. Some tenants (gms_12_1) bind no FieldEffect
+// writer at all -- no v12 IDA export exists to derive the opcode/mode table
+// (see docs/tasks/task-290-cosmic-map-action-parity/gms-12-1-dock-arrival-seed-exclusion.md).
+// The map-action seeds that trigger change_music are replicated to every
+// tenant uniformly (tools/catalog-lint enforces byte-identical map-action
+// seeds with no exemption), so the version gap has to be absorbed here
+// instead of in the seed set: a miss is a real content gap the operator needs
+// to see, not a misconfiguration to crash the client over. ResolveCode's
+// fallback for a genuine misconfiguration is a loud 99 sentinel that
+// libs/atlas-packet/resolve.go documents as likely to crash the client --
+// the caller must skip the write rather than reach that path.
+//
+// Package-level var so tests can exercise both the present and absent
+// versions without standing up a writer registry.
+var changeMusicConfigured = func(l logrus.FieldLogger, ctx context.Context) bool {
+	t := tenant.MustFromContext(ctx)
+	opts, ok := writer.TenantWriterOptions(t.Id(), fieldcb.FieldEffectWriter)
+	if ok && atlaspacket.CodeConfigured(opts, "operations", string(fieldpkt.FieldEffectBackgroundMusic)) {
+		return true
+	}
+	l.Warnf("Tenant [%s] binds no [%s] writer BACKGROUND_MUSIC operation; skipping change_music.", t.String(), fieldcb.FieldEffectWriter)
+	return false
+}
+
+// changeMusicAnnouncer is the seam that resolves a character's session and
+// sends the change_music FieldEffect frame. Package-level var so tests can
+// swap in a recording stub without a live net.Conn (mirrors trade's
+// tradeAnnouncer seam).
+var changeMusicAnnouncer = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, path string) error {
+	return session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId,
+		session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(path)))
+}
+
+func handleChangeMusic(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.ChangeMusicBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.ChangeMusicBody]) {
+		if cmd.Type != system_message2.CommandChangeMusic {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		if !changeMusicConfigured(l, ctx) {
+			return
+		}
+
+		err := changeMusicAnnouncer(l, ctx, sc, wp, cmd.CharacterId, cmd.Body.Path)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to change music for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+// boatEffectConfigured reports whether this tenant's ContiMove writer binds
+// the key's STATE operation, i.e. whether the client version has that
+// dispatcher arm at all. Same rationale as changeMusicConfigured: gms_12_1
+// binds no ContiMove writer, the boat_effect map-action seeds stay uniform
+// across every tenant, so the gap is absorbed here instead of in the seed
+// set.
+//
+// Package-level var so tests can exercise both the present and absent
+// versions without standing up a writer registry.
+var boatEffectConfigured = func(l logrus.FieldLogger, ctx context.Context, key writer.ContiMoveKey) bool {
+	t := tenant.MustFromContext(ctx)
+	opts, ok := writer.TenantWriterOptions(t.Id(), fieldcb.ContiMoveWriter)
+	if ok && atlaspacket.CodeConfigured(opts, "operations", string(key)+"_STATE") {
+		return true
+	}
+	l.Warnf("Tenant [%s] binds no [%s] writer [%s_STATE] operation; skipping boat_effect.", t.String(), fieldcb.ContiMoveWriter, key)
+	return false
+}
+
+// boatEffectAnnouncer is the seam that resolves a character's session and
+// sends the boat_effect ContiMove frame. Package-level var so tests can swap
+// in a recording stub without a live net.Conn (mirrors trade's
+// tradeAnnouncer seam).
+var boatEffectAnnouncer = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, key writer.ContiMoveKey) error {
+	return session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId,
+		session.Announce(l)(ctx)(wp)(fieldcb.ContiMoveWriter)(writer.ContiMoveBody(key)))
+}
+
+func handleBoatEffect(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.BoatEffectBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.BoatEffectBody]) {
+		if cmd.Type != system_message2.CommandBoatEffect {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		key := writer.ContiMoveHide
+		if cmd.Body.Show {
+			key = writer.ContiMoveShow
+		}
+
+		if !boatEffectConfigured(l, ctx, key) {
+			return
+		}
+
+		err := boatEffectAnnouncer(l, ctx, sc, wp, cmd.CharacterId, key)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to show boat effect for character [%d].", cmd.CharacterId)
 		}
 	}
 }

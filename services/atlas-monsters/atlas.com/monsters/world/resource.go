@@ -199,6 +199,13 @@ func handleCreateMonsterInMap(d *rest.HandlerDependency, c *rest.HandlerContext,
 							w.WriteHeader(http.StatusBadRequest)
 							return
 						}
+						if m.UniqueId() == 0 {
+							// SpawnIfAbsent suppressed the spawn (monster/processor.go
+							// Create); a zero Model with a nil error is not an error, but
+							// a 200 with a zero-valued monster body would be misleading.
+							w.WriteHeader(http.StatusNoContent)
+							return
+						}
 						res, err := model.Map(monster.Transform)(model.FixedProvider(m))()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")

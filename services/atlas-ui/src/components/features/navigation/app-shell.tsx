@@ -27,7 +27,7 @@ export function AppShell() {
         </header>
         <DeploymentScopeBanner />
         <div className="flex flex-1 flex-col overflow-hidden gap-4 p-2 pt-0">
-          <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-sidebar">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto rounded-xl bg-sidebar">
             <Outlet />
           </div>
         </div>

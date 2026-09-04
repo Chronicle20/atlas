@@ -89,3 +89,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-04T16:09:54Z	agent	Task 21 fix round 1	task-implementer	sonnet	-	-	-	-	DONE	b86769b	-	-	-	-
 2026-09-04T16:13:28Z	agent	Task 21	task-reviewer	sonnet	-	-	-	-	DONE	b86769b	APPROVED_WITH_FINDINGS	yes	docs/tasks/task-301-rest-handler-scaffold-alias/reviews/task-21-docs.md	-
 2026-09-04T16:13:29Z	agent	Task 21 fix round 2	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T16:42:29Z	agent	Task 22	task-verifier	haiku	-	-	-	-	DONE	78efed404	FAIL	-	-	-
+2026-09-04T16:42:30Z	agent	Task 22 lint fix	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-04T16:44:28Z	agent	Task 22 lint fix	task-implementer	sonnet	-	-	-	-	DONE	c70eed4	-	-	-	-
+2026-09-04T16:44:28Z	agent	Task 22 re-gate	task-verifier	haiku	-	-	-	-	dispatched	c70eed4	-	-	-	-

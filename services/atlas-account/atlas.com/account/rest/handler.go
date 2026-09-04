@@ -25,19 +25,8 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterInputHandler[M](l)
 }
 
-type AccountIdHandler func(id uint32) http.HandlerFunc
-
-func ParseAccountId(l logrus.FieldLogger, next AccountIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		value, err := strconv.Atoi(vars["accountId"])
-		if err != nil {
-			l.WithError(err).Errorln("Error parsing id as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(value))(w, r)
-	}
+func ParseAccountId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "accountId", next)
 }
 
 // AccountIdAndWorldIdHandler is the world-scoped counterpart of

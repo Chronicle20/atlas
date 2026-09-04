@@ -14,10 +14,8 @@ package rest
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 
@@ -38,32 +36,10 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterInputHandler[M](l)
 }
 
-type NpcIdHandler func(npcId uint32) http.HandlerFunc
-
-func ParseNpcId(l logrus.FieldLogger, next NpcIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		npcId, err := strconv.Atoi(vars["npcId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing npcId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(npcId))(w, r)
-	}
+func ParseNpcId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "npcId", next)
 }
 
-type CommodityIdHandler func(commodityId uuid.UUID) http.HandlerFunc
-
-func ParseCommodityId(l logrus.FieldLogger, next CommodityIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		commodityId, err := uuid.Parse(vars["commodityId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing commodityId as uuid")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(commodityId)(w, r)
-	}
+func ParseCommodityId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "commodityId", next)
 }

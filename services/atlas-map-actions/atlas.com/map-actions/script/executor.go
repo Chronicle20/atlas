@@ -3,18 +3,15 @@ package script
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	mapactionsaga "atlas-map-actions/saga"
 
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	saga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/ops"
 )
 
 type OperationExecutor struct {
@@ -95,103 +92,43 @@ func (e *OperationExecutor) executeFieldEffect(f field.Model, characterId uint32
 }
 
 func (e *OperationExecutor) executeShowIntro(f field.Model, characterId uint32, op operation.Model) error {
-	params := op.Params()
-
-	path, ok := params["path"]
-	if !ok {
-		return fmt.Errorf("show_intro operation missing path parameter")
+	t := ops.NewTargetBuilder(f).Build()
+	st, err := ops.ShowIntro(op.Params(), ops.DirectResolver{}, t, characterId)
+	if err != nil {
+		return err
 	}
 
-	e.l.Debugf("Showing intro [%s] for character [%d].", path, characterId)
+	e.l.Debugf("Showing intro for character [%d].", characterId)
 
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("map-action-intro").
-		AddStep(
-			fmt.Sprintf("intro-%d", characterId),
-			saga.Pending,
-			saga.ShowIntro,
-			saga.ShowIntroPayload{
-				CharacterId: characterId,
-				WorldId:     f.WorldId(),
-				ChannelId:   f.ChannelId(),
-				Path:        path,
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("map-action-intro"),
+		fmt.Sprintf("intro-%d", characterId),
+	).Build()
 
 	return e.sagaP.Create(s)
 }
 
 func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint32, op operation.Model) error {
-	params := op.Params()
-
-	monsterIdStr, ok := params["monsterId"]
-	if !ok {
-		return fmt.Errorf("spawn_monster operation missing monsterId parameter")
-	}
-	monsterId, err := strconv.ParseUint(monsterIdStr, 10, 32)
+	t := ops.NewTargetBuilder(f).Build()
+	st, err := ops.SpawnMonster(op.Params(), ops.DirectResolver{}, t, characterId)
 	if err != nil {
-		return fmt.Errorf("invalid monsterId [%s]: %w", monsterIdStr, err)
+		return err
+	}
+	p, err := ops.PayloadOf[saga.SpawnMonsterPayload](st)
+	if err != nil {
+		return err
 	}
 
-	var x int16 = 0
-	if xStr, hasX := params["x"]; hasX {
-		xVal, err := strconv.ParseInt(xStr, 10, 16)
-		if err != nil {
-			return fmt.Errorf("invalid x [%s]: %w", xStr, err)
-		}
-		x = int16(xVal)
-	}
+	e.l.Debugf("Spawning monster [%d] at (%d,%d) count [%d] for character [%d].", p.MonsterId, p.X, p.Y, p.Count, characterId)
 
-	var y int16 = 0
-	if yStr, hasY := params["y"]; hasY {
-		yVal, err := strconv.ParseInt(yStr, 10, 16)
-		if err != nil {
-			return fmt.Errorf("invalid y [%s]: %w", yStr, err)
-		}
-		y = int16(yVal)
-	}
-
-	var count int = 1
-	if countStr, hasCount := params["count"]; hasCount {
-		countVal, err := strconv.Atoi(countStr)
-		if err != nil {
-			return fmt.Errorf("invalid count [%s]: %w", countStr, err)
-		}
-		count = countVal
-	}
-
-	// Use event mapId by default, allow override
-	mapId := f.MapId()
-	if mapIdStr, hasMapId := params["mapId"]; hasMapId {
-		mId, err := strconv.ParseUint(mapIdStr, 10, 32)
-		if err != nil {
-			return fmt.Errorf("invalid mapId [%s]: %w", mapIdStr, err)
-		}
-		mapId = _map.Id(mId)
-	}
-
-	e.l.Debugf("Spawning monster [%d] at (%d,%d) count [%d] for character [%d].", monsterId, x, y, count, characterId)
-
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("map-action-spawn").
-		AddStep(
-			fmt.Sprintf("spawn-%d-%d", characterId, monsterId),
-			saga.Pending,
-			saga.SpawnMonster,
-			saga.SpawnMonsterPayload{
-				CharacterId: characterId,
-				WorldId:     f.WorldId(),
-				ChannelId:   f.ChannelId(),
-				MapId:       mapId,
-				Instance:    uuid.Nil,
-				MonsterId:   uint32(monsterId),
-				X:           x,
-				Y:           y,
-				Count:       count,
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("map-action-spawn"),
+		fmt.Sprintf("spawn-%d-%d", characterId, p.MonsterId),
+	).Build()
 
 	return e.sagaP.Create(s)
 }
@@ -218,35 +155,20 @@ func (e *OperationExecutor) executeUiLock(f field.Model, characterId uint32, ena
 }
 
 func (e *OperationExecutor) executeDropMessage(f field.Model, characterId uint32, op operation.Model) error {
-	params := op.Params()
-
-	msg, ok := params["message"]
-	if !ok {
-		return fmt.Errorf("drop_message operation missing message parameter")
+	t := ops.NewTargetBuilder(f).Build()
+	st, err := ops.SendMessage(op.Params(), ops.DirectResolver{}, t, characterId)
+	if err != nil {
+		return err
 	}
 
-	messageType := "PINK_TEXT"
-	if mt, hasType := params["messageType"]; hasType {
-		messageType = mt
-	}
+	e.l.Debugf("Sending message to character [%d].", characterId)
 
-	e.l.Debugf("Sending message to character [%d]: %s", characterId, msg)
-
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("map-action-message").
-		AddStep(
-			fmt.Sprintf("message-%d", characterId),
-			saga.Pending,
-			saga.SendMessage,
-			saga.SendMessagePayload{
-				CharacterId: characterId,
-				WorldId:     f.WorldId(),
-				ChannelId:   f.ChannelId(),
-				MessageType: messageType,
-				Message:     msg,
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("map-action-message"),
+		fmt.Sprintf("message-%d", characterId),
+	).Build()
 
 	return e.sagaP.Create(s)
 }
@@ -255,46 +177,20 @@ func (e *OperationExecutor) executeDropMessage(f field.Model, characterId uint32
 // Parameters: name (required, non-blank), value (required, uint32), kind
 // (optional, ENVIRONMENT or OBSTACLE; blank defaults to ENVIRONMENT).
 func (e *OperationExecutor) executeMoveEnvironment(f field.Model, characterId uint32, op operation.Model) error {
-	params := op.Params()
-
-	name, ok := params["name"]
-	if !ok || strings.TrimSpace(name) == "" {
-		return fmt.Errorf("move_environment operation missing name parameter")
-	}
-
-	valueStr, ok := params["value"]
-	if !ok || strings.TrimSpace(valueStr) == "" {
-		return fmt.Errorf("move_environment operation missing value parameter")
-	}
-	value, err := strconv.ParseUint(strings.TrimSpace(valueStr), 10, 32)
-	if err != nil {
-		return fmt.Errorf("move_environment operation has non-numeric value parameter [%s]: %w", valueStr, err)
-	}
-
-	kind, err := field.ParseObjectKind(params["kind"])
+	t := ops.NewTargetBuilder(f).Build()
+	st, err := ops.MoveEnvironment(op.Params(), ops.DirectResolver{}, t, characterId)
 	if err != nil {
 		return err
 	}
 
-	e.l.Debugf("Moving environment object [%s] kind [%s] to state [%d] in map [%d].", name, kind, value, f.MapId())
+	e.l.Debugf("Moving environment object in map [%d].", f.MapId())
 
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("map-action-move-environment").
-		AddStep(
-			fmt.Sprintf("move-environment-%s", name),
-			saga.Pending,
-			saga.MoveEnvironment,
-			saga.MoveEnvironmentPayload{
-				WorldId:   f.WorldId(),
-				ChannelId: f.ChannelId(),
-				MapId:     f.MapId(),
-				Instance:  f.Instance(),
-				Kind:      kind,
-				Name:      name,
-				State:     uint32(value),
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("map-action-move-environment"),
+		fmt.Sprintf("move-environment-%s", op.Params()["name"]),
+	).Build()
 
 	return e.sagaP.Create(s)
 }
@@ -302,22 +198,20 @@ func (e *OperationExecutor) executeMoveEnvironment(f field.Model, characterId ui
 // executeResetEnvironment clears every tracked field object and restores the
 // field's objects to their default state. Takes no parameters.
 func (e *OperationExecutor) executeResetEnvironment(f field.Model, characterId uint32, op operation.Model) error {
+	t := ops.NewTargetBuilder(f).Build()
+	st, err := ops.ResetEnvironment(op.Params(), ops.DirectResolver{}, t, characterId)
+	if err != nil {
+		return err
+	}
+
 	e.l.Debugf("Resetting environment objects in map [%d].", f.MapId())
 
-	s := saga.NewBuilder().
-		SetSagaType(saga.InventoryTransaction).
-		SetInitiatedBy("map-action-reset-environment").
-		AddStep(
-			fmt.Sprintf("reset-environment-%d", f.MapId()),
-			saga.Pending,
-			saga.ResetEnvironment,
-			saga.ResetEnvironmentPayload{
-				WorldId:   f.WorldId(),
-				ChannelId: f.ChannelId(),
-				MapId:     f.MapId(),
-				Instance:  f.Instance(),
-			},
-		).Build()
+	s := st.AppendTo(
+		saga.NewBuilder().
+			SetSagaType(saga.InventoryTransaction).
+			SetInitiatedBy("map-action-reset-environment"),
+		fmt.Sprintf("reset-environment-%d", f.MapId()),
+	).Build()
 
 	return e.sagaP.Create(s)
 }

@@ -70,7 +70,7 @@ func StartQuest(p map[string]string, r Resolver, t Target, characterId uint32, d
 // valid.
 //
 // The orchestrator branches on which field is set
-// (saga-orchestrator/saga/handler.go:3717-3734), so exactly one of them must
+// (saga-orchestrator/saga/handler.go:3709-3733), so exactly one of them must
 // be: reactor-actions resolves the PQ instance over REST and passes
 // instanceId; npc-conversations passes uuid.Nil and lets the orchestrator
 // look the instance up from characterId.

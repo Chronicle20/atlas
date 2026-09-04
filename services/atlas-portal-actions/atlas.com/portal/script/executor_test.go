@@ -158,3 +158,70 @@ func TestExecuteOperations_MovedStickyAcrossLaterError(t *testing.T) {
 	require.Error(t, err)
 	assert.True(t, moved, "the warp already dispatched; the SET_FIELD will unlock the client")
 }
+
+// FR-13: SendMessage accepts both the `type` and `messageType` parameter
+// keys, and numeric "6" maps to BLUE_TEXT for either key.
+func TestExecuteDropMessageAcceptsTypeAlias(t *testing.T) {
+	sp := &fakeSagaProcessor{}
+	e, _ := newTestExecutor(t, sp)
+
+	moved, err := e.ExecuteOperations(testField(), 100, 3, []operation.Model{
+		mustOp(t, "drop_message", map[string]string{"message": "hi", "type": "6"}),
+	})
+	require.NoError(t, err)
+	assert.False(t, moved)
+	require.Len(t, sp.created, 1)
+	require.Len(t, sp.created[0].Steps, 1)
+	payload, ok := sp.created[0].Steps[0].Payload.(sharedsaga.SendMessagePayload)
+	require.True(t, ok)
+	assert.Equal(t, "BLUE_TEXT", payload.MessageType)
+}
+
+// §5.4: the shared skill param decoder widens level through rangedByte (0-255),
+// where the previous strconv.ParseInt(levelStr, 10, 8) call (int8, max 127)
+// would have errored on 200.
+func TestExecuteCreateSkillWidensLevel(t *testing.T) {
+	sp := &fakeSagaProcessor{}
+	e, _ := newTestExecutor(t, sp)
+
+	moved, err := e.ExecuteOperations(testField(), 100, 3, []operation.Model{
+		mustOp(t, "create_skill", map[string]string{"skillId": "1001003", "level": "200"}),
+	})
+	require.NoError(t, err)
+	assert.False(t, moved)
+	require.Len(t, sp.created, 1)
+	require.Len(t, sp.created[0].Steps, 1)
+	payload, ok := sp.created[0].Steps[0].Payload.(sharedsaga.CreateSkillPayload)
+	require.True(t, ok)
+	assert.Equal(t, byte(200), payload.Level)
+}
+
+// A successful warp keeps every piece of its transaction wiring: exactly one
+// saga, a non-nil transaction id, the warpSagaTimeout, the "warp-%d" step id,
+// "portal-action-warp" as initiatedBy, and a registry entry for the saga's
+// transaction id carrying action.KindWarp.
+func TestExecuteWarpKeepsTransactionWiring(t *testing.T) {
+	sp := &fakeSagaProcessor{}
+	e, ctx := newTestExecutor(t, sp)
+
+	err := e.executeWarp(testField(), 100, mustOp(t, "warp", map[string]string{"mapId": "104000000", "portalId": "3"}))
+	require.NoError(t, err)
+
+	require.Len(t, sp.created, 1)
+	s := sp.created[0]
+	assert.NotEqual(t, uuid.Nil, s.TransactionId)
+	assert.Equal(t, warpSagaTimeout.Milliseconds(), s.Timeout)
+	assert.Equal(t, "portal-action-warp", s.InitiatedBy)
+	require.Len(t, s.Steps, 1)
+	assert.Equal(t, "warp-100", s.Steps[0].StepId)
+
+	pending, found := action.GetRegistry().Get(logger(t), ctx, s.TransactionId)
+	require.True(t, found)
+	assert.Equal(t, action.KindWarp, pending.Kind)
+}
+
+func logger(t *testing.T) logrus.FieldLogger {
+	t.Helper()
+	l, _ := logtest.NewNullLogger()
+	return l
+}

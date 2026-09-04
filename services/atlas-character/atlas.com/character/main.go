@@ -9,7 +9,6 @@ import (
 	"atlas-character/service"
 	"atlas-character/session"
 	"atlas-character/session/history"
-	"atlas-character/tasks"
 	"atlas-character/teleport_rock"
 	"context"
 	"os"
@@ -141,24 +140,20 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		// session sits outside env-domain-guard's permitted atlas-env import
-		// list (main.go, kafka/, rest/, socket/), so the environment
-		// identity is threaded in as a plain function value rather than the
-		// package importing atlas-env itself. lifecycle.TenantEnvironment
-		// resolves the environment that owns the timed-out session's
-		// tenant, falling back to this pod's own environment when the
-		// tenant's environment cannot be resolved -- a background sweep has
-		// no environment of its own to originate from, and stamping this
-		// pod's identity onto a tenant that belongs to a different
-		// environment drops the logout event at every consumer's ownership
-		// gate (FR-7.7).
-		tasks.Register(l, rt.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000), lifecycle.TenantEnvironment))
-	})
+	// session sits outside env-domain-guard's permitted atlas-env import
+	// list (main.go, kafka/, rest/, socket/), so the environment
+	// identity is threaded in as a plain function value rather than the
+	// package importing atlas-env itself. lifecycle.TenantEnvironment
+	// resolves the environment that owns the timed-out session's
+	// tenant, falling back to this pod's own environment when the
+	// tenant's environment cannot be resolved -- a background sweep has
+	// no environment of its own to originate from, and stamping this
+	// pod's identity onto a tenant that belongs to a different
+	// environment drops the logout event at every consumer's ownership
+	// gate (FR-7.7).
+	routine.Register(l, rt.Context(), rt.WaitGroup())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000), lifecycle.TenantEnvironment))
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(pending_change.NewExpiry(l, db, time.Minute*15))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(pending_change.NewExpiry(l, db, time.Minute*15))
 
 	rt.Wait()
 }

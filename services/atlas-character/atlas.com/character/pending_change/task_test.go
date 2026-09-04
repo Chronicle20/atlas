@@ -272,7 +272,7 @@ func TestExpiryRunSweepsEachTenantUnderItsOwnContext(t *testing.T) {
 		tenantB.Id(): tenantB,
 	}
 	e := newExpiryWithFetcher(testLogger(t), db, time.Minute, tenantStub(models))
-	e.Run()
+	e.Run(context.Background())
 
 	gotA, err := pA.GetById(mA.Id())
 	if err != nil {

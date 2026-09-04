@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 
@@ -41,18 +40,8 @@ func ParseCharacterId(l logrus.FieldLogger, next func(characterId uint32) http.H
 	return server.ParseIntId[uint32](l, "characterId", next)
 }
 
-type FieldInstanceHandler func(fieldInstance uuid.UUID) http.HandlerFunc
-
-func ParseFieldInstance(l logrus.FieldLogger, next FieldInstanceHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fieldInstance, err := uuid.Parse(mux.Vars(r)["fieldInstance"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse fieldInstance from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(fieldInstance)(w, r)
-	}
+func ParseFieldInstance(l logrus.FieldLogger, next func(fieldInstance uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "fieldInstance", next)
 }
 
 func ParseMapId(l logrus.FieldLogger, next func(mapId uint32) http.HandlerFunc) http.HandlerFunc {

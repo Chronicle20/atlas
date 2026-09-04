@@ -40818,8 +40818,7 @@
           "opcode": -1
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 296
         },
         "gms_v95": {

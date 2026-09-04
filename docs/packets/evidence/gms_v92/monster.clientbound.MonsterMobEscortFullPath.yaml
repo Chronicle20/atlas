@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMobEscortFullPath
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnEscortFullPath
+    address: "0x6374c0"
+    decompile_sha256: 028ca4bdbfad6771bd4567c69637a6ee433046d6c7f01170a0a3ca390fb1ad76
+verifies:
+    - libs/atlas-packet/monster/clientbound/mob_escort_full_path_test.go#TestMobEscortFullPath

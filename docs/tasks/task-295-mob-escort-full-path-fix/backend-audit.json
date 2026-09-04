@@ -1,0 +1,44 @@
+{
+  "service": "libs/atlas-packet + services/atlas-channel (task-295 changed-package scope)",
+  "path": "libs/atlas-packet/monster/clientbound; services/atlas-channel/atlas.com/channel/socket/writer",
+  "date": "2026-09-04",
+  "build": "pass",
+  "testsPassed": 3502,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "monster/clientbound",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor lives in processor.go", "status": "n-a", "evidence": "No Processor interface/ProcessorImpl/NewProcessor in mob_escort_full_path.go"},
+        {"id": "FILE-02", "name": "RestModel/Transform/Extract in rest.go", "status": "n-a", "evidence": "No RestModel/Transform/Extract in file"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "n-a", "evidence": "No requests.RootUrl/GetRequest/PostRequest call"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "n-a", "evidence": "No entity struct, Migration(), TableName()"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider placement", "status": "n-a", "evidence": "No Builder, no DB writes, no database.Query"},
+        {"id": "FILE-06", "name": "No catch-all file bundling >=2 responsibilities", "status": "pass", "evidence": "libs/atlas-packet/monster/clientbound/mob_escort_full_path.go:1-153 is single-purpose wire codec"},
+        {"id": "DOM-25", "name": "Client-interpreted wire values resolved from config, not Go literal outside codec internals", "status": "pass", "evidence": "mob_escort_full_path.go:116,141 (attr==2) are inside libs/atlas-packet codec internals, exempted by rule pass criteria; opcode binding lives in services/atlas-configurations/seed-data/templates/template_gms_92_1.json:3808-3809, not Go source; writer registered by name at services/atlas-channel/atlas.com/channel/main.go:758"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go, bare go needs guard marker", "status": "pass", "evidence": "grep for 'go '/goroutine in mob_escort_full_path.go returns no match"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "mob_escort_full_path_test.go:63-68 iterates pt.Variants with t.Run(v.Name, ...)"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "n-a", "evidence": "Test opens no GORM DB"},
+        {"id": "DOM-24", "name": "producertest stub installed when test reaches emit path", "status": "n-a", "evidence": "No AndEmit/message.Emit/producer.Produce reached"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "No Processor/Provider/Administrator interface change in diff"},
+        {"id": "VERSION-GATE-IDIOM", "name": "MajorAtLeast idiom instead of raw numeric comparison (task brief emphasis, not a numbered checklist rule)", "status": "n-a", "evidence": "Encode/Decode (mob_escort_full_path.go:106-153) contain zero version conditionals; doc comment and test comment state layout is byte-identical across all three routed versions, so there is no gate to grade"}
+      ]
+    },
+    {
+      "name": "socket/writer",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..05", "name": "Processor/RestModel/requests/entity/builder placement", "status": "n-a", "evidence": "services/atlas-channel/atlas.com/channel/socket/writer/mob_escort_full_path.go:1-27 contains only the thin MobEscortFullPathBody wrapper; none of these constructs present"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "Single-responsibility body-builder wrapper, matches sibling files"},
+        {"id": "DOM-25", "name": "Wire values resolved from config, not literal", "status": "pass", "evidence": "mob_escort_full_path.go:20-24 forwards typed parameters from caller, no dispatcher/sub-op literal in this file"},
+        {"id": "DOM-26", "name": "Goroutine discipline", "status": "pass", "evidence": "grep for 'go '/goroutine returns no match"},
+        {"id": "STRUCT-IMMUTABILITY", "name": "Unexported fields + accessor methods, no exported setters (task brief emphasis)", "status": "pass", "evidence": "mob_escort_full_path.go (packet lib) :26-30 and :71-79 declare only lowercase fields; construction only via NewMobEscortWaypoint (:33-35) / NewMobEscortFullPath (:81-91); read-only accessors at :37-40 / :93-99; no exported setter"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [],
+  "nonBlocking": []
+}

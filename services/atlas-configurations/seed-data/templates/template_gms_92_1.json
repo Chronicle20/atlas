@@ -3841,6 +3841,14 @@
         ]
       },
       {
+        "opCode": "0x128",
+        "writer": "MobEscortFullPath",
+        "fname": "CMob::OnEscortFullPath",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x12F",
         "writer": "SpawnNPC",
         "fname": "CNpcPool::OnNpcEnterField",

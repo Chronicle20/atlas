@@ -24,6 +24,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	scriptctx "github.com/Chronicle20/atlas/libs/atlas-script-core/context"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/ops"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -202,6 +203,26 @@ func (e *OperationExecutorImpl) evaluateContextValueAsInt(characterId uint32, pa
 	}
 
 	return intValue, nil
+}
+
+// contextResolver adapts the conversation-context evaluators to ops.Resolver,
+// so the shared step builders resolve "{context.xxx}" references and
+// arithmetic expressions through exactly the Redis reads this file performs
+// today, at the same call sites.
+type contextResolver struct{ e *OperationExecutorImpl }
+
+func (c contextResolver) String(characterId uint32, param string, raw string) (string, error) {
+	return c.e.evaluateContextValue(characterId, param, raw)
+}
+
+func (c contextResolver) Int(characterId uint32, param string, raw string) (int, error) {
+	return c.e.evaluateContextValueAsInt(characterId, param, raw)
+}
+
+func (e *OperationExecutorImpl) resolver() ops.Resolver { return contextResolver{e: e} }
+
+func (e *OperationExecutorImpl) target(f field.Model) ops.Target {
+	return ops.NewTargetBuilder(f).Build()
 }
 
 // parseRebalanceTargets parses a JSON-encoded array of {stat, floor} entries into
@@ -1522,48 +1543,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.IncreaseBuddyCapacity, payload, nil
 
 	case "create_skill":
-		// Format: create_skill
-		// Context: skillId (uint32), level (byte), masterLevel (byte), expiration (time.Time)
-		skillIdValue, exists := operation.Params()["skillId"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing skillId parameter for create_skill operation")
-		}
-
-		// Evaluate the skillId value
-		skillIdInt, err := e.evaluateContextValueAsInt(characterId, "skillId", skillIdValue)
+		st, err := ops.CreateSkill(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		// Level is optional with default 1
-		levelInt := 1
-		levelValue, exists := operation.Params()["level"]
-		if exists {
-			levelInt, err = e.evaluateContextValueAsInt(characterId, "level", levelValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		// Master level is optional with default 1
-		masterLevelInt := 1
-		masterLevelValue, exists := operation.Params()["masterLevel"]
-		if exists {
-			masterLevelInt, err = e.evaluateContextValueAsInt(characterId, "masterLevel", masterLevelValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		payload := saga.CreateSkillPayload{
-			CharacterId: characterId,
-			SkillId:     uint32(skillIdInt),
-			Level:       byte(levelInt),
-			MasterLevel: byte(masterLevelInt),
-			Expiration:  time.Now().Add(365 * 24 * time.Hour), // Default to 1 year from now
-		}
-
-		return stepId, saga.Pending, saga.CreateSkill, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "update_skill":
 		// Format: update_skill
@@ -1823,80 +1807,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.ChangeSkin, payload, nil
 
 	case "spawn_monster":
-		// Format: spawn_monster
-		// Params: monsterId (uint32), x (int16), y (int16), mapId (uint32, optional - defaults to character's current map),
-		//         count (int, optional, default 1), team (int8, optional, default 0)
-		// Note: Foothold is resolved by saga-orchestrator via atlas-data lookup
-		monsterIdValue, exists := operation.Params()["monsterId"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing monsterId parameter for spawn_monster operation")
-		}
-
-		monsterIdInt, err := e.evaluateContextValueAsInt(characterId, "monsterId", monsterIdValue)
+		st, err := ops.SpawnMonster(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		xValue, exists := operation.Params()["x"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing x parameter for spawn_monster operation")
-		}
-
-		xInt, err := e.evaluateContextValueAsInt(characterId, "x", xValue)
-		if err != nil {
-			return "", "", "", nil, err
-		}
-
-		yValue, exists := operation.Params()["y"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing y parameter for spawn_monster operation")
-		}
-
-		yInt, err := e.evaluateContextValueAsInt(characterId, "y", yValue)
-		if err != nil {
-			return "", "", "", nil, err
-		}
-
-		// MapId is optional, defaults to character's current map
-		mapIdInt := int(f.MapId())
-		if mapIdValue, exists := operation.Params()["mapId"]; exists {
-			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		// Count is optional, defaults to 1
-		countInt := 1
-		if countValue, exists := operation.Params()["count"]; exists {
-			countInt, err = e.evaluateContextValueAsInt(characterId, "count", countValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		// Team is optional, defaults to 0
-		teamInt := 0
-		if teamValue, exists := operation.Params()["team"]; exists {
-			teamInt, err = e.evaluateContextValueAsInt(characterId, "team", teamValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		payload := saga.SpawnMonsterPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
-			MapId:       _map.Id(mapIdInt),
-			MonsterId:   uint32(monsterIdInt),
-			X:           int16(xInt),
-			Y:           int16(yInt),
-			Team:        int8(teamInt),
-			Count:       countInt,
-		}
-
-		return stepId, saga.Pending, saga.SpawnMonster, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "complete_quest":
 		// Format: complete_quest
@@ -2101,63 +2016,18 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.SetQuestProgress, payload, nil
 
 	case "apply_consumable_effect":
-		// Format: apply_consumable_effect
-		// Params: itemId (uint32)
-		// Applies consumable item effects to a character without consuming from inventory
-		// Used for NPC-initiated buffs (e.g., cm.useItem() in scripts)
-		itemIdValue, exists := operation.Params()["itemId"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing itemId parameter for apply_consumable_effect operation")
-		}
-
-		itemIdInt, err := e.evaluateContextValueAsInt(characterId, "itemId", itemIdValue)
+		st, err := ops.ApplyConsumableEffect(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		payload := saga.ApplyConsumableEffectPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
-			ItemId:      uint32(itemIdInt),
-		}
-
-		return stepId, saga.Pending, saga.ApplyConsumableEffect, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "send_message":
-		// Format: send_message
-		// Params: messageType (string: "NOTICE", "POP_UP", "PINK_TEXT", "BLUE_TEXT"), message (string)
-		// Sends a system message to the character
-		// Used for NPC-initiated messages (e.g., cm.playerMessage() in scripts)
-		messageTypeValue, exists := operation.Params()["messageType"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing messageType parameter for send_message operation")
-		}
-
-		messageType, err := e.evaluateContextValue(characterId, "messageType", messageTypeValue)
+		st, err := ops.SendMessage(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		messageValue, exists := operation.Params()["message"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing message parameter for send_message operation")
-		}
-
-		message, err := e.evaluateContextValue(characterId, "message", messageValue)
-		if err != nil {
-			return "", "", "", nil, err
-		}
-
-		payload := saga.SendMessagePayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
-			MessageType: messageType,
-			Message:     message,
-		}
-
-		return stepId, saga.Pending, saga.SendMessage, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "award_fame":
 		// Format: award_fame
@@ -2238,17 +2108,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.ShowParcel, payload, nil
 
 	case "play_portal_sound":
-		// Format: play_portal_sound
-		// Params: none required
-		// Plays the portal sound effect for the character
-		// Used for portal-related scripts (e.g., after teleporting)
-		payload := saga.PlayPortalSoundPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
+		st, err := ops.PlayPortalSound(operation.Params(), e.resolver(), e.target(f), characterId)
+		if err != nil {
+			return "", "", "", nil, err
 		}
-
-		return stepId, saga.Pending, saga.PlayPortalSound, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "show_info":
 		// Format: show_info
@@ -2334,48 +2198,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.UpdateAreaInfo, payload, nil
 
 	case "show_hint":
-		// Format: show_hint
-		// Params: hint (string, required), width (uint16, optional), height (uint16, optional)
-		// Shows a hint box to the character
-		// Used for hint messages (e.g., qm.showHint() in scripts)
-		hintValue, exists := operation.Params()["hint"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing hint parameter for show_hint operation")
-		}
-
-		hint, err := e.evaluateContextValue(characterId, "hint", hintValue)
+		st, err := ops.ShowHint(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		// Width is optional, defaults to 0 (auto-calculated by channel)
-		widthInt := 0
-		if widthValue, exists := operation.Params()["width"]; exists {
-			widthInt, err = e.evaluateContextValueAsInt(characterId, "width", widthValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		// Height is optional, defaults to 0 (auto-calculated by channel)
-		heightInt := 0
-		if heightValue, exists := operation.Params()["height"]; exists {
-			heightInt, err = e.evaluateContextValueAsInt(characterId, "height", heightValue)
-			if err != nil {
-				return "", "", "", nil, err
-			}
-		}
-
-		payload := saga.ShowHintPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
-			Hint:        hint,
-			Width:       uint16(widthInt),
-			Height:      uint16(heightInt),
-		}
-
-		return stepId, saga.Pending, saga.ShowHint, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "show_guide_hint":
 		// Format: show_guide_hint
@@ -2412,28 +2239,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		return stepId, saga.Pending, saga.ShowGuideHint, payload, nil
 
 	case "show_intro":
-		// Format: show_intro
-		// Params: path (string, required) - path to the intro/direction effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
-		// Shows an intro/direction effect to the character
-		// Used for tutorial animations and direction effects (e.g., qm.showIntro() in scripts)
-		pathValue, exists := operation.Params()["path"]
-		if !exists {
-			return "", "", "", nil, errors.New("missing path parameter for show_intro operation")
-		}
-
-		path, err := e.evaluateContextValue(characterId, "path", pathValue)
+		st, err := ops.ShowIntro(operation.Params(), e.resolver(), e.target(f), characterId)
 		if err != nil {
 			return "", "", "", nil, err
 		}
-
-		payload := saga.ShowIntroPayload{
-			CharacterId: characterId,
-			WorldId:     f.WorldId(),
-			ChannelId:   f.ChannelId(),
-			Path:        path,
-		}
-
-		return stepId, saga.Pending, saga.ShowIntro, payload, nil
+		return stepId, st.Status(), st.Action(), st.Payload(), nil
 
 	case "set_hp":
 		// Format: set_hp

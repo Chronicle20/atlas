@@ -7,8 +7,10 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -1149,4 +1151,193 @@ func TestGetQuestProgressOperation(t *testing.T) {
 
 func strPtr(s string) *string {
 	return &s
+}
+
+// TestCreateStepSendMessageDefaultsMessageType verifies that send_message no
+// longer requires messageType (FR-13; previously errors.New("missing
+// messageType parameter for send_message operation")), accepts the `type`
+// alias, and maps the numeric "6" to BLUE_TEXT.
+func TestCreateStepSendMessageDefaultsMessageType(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(80)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	tests := []struct {
+		name            string
+		params          map[string]string
+		wantMessageType string
+	}{
+		{
+			name:            "no messageType defaults to PINK_TEXT",
+			params:          map[string]string{"message": "hi"},
+			wantMessageType: "PINK_TEXT",
+		},
+		{
+			name:            "type alias",
+			params:          map[string]string{"message": "hi", "type": "NOTICE"},
+			wantMessageType: "NOTICE",
+		},
+		{
+			name:            "numeric type alias maps to BLUE_TEXT",
+			params:          map[string]string{"message": "hi", "type": "6"},
+			wantMessageType: "BLUE_TEXT",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			op, err := NewOperationBuilder().SetType("send_message").SetParams(tt.params).Build()
+			if err != nil {
+				t.Fatalf("build op: %v", err)
+			}
+			_, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+			if err != nil {
+				t.Fatalf("createStepForOperation returned error: %v", err)
+			}
+			if status != saga.Pending {
+				t.Fatalf("expected status Pending, got %q", status)
+			}
+			if action != saga.SendMessage {
+				t.Fatalf("expected action SendMessage, got %q", action)
+			}
+			p, ok := payload.(saga.SendMessagePayload)
+			if !ok {
+				t.Fatalf("expected SendMessagePayload, got %T", payload)
+			}
+			if p.MessageType != tt.wantMessageType {
+				t.Errorf("MessageType = %q, want %q", p.MessageType, tt.wantMessageType)
+			}
+			if p.Message != "hi" {
+				t.Errorf("Message = %q, want %q", p.Message, "hi")
+			}
+		})
+	}
+}
+
+// TestCreateStepSpawnMonsterOptionalPosition verifies that spawn_monster no
+// longer requires x/y (FR-15/FR-16; previously errors.New("missing x
+// parameter for spawn_monster operation")) and that Instance carries the
+// target field's instance only when the spawn targets the same map (OQ-3).
+func TestCreateStepSpawnMonsterOptionalPosition(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(81)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+	instID := uuid.New()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(910010000)).SetInstance(instID).Build()
+
+	t.Run("no x/y defaults to 0,0 and inherits the target's instance", func(t *testing.T) {
+		op, err := NewOperationBuilder().
+			SetType("spawn_monster").
+			AddParamValue("monsterId", "100100").
+			Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+		_, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+		if err != nil {
+			t.Fatalf("createStepForOperation returned error: %v", err)
+		}
+		if status != saga.Pending {
+			t.Fatalf("expected status Pending, got %q", status)
+		}
+		if action != saga.SpawnMonster {
+			t.Fatalf("expected action SpawnMonster, got %q", action)
+		}
+		p, ok := payload.(saga.SpawnMonsterPayload)
+		if !ok {
+			t.Fatalf("expected SpawnMonsterPayload, got %T", payload)
+		}
+		if p.X != 0 || p.Y != 0 {
+			t.Errorf("X,Y = %d,%d, want 0,0", p.X, p.Y)
+		}
+		if p.Instance != instID {
+			t.Errorf("Instance = %s, want %s", p.Instance, instID)
+		}
+	})
+
+	t.Run("mapId targeting a different map carries uuid.Nil instance", func(t *testing.T) {
+		op, err := NewOperationBuilder().
+			SetType("spawn_monster").
+			AddParamValue("monsterId", "100100").
+			AddParamValue("mapId", "910510202").
+			Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+		_, _, _, payload, err := executor.createStepForOperation(f, characterId, op)
+		if err != nil {
+			t.Fatalf("createStepForOperation returned error: %v", err)
+		}
+		p, ok := payload.(saga.SpawnMonsterPayload)
+		if !ok {
+			t.Fatalf("expected SpawnMonsterPayload, got %T", payload)
+		}
+		if p.Instance != uuid.Nil {
+			t.Errorf("Instance = %s, want uuid.Nil", p.Instance)
+		}
+	})
+}
+
+// TestCreateStepCreateSkillHonoursExpiration verifies that create_skill now
+// reads the expiration parameter (design §5.4; operation_executor.go
+// previously hard-coded a ~1 year expiration regardless of input) and that
+// the "-1" sentinel resolves to an expiration far beyond the old 1-year
+// default.
+func TestCreateStepCreateSkillHonoursExpiration(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(82)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	op, err := NewOperationBuilder().
+		SetType("create_skill").
+		AddParamValue("skillId", "1001003").
+		AddParamValue("expiration", "-1").
+		Build()
+	if err != nil {
+		t.Fatalf("build op: %v", err)
+	}
+	_, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+	if err != nil {
+		t.Fatalf("createStepForOperation returned error: %v", err)
+	}
+	if status != saga.Pending {
+		t.Fatalf("expected status Pending, got %q", status)
+	}
+	if action != saga.CreateSkill {
+		t.Fatalf("expected action CreateSkill, got %q", action)
+	}
+	p, ok := payload.(saga.CreateSkillPayload)
+	if !ok {
+		t.Fatalf("expected CreateSkillPayload, got %T", payload)
+	}
+	minExpiration := time.Now().Add(50 * 365 * 24 * time.Hour)
+	if !p.Expiration.After(minExpiration) {
+		t.Errorf("Expiration = %s, want after %s", p.Expiration, minExpiration)
+	}
 }

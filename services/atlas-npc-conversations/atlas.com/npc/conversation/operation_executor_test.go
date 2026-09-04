@@ -1341,6 +1341,53 @@ func TestCreateStepCreateSkillHonoursExpiration(t *testing.T) {
 	}
 }
 
+// TestCreateStepUpdateSkillHonoursExpiration verifies that update_skill now
+// reads the expiration parameter (design §5.4; operation_executor.go
+// previously hard-coded a ~1 year expiration regardless of input) and that
+// the "-1" sentinel resolves to an expiration far beyond the old 1-year
+// default.
+func TestCreateStepUpdateSkillHonoursExpiration(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(82)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	op, err := NewOperationBuilder().
+		SetType("update_skill").
+		AddParamValue("skillId", "1001003").
+		AddParamValue("expiration", "-1").
+		Build()
+	if err != nil {
+		t.Fatalf("build op: %v", err)
+	}
+	_, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+	if err != nil {
+		t.Fatalf("createStepForOperation returned error: %v", err)
+	}
+	if status != saga.Pending {
+		t.Fatalf("expected status Pending, got %q", status)
+	}
+	if action != saga.UpdateSkill {
+		t.Fatalf("expected action UpdateSkill, got %q", action)
+	}
+	p, ok := payload.(saga.UpdateSkillPayload)
+	if !ok {
+		t.Fatalf("expected UpdateSkillPayload, got %T", payload)
+	}
+	minExpiration := time.Now().Add(50 * 365 * 24 * time.Hour)
+	if !p.Expiration.After(minExpiration) {
+		t.Errorf("Expiration = %s, want after %s", p.Expiration, minExpiration)
+	}
+}
+
 // TestCreateStepWarpToMapRequiresMapId verifies that warp_to_map now delegates
 // to ops.WarpToPortal (FR-18), which requires mapId — operation_executor.go
 // previously defaulted a missing mapId to 0 (saga.WarpToPortalPayload{MapId: 0})

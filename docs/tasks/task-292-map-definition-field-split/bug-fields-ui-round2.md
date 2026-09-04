@@ -173,6 +173,13 @@ Constraints:
 
 ## Resolution
 
-- Fix commit: _pending_
-- Gate: _pending_
-- Live re-test: _pending_
+- Fix commit: `a73aaaf3b` — fix(atlas-ui): field/map UI polish round 2.
+  Report: `bug-fields-ui-round2-report.md`.
+- Gate: PASS — `tools/verify.sh --quick --base 46a0bdc74`, exit 0
+  (12 changed paths; lint & format guard (atlas-ui) ✓). Module-local:
+  `npm run build`, `npm run lint` (0 errors), `npm run test -- --run`
+  (299 files / 2518 tests) all green.
+- Live re-test: _pending — not yet confirmed in the running UI._
+- Item 4 scope note: the `HoverTarget` `"character"` variant is overlay-side
+  only; Characters-tab row pairing was left unwired, as the "Not yet
+  answered" section permitted.

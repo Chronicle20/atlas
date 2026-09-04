@@ -208,6 +208,11 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
 		t := tenant.MustFromContext(ctx)
+		if le, ok := monster.GetLiveMirror().Lookup(t, e.UniqueId); ok {
+			bossHpBroadcaster(l, ctx, sc, wp, sc.Field(e.MapId, e.Instance), e.MonsterId, 0, le.MaxHp)
+		} else {
+			l.Errorf("Unable to resolve monster [%d] from the live mirror; skipping the boss HP gauge clear.", e.UniqueId)
+		}
 		monster.GetNextSkillInbox().Evict(t, e.UniqueId)
 		monster.GetStatusMirror().OnMonsterGone(t, e.UniqueId)
 		monster.GetLiveMirror().Remove(t, e.UniqueId)
@@ -322,8 +327,14 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 		if err != nil {
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
-		monster.GetStatusMirror().OnMonsterGone(tenant.MustFromContext(ctx), e.UniqueId)
-		monster.GetLiveMirror().Remove(tenant.MustFromContext(ctx), e.UniqueId)
+		t := tenant.MustFromContext(ctx)
+		if le, ok := monster.GetLiveMirror().Lookup(t, e.UniqueId); ok {
+			bossHpBroadcaster(l, ctx, sc, wp, sc.Field(e.MapId, e.Instance), e.MonsterId, 0, le.MaxHp)
+		} else {
+			l.Errorf("Unable to resolve monster [%d] from the live mirror; skipping the boss HP gauge clear.", e.UniqueId)
+		}
+		monster.GetStatusMirror().OnMonsterGone(t, e.UniqueId)
+		monster.GetLiveMirror().Remove(t, e.UniqueId)
 	}
 }
 

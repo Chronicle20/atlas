@@ -1,6 +1,7 @@
 package frederick
 
 import (
+	"atlas-merchant/kafka/message"
 	merchant "atlas-merchant/kafka/message/merchant"
 	"context"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -59,24 +61,36 @@ func (t *NotificationTask) Run(ctx context.Context) {
 	processDueNotifications(t.l, ctx, notifications, notifyAndAdvance(t.l, t.db, noTenantCtx), t.envContext)
 }
 
-// notifyAndAdvance emits the tier notification for one due entry, then
-// advances it to the next tier or deletes it if none remain. Injected into
+// notifyAndAdvance emits the tier notification for one due entry and advances
+// it to the next tier (or deletes it if none remain), both inside a single
+// transaction: the Kafka message is buffered into the outbox alongside the
+// write and only flushes once the write commits, so a failed advance/delete
+// never leaves an already-emitted notification behind. Injected into
 // processDueNotifications so the pure sweep logic can be tested with a spy
 // in place of the real producer/db side effects.
 func notifyAndAdvance(l logrus.FieldLogger, db *gorm.DB, noTenantCtx context.Context) func(ctx context.Context, n NotificationEntity) {
 	return func(ctx context.Context, n NotificationEntity) {
-		kp := producer.ProviderImpl(l)(ctx)
-		_ = kp(merchant.EnvStatusEventTopic)(notificationProvider(n.CharacterId, n.NextDay))
+		err := database.ExecuteTransaction(db.WithContext(noTenantCtx), func(tx *gorm.DB) error {
+			return message.Emit(outbox.EmitProvider(l, ctx, tx))(func(buf *message.Buffer) error {
+				if err := buf.Put(merchant.EnvStatusEventTopic, notificationProvider(n.CharacterId, n.NextDay)); err != nil {
+					return err
+				}
 
-		next, hasNext := nextTier(n.NextDay)
-		if hasNext {
-			if _, err := advanceNotification(n.Id, next)(db.WithContext(noTenantCtx))(); err != nil {
-				l.WithError(err).Errorf("Error advancing notification [%s] to tier %d.", n.Id, next)
-			}
-		} else {
-			if _, err := deleteNotification(n.Id)(db.WithContext(noTenantCtx))(); err != nil {
-				l.WithError(err).Errorf("Error deleting final notification [%s].", n.Id)
-			}
+				next, hasNext := nextTier(n.NextDay)
+				if hasNext {
+					if _, err := advanceNotification(n.Id, next)(tx)(); err != nil {
+						return err
+					}
+				} else {
+					if _, err := deleteNotification(n.Id)(tx)(); err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Error notifying and advancing notification [%s].", n.Id)
 		}
 	}
 }

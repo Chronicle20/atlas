@@ -2,8 +2,6 @@ package main
 
 import (
 	"atlas-account/account"
-	"atlas-account/tasks"
-	"context"
 	"os"
 	"time"
 
@@ -80,9 +78,7 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
 
 	rt.TeardownFunc(account.Teardown(l, db))
 

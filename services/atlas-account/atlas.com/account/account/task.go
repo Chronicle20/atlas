@@ -25,8 +25,8 @@ func NewTransitionTimeout(l logrus.FieldLogger, db *gorm.DB, interval time.Durat
 	return &Timeout{l, db, interval, timeout}
 }
 
-func (t *Timeout) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-account").Start(context.Background(), TimeoutTask)
+func (t *Timeout) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-account").Start(ctx, TimeoutTask)
 	defer span.End()
 
 	as, err := GetInTransition(t.timeout)

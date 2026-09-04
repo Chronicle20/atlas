@@ -4,8 +4,6 @@ import (
 	"atlas-ban/ban"
 	"atlas-ban/history"
 	"atlas-ban/report"
-	"atlas-ban/tasks"
-	"context"
 	"os"
 	"time"
 
@@ -90,12 +88,8 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(ban.NewExpiredBanCleanup(l, rt.Context(), db, time.Minute*time.Duration(5)))
-	})
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(history.NewHistoryPurge(l, rt.Context(), db, time.Hour*time.Duration(24)))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(ban.NewExpiredBanCleanup(l, db, time.Minute*time.Duration(5)))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(history.NewHistoryPurge(l, db, time.Hour*time.Duration(24)))
 
 	rt.TeardownFunc(database.Teardown(l, db))
 

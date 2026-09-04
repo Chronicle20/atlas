@@ -12,22 +12,21 @@ import (
 
 type ExpiredBanCleanup struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	db       *gorm.DB
 	interval time.Duration
 }
 
-func NewExpiredBanCleanup(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration) *ExpiredBanCleanup {
+func NewExpiredBanCleanup(l logrus.FieldLogger, db *gorm.DB, interval time.Duration) *ExpiredBanCleanup {
 	l.Infof("Initializing expired ban cleanup task to run every %dms.", interval.Milliseconds())
-	return &ExpiredBanCleanup{l: l, ctx: ctx, db: db, interval: interval}
+	return &ExpiredBanCleanup{l: l, db: db, interval: interval}
 }
 
 // Run deletes all expired temporary bans across all tenants. This intentionally
 // bypasses the processor layer and operates without tenant context, performing a
 // single global sweep rather than iterating per-tenant.
-func (t *ExpiredBanCleanup) Run() {
+func (t *ExpiredBanCleanup) Run(ctx context.Context) {
 	t.l.Debugf("Executing expired ban cleanup task.")
-	noTenantCtx := database.WithoutTenantFilter(t.ctx)
+	noTenantCtx := database.WithoutTenantFilter(ctx)
 	now := time.Now()
 	err := t.db.WithContext(noTenantCtx).Where("permanent = ? AND expires_at <= ?", false, now).Delete(&Entity{}).Error
 	if err != nil {

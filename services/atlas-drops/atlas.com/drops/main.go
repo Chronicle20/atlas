@@ -3,7 +3,6 @@ package main
 import (
 	"atlas-drops/configuration"
 	"atlas-drops/drop"
-	"atlas-drops/tasks"
 	"context"
 	"os"
 	"time"
@@ -99,9 +98,7 @@ func main() {
 		return env.WithContext(ctx, env.Self())
 	}
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(drop.NewExpirationTask(l, time.Millisecond*time.Duration(tt.Interval), envContext))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(drop.NewExpirationTask(l, time.Millisecond*time.Duration(tt.Interval), envContext))
 
 	rt.TeardownFunc(func() {
 		sctx, span := otel.GetTracerProvider().Tracer("atlas-drops").Start(context.Background(), "teardown")

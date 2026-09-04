@@ -40,7 +40,7 @@ func (t *ExpirationTask) tenantContext(sctx context.Context, ten tenant.Model) c
 	return t.envContext(tenant.WithContext(sctx, ten))
 }
 
-func (t *ExpirationTask) Run() {
+func (t *ExpirationTask) Run(ctx context.Context) {
 	var expire time.Duration
 	c, err := configuration.GetServiceConfig()
 	if err != nil {
@@ -54,7 +54,7 @@ func (t *ExpirationTask) Run() {
 		}
 	}
 
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-drops").Start(context.Background(), ExpirationTaskName)
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-drops").Start(ctx, ExpirationTaskName)
 	defer span.End()
 
 	ds := GetRegistry().GetAllDrops()

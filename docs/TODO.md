@@ -289,9 +289,8 @@ that is not available on the wire:
 - [ ] Transmit stats in portal transitions (`character/kafka.go:26`)
 
 ### Reactor Actions Service
-- [ ] Create saga action for boss weakening (`script/executor.go:229,243`)
-- [ ] Create saga action for environment object manipulation (`script/executor.go:250,260`)
-- [ ] Create saga action for mass monster killing (`script/executor.go:267,272`)
+- [ ] Create saga action for boss weakening (`services/atlas-reactor-actions/atlas.com/reactor/script/executor.go:226`)
+- [ ] Create saga action for mass monster killing (`services/atlas-reactor-actions/atlas.com/reactor/script/executor.go:290`)
 
 ---
 

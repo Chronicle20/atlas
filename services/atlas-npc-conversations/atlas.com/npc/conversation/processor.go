@@ -964,7 +964,7 @@ func (p *ProcessorImpl) processTransportActionState(ctx ConversationContext, sta
 		SetInitiatedBy(fmt.Sprintf("NPC_%d_transport", ctx.NpcId()))
 
 	// Add the transport step
-	transportPayload := saga.StartInstanceTransportPayload{
+	transportPayload := saga.StartInstanceTransportPayload{ // script-ops-guard:allow — built from a TransportAction conversation state, not script params; the "start_instance_transport" operation table entry already delegates to ops.StartInstanceTransport (operation_executor.go).
 		CharacterId: ctx.CharacterId(),
 		WorldId:     ctx.Field().WorldId(),
 		ChannelId:   ctx.Field().ChannelId(),

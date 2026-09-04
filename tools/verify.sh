@@ -845,6 +845,12 @@ else
     skip "npc-conversation contract mirror guard (contract unchanged)"
 fi
 
+if [ "$ALL" -eq 1 ] || touched '^services/atlas-(map|reactor|portal)-actions/|^services/atlas-npc-conversations/|^libs/atlas-script-core/|^tools/script-ops-guard\.sh$'; then
+    step "shared script ops guard" ./tools/script-ops-guard.sh
+else
+    skip "shared script ops guard (no script-operation source changed)"
+fi
+
 if touched '^tools/.*\.sh$'; then
     step "shell tooling guard" ./tools/shell-guard.sh --require-shellcheck
 

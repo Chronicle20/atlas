@@ -223,7 +223,7 @@ func TestSuppressAwardAssetByStartQuest(t *testing.T) {
 			stepId: "start",
 			status: saga.Pending,
 			action: saga.StartQuest,
-			payload: saga.StartQuestPayload{
+			payload: saga.StartQuestPayload{ // script-ops-guard:allow — expected-value fixture for the award-suppression test below, not an operation-table implementation.
 				CharacterId: 1,
 				QuestId:     1000,
 				Rewards:     rewards,

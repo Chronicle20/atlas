@@ -160,7 +160,7 @@ func sendFailureMessage(l logrus.FieldLogger, ctx context.Context, characterId u
 			fmt.Sprintf("message-%d", characterId),
 			sharedsaga.Pending,
 			sharedsaga.SendMessage,
-			sharedsaga.SendMessagePayload{
+			sharedsaga.SendMessagePayload{ // script-ops-guard:allow — internal failure notice, not driven by script params; ops.SendMessage needs a script param map this call site doesn't have.
 				CharacterId: characterId,
 				WorldId:     ch.WorldId(),
 				ChannelId:   ch.Id(),

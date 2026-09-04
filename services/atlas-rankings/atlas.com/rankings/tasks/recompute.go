@@ -21,7 +21,6 @@ import (
 // a redeploy, with staleness bounded by one tick.
 type RecomputeTask struct {
 	l            logrus.FieldLogger
-	ctx          context.Context
 	interval     time.Duration
 	tenants      func() ([]tenant.Model, error)
 	intervalFor  func(ctx context.Context, tenantId uuid.UUID) time.Duration
@@ -43,7 +42,6 @@ type RecomputeTask struct {
 func NewRecomputeTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *RecomputeTask {
 	return &RecomputeTask{
 		l:        l,
-		ctx:      ctx,
 		interval: interval,
 		tenants: func() ([]tenant.Model, error) {
 			return tenantclient.NewProcessor(l, ctx).GetAll()
@@ -62,8 +60,8 @@ func (t *RecomputeTask) SleepTime() time.Duration {
 	return t.interval
 }
 
-func (t *RecomputeTask) Run() {
-	if t.ctx.Err() != nil {
+func (t *RecomputeTask) Run(ctx context.Context) {
+	if ctx.Err() != nil {
 		return
 	}
 
@@ -74,12 +72,12 @@ func (t *RecomputeTask) Run() {
 	}
 
 	for _, ten := range ts {
-		if t.ctx.Err() != nil {
+		if ctx.Err() != nil {
 			t.l.Infof("Context cancelled mid-tick; abandoning remaining tenants for this tick.")
 			return
 		}
 
-		tctx := t.tenantContext(ten)
+		tctx := t.tenantContext(ctx, ten)
 		interval := t.intervalFor(tctx, ten.Id())
 		p := t.processorFor(tctx)
 
@@ -104,6 +102,6 @@ func (t *RecomputeTask) Run() {
 // environment identity on top. Extracted so the origination itself is
 // directly testable without standing up the tenant/configuration/ranking
 // dependencies Run's other callers require.
-func (t *RecomputeTask) tenantContext(ten tenant.Model) context.Context {
-	return t.envContext(tenant.WithContext(t.ctx, ten))
+func (t *RecomputeTask) tenantContext(ctx context.Context, ten tenant.Model) context.Context {
+	return t.envContext(tenant.WithContext(ctx, ten))
 }

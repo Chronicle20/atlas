@@ -239,8 +239,8 @@ The struct doc comment (FR-9) is rewritten to the layout in §2.2, cites all thr
 addresses, names the receiving `CVecCtrlMob` / `EscortDest` members, and states
 "v92 + v95 + jms; escort family absent in v83/v84/v87." The stale
 `8×Decode4 + Decode1 + Decode4 + Decode1` paragraph is replaced: with the corrected
-shape a 2-waypoint, all-`attr!=2` example is `3 + 2×3 = 9 × Decode4`, then
-`Decode1 + Decode4 + Decode1` — i.e. **9×Decode4**, not 8.
+shape a 2-waypoint, all-`attr!=2` example is `3 + 2×3 + 1 = 10 × Decode4`, then
+`Decode1 + Decode4 + Decode1` — i.e. **10×Decode4**, not 8.
 
 ---
 

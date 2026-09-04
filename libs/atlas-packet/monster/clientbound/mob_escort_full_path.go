@@ -62,7 +62,7 @@ func (w MobEscortWaypoint) StopDuration() int32 { return w.stopDuration }
 //     m_bEscortStop = 1 — the mob never auto-resumes.
 //
 // IDA basis: CMob::OnEscortFullPath — v92 @0x6374c0, v95 @0x643d90,
-// jms @0x6efa01. A 2-waypoint path with no attr==2 entry is 9×Decode4
+// jms @0x6efa01. A 2-waypoint path with no attr==2 entry is 10×Decode4
 // (count + oldDestX + oldDestY + 2×(x,y,attr) + currentDestIndex), then
 // Decode1 [+Decode4] + Decode1. v92 + v95 + jms only — the escort family is
 // absent in v83/v84/v87.

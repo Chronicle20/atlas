@@ -35,8 +35,8 @@ func NewRevertTask(l logrus.FieldLogger, interval time.Duration, envContext func
 	return &RevertTask{l, interval, envContext}
 }
 
-func (e *RevertTask) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-expressions").Start(context.Background(), RevertTaskName)
+func (e *RevertTask) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-expressions").Start(ctx, RevertTaskName)
 	defer span.End()
 
 	processExpired(e.l, sctx, GetRegistry().popExpired(sctx), revertExpression, e.envContext)

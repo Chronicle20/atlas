@@ -78,7 +78,7 @@ func TestRevertTask_Run_NoExpiredExpressions(t *testing.T) {
 	GetRegistry().add(ctx, 1000, f, 5)
 
 	// Run should not panic and expression should still exist
-	task.Run()
+	task.Run(ctx)
 
 	_, found := GetRegistry().get(ctx, 1000)
 	assert.True(t, found)
@@ -102,7 +102,7 @@ func TestRevertTask_Run_WithExpiredExpressions(t *testing.T) {
 	// Advance clock past TTL
 	GetRegistry().SetNowFunc(func() time.Time { return now.Add(6 * time.Second) })
 
-	task.Run()
+	task.Run(ctx)
 
 	// Verify expression was removed
 	_, found := GetRegistry().get(ctx, 1000)
@@ -131,7 +131,7 @@ func TestRevertTask_Run_MixedExpiredAndNonExpired(t *testing.T) {
 	// Advance to 6 seconds - first expired, second not
 	GetRegistry().SetNowFunc(func() time.Time { return now.Add(6 * time.Second) })
 
-	task.Run()
+	task.Run(ctx)
 
 	// Verify expired was removed
 	_, found1 := GetRegistry().get(ctx, 1000)

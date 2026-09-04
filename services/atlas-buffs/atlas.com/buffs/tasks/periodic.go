@@ -22,8 +22,8 @@ func NewPeriodicTick(l logrus.FieldLogger, interval int) *PeriodicTick {
 	return &PeriodicTick{l, interval}
 }
 
-func (r *PeriodicTick) Run() {
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-buffs").Start(context.Background(), "periodic_tick_task")
+func (r *PeriodicTick) Run(ctx context.Context) {
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-buffs").Start(ctx, "periodic_tick_task")
 	defer span.End()
 
 	_ = character.ProcessPeriodicTicks(r.l, ctx)

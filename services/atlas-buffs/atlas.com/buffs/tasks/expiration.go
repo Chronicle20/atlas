@@ -18,10 +18,10 @@ func NewExpiration(l logrus.FieldLogger, interval int) *Expiration {
 	return &Expiration{l, interval}
 }
 
-func (r *Expiration) Run() {
+func (r *Expiration) Run(ctx context.Context) {
 	r.l.Debugf("Executing expiration task.")
 
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-buffs").Start(context.Background(), "expiration_task")
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-buffs").Start(ctx, "expiration_task")
 	defer span.End()
 
 	_ = character.ExpireBuffs(r.l, ctx)

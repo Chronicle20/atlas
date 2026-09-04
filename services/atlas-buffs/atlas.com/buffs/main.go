@@ -7,7 +7,6 @@ import (
 	characterstatus2 "atlas-buffs/kafka/consumer/characterstatus"
 	skillstatus2 "atlas-buffs/kafka/consumer/skillstatus"
 	"atlas-buffs/tasks"
-	"context"
 	"os"
 
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -68,15 +67,9 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewExpiration(l, 10000))
-	})
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewPeriodicTick(l, 1000))
-	})
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewBerserkTick(l, 1000))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewExpiration(l, 10000))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewPeriodicTick(l, 1000))
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewBerserkTick(l, 1000))
 
 	server.New(l).
 		WithContext(rt.Context()).

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 
@@ -25,31 +24,10 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	return server.RegisterInputHandler[M](l)
 }
 
-type ScriptIdHandler func(scriptId uuid.UUID) http.HandlerFunc
-
-func ParseScriptId(l logrus.FieldLogger, next ScriptIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		scriptIdStr := mux.Vars(r)["scriptId"]
-		scriptId, err := uuid.Parse(scriptIdStr)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse scriptId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(scriptId)(w, r)
-	}
+func ParseScriptId(l logrus.FieldLogger, next func(scriptId uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "scriptId", next)
 }
 
-type ReactorIdHandler func(reactorId string) http.HandlerFunc
-
-func ParseReactorId(l logrus.FieldLogger, next ReactorIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		reactorId := mux.Vars(r)["reactorId"]
-		if reactorId == "" {
-			l.Errorf("Reactor ID is required")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(reactorId)(w, r)
-	}
+func ParseReactorId(l logrus.FieldLogger, next func(reactorId string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "reactorId", next)
 }

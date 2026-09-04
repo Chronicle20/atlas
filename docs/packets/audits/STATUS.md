@@ -7,15 +7,15 @@
 Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 
 - export gms_v48: `b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6`
-- export gms_v61: `af9ddeaff46dc92af0cf2199a33d7ef60fdf01db6423d5f396a55c0389a3c745`
-- export gms_v72: `e03dad84031f0486ed99c61cba511056a7ccfef1a9df95357e6f5c81353522c1`
-- export gms_v79: `045af888d05b8ff7060d8bc04146020d04518e4f079b9149d7cdd023fe42d95f`
-- export gms_v83: `6fcb33295092df32d17d5795b444d9c08419491de956e63b0a3ad03f83b9da31`
-- export gms_v84: `a05b8b562d80afa80073dc427f660364559a955847509a01ad6df734d34df5d5`
-- export gms_v87: `d9f57fef03c001656de14eed72c7696f977d7825892031f70fe0c90fa2e69cce`
-- export gms_v92: `8917182f873dbd7b2268394d10b7aa12f0fb17a13a2f2093b42a74c3d12e4f8b`
-- export gms_v95: `f1c0a6be17e594821d12a38543f4b5a2d863342bd4fc6217d107a74427ba4ca9`
-- export jms_v185: `3de6d6e589eb7ee3d8b5aaf0f58a679494a67efb3bd40c7a5bc466e33ec35b6e`
+- export gms_v61: `d50b21b2cfc509dfbcd635503a474ba71bf98f8c333e8c7f45bc46b7f137de85`
+- export gms_v72: `c76380dea239bc02ccd27caef104a21ebacd93a70741420ed13476ba2065758b`
+- export gms_v79: `a861f259fa13fad39e00c7485af6c11d333cc86ab6a5f1e1febeafcaeb3cb028`
+- export gms_v83: `b5a85d0832e894081a4f5c23dcbcca0e784fb336452e31a25d23e605a839576e`
+- export gms_v84: `70d00af2c4720b72c4306651609c9d08617b477b588405942ad3c51ae4ae42dc`
+- export gms_v87: `841e38852a5633d165aae8017c41c2514ce56966eb9ec4648db26a605f3c848b`
+- export gms_v92: `f5fa57dc9682962af95e331210f14c776dc2ef85cba306df2e117d0c9d8b9cf9`
+- export gms_v95: `28e674c200e6e9d47d0fc6d7616ae9ce7acafccf246c5a3312ce114a2cb2a702`
+- export jms_v185: `fea79ad611982c77da7a6641fb3bf20183dbdc8c9642965091baa33e1929afee`
 
 ## Clientbound
 
@@ -184,11 +184,11 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | FAMILY_REP_GAIN | CWvsContext::OnFamilyFamousPointIncResult |  |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x05F | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x069 | ❌ | 0x06C | ❌ |
 | SET_QUEST_CLEAR | CField::OnSetQuestClear; sub_4CBC9A | field/clientbound/FieldSetQuestClear (T1) | 0x05E | ✅ | 0x071 | 🟡ᶠ | 0x08A | 🟡ᶠ | 0x08E | 🟡ᶠ | 0x096 | ✅ | 0x099 | ✅ | 0x09E | ✅ | 0x0A5 | 🟡ᶠ | 0x0A6 | ✅ | 0x093 | ✅ |
 | FAMILY_NOTIFY_LOGIN_OR_LOGOUT | CWvsContext::OnFamilyNotifyLoginOrLogout |  |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x060 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x069 | ❌ | 0x06B | ❌ | 0x06A | ❌ | 0x06D | ❌ |
-| IDA_0X05F | sub_5A8316 |  |  | ⬜ | 0x05F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
+| SET_BACK_EFFECT | CMapLoadable::OnSetBackEffect |  |  | ⬜ | 0x05F | ✅ | 0x075 | ✅ | 0x079 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x088 | ✅ | 0x08F | ✅ | 0x090 | ✅ | 0x07E | ✅ |
 | SET_QUEST_TIME | CField::OnSetQuestTime | field/clientbound/FieldSetQuestTime (T1) | 0x05F | ✅ | 0x072 | 🟡ᶠ | 0x08B | 🟡ᶠ | 0x08F | 🟡ᶠ | 0x097 | ✅ | 0x09A | ✅ | 0x09F | ✅ | 0x0A6 | 🟡ᶠ | 0x0A7 | ✅ | 0x094 | ✅ |
 | ARIANT_RESULT | CField::OnWarnMessage | field/clientbound/FieldAriantResult (T1) | 0x060 | ✅ | 0x073 | 🟡ᶠ | 0x08C | 🟡ᶠ | 0x090 | 🟡ᶠ | 0x098 | ✅ | 0x09B | ✅ | 0x0A0 | ✅ | 0x0A7 | 🟡ᶠ | 0x0A8 | ✅ |  | ⬜ |
+| CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  |  | ⬜ | 0x060 | ✅ | 0x076 | ✅ | 0x07A | ✅ | 0x082 | ✅ | 0x085 | ✅ | 0x08A | ✅ | 0x091 | ✅ | 0x092 | ✅ | 0x080 | ✅ |
 | FAMILY_SET_PRIVILEGE | CWvsContext::OnFamilySetPrivilege |  |  | ⬜ |  | ⬜ | 0x060 | ❌ | 0x061 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x06A | ❌ | 0x06C | ❌ | 0x06B | ❌ | 0x06E | ❌ |
-| IDA_0X060 | sub_5A871B |  |  | ⬜ | 0x060 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | FAMILY_SUMMON_REQUEST | CWvsContext::OnFamilySummonRequest |  |  | ⬜ |  | ⬜ | 0x061 | ❌ | 0x062 | ❌ | 0x068 | ❌ | 0x06B | ❌ | 0x06B | ❌ | 0x06D | ❌ | 0x06C | ❌ | 0x06F | ❌ |
 | SET_OBJECT_STATE | CField::OnSetObjectState | field/clientbound/FieldSetObjectState (T1) | 0x061 | ✅ | 0x074 | 🟡ᶠ | 0x08D | 🟡ᶠ | 0x091 | 🟡ᶠ | 0x099 | ✅ | 0x09C | ✅ | 0x0A1 | ✅ | 0x0A8 | 🟡ᶠ | 0x0A9 | ✅ | 0x095 | ✅ |
 | NOTIFY_LEVELUP | CWvsContext::OnNotifyLevelUp; sub_90D651 |  |  | ⬜ |  | ⬜ | 0x062 | ❌ | 0x063 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06D | ❌ | 0x070 | ❌ |
@@ -207,8 +207,6 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt; sub_95EE37 |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ | 0x079 | ❌ | 0x07C | ❌ | 0x07C | ❌ | 0x07E | ❌ | 0x07D | ❌ |  | ⬜ |
 | IDA_0X074 | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ |
 | SCRIPT_PROGRESS_MESSAGE | CWvsContext::OnScriptProgressMessage; sub_95F0D4 | quest/clientbound/ScriptProgress |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ | 0x07A | ✅ | 0x07D | ✅ | 0x07D | ✅ | 0x080 | 🟡ᵈ | 0x07F | ✅ | 0x076 | ✅ |
-| SET_BACK_EFFECT | CMapLoadable::OnSetBackEffect |  |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x079 | ❌ | 0x080 | ❌ | 0x083 | ❌ | 0x088 | ❌ | 0x08F | ❌ | 0x090 | ❌ | 0x07E | ❌ |
-| SET_MAP_OBJECT_VISIBLE | CMapLoadable::OnSetMapObjectVisible; sub_5F5F54; sub_614977 |  |  | ⬜ |  | ⬜ | 0x076 | ❌ | 0x07A | ❌ | 0x081 | ❌ | 0x084 | ❌ | 0x089 | ❌ | 0x090 | ❌ | 0x091 | ❌ | 0x07F | ❌ |
 | IDA_0X09C | CField::OnStalkResult; sub_4EFABF | field/clientbound/FieldStalkResult (T1) |  | ⬜ | 0x077 | ✅ | 0x090 | ✅ | 0x094 | ✅ | 0x09C | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X078 | sub_AF807A |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x078 | ❌ |
 | IDA_0X079 | CWvsContext::OnAskWhetherUsePamsSong |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ |
@@ -226,9 +224,9 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 | UPDATE_GM_BOARD | CWvsContext::OnUpdateGMBoard |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x080 | ❌ | 0x083 | ❌ | 0x082 | ❌ |  | ⬜ |
 | FIELD_OBSTACLE_ALL_RESET | CField::OnFieldObstacleAllRese; CField::OnFieldObstacleAllReset | field/clientbound/FieldFieldObstacleAllReset (T1) |  | ⬜ |  | ⬜ | 0x081 | 🟡ᶠ | 0x085 | 🟡ᶠ | 0x08D | ✅ | 0x090 | ✅ | 0x095 | ✅ | 0x09C | ❌ | 0x09D | ✅ | 0x08A | ✅ |
 | MOVE_PET | CPet::OnMove | pet/clientbound/PetMovement (T1) |  | ⬜ | 0x081 | ✅ | 0x09B | ✅ | 0x09F | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0B7 | ✅ | 0x0C6 | ❌ | 0x0C9 | ✅ | 0x0B0 | ✅ |
+| SET_MAP_OBJECT_VISIBLE | CMapLoadable::OnSetMapObjectVisible |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x081 | ❌ | 0x084 | ❌ | 0x089 | ❌ | 0x090 | ❌ | 0x091 | ❌ | 0x07F | ❌ |
 | SHOW_SLOT_MESSAGE | CWvsContext::OnShowSlotMessage |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x081 | ❌ | 0x084 | ❌ | 0x083 | ❌ |  | ⬜ |
 | ACCOUNT_MORE_INFO | CWvsContext::OnAccountMoreInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ | 0x085 | ❌ |  | ⬜ |
-| CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ | 0x08A | ❌ | 0x091 | ❌ | 0x092 | ❌ | 0x080 | ❌ |
 | PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) |  | ⬜ | 0x082 | ✅ | 0x09C | ✅ | 0x0A0 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0C7 | ❌ | 0x0CA | ✅ | 0x0B1 | ✅ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ | 0x086 | ❌ |  | ⬜ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) |  | ⬜ | 0x084 | ✅ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0C9 | ❌ | 0x0CC | ✅ | 0x0B3 | ✅ |
@@ -1063,16 +1061,16 @@ Tool: `ff53f81435f596f5a55959c1d8a24fd2edad0c02ede677be6fc0f64d90dcf20b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 215 | 0 | 19 | 198 | 595 | 0 | 49.8% |
-| v61 | 282 | 0 | 56 | 231 | 458 | 0 | 49.6% |
-| v72 | 309 | 0 | 69 | 240 | 409 | 0 | 50.0% |
-| v79 | 355 | 0 | 68 | 236 | 368 | 0 | 53.9% |
-| v83 | 484 | 0 | 0 | 315 | 228 | 0 | 60.6% |
-| v84 | 459 | 0 | 0 | 321 | 247 | 0 | 58.8% |
-| v87 | 492 | 0 | 0 | 344 | 191 | 0 | 58.9% |
-| v92 | 72 | 0 | 147 | 667 | 141 | 0 | 8.1% |
-| v95 | 528 | 0 | 0 | 391 | 108 | 0 | 57.5% |
-| JMS185 | 455 | 0 | 0 | 374 | 198 | 0 | 54.9% |
+| v48 | 215 | 0 | 19 | 198 | 593 | 0 | 49.8% |
+| v61 | 284 | 0 | 56 | 229 | 456 | 0 | 49.9% |
+| v72 | 311 | 0 | 69 | 238 | 407 | 0 | 50.3% |
+| v79 | 357 | 0 | 68 | 234 | 366 | 0 | 54.2% |
+| v83 | 486 | 0 | 0 | 313 | 226 | 0 | 60.8% |
+| v84 | 461 | 0 | 0 | 319 | 245 | 0 | 59.1% |
+| v87 | 494 | 0 | 0 | 342 | 189 | 0 | 59.1% |
+| v92 | 74 | 0 | 147 | 665 | 139 | 0 | 8.4% |
+| v95 | 530 | 0 | 0 | 389 | 106 | 0 | 57.7% |
+| JMS185 | 457 | 0 | 0 | 372 | 196 | 0 | 55.1% |
 
 ## Conflicts
 

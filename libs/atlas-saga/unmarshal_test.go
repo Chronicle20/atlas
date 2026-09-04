@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -1737,5 +1738,35 @@ func TestUnmarshalResetEnvironmentStep(t *testing.T) {
 	}
 	if p.MapId != _map.Id(910010000) {
 		t.Fatalf("mapId = %v, want 910010000", p.MapId)
+	}
+}
+
+func TestUnmarshalSetBackEffectStep(t *testing.T) {
+	data := []byte(`{"stepId":"back-effect-step","status":"pending","action":"set_back_effect","payload":{"worldId":0,"channelId":1,"mapId":100000000,"instance":"00000000-0000-0000-0000-000000000000","effect":"SHOW","fieldId":100000000,"pageId":1,"duration":1000}}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := s.Payload.(SetBackEffectPayload)
+	if !ok {
+		t.Fatalf("payload type = %T", s.Payload)
+	}
+	if p.MapId != 100000000 || p.Effect != backeffect.EffectShow || p.PageId != 1 || p.Duration != 1000 {
+		t.Fatalf("payload = %+v", p)
+	}
+}
+
+func TestUnmarshalClearBackEffectStep(t *testing.T) {
+	data := []byte(`{"stepId":"back-effect-step","status":"pending","action":"clear_back_effect","payload":{"worldId":0,"channelId":1,"mapId":100000000,"instance":"00000000-0000-0000-0000-000000000000"}}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := s.Payload.(ClearBackEffectPayload)
+	if !ok {
+		t.Fatalf("payload type = %T", s.Payload)
+	}
+	if p.MapId != 100000000 {
+		t.Fatalf("payload = %+v", p)
 	}
 }

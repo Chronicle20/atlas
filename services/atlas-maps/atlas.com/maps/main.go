@@ -12,6 +12,7 @@ import (
 	"atlas-maps/kafka/consumer/monster"
 	sessionConsumer "atlas-maps/kafka/consumer/session"
 	_map "atlas-maps/map"
+	"atlas-maps/map/backeffect"
 	"atlas-maps/map/environment"
 	"atlas-maps/map/jukebox"
 	spawnMonster "atlas-maps/map/monster"
@@ -149,6 +150,7 @@ func main() {
 		AddRouteInitializer(weather.InitResource(GetServer())).
 		AddRouteInitializer(jukebox.InitResource(GetServer())).
 		AddRouteInitializer(environment.InitResource(GetServer())).
+		AddRouteInitializer(backeffect.InitResource(GetServer())).
 		AddRouteInitializer(visit.InitResource(GetServer())(db)).
 		AddRouteInitializer(location.InitResource(GetServer())(db, func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) location.WarpProcessor {
 			return warp.NewProcessor(l, ctx, db)

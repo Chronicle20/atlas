@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -75,6 +76,39 @@ func ResetEnvironmentCommandProvider(transactionId uuid.UUID, f field.Model) mod
 		Instance:      f.Instance(),
 		Type:          mapKafka.CommandTypeResetEnvironment,
 		Body:          mapKafka.ResetEnvironmentCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func SetBackEffectCommandProvider(transactionId uuid.UUID, f field.Model, effect backeffect.Effect, fieldId uint32, pageId uint8, duration uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
+	value := &mapKafka.Command[mapKafka.SetBackEffectCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       f.WorldId(),
+		ChannelId:     f.ChannelId(),
+		MapId:         f.MapId(),
+		Instance:      f.Instance(),
+		Type:          mapKafka.CommandTypeSetBackEffect,
+		Body: mapKafka.SetBackEffectCommandBody{
+			Effect:   effect,
+			FieldId:  fieldId,
+			PageId:   pageId,
+			Duration: duration,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ClearBackEffectCommandProvider(transactionId uuid.UUID, f field.Model) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
+	value := &mapKafka.Command[mapKafka.ClearBackEffectCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       f.WorldId(),
+		ChannelId:     f.ChannelId(),
+		MapId:         f.MapId(),
+		Instance:      f.Instance(),
+		Type:          mapKafka.CommandTypeClearBackEffect,
+		Body:          mapKafka.ClearBackEffectCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

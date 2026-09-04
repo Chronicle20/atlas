@@ -875,6 +875,8 @@ func produceWriters() []string {
 		fieldcb.SummonItemUnavailableWriter,
 		fieldcb.FieldObstacleOnOffWriter,
 		fieldcb.FieldObstacleAllResetWriter,
+		fieldcb.SetBackEffectWriter,
+		fieldcb.ClearBackEffectWriter,
 		fieldcb.SetQuestClearWriter,
 		fieldcb.SetQuestTimeWriter,
 		fieldcb.GmEventInstructionsWriter,

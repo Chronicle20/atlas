@@ -3,6 +3,7 @@ package _map
 import (
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -21,6 +22,9 @@ const (
 	CommandTypeSetEnvironmentState = "SET_ENVIRONMENT_STATE"
 
 	CommandTypeResetEnvironment = "RESET_ENVIRONMENT"
+
+	CommandTypeSetBackEffect   = "SET_BACK_EFFECT"
+	CommandTypeClearBackEffect = "CLEAR_BACK_EFFECT"
 )
 
 type Command[E any] struct {
@@ -52,3 +56,12 @@ type SetEnvironmentStateCommandBody struct {
 }
 
 type ResetEnvironmentCommandBody struct{}
+
+type SetBackEffectCommandBody struct {
+	Effect   backeffect.Effect `json:"effect"`
+	FieldId  uint32            `json:"fieldId"`
+	PageId   uint8             `json:"pageId"`
+	Duration uint32            `json:"duration"`
+}
+
+type ClearBackEffectCommandBody struct{}

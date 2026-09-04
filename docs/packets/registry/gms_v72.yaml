@@ -838,18 +838,20 @@
   direction: clientbound
   opcode: 117
   fname: CMapLoadable::OnSetBackEffect
+  packet: field/clientbound/FieldSetBackEffect
   provenance: manual
   ida:
     address: 6249295
   note: 'CMapLoadable::OnPacket @0x5f59e3 if a2==117. Δ-4 vs v79 (121).'
-- op: SET_MAP_OBJECT_VISIBLE
+- op: CLEAR_BACK_EFFECT
   direction: clientbound
   opcode: 118
-  fname: sub_5F5F54
+  fname: CMapLoadable::OnClearBackEffect
+  packet: field/clientbound/FieldClearBackEffect
   provenance: manual
   ida:
     address: 6250324
-  note: 'CMapLoadable::OnPacket a2==118 -> sub_5F5F54 = OnSetMapObjectVisible.'
+  note: 'task-281: CMapLoadable::OnPacket @0x5f59e3 else-if a2==118 calls the handler @0x5f5f54, a thunk that discards its CInPacket * and tail-calls sub_5F5A1B @0x5f5a1b (the address ReloadBack occupies on v79, immediately after OnPacket). It reads ZERO packet bytes. This slot previously carried SET_MAP_OBJECT_VISIBLE at this same address; that attribution is DISPROVEN — a real OnSetMapObjectVisible decodes a count, per-object names and visibility flags, and this handler decodes nothing. The true v72 opcode for SET_MAP_OBJECT_VISIBLE is unknown.'
 - op: BLOCKED_MAP
   direction: clientbound
   opcode: 119

@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -1735,6 +1736,14 @@ func (m *mapCommandProcessorMock) ResetEnvironment(transactionId uuid.UUID, f fi
 	return nil
 }
 
+func (m *mapCommandProcessorMock) SetBackEffect(_ uuid.UUID, _ field.Model, _ backeffect.Effect, _ uint32, _ uint8, _ uint32) error {
+	return nil
+}
+
+func (m *mapCommandProcessorMock) ClearBackEffect(_ uuid.UUID, _ field.Model) error {
+	return nil
+}
+
 var _ map_command.Processor = (*mapCommandProcessorMock)(nil)
 
 // TestHandleMoveEnvironment_InvalidPayload proves handleMoveEnvironment rejects
@@ -2026,4 +2035,56 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "atlas-maps unreachable")
 	})
+}
+
+// TestHandleSetBackEffect_InvalidPayload proves handleSetBackEffect rejects a
+// step whose payload is not a SetBackEffectPayload before touching Kafka. The
+// happy path is not covered here for the same reason handlePlayJukebox is not:
+// no fixture in this package stubs the atlas-kafka producer's
+// WriterFactory/env-topic resolution. Message-shape coverage lives in
+// TestSetBackEffectCommandProvider (map_command/producer_test.go).
+func TestHandleSetBackEffect_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("set-back-effect-step", Pending, SetBackEffect, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleSetBackEffect(saga, step)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+}
+
+// TestHandleClearBackEffect_InvalidPayload proves handleClearBackEffect rejects
+// a step whose payload is not a ClearBackEffectPayload before touching Kafka.
+// Message-shape coverage lives in TestClearBackEffectCommandProvider
+// (map_command/producer_test.go).
+func TestHandleClearBackEffect_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("clear-back-effect-step", Pending, ClearBackEffect, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleClearBackEffect(saga, step)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
 }

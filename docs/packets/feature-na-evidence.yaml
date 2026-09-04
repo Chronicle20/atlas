@@ -297,3 +297,61 @@ entries:
       `?GetMaxLEV@CItemInfo@@QAEJJ@Z` are all absent — sender, redeemer, and
       the WZ accessor the sender gates on. Positive absence, not a search
       miss. (task-277)
+  - op: SET_BACK_EFFECT
+    version: gms_v48
+    evidence: >
+      task-281, live IDB session 12a398ce (GMS_v48_1_DEVM.exe). There is no
+      `CMapLoadable::OnPacket` on this version: the IDB symbolizes 33 distinct
+      `*::OnPacket` methods and `?OnPacket@CMapLoadable@@` is not among them
+      (`CMapLoadable` exists, but only `TransientLayer_NewYear` @0x477419,
+      `LoadMap` @0x5291bb and `PrepareNextBGM` @0x53034e are symbolized, and
+      none takes a `CInPacket&`). The complete clientbound field router is
+      therefore `CField::OnPacket` @0x4c66f2, and its arms were enumerated in
+      full — 25 direct switch cases (0x4D..0x62 plus 232/237/238/239/247) and
+      15 range fall-through arms (72-75 CStage, 99-156 CUserPool, ... 267-272
+      sub_527238). No arm and no range reaches a CMapLoadable router or a
+      back-effect handler; the only opcodes in the field block that reach
+      nothing at all are 91 and 92. The opcode slots the pair occupies one
+      version up are owned by other named ops here: on gms_v61 `CField::OnPacket`
+      @0x4e9ea3 hands opcodes 95..96 to `CMapLoadable::OnPacket` @0x5a81b9,
+      whereas on gms_v48 opcode 95 is `CField::OnSetQuestTime` (0x4cbcad) and
+      opcode 96 is `CField::OnWarnMessage` (0x4ca7d4), both in the direct
+      switch. The gms_v61 handler shape (`sub_5A8316`: back-layer ZMap GetAt
+      via sub_5A8E05 + vtbl+144 alpha RelMove, fed by the decode sub_5163AE)
+      has no analogue in the v48 CMapLoadable neighbourhood (0x5291bb-0x531607):
+      the two functions occupying the positions their v61 counterparts hold
+      relative to the reload function are `sub_530CB9` (the video-config
+      reload, below) and `sub_531094` (a WZ-property/canvas layout helper that
+      takes no `CInPacket&` and performs no packet read, single xref from
+      `sub_4D00BC`). Neither decodes anything. Scope note on method, carried
+      verbatim from the structures record: this is a neighbourhood sweep plus
+      the exhaustive router enumeration, NOT an image-wide instruction-pattern
+      scan for the Decode1/Decode4/Decode1/Decode4 sequence — that scan was not
+      run. It does not weaken the conclusion, because a tween function no
+      opcode can reach is not a packet. See
+      docs/tasks/task-281-map-back-effects/structures/gms_v48.md.
+  - op: CLEAR_BACK_EFFECT
+    version: gms_v48
+    evidence: >
+      task-281, live IDB session 12a398ce (GMS_v48_1_DEVM.exe). Same router
+      proof as the SET_BACK_EFFECT x gms_v48 entry above — there is no
+      `CMapLoadable::OnPacket` on this version and no arm of the complete
+      field router `CField::OnPacket` @0x4c66f2 reaches a back-effect handler.
+      Additionally, a binary-wide search for the whole-field back reload
+      (`ReloadBack`) that the clear op thunks to returned exactly 1 candidate,
+      and it is not packet-reachable. The search was anchored on
+      `CUser::GetVecCtrl` @0x472a6c, the tail call of the reference ReloadBack
+      shape; it has 82 xrefs in the whole image (complete list, not truncated).
+      The single candidate inside the CMapLoadable address neighbourhood is
+      `sub_530CB9` @0x530cb9 (call site 0x530e9c), and it does carry the
+      reference clear shape (IWzGr2D::Getcenter at vtbl+100 with stru_80F0C0,
+      then sub_531607(0,0) at vtbl+64, then sub_52B315 = RestoreBack, then
+      CUser::GetVecCtrl @0x472a6c, then CAnimationDisplayer::Effect_Quest
+      @0x42263c). It has exactly one xref: `CConfig::ApplySysOpt` @0x46b06d
+      (call site 0x46b098). It is a video-option reload entered only when
+      g_CConfig_pInstance changes; no zero-read thunk and no packet handler
+      calls it. The contrast with gms_v61 is the discriminator: there,
+      ReloadBack (`sub_5A81E2` @0x5a81e2) also has exactly one xref — and that
+      xref IS the packet thunk `sub_5A871B` @0x5a871b, the case-96 arm of
+      CMapLoadable::OnPacket. On gms_v48 no such thunk exists. See
+      docs/tasks/task-281-map-back-effects/structures/gms_v48.md.

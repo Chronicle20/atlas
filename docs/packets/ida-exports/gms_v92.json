@@ -14238,6 +14238,16 @@
           "comment": "updateTime (get_update_time(); tick)"
         }
       ]
+    },
+    "CMapLoadable::OnSetBackEffect": {
+      "address": "0x606d80",
+      "direction": "",
+      "calls": null
+    },
+    "CMapLoadable::OnClearBackEffect": {
+      "address": "0x612ef0",
+      "direction": "",
+      "calls": null
     }
   }
 }

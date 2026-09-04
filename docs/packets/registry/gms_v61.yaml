@@ -646,22 +646,24 @@
   ida:
     address: 6662515
   note: 'CStage::OnPacket case ''^''(94). LEGACY Cash Shop body: CCashShop::LoadData 0x45b539 has DecodeStock (sub_45C497) + DecodeLimitGoods (sub_45C4DE) but NO DecodeZeroGoods; ctor 0x453549 reads a single trailing Decode1 (bEventOn) with NO Decode4 nHighest. Writer gates ZeroGoods+nHighest on GMS MajorAtLeast(72).'
-- op: IDA_0X05F
+- op: SET_BACK_EFFECT
   direction: clientbound
   opcode: 95
-  fname: sub_5A8316
+  fname: CMapLoadable::OnSetBackEffect
+  packet: field/clientbound/FieldSetBackEffect
   provenance: manual
   ida:
     address: 5931798
-  note: 'CField::OnPacket @0x4e9ea3 routes 95->sub_5A81B9->sub_5A8316 (CWvsContext excl-request / IWzVector COM field packet). v61-region low op; exact op-name Stage E.'
-- op: IDA_0X060
+  note: 'task-281: CField::OnPacket @0x4e9ea3 hands opcodes 95..96 to CMapLoadable::OnPacket @0x5a81b9, whose case 95 calls CMapLoadable::OnSetBackEffect @0x5a8316 (unnamed sub_5A8316 before task-281 named it). Decode callee sub_5163AE @0x5163ae reads Decode1 nEffect, Decode4 nFieldID, Decode1 nPageID, Decode4 tDuration = 10 bytes, identical to the v95 reference. v61 has no OnSetMapObjectVisible arm, so the CMapLoadable window is two opcodes wide and CLEAR_BACK_EFFECT is SET+1 (96), not SET+2. Was the IDA_0X05F placeholder ("exact op-name Stage E"); the address is unchanged.'
+- op: CLEAR_BACK_EFFECT
   direction: clientbound
   opcode: 96
-  fname: sub_5A871B
+  fname: CMapLoadable::OnClearBackEffect
+  packet: field/clientbound/FieldClearBackEffect
   provenance: manual
   ida:
     address: 5932827
-  note: 'CField::OnPacket routes 96->sub_5A81B9->sub_5A871B. v61-region low op; exact op-name Stage E.'
+  note: 'task-281: CMapLoadable::OnPacket @0x5a81b9 case 96 calls CMapLoadable::OnClearBackEffect @0x5a871b (unnamed sub_5A871B before task-281 named it), an 8-byte thunk that reads zero packet bytes and tail-calls CMapLoadable::ReloadBack @0x5a81e2. ReloadBack has exactly one xref — this thunk — so the clear-back-effect packet is its only caller. Was the IDA_0X060 placeholder ("exact op-name Stage E"); the address is unchanged.'
 - op: BLOCKED_MAP
   direction: clientbound
   opcode: 97

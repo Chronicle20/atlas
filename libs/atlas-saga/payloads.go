@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -1349,6 +1350,26 @@ type PlayJukeboxPayload struct {
 	ItemId     uint32     `json:"itemId"`     // Cash song-player item ID
 	PlayerName string     `json:"playerName"` // Character who started the song
 	DurationMs uint32     `json:"durationMs"` // Song length in MILLISECONDS (client-supplied, server-capped)
+}
+
+// SetBackEffectPayload represents the payload for starting a back effect in a field.
+type SetBackEffectPayload struct {
+	WorldId   world.Id          `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id        `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id           `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID         `json:"instance"`  // Instance UUID of the field
+	Effect    backeffect.Effect `json:"effect"`    // Semantic back effect state (show/hide)
+	FieldId   uint32            `json:"fieldId"`   // Back effect field ID
+	PageId    uint8             `json:"pageId"`    // Back effect page ID
+	Duration  uint32            `json:"duration"`  // Fade length in MILLISECONDS, not a lifetime
+}
+
+// ClearBackEffectPayload represents the payload for stopping the active back effect in a field.
+type ClearBackEffectPayload struct {
+	WorldId   world.Id   `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id    `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID  `json:"instance"`  // Instance UUID of the field
 }
 
 // SetAssetOwnerPayload represents the payload required to set the owner tag on an asset in a specific inventory slot.

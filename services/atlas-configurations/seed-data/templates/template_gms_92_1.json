@@ -2520,6 +2520,22 @@
         ]
       },
       {
+        "opCode": "0x8F",
+        "writer": "SetBackEffect",
+        "fname": "CMapLoadable::OnSetBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x91",
+        "writer": "ClearBackEffect",
+        "fname": "CMapLoadable::OnClearBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x9D",
         "writer": "FieldEffectWeather",
         "fname": "CField::OnBlowWeather",

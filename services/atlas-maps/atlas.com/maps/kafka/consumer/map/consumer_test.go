@@ -2,6 +2,7 @@ package _map
 
 import (
 	mapKafka "atlas-maps/kafka/message/map"
+	"atlas-maps/map/backeffect"
 	"atlas-maps/map/environment"
 	"atlas-maps/map/jukebox"
 	"context"
@@ -12,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	beconst "github.com/Chronicle20/atlas/libs/atlas-constants/backeffect"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -305,4 +307,147 @@ func TestHandleResetEnvironmentCommand_WrongTypeIgnored(t *testing.T) {
 
 	entries := environment.NewProcessor(l, ctx).GetAll(f)
 	require.Len(t, entries, 1)
+}
+
+func TestHandleSetBackEffectCommand_RecordsEntry(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 100000000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.SetBackEffectCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         100000000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeSetBackEffect,
+		Body: mapKafka.SetBackEffectCommandBody{
+			Effect:   beconst.EffectShow,
+			FieldId:  100000000,
+			PageId:   1,
+			Duration: 1000,
+		},
+	}
+
+	handleSetBackEffectCommand()(l, ctx, cmd)
+
+	entries := backeffect.NewProcessor(l, ctx).GetActive(f)
+	require.Len(t, entries, 1)
+	require.Equal(t, beconst.EffectShow, entries[0].Effect)
+	require.Equal(t, uint32(100000000), entries[0].FieldId)
+	require.Equal(t, byte(1), entries[0].PageId)
+	require.Equal(t, uint32(1000), entries[0].Duration)
+}
+
+func TestHandleSetBackEffectCommand_RejectsInvalidEffect(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 100000000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.SetBackEffectCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         100000000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeSetBackEffect,
+		Body: mapKafka.SetBackEffectCommandBody{
+			Effect:   beconst.Effect("BOGUS"),
+			FieldId:  100000000,
+			PageId:   1,
+			Duration: 1000,
+		},
+	}
+
+	handleSetBackEffectCommand()(l, ctx, cmd)
+
+	entries := backeffect.NewProcessor(l, ctx).GetActive(f)
+	require.Len(t, entries, 0)
+}
+
+func TestHandleSetBackEffectCommand_IgnoresWrongType(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 100000000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.SetBackEffectCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         100000000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeWeatherStart,
+		Body: mapKafka.SetBackEffectCommandBody{
+			Effect:   beconst.EffectShow,
+			FieldId:  100000000,
+			PageId:   1,
+			Duration: 1000,
+		},
+	}
+
+	handleSetBackEffectCommand()(l, ctx, cmd)
+
+	entries := backeffect.NewProcessor(l, ctx).GetActive(f)
+	require.Len(t, entries, 0)
+}
+
+func TestHandleClearBackEffectCommand_RemovesEntries(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 100000000).SetInstance(uuid.Nil).Build()
+
+	proc := backeffect.NewProcessor(l, ctx)
+	proc.Set(f, backeffect.BackEffectEntry{Effect: beconst.EffectShow, FieldId: 100000000, PageId: 1, Duration: 1000})
+	proc.Set(f, backeffect.BackEffectEntry{Effect: beconst.EffectHide, FieldId: 100000000, PageId: 2, Duration: 2000})
+
+	cmd := mapKafka.Command[mapKafka.ClearBackEffectCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         100000000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeClearBackEffect,
+		Body:          mapKafka.ClearBackEffectCommandBody{},
+	}
+
+	handleClearBackEffectCommand()(l, ctx, cmd)
+
+	entries := backeffect.NewProcessor(l, ctx).GetActive(f)
+	require.Len(t, entries, 0)
+}
+
+func TestHandleClearBackEffectCommand_EmptyFieldIsNotAnError(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	f := field.NewBuilder(0, 1, 100000000).SetInstance(uuid.Nil).Build()
+
+	cmd := mapKafka.Command[mapKafka.ClearBackEffectCommandBody]{
+		TransactionId: uuid.New(),
+		WorldId:       0,
+		ChannelId:     1,
+		MapId:         100000000,
+		Instance:      uuid.Nil,
+		Type:          mapKafka.CommandTypeClearBackEffect,
+		Body:          mapKafka.ClearBackEffectCommandBody{},
+	}
+
+	handleClearBackEffectCommand()(l, ctx, cmd)
+
+	entries := backeffect.NewProcessor(l, ctx).GetActive(f)
+	require.Len(t, entries, 0)
 }

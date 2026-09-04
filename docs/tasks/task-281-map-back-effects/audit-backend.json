@@ -1,0 +1,134 @@
+{
+  "service": "task-281-map-back-effects (multi-service diff)",
+  "path": "services/atlas-channel, services/atlas-configurations, services/atlas-maps, services/atlas-messages, services/atlas-saga-orchestrator, libs/atlas-packet, libs/atlas-saga",
+  "date": "2026-08-28",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/field/clientbound",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "set_back_effect.go / clear_back_effect.go each hold one codec type" },
+        { "id": "DOM-25", "name": "Wire byte source resolved, not a literal", "status": "pass", "evidence": "set_back_effect.go:20-23 consts live inside libs/atlas-packet codec internals (documented exemption)" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "n-a", "evidence": "packet byte-fixture pin playbook governs instead (packet-audit:verify + test.RoundTrip/test.Variants)" }
+      ]
+    },
+    {
+      "name": "services/atlas-maps/.../map/backeffect",
+      "type": "sub-domain",
+      "checks": [
+        { "id": "FILE-05", "name": "Model/writes/reads placement", "status": "fail", "evidence": "registry.go:15-76 bundles domain struct + Set/Clear writers + Get reader in one file" },
+        { "id": "FILE-06", "name": "No catch-all file with >=2 responsibilities", "status": "fail", "evidence": "registry.go:15-76 same evidence as FILE-05" },
+        { "id": "DOM-29", "name": "Cache is an application-scoped singleton", "status": "pass", "evidence": "registry.go:26-42 package-level var + sync.Once + sync.RWMutex via getRegistry()" },
+        { "id": "SUB-01", "name": "Business logic in processor, not handler", "status": "pass", "evidence": "resource.go:37 calls NewProcessor(...).GetActive(f)" },
+        { "id": "SUB-02", "name": "No db.Create/db.Save in resource.go", "status": "pass", "evidence": "no DB calls in package" },
+        { "id": "SUB-03", "name": "POST via RegisterInputHandler[T]", "status": "n-a", "evidence": "only a GET route is registered" },
+        { "id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "no json.Unmarshal/NewDecoder/io.ReadAll" },
+        { "id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "pass", "evidence": "rest.go:26-33" },
+        { "id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "fail", "evidence": "rest.go defines no TransformSlice; resource.go:38-47 hand-loops Transform" },
+        { "id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:23" },
+        { "id": "DOM-07", "name": "Handler passes d.Logger() into NewProcessor", "status": "pass", "evidence": "resource.go:37" },
+        { "id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "n-a", "evidence": "no POST/PATCH route" },
+        { "id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "pass", "evidence": "resource.go:40-45" },
+        { "id": "DOM-12", "name": "No os.Getenv in resource.go", "status": "pass", "evidence": "no matches" },
+        { "id": "DOM-13", "name": "No cross-domain orchestration in handler", "status": "pass", "evidence": "handler calls only backeffect processor" },
+        { "id": "DOM-14", "name": "Handler calls processor methods only", "status": "pass", "evidence": "resource.go:37" },
+        { "id": "DOM-15", "name": "No db.Create/Save/Delete in resource.go", "status": "pass", "evidence": "no matches" },
+        { "id": "DOM-17", "name": "Domain errors mapped to correct HTTP status", "status": "n-a", "evidence": "no validation/not-found/conflict path; empty list is 200 per resource_test.go:99-121" },
+        { "id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "rest.go:13-24" },
+        { "id": "DOM-19", "name": "Flat request models", "status": "n-a", "evidence": "GET-only endpoint, no request model" },
+        { "id": "DOM-31", "name": "Tenant travels via context only", "status": "pass", "evidence": "processor.go:30,37,45 tenant.MustFromContext(p.ctx); rest.go:5-11 carries no tenant field" },
+        { "id": "DOM-32", "name": "Routes via server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:26 rest.RegisterHandler -> rest/handler.go:29 var RegisterHandler = server.RegisterHandler" },
+        { "id": "DOM-30", "name": "DB write + events atomic via AndEmit", "status": "pass", "evidence": "documented exception: in-memory registry, no DB write on any path (kafka/consumer/map/consumer.go:135-140,152-159)" },
+        { "id": "DOM-24", "name": "Producer stub installed for emit-reaching tests", "status": "pass", "evidence": "kafka/consumer/map/testmain_test.go:10-13 producertest.InstallNoop()" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "registry_test.go, resource_test.go, kafka/consumer/map/consumer_test.go:108-249 are standalone Test funcs" }
+      ]
+    },
+    {
+      "name": "services/atlas-maps/.../kafka/consumer/map + kafka/message/map",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "command.go/kafka.go hold only constants+structs; consumer.go holds only handlers" },
+        { "id": "DOM-25", "name": "Domain service emits semantic key, not client byte", "status": "fail", "evidence": "kafka/message/map/command.go:41-46 SetBackEffectCommandBody.Effect uint8; kafka.go:65-70 BackEffectSet.Effect uint8 carry the raw client byte" },
+        { "id": "DOM-31", "name": "Tenant via context only", "status": "pass", "evidence": "consumer.go:135,152 tenant via ctx; no tenant field on Command/StatusEvent structs" }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../backeffect",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "processor.go / rest.go / requests.go each single-responsibility" },
+        { "id": "EXT-01", "name": "Target RestModel implements SetToOne/SetToMany", "status": "pass", "evidence": "rest.go:31-32" },
+        { "id": "EXT-02", "name": "httptest-backed integration test with populated domain struct", "status": "pass", "evidence": "kafka/consumer/map/consumer_test.go:970-1008 TestAnnounceActiveBackEffects_ReplaysWithZeroDuration uses a real httptest.Server + JSON:API fixture" },
+        { "id": "EXT-03", "name": "Only genuine 404s map to not-found; others bubble", "status": "pass", "evidence": "processor.go:29 returns error verbatim" },
+        { "id": "EXT-04", "name": "URL via requests.RootUrl/RootUrlFor", "status": "pass", "evidence": "requests.go:17 requests.RootUrlFor(ctx, \"MAPS\")" },
+        { "id": "DOM-31", "name": "Tenant via context only", "status": "pass", "evidence": "no tenant field on backeffect.RestModel (rest.go:6-12)" }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../kafka/consumer/map + socket/writer",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "new handlers added alongside weather/jukebox siblings in consumer.go; writer files each hold one wrapper" },
+        { "id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "consumer.go:396 routine.Go(l, ctx, ...)" },
+        { "id": "DOM-25", "name": "Wire byte resolved at codec boundary (channel side)", "status": "pass", "evidence": "consumer.go:1169-1183 cast happens immediately before fieldcb.NewSetBackEffect; fault is upstream" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "consumer_test.go:837-1046 standalone Test funcs" }
+      ]
+    },
+    {
+      "name": "services/atlas-messages/.../command/map",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "back_effect.go mirrors sibling weather.go shape" },
+        { "id": "DOM-25", "name": "Domain service originates semantic key, not raw client code", "status": "fail", "evidence": "back_effect.go:39 strconv.ParseUint(match[2],10,8) parses GM's literal 0/1 digit; line 71 stores unchanged into SetBackEffectCommandBody" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "back_effect_test.go:18-79 testCases + t.Run" },
+        { "id": "DOM-24", "name": "Producer stub for emit-reaching tests", "status": "n-a", "evidence": "tests only exercise regex-matching/gating, never invoke the returned Executor" }
+      ]
+    },
+    {
+      "name": "services/atlas-saga-orchestrator/.../map_command",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "processor.go / producer.go single-responsibility" },
+        { "id": "DOM-33", "name": "Every mock of a changed Processor interface updated", "status": "pass", "evidence": "grep -rn \"map_command.Processor\" finds only saga/handler.go:240 field decl; no mock exists to update" },
+        { "id": "DOM-25", "name": "Domain service forwards raw client byte", "status": "fail", "evidence": "producer.go:50-67 SetBackEffectCommandProvider forwards the same raw uint8" },
+        { "id": "DOM-30", "name": "DB write + events atomic via AndEmit", "status": "pass", "evidence": "documented exception: no DB write in this saga step (processor.go:44-46)" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "producer_test.go standalone Test funcs" }
+      ]
+    },
+    {
+      "name": "services/atlas-saga-orchestrator/.../saga",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "handler_test.go 13 t.Run / 13-entry table" },
+        { "id": "DOM-33", "name": "Mocks updated for interface change", "status": "n-a", "evidence": "Handler is not a Processor/Provider/Administrator interface and has no mock implementation" }
+      ]
+    },
+    {
+      "name": "libs/atlas-saga",
+      "type": "support",
+      "checks": [
+        { "id": "DOM-21", "name": "No redeclaration of existing shared constant/type", "status": "pass", "evidence": "grep -rl BackEffect libs/atlas-constants/ found nothing" },
+        { "id": "DOM-22", "name": "New lib wired into Dockerfile/go.work", "status": "n-a", "evidence": "libs/atlas-saga is a pre-existing module, not newly added" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "unmarshal_test.go:1667-1691 two new standalone Test funcs, matching the file's existing per-action idiom" }
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-25: services/atlas-messages/atlas.com/messages/command/map/back_effect.go:39,71; services/atlas-maps/atlas.com/maps/kafka/message/map/command.go:41-46; kafka.go:65-70; services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/map_command/producer.go:50-67 — raw client wire byte (Effect 0/1) parsed from GM chat and carried unchanged through domain Kafka command/status-event bodies instead of a semantic key resolved only at the atlas-channel codec boundary.",
+    "FILE-05/FILE-06: services/atlas-maps/atlas.com/maps/map/backeffect/registry.go:15-76 — domain struct, writer functions, and reader function bundled into a single file instead of model.go/administrator.go/provider.go.",
+    "DOM-05: services/atlas-maps/atlas.com/maps/map/backeffect/resource.go:38-47 and rest.go — no TransformSlice defined; list handler hand-loops Transform calls inline."
+  ],
+  "nonBlocking": [
+    "DOM-20: services/atlas-maps/atlas.com/maps/map/backeffect/registry_test.go — standalone Test funcs, not table-driven.",
+    "DOM-20: services/atlas-maps/atlas.com/maps/map/backeffect/resource_test.go — standalone Test funcs, not table-driven.",
+    "DOM-20: services/atlas-maps/atlas.com/maps/kafka/consumer/map/consumer_test.go:108-249 — standalone Test funcs, not table-driven.",
+    "DOM-20: services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer_test.go:837-1046 — standalone Test funcs, not table-driven.",
+    "DOM-20: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/map_command/producer_test.go — standalone Test funcs, not table-driven.",
+    "DOM-20: libs/atlas-saga/unmarshal_test.go:1667-1691 — standalone Test funcs, not table-driven."
+  ]
+}

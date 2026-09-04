@@ -294,6 +294,12 @@ const (
 	// IWzSound::length; atlas-maps caps it. The BGM name is never carried --
 	// the client resolves it from the item's WZ info/path node itself.
 	PlayJukebox Action = "play_jukebox"
+	// SetBackEffect starts a back effect (background animation) in one field.
+	// Duration is a fade length in milliseconds, not a lifetime -- atlas-maps
+	// owns how long the effect itself persists.
+	SetBackEffect Action = "set_back_effect"
+	// ClearBackEffect stops the active back effect in one field.
+	ClearBackEffect Action = "clear_back_effect"
 
 	// Environment object actions. Both are fire-and-forget: the step
 	// completes when the command is produced, and neither has a

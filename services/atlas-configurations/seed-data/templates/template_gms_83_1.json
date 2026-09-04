@@ -3154,6 +3154,22 @@
         ]
       },
       {
+        "opCode": "0x80",
+        "writer": "SetBackEffect",
+        "fname": "CMapLoadable::OnSetBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x82",
+        "writer": "ClearBackEffect",
+        "fname": "CMapLoadable::OnClearBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x83",
         "writer": "BlockedMap",
         "fname": "CField::OnTransferFieldReqIgnored",

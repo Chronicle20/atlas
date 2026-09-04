@@ -23,10 +23,10 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
+			registerGet := rest.RegisterHandler(l)(si)
 
 			r := router.PathPrefix("/characters/{characterId}/mts/transactions").Subrouter()
-			r.HandleFunc("", registerGet("get_character_transactions", handleGetCharacterTransactions)).Methods(http.MethodGet)
+			r.HandleFunc("", registerGet("get_character_transactions", handleGetCharacterTransactions(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -34,34 +34,36 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 // handleGetCharacterTransactions is a growing log (settled purchase/sale
 // history accumulates over a character's lifetime) — page[size] defaults to
 // paginate.DefaultPageSize, capped at paginate.MaxPageSize (task-117).
-func handleGetCharacterTransactions(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			page, perr := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
-			if perr != nil {
-				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
-				return
+func handleGetCharacterTransactions(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				page, perr := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if perr != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				p := NewProcessor(d.Logger(), d.Context(), db)
+
+				paged, err := p.ByCharacterPagedProvider(characterId, page)()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Retrieving transactions for character [%d].", characterId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 			}
-
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-
-			paged, err := p.ByCharacterPagedProvider(characterId, page)()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving transactions for character [%d].", characterId)
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				server.WriteErrorResponse(d.Logger())(w)(err)
-				return
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
-		}
-	})
+		})
+	}
 }

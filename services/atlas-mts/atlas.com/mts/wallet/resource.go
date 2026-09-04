@@ -66,7 +66,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func initResource(si jsonapi.ServerInformation, rf ReaderFactory) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
+			registerGet := rest.RegisterHandler(l)(si)
 			r := router.PathPrefix("/accounts/{accountId}/mts/wallet").Subrouter()
 			r.HandleFunc("", registerGet("get_account_wallet", handleGetWallet(rf))).Methods(http.MethodGet)
 		}

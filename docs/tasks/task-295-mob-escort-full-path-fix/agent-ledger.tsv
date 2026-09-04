@@ -19,3 +19,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-09-04T11:58:14Z	agent	branch review	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	7ca937148	-	-	-	-
 2026-09-04T12:00:39Z	agent	branch review	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	7ca937148	APPROVED_WITH_FINDINGS	no	docs/tasks/task-295-mob-escort-full-path-fix/audit.md	-
 2026-09-04T12:04:23Z	agent	branch review	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	7ca937148	APPROVED	no	docs/tasks/task-295-mob-escort-full-path-fix/backend-audit.md	-
+2026-09-04T12:13:20Z	agent	branch-end gate	task-verifier	haiku	-	-	-	-	PASS	7ca937148	-	-	-	-
+2026-09-04T12:15:34Z	handoff	branch finish	-	-	-	-	-	-	DONE	34270fc7a	-	-	-	-

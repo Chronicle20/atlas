@@ -4,6 +4,7 @@ import (
 	"atlas-channel/door"
 	"atlas-channel/environment"
 	_map3 "atlas-channel/kafka/message/map"
+	"atlas-channel/monster"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -27,6 +28,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -387,6 +389,204 @@ func stubDoorAnnounceForVisuals(t *testing.T) (restore func(), calls *[]string, 
 	}
 
 	return func() { doorAnnounce = orig }, &seenWriters, &state, &subState, &bgm
+}
+
+// bossHpRecord is the map package's own recording type for a bossHpSenderFn
+// stub invocation (package-local; not shared with kafka/consumer/monster's
+// bossHpRecord).
+type bossHpRecord struct {
+	characterId       uint32
+	monsterTemplateId uint32
+	currentHp         uint32
+	maxHp             uint32
+}
+
+// withRecordingSpawnSeams stubs both doorAnnounce and bossHpSenderFn so that
+// spawn/control announces and boss HP gauge sends land in one shared,
+// ordered slice -- FR-12/FR-13 (ordering) is only assertable when both seams
+// write into the same recorder. Swap-and-restore shape copied from
+// stubDoorAnnounceForVisuals.
+func withRecordingSpawnSeams(t *testing.T) (calls *[]string, gaugeCalls *[]bossHpRecord, stubGaugeErr func(templateId uint32, err error)) {
+	t.Helper()
+	var seen []string
+	var records []bossHpRecord
+	errByTemplateId := map[uint32]error{}
+
+	origDoorAnnounce := doorAnnounce
+	origBossHpSender := bossHpSenderFn
+
+	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+		seen = append(seen, writerName)
+		return nil
+	}
+	bossHpSenderFn = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, s session.Model, m monster.Model) error {
+		seen = append(seen, "bosshp")
+		records = append(records, bossHpRecord{
+			characterId:       s.CharacterId(),
+			monsterTemplateId: m.MonsterId(),
+			currentHp:         m.Hp(),
+			maxHp:             m.MaxHp(),
+		})
+		if err, ok := errByTemplateId[m.MonsterId()]; ok {
+			return err
+		}
+		return nil
+	}
+
+	t.Cleanup(func() {
+		doorAnnounce = origDoorAnnounce
+		bossHpSenderFn = origBossHpSender
+	})
+
+	return &seen, &records, func(templateId uint32, err error) {
+		errByTemplateId[templateId] = err
+	}
+}
+
+// TestSpawnMonsterForSession_SendsBossHpAfterSpawn asserts FR-11..FR-14/FR-17:
+// spawnMonsterForSession sends the current BOSS_HP gauge for each
+// already-spawned monster after Spawn (and after Control, when granted),
+// one gauge per monster in enumeration order, never for an empty field, and
+// a gauge-send failure never aborts the enumeration.
+func TestSpawnMonsterForSession_SendsBossHpAfterSpawn(t *testing.T) {
+	f := newTestField()
+
+	tests := []struct {
+		name            string
+		monsters        []monster.Model
+		stubDoorErr     bool
+		stubGaugeErrIdx int // index into monsters for which bossHpSenderFn errors, -1 for none
+		wantSeq         []string
+		wantRecords     []bossHpRecord
+	}{
+		{
+			// ControlCharacterId is set to a character other than the
+			// entering session's (session.Model{}.CharacterId() == 0) so
+			// the control branch does not fire -- the zero value would
+			// otherwise coincidentally match and pull in MonsterControlWriter.
+			name: "gauge follows Spawn",
+			monsters: []monster.Model{
+				monster.NewBuilder(7301, f, 8800002).SetHp(50000).SetMaxHp(100000).SetControlCharacterId(999).MustBuild(),
+			},
+			stubGaugeErrIdx: -1,
+			wantSeq:         []string{monsterpkt.MonsterSpawnWriter, "bosshp"},
+			wantRecords: []bossHpRecord{
+				{characterId: 0, monsterTemplateId: 8800002, currentHp: 50000, maxHp: 100000},
+			},
+		},
+		{
+			name: "gauge follows Spawn and Control",
+			monsters: []monster.Model{
+				monster.NewBuilder(7301, f, 8800002).SetHp(50000).SetMaxHp(100000).SetControlCharacterId(0).MustBuild(),
+			},
+			stubGaugeErrIdx: -1,
+			wantSeq:         []string{monsterpkt.MonsterSpawnWriter, monsterpkt.MonsterControlWriter, "bosshp"},
+			wantRecords: []bossHpRecord{
+				{characterId: 0, monsterTemplateId: 8800002, currentHp: 50000, maxHp: 100000},
+			},
+		},
+		{
+			name: "one gauge per monster in enumeration order",
+			monsters: []monster.Model{
+				monster.NewBuilder(7301, f, 8800002).SetHp(1).SetMaxHp(2).SetControlCharacterId(999).MustBuild(),
+				monster.NewBuilder(7302, f, 8810018).SetHp(1).SetMaxHp(2).SetControlCharacterId(999).MustBuild(),
+				monster.NewBuilder(7303, f, 100100).SetHp(1).SetMaxHp(2).SetControlCharacterId(999).MustBuild(),
+			},
+			stubGaugeErrIdx: -1,
+			wantSeq: []string{
+				monsterpkt.MonsterSpawnWriter, "bosshp",
+				monsterpkt.MonsterSpawnWriter, "bosshp",
+				monsterpkt.MonsterSpawnWriter, "bosshp",
+			},
+			wantRecords: []bossHpRecord{
+				{characterId: 0, monsterTemplateId: 8800002, currentHp: 1, maxHp: 2},
+				{characterId: 0, monsterTemplateId: 8810018, currentHp: 1, maxHp: 2},
+				{characterId: 0, monsterTemplateId: 100100, currentHp: 1, maxHp: 2},
+			},
+		},
+		{
+			name:            "no monsters means no invocation and no lookup",
+			monsters:        nil,
+			stubGaugeErrIdx: -1,
+			wantSeq:         nil,
+			wantRecords:     nil,
+		},
+		{
+			name: "sender failure does not abort the enumeration",
+			monsters: []monster.Model{
+				monster.NewBuilder(7301, f, 8800002).SetHp(1).SetMaxHp(2).SetControlCharacterId(999).MustBuild(),
+				monster.NewBuilder(7302, f, 8810018).SetHp(1).SetMaxHp(2).SetControlCharacterId(999).MustBuild(),
+			},
+			stubGaugeErrIdx: 0,
+			wantSeq: []string{
+				monsterpkt.MonsterSpawnWriter, "bosshp",
+				monsterpkt.MonsterSpawnWriter, "bosshp",
+			},
+			wantRecords: []bossHpRecord{
+				{characterId: 0, monsterTemplateId: 8800002, currentHp: 1, maxHp: 2},
+				{characterId: 0, monsterTemplateId: 8810018, currentHp: 1, maxHp: 2},
+			},
+		},
+		{
+			name: "spawn failure suppresses the gauge",
+			monsters: []monster.Model{
+				monster.NewBuilder(7301, f, 8800002).SetHp(1).SetMaxHp(2).MustBuild(),
+			},
+			stubDoorErr:     true,
+			stubGaugeErrIdx: -1,
+			wantSeq:         []string{monsterpkt.MonsterSpawnWriter},
+			wantRecords:     nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := logrus.New()
+			ctx := newTestCtx(t)
+			s := session.Model{}
+
+			calls, gaugeCalls, stubGaugeErr := withRecordingSpawnSeams(t)
+
+			if tt.stubGaugeErrIdx >= 0 {
+				stubGaugeErr(tt.monsters[tt.stubGaugeErrIdx].MonsterId(), errors.New("boom"))
+			}
+
+			if tt.stubDoorErr {
+				origDoorAnnounce := doorAnnounce
+				doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
+					*calls = append(*calls, writerName)
+					if writerName == monsterpkt.MonsterSpawnWriter {
+						return errors.New("boom")
+					}
+					return nil
+				}
+				t.Cleanup(func() { doorAnnounce = origDoorAnnounce })
+			}
+
+			op := spawnMonsterForSession(l)(ctx)(nil)(s)
+			for _, m := range tt.monsters {
+				_ = op(m)
+			}
+
+			if len(*calls) != len(tt.wantSeq) {
+				t.Fatalf("seen writer/seam sequence = %v, want %v", *calls, tt.wantSeq)
+			}
+			for i, want := range tt.wantSeq {
+				if (*calls)[i] != want {
+					t.Errorf("seen[%d] = %q, want %q (full sequence %v)", i, (*calls)[i], want, *calls)
+				}
+			}
+
+			if len(*gaugeCalls) != len(tt.wantRecords) {
+				t.Fatalf("gauge records = %v, want %v", *gaugeCalls, tt.wantRecords)
+			}
+			for i, want := range tt.wantRecords {
+				if (*gaugeCalls)[i] != want {
+					t.Errorf("record[%d] = %+v, want %+v", i, (*gaugeCalls)[i], want)
+				}
+			}
+		})
+	}
 }
 
 // TestAnnounceActiveVisuals_ContiMoveFiresForEnteringSession asserts a

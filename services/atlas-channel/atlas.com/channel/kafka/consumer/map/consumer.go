@@ -25,6 +25,7 @@ import (
 	"atlas-channel/merchant"
 	"atlas-channel/minigame"
 	"atlas-channel/monster"
+	"atlas-channel/monster/bosshp"
 	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/party"
 	"atlas-channel/party/hpsync"
@@ -774,13 +775,16 @@ func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func
 		return func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 			return func(s session.Model) model.Operator[monster.Model] {
 				return func(m monster.Model) error {
-					if err := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterSpawnWriter)(writer.SpawnMonsterBody(m, false))(s); err != nil {
+					if err := doorAnnounce(l, ctx, wp, monsterpkt.MonsterSpawnWriter, writer.SpawnMonsterBody(m, false), s); err != nil {
 						return err
 					}
 					if m.ControlCharacterId() == s.CharacterId() {
-						if err := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, m.ControllerHasAggro()))(s); err != nil {
+						if err := doorAnnounce(l, ctx, wp, monsterpkt.MonsterControlWriter, writer.StartControlMonsterBody(m, m.ControllerHasAggro()), s); err != nil {
 							l.WithError(err).Errorf("SpawnForSelf: unable to re-issue MonsterControl for character [%d] mob [%d].", s.CharacterId(), m.UniqueId())
 						}
+					}
+					if err := bossHpSenderFn(l, ctx, wp, s, m); err != nil {
+						l.WithError(err).Errorf("Unable to send boss HP gauge for mob [%d] to character [%d].", m.UniqueId(), s.CharacterId())
 					}
 					return nil
 				}
@@ -824,6 +828,22 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 // writerName and body.
 var doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, writerName string, enc packet.Encode, s session.Model) error {
 	return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
+}
+
+// bossHpSenderFn sends the current BOSS_HP gauge for one already-spawned
+// monster to one entering session. Package-level var so the map-entry
+// ordering is assertable without a live writer.
+var bossHpSenderFn = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, m monster.Model) error {
+	g, ok, err := bosshp.NewResolver(l, ctx).Resolve(m.MonsterId(), m.Hp(), m.MaxHp())
+	if err != nil {
+		degrade.Observe(l, "channel.map.boss_hp_resolve", m.MonsterId(), err)
+		l.WithError(err).Errorf("Unable to resolve boss HP gauge for mob [%d]; skipping.", m.UniqueId())
+		return nil
+	}
+	if !ok {
+		return nil
+	}
+	return bosshp.AnnounceOperator(l)(ctx)(wp)(g)(s)
 }
 
 // announceActiveVisuals looks up the event visuals currently active on f

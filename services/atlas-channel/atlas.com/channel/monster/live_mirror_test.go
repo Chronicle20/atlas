@@ -210,6 +210,23 @@ func TestLiveEntryFromModel_MapsPosition(t *testing.T) {
 	}
 }
 
+func TestLiveEntryFromModel_SeedsMaxHp(t *testing.T) {
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	mo := NewBuilder(7001, f, 8800002).
+		SetHp(50000).
+		SetMaxHp(100000).
+		SetMp(60).
+		SetMaxMp(90).
+		MustBuild()
+	e := LiveEntryFromModel(mo)
+	if e.MaxHp != 100000 {
+		t.Fatalf("expected MaxHp to be seeded from the model, got %d", e.MaxHp)
+	}
+	if e.MonsterId != 8800002 || e.Mp != 60 || e.MaxMp != 90 {
+		t.Fatalf("pre-existing fields changed: %+v", e)
+	}
+}
+
 func TestLiveMirror_UpdatePosition(t *testing.T) {
 	m := newTestLiveMirror()
 	tm := newTestTenant(t)

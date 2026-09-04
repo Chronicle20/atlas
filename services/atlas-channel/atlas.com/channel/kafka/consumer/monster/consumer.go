@@ -9,6 +9,7 @@ import (
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
+	"atlas-channel/monster/bosshp"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -207,6 +208,11 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
 		t := tenant.MustFromContext(ctx)
+		if le, ok := monster.GetLiveMirror().Lookup(t, e.UniqueId); ok {
+			bossHpBroadcaster(l, ctx, sc, wp, sc.Field(e.MapId, e.Instance), e.MonsterId, 0, le.MaxHp)
+		} else {
+			l.Errorf("Unable to resolve monster [%d] from the live mirror; skipping the boss HP gauge clear.", e.UniqueId)
+		}
 		monster.GetNextSkillInbox().Evict(t, e.UniqueId)
 		monster.GetStatusMirror().OnMonsterGone(t, e.UniqueId)
 		monster.GetLiveMirror().Remove(t, e.UniqueId)
@@ -264,7 +270,7 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
+		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
 			return
 		}
@@ -274,9 +280,13 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 
 		// Boss monsters: broadcast HP bar to all characters in the map
 		f := sc.Field(e.MapId, e.Instance)
+		if e.Body.Boss {
+			bossHpBroadcaster(l, ctx, sc, wp, f, e.MonsterId, m.Hp(), m.MaxHp())
+		}
 		routine.Go(l, ctx, func(_ context.Context) {
+			var aerr error
 			if e.Body.Boss {
-				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
+				aerr = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
 			} else {
 				idProvider := model2.FixedProvider([]uint32{e.Body.ActorId})
 
@@ -288,17 +298,20 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 					idProvider = party.MemberToMemberIdMapper(mp)
 				}
 
-				err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(idProvider, announcer)
+				aerr = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(idProvider, announcer)
 			}
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
+			if aerr != nil {
+				l.WithError(aerr).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 			}
 		})
 		if shouldEchoDamagePacket(e.Body.DamageSource) {
 			routine.Go(l, ctx, func(_ context.Context) {
-				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+				eerr := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
 					return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDamageWriter)(monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageTypeUnk3, e.Body.Damage, m.Hp(), m.MaxHp()).Encode)(s)
 				})
+				if eerr != nil {
+					l.WithError(eerr).Errorf("Unable to echo monster [%d] damage packet.", e.UniqueId)
+				}
 			})
 		}
 	}
@@ -318,8 +331,14 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 		if err != nil {
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
-		monster.GetStatusMirror().OnMonsterGone(tenant.MustFromContext(ctx), e.UniqueId)
-		monster.GetLiveMirror().Remove(tenant.MustFromContext(ctx), e.UniqueId)
+		t := tenant.MustFromContext(ctx)
+		if le, ok := monster.GetLiveMirror().Lookup(t, e.UniqueId); ok {
+			bossHpBroadcaster(l, ctx, sc, wp, sc.Field(e.MapId, e.Instance), e.MonsterId, 0, le.MaxHp)
+		} else {
+			l.Errorf("Unable to resolve monster [%d] from the live mirror; skipping the boss HP gauge clear.", e.UniqueId)
+		}
+		monster.GetStatusMirror().OnMonsterGone(t, e.UniqueId)
+		monster.GetLiveMirror().Remove(t, e.UniqueId)
 	}
 }
 
@@ -510,6 +529,27 @@ var monsterStatResetBroadcaster = func(l logrus.FieldLogger, ctx context.Context
 	if err != nil {
 		l.WithError(err).Errorf("Unable to broadcast status effect reset for monster [%d].", uniqueId)
 	}
+}
+
+// bossHpBroadcaster resolves the FR-1 gauge for a monster template and fans the
+// BOSS_HP field effect out to every session in the field. Package-level var so
+// tests can record the broadcast without standing up ForSessionsInMap; the
+// routine.Go is inside so the caller never blocks on the atlas-data lookup.
+var bossHpBroadcaster = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, f field.Model, monsterTemplateId uint32, currentHp uint32, maxHp uint32) {
+	routine.Go(l, ctx, func(_ context.Context) {
+		g, ok, err := bosshp.NewResolver(l, ctx).Resolve(monsterTemplateId, currentHp, maxHp)
+		if err != nil {
+			degrade.Observe(l, "channel.monster.boss_hp_resolve", monsterTemplateId, err)
+			l.WithError(err).Errorf("Unable to resolve boss HP gauge for monster template [%d] in field map [%d].", monsterTemplateId, f.MapId())
+			return
+		}
+		if !ok {
+			return
+		}
+		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, bosshp.AnnounceOperator(l)(ctx)(wp)(g)); err != nil {
+			l.WithError(err).Errorf("Unable to broadcast boss HP gauge for monster template [%d] in field map [%d].", monsterTemplateId, f.MapId())
+		}
+	})
 }
 
 // statusesWithoutVenom returns a copy of statuses with VENOM removed.

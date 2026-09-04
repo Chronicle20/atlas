@@ -1,0 +1,94 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "date": "2026-09-04",
+  "build": "pass",
+  "testsPassed": 178,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "data/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder()/Build()", "status": "n-a", "evidence": "Pure REST-client projection, constructed only via Extract (rest.go:34-41); no new construction pathway added; same shape as data/skill precedent (no builder.go)."},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "No entity.go, no persistence."},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "n-a", "evidence": "No entity.go, no persistence."},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "pass", "evidence": "data/monster/rest.go:44-51"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "No resource.go / list handler in this package; grep TransformSlice = 0 matches."},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "data/monster/processor.go:19"},
+        {"id": "DOM-11", "name": "Lazy providers", "status": "n-a", "evidence": "No provider.go."},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "n-a", "evidence": "Package performs no writes."},
+        {"id": "DOM-18", "name": "JSON:API interface", "status": "pass", "evidence": "data/monster/rest.go:17-31"},
+        {"id": "DOM-19", "name": "Flat request models", "status": "pass", "evidence": "data/monster/rest.go:8-14"},
+        {"id": "DOM-21", "name": "No redeclared shared constant/type", "status": "n-a", "evidence": "bosshp.Gauge has no equivalent in libs/atlas-constants/monster/."},
+        {"id": "DOM-29", "name": "Cache is application-scoped singleton via accessor", "status": "pass", "evidence": "data/monster/cache.go:100-109 getMonsterCache() sync.Once + package pointer; processor.go:12-16 holds no cache field."},
+        {"id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "data/monster/cache.go:174 tenant.MustFromContext(ctx); RestModel carries no tenant field."},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "data/monster/processor.go:9-29"},
+        {"id": "FILE-02", "name": "RestModel/Transform/Extract/JSON:API in rest.go", "status": "pass", "evidence": "data/monster/rest.go"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "pass", "evidence": "data/monster/requests.go:17-24"},
+        {"id": "FILE-04", "name": "Entity in entity.go", "status": "n-a", "evidence": "No persistence."},
+        {"id": "FILE-05", "name": "Model in model.go", "status": "pass", "evidence": "data/monster/model.go"},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "cache.go/model.go/processor.go/requests.go/rest.go each single-purpose."},
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "data/monster/rest.go:8-31 — no such methods; grep returns 0 matches."},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "No httptest.NewServer under data/monster/; rest_test.go only unmarshals a literal payload, no round trip through requestById/upstreamFn."},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "cache.go:186-196 getByIdCached; cache_test.go:141-161 TransientErrorNotCached proves non-ErrNotFound errors are never cached."},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl/RootUrlFor", "status": "pass", "evidence": "data/monster/requests.go:16 requests.RootUrlFor(ctx, \"DATA\")"},
+        {"id": "DOM-20", "name": "Table-driven or single-scenario per guideline example", "status": "pass", "evidence": "cache_test.go:51-249 table-driven; rest_test.go single-scenario tests match testing-guide.md:21-27 example."},
+        {"id": "DOM-24", "name": "Emit-path stubbing", "status": "n-a", "evidence": "No AndEmit/message.Emit/producer.Produce reachable from this package."},
+        {"id": "DOM-33", "name": "Mock kept in sync with interface", "status": "pass", "evidence": "Processor.GetById signature unchanged; mock/processor.go:1-18 new mock matches it."}
+      ]
+    },
+    {
+      "name": "monster/bosshp",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..05", "name": "Processor/RestModel/requests/entity/Builder placement", "status": "n-a", "evidence": "No named symbols (Processor interface, RestModel, requests.RootUrl, entity struct, Builder) present in bosshp.go."},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "bosshp.go is a genuine single-purpose utility (file-responsibilities.md:216 carve-out); doc comment bosshp.go:1-4."},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "No goroutine spawned in bosshp.go; tools/goroutine-guard.sh exit 0."},
+        {"id": "DOM-28", "name": "Fallible enrichment degrades loudly", "status": "fail", "evidence": "See kafka/consumer/monster and kafka/consumer/map rows — the two call sites of Resolver.Resolve swallow errors with a bare log."},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "bosshp_test.go:16-129 TestResolve, :131-164 TestBossHpBodyBytes."}
+      ]
+    },
+    {
+      "name": "kafka/consumer/monster",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "bossHpBroadcaster is a handler helper in the conventional consumer.go."},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "consumer.go:535 routine.Go(...); tools/goroutine-guard.sh exit 0."},
+        {"id": "DOM-28", "name": "Fallible enrichment degrades loudly", "status": "fail", "evidence": "consumer.go:534-539 bare l.WithError(err).Errorf(...); return, no model.ErrDecorator/degrade.Observe; same file already uses degrade.Observe at consumer.go:374 (pre-existing) for an analogous fetch."},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "consumer_test.go:743-810 TestHandleStatusEventDamaged_BossHpGauge; :465-537 TestHandleStatusEventDeath_BossHpGaugeEmpties."},
+        {"id": "DOM-33", "name": "Mock sync", "status": "n-a", "evidence": "No Processor/Provider/Administrator interface changed in this package."},
+        {"id": "DOM-31", "name": "Tenant travels in context only", "status": "pass", "evidence": "consumer.go:210/281/329 tenant.MustFromContext(ctx); StatusEvent bodies carry no tenant field."}
+      ]
+    },
+    {
+      "name": "kafka/consumer/map",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; bossHpSenderFn runs inline, no bare go statement."},
+        {"id": "DOM-28", "name": "Fallible enrichment degrades loudly", "status": "fail", "evidence": "consumer.go:836-841 bare l.WithError(err).Errorf(...); return nil, no model.ErrDecorator/degrade.Observe; same file already uses degrade.Observe at consumer.go:425 (pre-existing)."},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "consumer_test.go:433-563 TestSpawnMonsterForSession_SendsBossHpAfterSpawn."}
+      ]
+    },
+    {
+      "name": "monster (live_mirror.go)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-05", "name": "LiveEntry stays in its existing file", "status": "pass", "evidence": "MaxHp field added to pre-existing LiveEntry struct in live_mirror.go."},
+        {"id": "DOM-20", "name": "Single-scenario test matches guideline example", "status": "pass", "evidence": "live_mirror_test.go:213-226 TestLiveEntryFromModel_SeedsMaxHp."}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "PRD §10 live smoke acceptance criteria: requires a live client/tenant session, out of reach of static code review",
+    "gms_12/gms_92 FieldEffect writer bring-up decision: deferred by design (§9 OQ1), disposed by docs/tasks/task-297-boss-hp-bar/follow-up-field-effect-writer-gms12-gms92.md rather than this audit"
+  ],
+  "blocking": [
+    "EXT-01: services/atlas-channel/atlas.com/channel/data/monster/rest.go:8-31 — RestModel missing SetToOneReferenceID/SetToManyReferenceIDs no-ops",
+    "EXT-02: services/atlas-channel/atlas.com/channel/data/monster/ — no httptest-backed integration test for the atlas-data client",
+    "DOM-28: services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:534-539 — bossHpBroadcaster swallows the atlas-data lookup error without model.ErrDecorator/degrade.Observe",
+    "DOM-28: services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:836-841 — bossHpSenderFn has the same gap"
+  ],
+  "nonBlocking": []
+}

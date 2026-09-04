@@ -45,6 +45,29 @@ func withRecordingBroadcasters(t *testing.T) (restore func(), setCalls *int, res
 	}, &setN, &resetN
 }
 
+// bossHpRecord is a recorded invocation of bossHpBroadcaster, local to this
+// package's tests (the map consumer package declares its own, task 7).
+type bossHpRecord struct {
+	monsterTemplateId uint32
+	currentHp         uint32
+	maxHp             uint32
+}
+
+// withRecordingBossHp swaps bossHpBroadcaster for a synchronous recording
+// stub so DAMAGED handler tests can assert the FR-4/FR-6 gauge broadcast
+// without standing up ForSessionsInMap or atlas-data.
+func withRecordingBossHp(t *testing.T) (restore func(), records *[]bossHpRecord) {
+	t.Helper()
+	var recs []bossHpRecord
+	orig := bossHpBroadcaster
+	bossHpBroadcaster = func(_ logrus.FieldLogger, _ context.Context, _ server.Model, _ writer.Producer, _ field.Model, monsterTemplateId uint32, currentHp uint32, maxHp uint32) {
+		recs = append(recs, bossHpRecord{monsterTemplateId: monsterTemplateId, currentHp: currentHp, maxHp: maxHp})
+	}
+	return func() {
+		bossHpBroadcaster = orig
+	}, &recs
+}
+
 func newTestTenant(t *testing.T) tenant.Model {
 	t.Helper()
 	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -437,6 +460,88 @@ func TestHandleStatusEventDestroyedAndKilled_RemoveMirrorEntry(t *testing.T) {
 	}
 }
 
+// TestHandleStatusEventDeath_BossHpGaugeEmpties covers FR-8 (KILLED and
+// DESTROYED both empty the boss HP gauge), FR-9 (the gauge is resolved from
+// the live mirror before the entry is evicted) and FR-10 (a mirror miss logs
+// and the handler still completes without panicking).
+func TestHandleStatusEventDeath_BossHpGaugeEmpties(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+
+	t.Run("KILLED empties the gauge (FR-8)", func(t *testing.T) {
+		monster.GetLiveMirror().Put(tm, 7201, monster.LiveEntry{Field: f, MonsterId: 8800002, MaxHp: 100000})
+		restore, records := withRecordingBossHp(t)
+		defer restore()
+
+		ke := monster2.StatusEvent[monster2.StatusEventKilledBody]{
+			WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7201,
+			MonsterId: 8800002, Type: monster2.EventStatusKilled,
+		}
+		handleStatusEventKilled(sc, nil)(logrus.New(), ctx, ke)
+
+		want := []bossHpRecord{{monsterTemplateId: 8800002, currentHp: 0, maxHp: 100000}}
+		if len(*records) != len(want) || (*records)[0] != want[0] {
+			t.Fatalf("records = %+v, want %+v", *records, want)
+		}
+	})
+
+	t.Run("DESTROYED empties the gauge (FR-8)", func(t *testing.T) {
+		monster.GetLiveMirror().Put(tm, 7202, monster.LiveEntry{Field: f, MonsterId: 8800002, MaxHp: 100000})
+		restore, records := withRecordingBossHp(t)
+		defer restore()
+
+		de := monster2.StatusEvent[monster2.StatusEventDestroyedBody]{
+			WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7202,
+			MonsterId: 8800002, Type: monster2.EventStatusDestroyed,
+		}
+		handleStatusEventDestroyed(sc, nil)(logrus.New(), ctx, de)
+
+		want := []bossHpRecord{{monsterTemplateId: 8800002, currentHp: 0, maxHp: 100000}}
+		if len(*records) != len(want) || (*records)[0] != want[0] {
+			t.Fatalf("records = %+v, want %+v", *records, want)
+		}
+	})
+
+	t.Run("mirror miss logs and skips (FR-10)", func(t *testing.T) {
+		restore, records := withRecordingBossHp(t)
+		defer restore()
+
+		ke := monster2.StatusEvent[monster2.StatusEventKilledBody]{
+			WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7203,
+			MonsterId: 8800002, Type: monster2.EventStatusKilled,
+		}
+		if _, ok := monster.GetLiveMirror().Lookup(tm, 7203); ok {
+			t.Fatalf("expected no mirror entry for 7203 before the handler runs")
+		}
+		handleStatusEventKilled(sc, nil)(logrus.New(), ctx, ke)
+
+		if len(*records) != 0 {
+			t.Fatalf("records = %+v, want none", *records)
+		}
+	})
+
+	t.Run("resolved before eviction (FR-9)", func(t *testing.T) {
+		monster.GetLiveMirror().Put(tm, 7204, monster.LiveEntry{Field: f, MonsterId: 8800002, MaxHp: 100000})
+		restore, records := withRecordingBossHp(t)
+		defer restore()
+
+		ke := monster2.StatusEvent[monster2.StatusEventKilledBody]{
+			WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7204,
+			MonsterId: 8800002, Type: monster2.EventStatusKilled,
+		}
+		handleStatusEventKilled(sc, nil)(logrus.New(), ctx, ke)
+
+		if len(*records) != 1 || (*records)[0].maxHp != 100000 {
+			t.Fatalf("records = %+v, want a single record with maxHp 100000", *records)
+		}
+		if _, ok := monster.GetLiveMirror().Lookup(tm, 7204); ok {
+			t.Fatalf("mirror entry for 7204 must be evicted after the handler runs")
+		}
+	})
+}
+
 // withRecordingControlGrant swaps the control-grant seam for a stub that
 // records what each grant delivered, so a test can assert Spawn-then-Control
 // ordering without standing up a session.
@@ -629,6 +734,135 @@ func TestShouldEchoDamagePacket(t *testing.T) {
 		if got := shouldEchoDamagePacket(tt.source); got != tt.want {
 			t.Errorf("shouldEchoDamagePacket(%q) = %v, want %v", tt.source, got, tt.want)
 		}
+	}
+}
+
+// TestHandleStatusEventDamaged_BossHpGauge covers FR-4 (boss damage
+// broadcasts the gauge), FR-6 (an echo-suppressed damage source still
+// broadcasts the gauge) and NFR-1 (a non-boss event never reaches the
+// resolver).
+func TestHandleStatusEventDamaged_BossHpGauge(t *testing.T) {
+	tests := []struct {
+		name         string
+		boss         bool
+		damageSource string
+		fetchErr     error
+		want         []bossHpRecord
+	}{
+		{
+			name:         "boss damage broadcasts (FR-4)",
+			boss:         true,
+			damageSource: monster2.DamageSourceMonsterAttack,
+			want:         []bossHpRecord{{monsterTemplateId: 8800002, currentHp: 50000, maxHp: 100000}},
+		},
+		{
+			name:         "echo-suppressed source still broadcasts (FR-6)",
+			boss:         true,
+			damageSource: monster2.DamageSourceCharacterAttack,
+			want:         []bossHpRecord{{monsterTemplateId: 8800002, currentHp: 50000, maxHp: 100000}},
+		},
+		{
+			name:         "non-boss event does not broadcast (NFR-1 pre-filter)",
+			boss:         false,
+			damageSource: monster2.DamageSourceMonsterAttack,
+			want:         nil,
+		},
+		{
+			name:         "monster fetch failure aborts before the gauge",
+			boss:         true,
+			damageSource: monster2.DamageSourceMonsterAttack,
+			fetchErr:     errors.New("boom"),
+			want:         nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tm := newTestTenant(t)
+			ctx := tenant.WithContext(context.Background(), tm)
+			sc := newTestServer(t, tm)
+
+			f := field.NewBuilder(0, 1, 100000000).Build()
+			prevGet := monsterGetByIdFn
+			monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
+				if tt.fetchErr != nil {
+					return monster.Model{}, tt.fetchErr
+				}
+				return monster.NewBuilder(uniqueId, f, 8800002).SetHp(50000).SetMaxHp(100000).MustBuild(), nil
+			}
+			defer func() { monsterGetByIdFn = prevGet }()
+
+			restore, records := withRecordingBossHp(t)
+			defer restore()
+
+			e := monster2.StatusEvent[monster2.StatusEventDamagedBody]{
+				WorldId:   0,
+				ChannelId: 1,
+				MapId:     100000000,
+				UniqueId:  7101,
+				MonsterId: 8800002,
+				Type:      monster2.EventStatusDamaged,
+				Body: monster2.StatusEventDamagedBody{
+					Boss:         tt.boss,
+					DamageSource: tt.damageSource,
+				},
+			}
+			handleStatusEventDamaged(sc, nil)(logrus.New(), ctx, e)
+
+			if len(*records) != len(tt.want) {
+				t.Fatalf("records = %+v, want %+v", *records, tt.want)
+			}
+			for i, r := range *records {
+				if r != tt.want[i] {
+					t.Errorf("record[%d] = %+v, want %+v", i, r, tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+// TestHandleStatusEventDamaged_GaugeDoesNotDisturbHealthPath covers FR-5:
+// the gauge broadcast must reuse the health path's single monster fetch and
+// must not prevent the health/damage-echo goroutines from being launched.
+// The MonsterHealth wire effect itself is not observable from this
+// package's tests (session.Announce writes through a nil connection here);
+// the live smoke (AC-13) is what actually proves the two bars coexist.
+func TestHandleStatusEventDamaged_GaugeDoesNotDisturbHealthPath(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	fetchCalls := 0
+	prevGet := monsterGetByIdFn
+	monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
+		fetchCalls++
+		return monster.NewBuilder(uniqueId, f, 8800002).SetHp(50000).SetMaxHp(100000).MustBuild(), nil
+	}
+	defer func() { monsterGetByIdFn = prevGet }()
+
+	restore, records := withRecordingBossHp(t)
+	defer restore()
+
+	e := monster2.StatusEvent[monster2.StatusEventDamagedBody]{
+		WorldId:   0,
+		ChannelId: 1,
+		MapId:     100000000,
+		UniqueId:  7101,
+		MonsterId: 8800002,
+		Type:      monster2.EventStatusDamaged,
+		Body: monster2.StatusEventDamagedBody{
+			Boss:         true,
+			DamageSource: monster2.DamageSourceMonsterAttack,
+		},
+	}
+	handleStatusEventDamaged(sc, nil)(logrus.New(), ctx, e)
+
+	if fetchCalls != 1 {
+		t.Fatalf("monsterGetByIdFn calls = %d, want exactly 1", fetchCalls)
+	}
+	if len(*records) != 1 {
+		t.Fatalf("boss HP records = %+v, want exactly 1", *records)
 	}
 }
 

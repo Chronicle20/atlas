@@ -92,6 +92,19 @@ func TestMoveEnvironment(t *testing.T) {
 			params:       map[string]string{"name": "g", "value": "-1"},
 			wantRangeErr: "out of range for uint32",
 		},
+		{
+			name:   "name sent raw, not trimmed",
+			params: map[string]string{"name": " gate01 ", "value": "3"},
+			wantPayload: saga.MoveEnvironmentPayload{
+				WorldId:   0,
+				ChannelId: 1,
+				MapId:     910010000,
+				Instance:  instID,
+				Kind:      field.ObjectKindEnvironment,
+				Name:      " gate01 ",
+				State:     3,
+			},
+		},
 	}
 
 	for _, tt := range tests {

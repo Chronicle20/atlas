@@ -17,7 +17,10 @@ const (
 //
 // Parameters:
 //   - name  (required) opaque object name; not validated against WZ data.
-//     Whitespace-only is treated as absent.
+//     Whitespace-only is treated as absent. The raw (untrimmed) value is
+//     sent in the payload — only the blank-check trims — matching both
+//     source executors (map-actions executor.go:257-266, reactor-actions
+//     executor.go:280-289).
 //   - value (required) the new object state, uint32.
 //   - kind  (optional) "ENVIRONMENT" or "OBSTACLE"; blank defaults to
 //     ENVIRONMENT (see field.ParseObjectKind). Read raw, not through the
@@ -30,8 +33,7 @@ func MoveEnvironment(p map[string]string, r Resolver, t Target, characterId uint
 	if err != nil {
 		return Step{}, err
 	}
-	name = strings.TrimSpace(name)
-	if name == "" {
+	if strings.TrimSpace(name) == "" {
 		return Step{}, missingParam(opMoveEnvironment, "name")
 	}
 

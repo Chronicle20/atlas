@@ -212,7 +212,9 @@ func ValidateDefinitionsHandler(db *gorm.DB) rest.GetHandler {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(results)
+			if err := json.NewEncoder(w).Encode(results); err != nil {
+				d.Logger().WithError(err).Errorf("Encoding validation results.")
+			}
 		}
 	}
 }

@@ -70,6 +70,14 @@ func (ReactorSubdomain) Build(t tenant.Model, entityID string, attrs jsonReactor
 		builder.AddActRule(rule)
 	}
 
+	for _, jr := range attrs.TouchRules {
+		rule, err := convertJsonRule(jr)
+		if err != nil {
+			return nil, fmt.Errorf("reactor-actions: convert touch rule %q: %w", jr.Id, err)
+		}
+		builder.AddTouchRule(rule)
+	}
+
 	return []ReactorScript{builder.Build()}, nil
 }
 

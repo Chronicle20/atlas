@@ -1,0 +1,28 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "2",
+                "mesoMax": "100",
+                "mesoMin": "80"
+              },
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Dogon's HQ reactor - Dogon's Report, Meso",
+      "hitRules": [],
+      "reactorId": "2212003"
+    },
+    "id": "2212003",
+    "type": "reactor-action"
+  }
+}

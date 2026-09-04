@@ -1,0 +1,93 @@
+{
+  "service": "atlas-channel, atlas-reactor-actions, atlas-map-actions",
+  "path": "services/atlas-channel; services/atlas-reactor-actions; services/atlas-map-actions",
+  "date": "2026-08-28",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-channel/environment",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor interface, constructor, and ProcessorImpl methods live in processor.go or a processor_<group>.go split", "status": "pass", "evidence": "environment/processor.go:12-24" },
+        { "id": "FILE-02", "name": "RestModel, Transform/Extract, and the JSON:API methods live in rest.go", "status": "pass", "evidence": "environment/rest.go:3-21; Extract lives in processor.go:32 (no-op)" },
+        { "id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "pass", "evidence": "environment/requests.go:16-26" },
+        { "id": "FILE-04", "name": "Entity struct, Migration, and TableName live in entity.go", "status": "n-a", "evidence": "no entity.go in this package" },
+        { "id": "FILE-05", "name": "Builder in builder.go, domain Model in model.go, writes in administrator.go, readers in provider.go, enums in state.go", "status": "n-a", "evidence": "none of builder.go/model.go/administrator.go/provider.go/state.go exist in this package" },
+        { "id": "FILE-06", "name": "No package-named catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "processor.go, rest.go, requests.go each carry exactly one responsibility" },
+        { "id": "DOM-04", "name": "Model.ToEntity()/Transform(Model) (RestModel, error) defined in rest.go", "status": "fail", "evidence": "environment/rest.go has no func Transform( (grep: zero matches); GetAll returns []RestModel directly via no-op Extract, processor.go:32" },
+        { "id": "DOM-05", "name": "TransformSlice defined in rest.go and used by list handlers", "status": "fail", "evidence": "environment/rest.go has no func TransformSlice( (grep: zero matches)" },
+        { "id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger, never *logrus.Logger", "status": "pass", "evidence": "environment/processor.go:16" },
+        { "id": "DOM-18", "name": "REST models implement the JSON:API interface", "status": "pass", "evidence": "environment/rest.go:9,13,17 - GetID/GetName/SetID" },
+        { "id": "DOM-19", "name": "Request models are flat", "status": "n-a", "evidence": "no request/write model defined in this GET-only client package" },
+        { "id": "DOM-31", "name": "Tenant and trace identifiers travel in context only", "status": "pass", "evidence": "environment/requests.go:15-16 uses ctx via requests.RootUrlFor; RestModel carries no tenant field" },
+        { "id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID and SetToManyReferenceIDs", "status": "fail", "evidence": "environment/rest.go: grep for SetToOneReferenceID/SetToManyReferenceIDs returns zero matches" },
+        { "id": "EXT-02", "name": "httptest-backed integration test asserts populated domain struct", "status": "pass", "evidence": "environment/requests_test.go:33-53 TestGetAll_ParsesCollection" },
+        { "id": "EXT-03", "name": "Only genuine 404s map to not-found; other failures bubble with original error", "status": "pass", "evidence": "requests.go performs no custom error mapping; requests_test.go:83-98 TestGetAll_ServerError confirms 500 surfaces as non-nil error" },
+        { "id": "EXT-04", "name": "Service URL composed via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "environment/requests.go:15-16 requests.RootUrlFor(ctx, \"MAPS\")" },
+        { "id": "DOM-33", "name": "Interface change updates every mock implementation in the same diff", "status": "pass", "evidence": "environment/mock/processor.go:9-20 ProcessorMock with nil-check default" },
+        { "id": "DOM-20", "name": "Tests are table-driven", "status": "n-a", "evidence": "requests_test.go uses 4 single-scenario func Test... tests, not a table-of-cases candidate (informational)" }
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/map",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01", "name": "Handler/dispatch functions correctly placed", "status": "pass", "evidence": "consumer.go new handlers/helpers follow existing status-event handler shape" },
+        { "id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "consumer.go:396 routine.Go(...); no bare `go` added by this diff" },
+        { "id": "DOM-25", "name": "Client-interpreted bytes resolved from tenant writer-options table, never Go literals", "status": "pass", "evidence": "consumer.go:1186-1197 announceObjectState probes wp(fieldcb.FieldObstacleOnOffWriter)/wp(fieldcb.SetObjectStateWriter)" },
+        { "id": "CHANNEL-WIRE-fallback-bypass", "name": "No call site bypasses the announceObjectState fallback helper", "status": "pass", "evidence": "consumer.go:1228,1234,1256,1289 are the only 4 object-state call sites, all via announceObjectState" },
+        { "id": "CHANNEL-WIRE-second-probe-logged", "name": "Second writer-probe failure logged, not swallowed", "status": "pass", "evidence": "consumer.go:1192-1195 logs Errorf and returns err; exercised by consumer_test.go:833-839" },
+        { "id": "DOM-31", "name": "Broadcast guarded by tenant/world/channel", "status": "pass", "evidence": "consumer.go:1243,1269 sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId)" },
+        { "id": "RESILIENCE-fail-open", "name": "Map-enter environment replay must fail open, not stall map entry", "status": "pass", "evidence": "consumer.go:396-403 inside routine.Go; failure only logs and returns from the goroutine, does not affect SpawnForSelf's synchronous path or its return at line 410" },
+        { "id": "DOM-28", "name": "Fallible enrichment/decorator paths degrade loudly via model.ErrDecorator + degrade.Observe", "status": "warn", "evidence": "consumer.go:397-403 fetches remote data, branches on err, logs Errorf but never calls degrade.Observe/increments atlas_enrichment_degraded_total; not a model.Decorator (no Model enriched/returned) and identical in shape to untouched weather/jukebox/boat/timer blocks in the same function" }
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/message/map",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-06", "name": "No catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "kafka.go carries only Kafka message-envelope type/const declarations" },
+        { "id": "DOM-21", "name": "No redeclaration of a type/const already in libs/atlas-constants", "status": "pass", "evidence": "kafka.go:21-22,66-83 new consts/types have no libs/atlas-constants equivalent (grep: zero matches)" },
+        { "id": "CONSTANTS-ObjectKind-reuse", "name": "field.ObjectKind not redefined locally", "status": "pass", "evidence": "consumer.go imports field.ParseObjectKind/ObjectKindObstacle/ObjectKindEnvironment from libs/atlas-constants/field/constants.go:14-37 (added same branch)" }
+      ]
+    },
+    {
+      "name": "atlas-reactor-actions/script",
+      "type": "domain",
+      "checks": [
+        { "id": "FILE-01/06", "name": "Executor logic in established file, no catch-all", "status": "pass", "evidence": "executor.go:283-352 executeMoveEnvironment/executeResetEnvironment alongside every other execute* handler" },
+        { "id": "CONSTANTS-reuse", "name": "No local ObjectKind/message-type redeclaration", "status": "pass", "evidence": "executor.go:301 field.ParseObjectKind; saga.MoveEnvironment/ResetEnvironment/Payload types from libs/atlas-saga/model.go:296-297, payloads.go:1311-1330 (added same branch)" },
+        { "id": "SUB-04-equivalent", "name": "No manual JSON parsing", "status": "pass", "evidence": "reads op.Params() map[string]string; no json.Unmarshal/io.ReadAll added" },
+        { "id": "DOM-20", "name": "Tests table-driven", "status": "pass", "evidence": "executor_test.go:57-224 TestExecuteMoveEnvironment tests:=[]struct{...}+t.Run" },
+        { "id": "DOM-24", "name": "Test package reaching emit path stubs producer", "status": "n-a", "evidence": "executor_test.go:17-28 captureSagaProcessor replaces e.sagaP entirely; real producer path never reached" }
+      ]
+    },
+    {
+      "name": "atlas-map-actions/script",
+      "type": "domain",
+      "checks": [
+        { "id": "FILE-01/06", "name": "Executor logic in established file, no catch-all", "status": "pass", "evidence": "executor.go executeMoveEnvironment/executeResetEnvironment (lines ~250-323) alongside every other execute* handler" },
+        { "id": "CONSTANTS-reuse", "name": "No local redeclaration", "status": "pass", "evidence": "executor.go:274 field.ParseObjectKind; saga types from libs/atlas-saga, same as atlas-reactor-actions" },
+        { "id": "SUB-04-equivalent", "name": "No manual JSON parsing", "status": "pass", "evidence": "reads op.Params() only; no json.Unmarshal/io.ReadAll added" },
+        { "id": "DOM-20", "name": "Tests table-driven", "status": "pass", "evidence": "executor_test.go:52- TestExecuteMoveEnvironment tests:=[]struct{...}+t.Run" },
+        { "id": "DOM-24", "name": "Test package reaching emit path stubs producer", "status": "n-a", "evidence": "executor_test.go:17-28 captureSagaProcessor in-package double, same pattern as reactor-actions" }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-01/02/03/11/16 (atlas-reactor-actions/script, atlas-map-actions/script): package has pre-existing model.go so the family trigger fires, but builder.go/entity.go/provider.go were not touched by this diff and reading them is outside this change's review surface.",
+    "DOM-27 (atlas-channel): trigger did not fire on changed files; confirming atlas-channel is DB-less service-wide (vs. simply unused in this diff) was not performed."
+  ],
+  "blocking": [
+    "DOM-04: services/atlas-channel/atlas.com/channel/environment/rest.go: no Transform(Model) (RestModel, error) function — RestModel is returned directly with a no-op Extract, skipping the domain-model layer.",
+    "DOM-05: services/atlas-channel/atlas.com/channel/environment/rest.go: no TransformSlice function.",
+    "EXT-01: services/atlas-channel/atlas.com/channel/environment/rest.go: RestModel does not implement SetToOneReferenceID/SetToManyReferenceIDs, even as no-ops."
+  ],
+  "nonBlocking": [
+    "DOM-28 (WARN): services/atlas-channel/atlas.com/channel/kafka/consumer/map/consumer.go:397-403: environment-replay fetch in SpawnForSelf logs on failure but does not call degrade.Observe/increment atlas_enrichment_degraded_total; ambiguous applicability (not a model.Decorator) but worth reviewing.",
+    "INFO (pre-accepted, not blocking): boundary-row (non-numeric/negative/overflow value) tests in atlas-reactor-actions/script/executor_test.go and atlas-map-actions/script/executor_test.go assert only err != nil, not message content — already accepted at per-task review per task brief."
+  ]
+}

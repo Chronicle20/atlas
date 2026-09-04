@@ -884,6 +884,7 @@
   direction: clientbound
   opcode: 131
   fname: CMapLoadable::OnSetBackEffect
+  packet: field/clientbound/FieldSetBackEffect
   provenance: ida-discovered
   ida:
     address: 5494183
@@ -900,6 +901,7 @@
   direction: clientbound
   opcode: 133
   fname: CMapLoadable::OnClearBackEffect
+  packet: field/clientbound/FieldClearBackEffect
   provenance: ida-discovered
   ida:
     address: 6659261
@@ -3688,6 +3690,7 @@
   direction: serverbound
   opcode: 161
   fname: CWvsContext::SendExpUpItemUseRequest
+  packet: inventory/serverbound/InventorySolomonItemUse
   provenance: ida-discovered
   ida:
     address: 10865346
@@ -3696,6 +3699,7 @@
   direction: serverbound
   opcode: 162
   fname: CWvsContext::SendTempExpUseRequest
+  packet: character/serverbound/StoredExperienceUse
   provenance: ida-discovered
   ida:
     address: 10865868

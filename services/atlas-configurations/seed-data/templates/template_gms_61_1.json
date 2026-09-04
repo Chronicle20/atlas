@@ -2655,6 +2655,22 @@
         ]
       },
       {
+        "opCode": "0x5F",
+        "writer": "SetBackEffect",
+        "fname": "CMapLoadable::OnSetBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x60",
+        "writer": "ClearBackEffect",
+        "fname": "CMapLoadable::OnClearBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x61",
         "writer": "BlockedMap",
         "fname": "CField::OnTransferFieldReqIgnored",

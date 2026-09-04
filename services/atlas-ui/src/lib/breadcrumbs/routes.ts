@@ -207,6 +207,17 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     entityType: "portal",
   },
 
+  // Field routes (runtime read model — live occupancy, not a definition).
+  // A single locator route: the field-detail view is a query-param
+  // (`?instance=`) variant of this same page, not a distinct path, so there
+  // is no nested world/channel/map/instance chain to resolve (bug-fields-ui
+  // items 5/6).
+  {
+    pattern: "/fields",
+    label: "Fields",
+    parent: "/",
+  },
+
   // Reactor routes
   {
     pattern: "/reactors",
@@ -681,6 +692,7 @@ export const ROUTE_PATTERNS = {
   MAPS: "/maps",
   MAP_DETAIL: "/maps/[id]",
   MAP_PORTAL_DETAIL: "/maps/[id]/portals/[portalId]",
+  FIELDS: "/fields",
   REACTORS: "/reactors",
   REACTOR_DETAIL: "/reactors/[id]",
   MERCHANTS: "/merchants",

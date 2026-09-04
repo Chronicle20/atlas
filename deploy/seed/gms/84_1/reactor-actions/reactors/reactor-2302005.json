@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Aqua Road Reactor - Treasure Chest for Mount quest",
+      "hitRules": [],
+      "reactorId": "2302005"
+    },
+    "id": "2302005",
+    "type": "reactor-action"
+  }
+}

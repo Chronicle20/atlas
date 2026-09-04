@@ -46,6 +46,15 @@ func (Map) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 		// Don't clear NPC registry; the NPC worker may still need it.
 	}
 
+	// Index Map.wz/Obj once so the reader can resolve each named object's kind
+	// without re-parsing the same Obj images per map.
+	if n, err := _map.InitObj(t, filepath.Join(root, "Map.wz", "Obj")); err != nil {
+		l.WithError(err).Warnf("map.InitObj failed; all map objects will resolve to ENVIRONMENT")
+	} else {
+		l.Infof("Indexed [%d] obstacle object definitions.", n)
+	}
+	defer func() { _ = _map.GetMapObjectRegistry().Clear(t) }()
+
 	// Map registrations live under Map.wz/Map/Map<digit>/<id>.img.xml.
 	mapDir := filepath.Join(root, "Map.wz", "Map")
 	if err := registerAllInDirectory(l, ctx, mapDir, _map.NewProcessor(l, ctx, db).RegisterMap); err != nil {

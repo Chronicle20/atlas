@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Mu Lung Reactor - Wild bear 1",
+      "hitRules": [],
+      "reactorId": "2502002"
+    },
+    "id": "2502002",
+    "type": "reactor-action"
+  }
+}

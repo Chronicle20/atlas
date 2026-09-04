@@ -1,0 +1,26 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "weaken_area_boss",
+          "operations": [
+            {
+              "params": {
+                "message": "Rurumo has been poisoned. It may finally be defeatable!",
+                "monsterId": "6090004"
+              },
+              "type": "weaken_area_boss"
+            }
+          ]
+        }
+      ],
+      "description": "Altar - weakens Rurumo",
+      "hitRules": [],
+      "reactorId": "2619004"
+    },
+    "id": "2619004",
+    "type": "reactor-action"
+  }
+}

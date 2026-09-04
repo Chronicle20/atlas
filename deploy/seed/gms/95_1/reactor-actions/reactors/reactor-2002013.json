@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Drops the Statue piece.",
+      "hitRules": [],
+      "reactorId": "2002013"
+    },
+    "id": "2002013",
+    "type": "reactor-action"
+  }
+}

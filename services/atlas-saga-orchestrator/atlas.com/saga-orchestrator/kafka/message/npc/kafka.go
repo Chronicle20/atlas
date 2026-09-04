@@ -76,9 +76,10 @@ type CommandItemConversationStartBody struct {
 }
 
 type CommandConversationContinueBody struct {
-	Action          byte  `json:"action"`
-	LastMessageType byte  `json:"lastMessageType"`
-	Selection       int32 `json:"selection"`
+	Action          byte   `json:"action"`
+	LastMessageType byte   `json:"lastMessageType"`
+	Selection       int32  `json:"selection"`
+	Text            string `json:"text"`
 }
 
 type CommandConversationEndBody struct{}
@@ -106,6 +107,12 @@ type CommandNumberBody struct {
 	DefaultValue uint32 `json:"defaultValue"`
 	MinValue     uint32 `json:"minValue"`
 	MaxValue     uint32 `json:"maxValue"`
+}
+
+type CommandTextBody struct {
+	DefaultValue string `json:"defaultValue"`
+	MinLength    uint16 `json:"minLength"`
+	MaxLength    uint16 `json:"maxLength"`
 }
 
 type CommandStyleBody struct {

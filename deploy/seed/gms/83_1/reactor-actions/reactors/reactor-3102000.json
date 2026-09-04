@@ -1,0 +1,29 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "false",
+                "mesoChance": "0",
+                "mesoMax": "0",
+                "mesoMin": "0",
+                "minItems": "3"
+              },
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Box - drops items",
+      "hitRules": [],
+      "reactorId": "3102000"
+    },
+    "id": "3102000",
+    "type": "reactor-action"
+  }
+}

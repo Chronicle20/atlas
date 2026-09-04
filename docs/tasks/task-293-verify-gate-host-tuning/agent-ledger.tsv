@@ -1,0 +1,6 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-03T09:49:21Z	agent	task-293	task-reviewer	sonnet	-	-	-	-	DONE	d2d89a3af	CHANGES_REQUIRED	yes	docs/tasks/task-293-verify-gate-host-tuning/reviews/task-293.md	-
+2026-09-03T09:49:21Z	agent	task-293	verify.sh	none	-	-	-	-	PASS	d2d89a3af	-	-	-	-
+2026-09-03T09:50:45Z	agent	task-293 fix	verify.sh	none	-	-	-	-	FAIL	9d3ee1cd3	-	-	-	-
+2026-09-03T09:51:17Z	agent	task-293 fix	task-reviewer	sonnet	-	-	-	-	DONE	9d3ee1cd3	APPROVED_WITH_FINDINGS	no	docs/tasks/task-293-verify-gate-host-tuning/reviews/task-293.md	-
+2026-09-03T09:53:01Z	agent	task-293 final	verify.sh	none	-	-	-	-	PASS	cfd26e245	-	-	-	-

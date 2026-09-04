@@ -1,0 +1,37 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-03T19:33:14Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	b7cdb2716	-	-	-	-
+2026-09-03T19:33:50Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	b7cdb2716	APPROVED	no	-	-
+2026-09-03T19:43:15Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	84c6c5695	-	-	-	-
+2026-09-03T19:43:15Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	84c6c5695	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T19:47:09Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	6dbf44b86	-	-	-	-
+2026-09-03T19:49:16Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	6dbf44b86	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T19:51:08Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	54ea73400	-	-	-	-
+2026-09-03T19:53:20Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	54ea73400	APPROVED	no	-	-
+2026-09-03T19:53:20Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	60000
+2026-09-03T19:56:09Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T19:58:46Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	b850f4073	-	-	-	-
+2026-09-03T19:58:50Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T20:02:50Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	b850f4073	APPROVED	no	-	-
+2026-09-03T20:03:36Z	agent	gate a915de988..54ea73400	verify.sh	-	-	-	-	-	FAIL	54ea73400	-	-	-	-
+2026-09-03T20:08:59Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	4619cd5af	-	-	-	-
+2026-09-03T20:08:59Z	agent	gatefix rediskeyguard	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T20:11:02Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	4619cd5af	APPROVED	no	-	-
+2026-09-03T20:14:26Z	agent	gatefix rediskeyguard	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	2c3cb80cd	-	-	-	-
+2026-09-03T20:14:26Z	agent	gatefix rearm atomicity	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T20:17:10Z	agent	gatefix rearm atomicity	task-implementer	sonnet	-	-	-	-	DONE	16fc28cde	-	-	-	-
+2026-09-03T20:17:10Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-03T20:19:20Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	125bb84	-	-	-	-
+2026-09-03T20:20:18Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	125bb84	APPROVED	no	-	-
+2026-09-03T20:21:47Z	agent	gatefix range	task-reviewer	sonnet	-	-	-	-	DONE	16fc28cde	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-03T20:21:48Z	agent	cleanup dead mocks	controller	opus	-	-	-	-	DONE	4457c3547	-	-	-	-
+2026-09-03T20:21:49Z	handoff	after Task 7 + cleanup	-	-	-	-	-	-	-	-	-	-	-	100000
+2026-09-03T20:23:49Z	agent	flagless verify.sh	verify.sh	-	-	-	-	-	PASS	4457c3547	-	-	-	-
+2026-09-03T21:25:15Z	agent	pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	running	4457c3547	-	-	-	-
+2026-09-03T21:25:15Z	agent	pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	running	4457c3547	-	-	-	-
+2026-09-03T21:27:11Z	agent	pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	done	4457c3547	APPROVED	no	-	-
+2026-09-03T21:34:36Z	agent	pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	done	4457c3547	CHANGES_REQUIRED	no	-	-
+2026-09-03T21:42:49Z	agent	audit fix: structural	task-implementer	sonnet	-	-	-	-	done	e001bc7c4	-	-	-	-
+2026-09-03T21:45:00Z	agent	audit fix: structural	task-reviewer	sonnet	-	-	-	-	done	e001bc7c4	APPROVED	no	-	-
+2026-09-03T21:50:55Z	agent	audit fix: DOM-20	task-implementer	sonnet	-	-	-	-	done	a7f11c189	-	-	-	-
+2026-09-03T21:53:02Z	agent	audit fix: DOM-20	task-reviewer	sonnet	-	-	-	-	done	a7f11c189	APPROVED	no	-	-
+2026-09-03T21:57:38Z	agent	pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	done	a7f11c189	APPROVED_WITH_FINDINGS	yes	-	-

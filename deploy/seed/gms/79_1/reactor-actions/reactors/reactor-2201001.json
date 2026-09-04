@@ -1,0 +1,26 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spawn_monster",
+          "operations": [
+            {
+              "params": {
+                "count": "3",
+                "monsterId": "9300007"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "description": "- 3 Blocktopus",
+      "hitRules": [],
+      "reactorId": "2201001"
+    },
+    "id": "2201001",
+    "type": "reactor-action"
+  }
+}

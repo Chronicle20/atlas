@@ -1,0 +1,226 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2111017,
+      "startState": "gate",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "3339",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "checkProgress"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "3339",
+                    "type": "questStatus",
+                    "value": "3"
+                  }
+                ],
+                "nextState": "warpIn"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "gate",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "23339",
+                    "step": "1",
+                    "type": "questProgress",
+                    "value": "3"
+                  }
+                ],
+                "nextState": "askPassword"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">",
+                    "referenceId": "23339",
+                    "step": "1",
+                    "type": "questProgress",
+                    "value": "3"
+                  }
+                ],
+                "nextState": "warpIn"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "23339",
+                    "step": "1",
+                    "type": "questProgress",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "advanceTo1"
+              },
+              {
+                "conditions": [],
+                "nextState": "resetProgress"
+              }
+            ]
+          },
+          "id": "checkProgress",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "questId": "23339",
+                  "infoNumber": "1",
+                  "progress": "1"
+                },
+                "type": "set_quest_progress"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "advanceTo1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "questId": "23339",
+                  "infoNumber": "1",
+                  "progress": "0"
+                },
+                "type": "set_quest_progress"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "resetProgress",
+          "type": "genericAction"
+        },
+        {
+          "askText": {
+            "contextKey": "answer",
+            "defaultText": "",
+            "matches": [
+              {
+                "nextState": "unlock",
+                "value": "my love Phyllia"
+              }
+            ],
+            "maxLength": 32,
+            "minLength": 1,
+            "nextState": "wrongPassword",
+            "text": "The pipe reacts as the water starts flowing. A secret compartment with a keypad shows up. #bPassword#k!"
+          },
+          "id": "askPassword",
+          "type": "askText"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "questId": "23339",
+                  "infoNumber": "1",
+                  "progress": "4"
+                },
+                "type": "set_quest_progress"
+              },
+              {
+                "params": {
+                  "mapId": "261000001",
+                  "portalId": "1"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "unlock",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "261000001",
+                  "portalId": "1"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpIn",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "#rWrong!"
+          },
+          "id": "wrongPassword",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2111017",
+    "type": "npc-conversation"
+  }
+}

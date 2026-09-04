@@ -123,8 +123,16 @@ func (p *ProcessorImpl) StartWorker(name string, path string) error {
 			p.l.WithError(err).Errorf("Failed to initialize NPC string registry for map worker.")
 			return err
 		}
+		var objCount int
+		if objCount, err = _map.InitObj(t, filepath.Join(path, "Map.wz", "Obj")); err != nil {
+			p.l.WithError(err).Errorf("Failed to initialize map object registry.")
+			return err
+		}
+		p.l.Infof("Indexed [%d] obstacle object definitions.", objCount)
+
 		err = p.RegisterAllData(path, filepath.Join("Map.wz", "Map"), _map.NewProcessor(p.l, p.ctx, p.db).RegisterMap)()
 		_ = _map.GetMapStringRegistry().Clear(t)
+		_ = _map.GetMapObjectRegistry().Clear(t)
 		// Note: Don't clear NPC registry here - WorkerNPC may run concurrently and needs it
 	} else if name == WorkerMonster {
 		if err = monster.InitString(t, filepath.Join(path, "String.wz", "Mob.img.xml")); err != nil {

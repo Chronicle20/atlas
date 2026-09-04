@@ -95,6 +95,8 @@ func main() {
 	command.Registry().Add(_map.WeatherCommandProducer)
 	command.Registry().Add(commandplayernpc.DeployCommandProducer)
 	command.Registry().Add(commandplayernpc.RemoveCommandProducer)
+	command.Registry().Add(_map.BackEffectCommandProducer)
+	command.Registry().Add(_map.ClearBackEffectCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)

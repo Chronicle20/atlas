@@ -1,0 +1,54 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-28T13:31:19Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	38fdbc8c6	-	-	-	-
+2026-08-28T13:32:37Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	8f8a629	-	-	-	-
+2026-08-28T13:33:24Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	38fdbc8c6	APPROVED	no	-	-
+2026-08-28T13:33:59Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	8f8a629e3	APPROVED	no	-	-
+2026-08-28T13:35:36Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	5ac002ae0	-	-	-	-
+2026-08-28T13:38:42Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	5ac002ae0	CHANGES_REQUIRED	yes	-	-
+2026-08-28T13:41:48Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	NO_PROGRESS	-	-	-	-	-
+2026-08-28T13:43:42Z	agent	Task 3 fix 1	task-implementer	sonnet	-	-	-	-	DONE	002a593f6	-	-	-	-
+2026-08-28T13:44:28Z	agent	Task 3 fix 1	task-reviewer	sonnet	-	-	-	-	DONE	002a593f6	APPROVED	no	-	-
+2026-08-28T13:58:28Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	640b6958d	-	-	-	-
+2026-08-28T14:08:43Z	agent	Task 4	task-reviewer	opus	-	-	-	-	DONE	640b6958d	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-28T14:14:27Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	8fe0b95b2	-	-	-	-
+2026-08-28T14:16:57Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	8fe0b95b2	APPROVED	no	.superpowers/sdd/plan/task-5-review.md	-
+2026-08-28T14:18:06Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	0dd1c3bc9	-	-	-	-
+2026-08-28T14:21:15Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	0dd1c3bc9	APPROVED	no	.superpowers/sdd/plan/task-6-review.md	-
+2026-08-28T14:23:39Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	847ad050e	-	-	-	-
+2026-08-28T14:28:11Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	847ad050e	APPROVED	no	.superpowers/sdd/plan/task-7-review.md	-
+2026-08-28T14:33:13Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	NO_PROGRESS	-	-	-	-	-
+2026-08-28T14:36:43Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	ac01f40b5	-	-	-	-
+2026-08-28T14:39:50Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	ac01f40b5	APPROVED	no	.superpowers/sdd/plan/task-8-review.md	-
+2026-08-28T14:39:51Z	handoff	after Task 8	-	-	-	-	-	-	-	-	-	-	-	80000
+2026-08-28T15:42:08Z	agent	Tasks 1-4 gate	verify.sh	-	-	-	-	-	PASS	c90c59ba6	-	-	-	-
+2026-08-28T16:14:51Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:24:06Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	done	9911b88c5	-	-	-	-
+2026-08-28T16:24:09Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:25:55Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	done	9911b88c5	APPROVED	no	-	-
+2026-08-28T16:27:34Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	stalled	-	-	-	-	-
+2026-08-28T16:27:36Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:28:52Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	done_with_concerns	2d440bb49	-	-	-	-
+2026-08-28T16:28:52Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:30:48Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	done	2d440bb49	APPROVED	no	-	-
+2026-08-28T16:31:55Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:41:06Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	done	a1a12685e	-	-	-	-
+2026-08-28T16:41:06Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:42:29Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	done	a1a12685e	APPROVED	no	-	-
+2026-08-28T16:43:45Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:46:47Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	done	4e333abb8	-	-	-	-
+2026-08-28T16:46:48Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:49:09Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	done	4e333abb8	APPROVED	no	-	-
+2026-08-28T16:49:09Z	handoff	after Task 12	-	-	-	-	-	-	-	-	-	-	-	120000
+2026-08-28T16:51:12Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T16:57:30Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	done	6559f3bad	-	-	-	-
+2026-08-28T16:57:31Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	done	6559f3bad	CHANGES_REQUIRED	yes	-	-
+2026-08-28T18:08:26Z	agent	Fix round	task-implementer	sonnet	-	-	-	-	done	439e02fdd	-	-	-	-
+2026-08-28T18:08:31Z	agent	Fix round	task-reviewer	sonnet	-	-	-	-	done	439e02fdd	APPROVED	no	-	-
+2026-08-28T20:24:16Z	agent	Task 14	gate	-	-	-	-	-	pass	648b103ca	-	-	-	-
+2026-08-28T20:26:28Z	agent	Pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T20:26:29Z	agent	Pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-28T20:28:44Z	agent	Pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	done	7ec1cb118	APPROVED	no	-	-
+2026-08-28T20:39:24Z	agent	Pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	done	7ec1cb118	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T18:52:32Z	agent	bug-solomon-no-effect-no-feedback	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	1e33a1a78	-	-	-	-
+2026-09-02T18:55:24Z	agent	bug-solomon-no-effect-no-feedback	task-reviewer	sonnet	-	-	-	-	DONE	d6f0fed60	APPROVED_WITH_FINDINGS	true	-	-
+2026-09-02T19:04:50Z	agent	bug-solomon-no-effect-no-feedback	task-verifier	haiku	-	-	-	-	DONE	d6f0fed60	PASS	-	-	-

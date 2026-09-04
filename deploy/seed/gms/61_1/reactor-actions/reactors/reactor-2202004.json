@@ -1,0 +1,29 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spray_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "60",
+                "mesoMin": "30",
+                "minItems": "15"
+              },
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "description": "Reactor : LudiPQ Bonus Reactor - Drops all the Bonus Items",
+      "hitRules": [],
+      "reactorId": "2202004"
+    },
+    "id": "2202004",
+    "type": "reactor-action"
+  }
+}

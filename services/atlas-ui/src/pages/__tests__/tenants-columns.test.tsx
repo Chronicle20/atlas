@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import type { CellContext } from "@tanstack/react-table";
 import type {
   DataTableColumnDef,
@@ -7,7 +8,7 @@ import type {
 } from "@/components/data-table-features";
 import { describe, it, expect, vi } from "vitest";
 import { getColumns } from "@/pages/tenants-columns";
-import type { Tenant } from "@/types/models/tenant";
+import type { Tenant, TenantConfig } from "@/types/models/tenant";
 
 function makeTenant(id: string): Tenant {
   return {
@@ -71,5 +72,85 @@ describe("tenants-columns actions menu", () => {
     await userEvent.click(screen.getByRole("button", { name: /open menu/i }));
     expect(await screen.findByText("Delete")).toBeInTheDocument();
     expect(screen.queryByText("Rename")).not.toBeInTheDocument();
+  });
+});
+
+function driftCell(configs: Map<string, TenantConfig>) {
+  const columns = getColumns({ configs });
+  const column = columns.find((c) => c.id === "templateDrift");
+  if (!column?.cell || typeof column.cell !== "function") {
+    throw new Error("templateDrift column is missing or has no cell renderer");
+  }
+  const row = { original: makeTenant("abc") };
+  return column.cell({ row } as never);
+}
+
+describe("tenants-columns templateDrift", () => {
+  it("renders a badge when the tenant has drifted", () => {
+    const configs = new Map<string, TenantConfig>([
+      [
+        "abc",
+        {
+          id: "abc",
+          attributes: {
+            templateDrift: true,
+            sectionDrift: {
+              socket: true,
+              properties: false,
+              characters: false,
+              npcs: false,
+              cashShop: false,
+              mapleLife: false,
+            },
+          },
+        } as unknown as TenantConfig,
+      ],
+    ]);
+    render(<MemoryRouter>{driftCell(configs)}</MemoryRouter>);
+    expect(screen.getByText("Differs from template")).toBeInTheDocument();
+  });
+
+  it("renders nothing when the tenant has not drifted", () => {
+    const configs = new Map<string, TenantConfig>([
+      [
+        "abc",
+        {
+          id: "abc",
+          attributes: {
+            templateDrift: false,
+            sectionDrift: {
+              socket: false,
+              properties: false,
+              characters: false,
+              npcs: false,
+              cashShop: false,
+              mapleLife: false,
+            },
+          },
+        } as unknown as TenantConfig,
+      ],
+    ]);
+    const { container } = render(
+      <MemoryRouter>{driftCell(configs)}</MemoryRouter>,
+    );
+    expect(container).not.toHaveTextContent("Differs from template");
+  });
+
+  it("renders nothing when templateDrift is absent", () => {
+    const configs = new Map<string, TenantConfig>([
+      ["abc", { id: "abc", attributes: {} } as unknown as TenantConfig],
+    ]);
+    const { container } = render(
+      <MemoryRouter>{driftCell(configs)}</MemoryRouter>,
+    );
+    expect(container).not.toHaveTextContent("Differs from template");
+  });
+
+  it("renders nothing when the tenant has no configuration row", () => {
+    const configs = new Map<string, TenantConfig>();
+    const { container } = render(
+      <MemoryRouter>{driftCell(configs)}</MemoryRouter>,
+    );
+    expect(container).not.toHaveTextContent("Differs from template");
   });
 });

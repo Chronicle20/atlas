@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Phoenix Egg in El Nath Lava - part of the Phoenix quest (4th job Bowmaster)",
+      "hitRules": [],
+      "reactorId": "2112016"
+    },
+    "id": "2112016",
+    "type": "reactor-action"
+  }
+}

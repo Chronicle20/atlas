@@ -1,0 +1,26 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "spawn_monster",
+          "operations": [
+            {
+              "params": {
+                "count": "10",
+                "monsterId": "9300011"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "description": "Summons alternate Toy Trojans (no drops except for the Maintenance Manual quest item)",
+      "hitRules": [],
+      "reactorId": "2201000"
+    },
+    "id": "2201000",
+    "type": "reactor-action"
+  }
+}

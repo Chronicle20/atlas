@@ -10,6 +10,7 @@
 
 import {
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   type UseMutationResult,
@@ -110,6 +111,31 @@ export function useMapsByStreetName(
     staleTime: 10 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
+}
+
+/**
+ * Batched per-id map-name resolution (Fields locator, task-292). Reuses
+ * useMap's query keys so a lookup here cache-shares with the map definition
+ * pages instead of issuing a duplicate request. `undefined` = still loading
+ * or failed — the caller degrades to the numeric id, never a spinner that
+ * blocks the row.
+ */
+export function useMapNames(ids: number[]): Record<number, string | undefined> {
+  const { activeTenant } = useTenant();
+  const results = useQueries({
+    queries: ids.map((id) => ({
+      queryKey: mapKeys.detail(String(id)),
+      queryFn: () => mapsService.getMapById(String(id), { useCache: false }),
+      enabled: !!activeTenant,
+      staleTime: 10 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    })),
+  });
+  const names: Record<number, string | undefined> = {};
+  ids.forEach((id, i) => {
+    names[id] = results[i]?.data?.attributes.name;
+  });
+  return names;
 }
 
 // ============================================================================

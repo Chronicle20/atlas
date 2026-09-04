@@ -50,6 +50,7 @@ type Processor interface {
 	ChangeMP(f field.Model, characterId uint32, amount int16) error
 	RequestDistributeSp(f field.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error
 	AwardExperience(f field.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
+	RedeemStoredExperience(f field.Model, characterId uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -330,4 +331,8 @@ func (p *ProcessorImpl) RequestDistributeSp(f field.Model, characterId uint32, _
 
 func (p *ProcessorImpl) AwardExperience(f field.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(AwardExperienceCommandProvider(f, characterId, distributions, showEffect))
+}
+
+func (p *ProcessorImpl) RedeemStoredExperience(f field.Model, characterId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RedeemStoredExperienceCommandProvider(f, characterId))
 }

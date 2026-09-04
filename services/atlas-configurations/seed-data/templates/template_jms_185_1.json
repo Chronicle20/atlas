@@ -434,6 +434,24 @@
         "validator": "LoggedInValidator",
         "handler": "NPCContinueConversationHandle",
         "fname": "CScriptMan::OnAskSlideMenu",
+        "options": {
+          "messageType": {
+            "SAY": 0,
+            "SAY_IMAGE": 1,
+            "ASK_YES_NO": 2,
+            "ASK_TEXT": 3,
+            "ASK_NUMBER": 4,
+            "ASK_MENU": 5,
+            "ASK_QUIZ": 6,
+            "ASK_SPEED_QUIZ": 7,
+            "ASK_AVATAR": 8,
+            "ASK_PET": 9,
+            "ASK_PET_ALL": 10,
+            "ASK_YES_NO_QUEST": 12,
+            "ASK_BOX_TEXT": 13,
+            "ASK_SLIDE_MENU": 14
+          }
+        },
         "services": [
           "channel"
         ]
@@ -795,6 +813,24 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseLotteryHandle",
         "fname": "CWvsContext::SendLotteryItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x71",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSolomonHandle",
+        "fname": "CWvsContext::SendExpUpItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x72",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseStoredExperienceHandle",
+        "fname": "CWvsContext::SendTempExpUseRequest",
         "services": [
           "channel"
         ]
@@ -2856,6 +2892,22 @@
         "opCode": "0x7D",
         "writer": "CashShopOpen",
         "fname": "CStage::OnSetCashShop",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x7E",
+        "writer": "SetBackEffect",
+        "fname": "CMapLoadable::OnSetBackEffect",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x80",
+        "writer": "ClearBackEffect",
+        "fname": "CMapLoadable::OnClearBackEffect",
         "services": [
           "channel"
         ]

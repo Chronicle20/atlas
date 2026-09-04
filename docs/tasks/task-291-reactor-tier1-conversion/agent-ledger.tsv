@@ -1,0 +1,46 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-02T13:56:36Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	2706d07	-	-	-	-
+2026-09-02T14:00:05Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	2706d07	CHANGES_REQUIRED	yes	-	-
+2026-09-02T14:00:06Z	agent	Task 1 fix r1	task-implementer	sonnet	-	-	-	-	DONE	8da3341	-	-	-	-
+2026-09-02T14:00:06Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	a188f36	-	-	-	-
+2026-09-02T14:00:45Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	a188f36	APPROVED	no	-	-
+2026-09-02T14:01:54Z	agent	Task 1 re-review	task-reviewer	haiku	-	-	-	-	DONE	8da3341	APPROVED	no	-	-
+2026-09-02T14:05:18Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	ac89cd7	-	-	-	-
+2026-09-02T14:05:19Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	ac89cd7	APPROVED	no	-	-
+2026-09-02T14:17:34Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	e8b0cc5b5	-	-	-	-
+2026-09-02T14:17:34Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	e8b0cc5b5	CHANGES_REQUIRED	yes	-	-
+2026-09-02T14:17:34Z	agent	Task 4 fix r1	task-implementer	sonnet	-	-	-	-	DONE	3b799b5b9	-	-	-	-
+2026-09-02T14:17:35Z	agent	Task 4 re-review	task-reviewer	sonnet	-	-	-	-	DONE	3b799b5b9	APPROVED	no	-	-
+2026-09-02T14:17:35Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	60000
+2026-09-02T14:21:22Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	777a090	-	-	-	-
+2026-09-02T14:23:00Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	af7b89c3d	-	-	-	-
+2026-09-02T14:23:43Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	777a090	APPROVED	no	.superpowers/sdd/plan/task-5-review.md	-
+2026-09-02T14:25:38Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE	6c4f1b6ad	-	-	-	-
+2026-09-02T14:27:18Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	af7b89c3d	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan/task-6-review.md	-
+2026-09-02T14:27:24Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	6c4f1b6ad	APPROVED	no	.superpowers/sdd/plan/task-7-review.md	-
+2026-09-02T14:29:37Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE	85e063620	-	-	-	-
+2026-09-02T14:31:47Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	85e063620	APPROVED	no	.superpowers/sdd/plan/task-8-review.md	-
+2026-09-02T14:31:48Z	handoff	after Task 8	-	-	-	-	-	-	-	-	-	-	-	45000
+2026-09-02T14:46:52Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DONE	058a036	-	-	-	-
+2026-09-02T14:50:19Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	058a036	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T14:57:16Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	8c5871965	-	-	-	-
+2026-09-02T14:57:17Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	8c5871965	CHANGES_REQUIRED	yes	-	-
+2026-09-02T14:57:47Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	8b7f6b763	-	-	-	-
+2026-09-02T15:03:41Z	agent	Task 10 fix 1	task-implementer	sonnet	-	-	-	-	DONE	78182c4dc	-	-	-	-
+2026-09-02T15:08:55Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	DONE	78182c4dc	CHANGES_REQUIRED	yes	-	-
+2026-09-02T15:12:59Z	agent	Task 11 fix 2	task-implementer	sonnet	-	-	-	-	DONE	f02d6ec54	-	-	-	-
+2026-09-02T15:15:31Z	agent	Task 11 fix 2	task-reviewer	sonnet	-	-	-	-	DONE	f02d6ec54	APPROVED	no	-	-
+2026-09-02T15:15:31Z	handoff	after Task 11	-	-	-	-	-	-	-	-	-	-	-	120000
+2026-09-02T15:27:48Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-02T15:29:41Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	DONE	3a1ee5c40	-	-	-	-
+2026-09-02T15:29:41Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-02T15:30:38Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	DONE	3a1ee5c40	APPROVED	no	-	-
+2026-09-02T15:32:35Z	agent	Task 13	task-implementer	sonnet	-	-	-	-	DONE	de51bfd59	-	-	-	-
+2026-09-02T15:32:36Z	agent	Task 14	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-09-02T15:33:56Z	agent	Task 13	task-reviewer	sonnet	-	-	-	-	DONE	de51bfd59	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-02T15:35:04Z	agent	Task 14	task-implementer	sonnet	-	-	-	-	DONE	ee40a0549	-	-	-	-
+2026-09-02T15:36:40Z	agent	Task 14	task-reviewer	sonnet	-	-	-	-	DONE	ee40a0549	APPROVED	no	-	-
+2026-09-02T15:59:56Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	ee40a0549	APPROVED	no	-	-
+2026-09-02T16:04:51Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	ee40a0549	APPROVED_WITH_FINDINGS	yes	-	-
+2026-09-02T16:09:22Z	agent	DOM-20 fix	task-implementer	sonnet	-	-	-	-	DONE	9a3ba432e	-	-	-	-
+2026-09-02T16:42:18Z	agent	pre-PR	gate	-	-	-	-	-	PASS	1c3f78101	-	-	-	-

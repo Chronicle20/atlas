@@ -24,12 +24,7 @@ func byIdEntityProvider(ctx context.Context) func(id uuid.UUID) database.EntityP
 	return func(id uuid.UUID) database.EntityProvider[Entity] {
 		return func(db *gorm.DB) model.Provider[Entity] {
 			caller := env.MustFromContext(ctx)
-			var result Entity
-			err := scope.Strict(db.WithContext(ctx), caller).Where("id = ?", id).First(&result).Error
-			if err != nil {
-				return model.ErrorProvider[Entity](err)
-			}
-			return model.FixedProvider[Entity](result)
+			return database.Query[Entity](scope.Strict(db.WithContext(ctx), caller), map[string]any{"id": id})
 		}
 	}
 }
@@ -38,14 +33,12 @@ func byRegionVersionEntityProvider(ctx context.Context) func(region string, majo
 	return func(region string, majorVersion uint16, minorVersion uint16) database.EntityProvider[Entity] {
 		return func(db *gorm.DB) model.Provider[Entity] {
 			caller := env.MustFromContext(ctx)
-			var result Entity
-			err := scope.Strict(db.WithContext(ctx), caller).
-				Where("region = ? AND major_version = ? AND minor_version = ?", region, majorVersion, minorVersion).
-				First(&result).Error
-			if err != nil {
-				return model.ErrorProvider[Entity](err)
+			query := map[string]any{
+				"region":        region,
+				"major_version": majorVersion,
+				"minor_version": minorVersion,
 			}
-			return model.FixedProvider[Entity](result)
+			return database.Query[Entity](scope.Strict(db.WithContext(ctx), caller), query)
 		}
 	}
 }

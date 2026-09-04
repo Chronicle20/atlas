@@ -1,0 +1,15 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-09-04T11:40:44Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	dc9c7707e	-	-	-	-
+2026-09-04T11:42:01Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	dc9c7707e	APPROVED	no	-	-
+2026-09-04T11:42:11Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	fffe4fdde	-	-	-	-
+2026-09-04T11:44:03Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	fffe4fdde	APPROVED	no	-	-
+2026-09-04T11:44:43Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	0159742ad	-	-	-	-
+2026-09-04T11:46:10Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	0159742ad	APPROVED_WITH_FINDINGS	no	-	-
+2026-09-04T11:46:47Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	bdfb6c239	-	-	-	-
+2026-09-04T11:48:24Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	bdfb6c239	APPROVED	no	-	-
+2026-09-04T11:49:05Z	agent	Tasks 1-2	verify.sh	-	-	-	-	-	PASS	fffe4fdde	-	-	-	-
+2026-09-04T11:52:02Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	c4fc10ab7	-	-	-	-
+2026-09-04T11:53:11Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	c4fc10ab7	APPROVED	no	-	-
+2026-09-04T11:54:57Z	agent	Task 6 branch review	task-reviewer	sonnet	-	-	-	-	DONE	c4fc10ab7	APPROVED	no	-	-
+2026-09-04T11:57:34Z	agent	Task 6 backend audit	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	c4fc10ab7	APPROVED	no	-	-
+2026-09-04T12:02:21Z	agent	Task 6 gate	task-verifier	haiku	-	-	-	-	PASS	c4fc10ab7	-	-	-	-

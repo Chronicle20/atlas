@@ -677,3 +677,27 @@ carried forward, not fixed" note in `docs/tasks/task-219-cash-morph-coupons/desi
 - [ ] **If confirmed as a defect, fix the three `TypeValueUse` call sites in `ConsumeCashPetFood`
   to `TypeValueCash`**, matching the function's own first `ConsumeError` call and the pattern
   `ConsumeMorphCoupon` (task-219) follows.
+
+## task-277 follow-up: tenant Item.wz re-ingest for Writ of Solomon `spec/exp`
+
+Deferred from task-277 (stored gachapon EXP items). Commit `d321b2e92` added
+`atlas-data`'s parse of the consumable `info/maxLevel` field and `spec/exp` spec, and
+`atlas-consumables`' `consumeSolomon` reads both to bank a Writ of Solomon's EXP, but the
+reader change only takes effect for **newly ingested** WZ data. `document.DbStorage.Add`
+persists the parsed `consumable.RestModel` as a JSON blob at ingest time and
+`Storage.ByIdProvider` serves that blob verbatim thereafter; ingestion never re-runs at
+request time or pod start. Every tenant whose `Item.wz` was ingested before this change
+still serves `Consume/2370000` (and every other consumable) with `spec/exp` absent and
+`info/maxLevel: 0`. Until the re-ingest below runs for a given tenant, using a Writ of
+Solomon there is rejected via `ErrSolomonNoExperience` — the item is preserved, never
+destroyed — so this note is meant to make that first bug report self-answering rather than
+a mystery.
+
+- [ ] **Re-ingest Item.wz `Consume` for every provisioned tenant, plus the canonical
+  `GMS/83/1` dataset**, so `spec/exp` and `info/maxLevel` populate from the existing
+  `Item.wz/Consume/0237.img.xml` source data (no WZ content change needed, only a re-parse
+  via the existing `PATCH /data/wz` + `POST /data/process` ingest path).
+- [ ] **Verify per tenant** with a live `GET /api/data/consumables/2370000` and confirm the
+  response's `spec` contains `exp: 100000` and `maxLevel: 50` (the WZ source values at
+  `Item.wz/Consume/0237.img.xml`, node `02370000`). Repeat across provisioned tenants — this
+  is the PRD's own acceptance item this follow-up exists to close out operationally.

@@ -815,3 +815,157 @@ const testXMLWithClock = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?
     <imgdir name="2"><string name="pn" value="out00"/><int name="pt" value="2"/><int name="x" value="-221"/><int name="y" value="82"/><int name="tm" value="101000000"/><string name="tn" value="in03"/></imgdir>
   </imgdir>
 </imgdir>`
+
+// getObjectsTestXML holds one empty numeric layer ("0") and one populated
+// layer ("1") whose "obj" child carries three entries: two named ("gate",
+// "rock") and one unnamed, which getObjects must skip. This mirrors the
+// getReactors test fixtures (reactorTestXML) rather than cloning the full
+// testXML map: getObjects is exercised directly, the same way
+// getReactors(n) is, since it needs only the layer/obj shape and not a full
+// map read.
+const getObjectsTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="000050000.img">
+  <imgdir name="0">
+    <imgdir name="obj"></imgdir>
+  </imgdir>
+  <imgdir name="1">
+    <imgdir name="obj">
+      <imgdir name="0"><string name="oS" value="effect"/><string name="l0" value="quest"/><string name="l1" value="gate"/><string name="l2" value="1"/><int name="x" value="640"/><int name="y" value="120"/><int name="z" value="0"/><int name="f" value="0"/><int name="zM" value="0"/><string name="name" value="gate"/></imgdir>
+      <imgdir name="1"><string name="oS" value="effect"/><string name="l0" value="quest"/><string name="l1" value="gate"/><string name="l2" value="0"/><int name="x" value="10"/><int name="y" value="20"/><int name="z" value="3"/><int name="f" value="0"/><int name="zM" value="0"/></imgdir>
+      <imgdir name="2"><string name="oS" value="effect"/><string name="l0" value="quest"/><string name="l1" value="gate"/><string name="l2" value="0"/><int name="x" value="30"/><int name="y" value="40"/><int name="z" value="1"/><int name="f" value="0"/><int name="zM" value="0"/><string name="name" value="rock"/></imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+// getObjectsDuplicateTestXML has a single layer with two entries that both
+// name="gate" and both resolve to ENVIRONMENT (an unregistered tenant), at
+// different x coordinates, to verify getObjects keeps the first occurrence
+// (design D7).
+const getObjectsDuplicateTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="000050000.img">
+  <imgdir name="0">
+    <imgdir name="obj">
+      <imgdir name="0"><string name="oS" value="effect"/><string name="l0" value="quest"/><string name="l1" value="gate"/><string name="l2" value="1"/><int name="x" value="1"/><int name="y" value="0"/><int name="z" value="0"/><int name="f" value="0"/><int name="zM" value="0"/><string name="name" value="gate"/></imgdir>
+      <imgdir name="1"><string name="oS" value="effect"/><string name="l0" value="quest"/><string name="l1" value="gate"/><string name="l2" value="1"/><int name="x" value="2"/><int name="y" value="0"/><int name="z" value="0"/><int name="f" value="0"/><int name="zM" value="0"/><string name="name" value="gate"/></imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+// getObjectsEmptyTestXML has several numeric layers, each with an empty
+// "obj" child, exercising the "no named objects at all" path.
+const getObjectsEmptyTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="000050000.img">
+  <imgdir name="0">
+    <imgdir name="obj"></imgdir>
+  </imgdir>
+  <imgdir name="1">
+    <imgdir name="obj"></imgdir>
+  </imgdir>
+</imgdir>
+`
+
+func TestGetObjectsOnlyNamedEntries(t *testing.T) {
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	n, err := xml.FromByteArrayProvider([]byte(getObjectsTestXML))()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	objs := getObjects(ten, n)
+	if len(objs) != 2 {
+		t.Fatalf("len(objs) != 2, got %d", len(objs))
+	}
+	if objs[0].Id() != "ENVIRONMENT:gate" || objs[0].Kind() != "ENVIRONMENT" || objs[0].Name() != "gate" {
+		t.Fatalf("objs[0] = %+v", objs[0])
+	}
+	if objs[0].ObjectSource() != "effect" || objs[0].L0() != "quest" || objs[0].L1() != "gate" || objs[0].L2() != "1" {
+		t.Fatalf("objs[0] fields = %+v", objs[0])
+	}
+	if objs[0].X() != 640 || objs[0].Y() != 120 || objs[0].Z() != 0 || objs[0].Layer() != 1 {
+		t.Fatalf("objs[0] position/layer = %+v", objs[0])
+	}
+	if objs[1].Id() != "ENVIRONMENT:rock" || objs[1].Kind() != "ENVIRONMENT" || objs[1].Name() != "rock" {
+		t.Fatalf("objs[1] = %+v", objs[1])
+	}
+}
+
+func TestGetObjectsResolvesObstacle(t *testing.T) {
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	dir := t.TempDir()
+	writeObjFixture(t, dir)
+	if _, err := InitObj(ten, dir); err != nil {
+		t.Fatalf("InitObj returned error: %v", err)
+	}
+
+	n, err := xml.FromByteArrayProvider([]byte(getObjectsTestXML))()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	objs := getObjects(ten, n)
+	if len(objs) != 2 {
+		t.Fatalf("len(objs) != 2, got %d", len(objs))
+	}
+	if objs[0].Id() != "ENVIRONMENT:gate" || objs[0].Kind() != "ENVIRONMENT" {
+		t.Fatalf("objs[0] = %+v", objs[0])
+	}
+	if objs[1].Id() != "OBSTACLE:rock" || objs[1].Kind() != "OBSTACLE" {
+		t.Fatalf("objs[1] = %+v", objs[1])
+	}
+}
+
+func TestGetObjectsDuplicateIdKeepsFirst(t *testing.T) {
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	n, err := xml.FromByteArrayProvider([]byte(getObjectsDuplicateTestXML))()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	objs := getObjects(ten, n)
+	if len(objs) != 1 {
+		t.Fatalf("len(objs) != 1, got %d", len(objs))
+	}
+	if objs[0].Id() != "ENVIRONMENT:gate" {
+		t.Fatalf("objs[0].Id() != ENVIRONMENT:gate, got %s", objs[0].Id())
+	}
+	if objs[0].X() != 1 {
+		t.Fatalf("objs[0].X() != 1 (first wins), got %d", objs[0].X())
+	}
+}
+
+func TestGetObjectsEmptyLayers(t *testing.T) {
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	n, err := xml.FromByteArrayProvider([]byte(getObjectsEmptyTestXML))()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	objs := getObjects(ten, n)
+	if objs == nil {
+		t.Fatal("getObjects returned nil slice")
+	}
+	if len(objs) != 0 {
+		t.Fatalf("len(objs) != 0, got %d", len(objs))
+	}
+}

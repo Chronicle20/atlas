@@ -141,6 +141,42 @@ describe("toConfigExportPayload computed attributes", () => {
     expect(out).toHaveProperty("socket");
     expect(out).toHaveProperty("characters");
   });
+
+  it("strips the tenant computed keys", () => {
+    const out = toConfigExportPayload(
+      fixture({
+        baselineTemplateId: "b",
+        baselineRevision: "r",
+        storedRevision: "s",
+        templateDrift: true,
+        sectionDrift: { socket: true },
+        usesPin: true,
+      }) as never,
+    ) as Record<string, unknown>;
+
+    expect(out).not.toHaveProperty("baselineTemplateId");
+    expect(out).not.toHaveProperty("baselineRevision");
+    expect(out).not.toHaveProperty("storedRevision");
+    expect(out).not.toHaveProperty("templateDrift");
+    expect(out).not.toHaveProperty("sectionDrift");
+    expect(out.usesPin).toBe(true);
+    expect(out).toHaveProperty("socket");
+    expect(out).toHaveProperty("worlds");
+  });
+
+  it("still strips the template computed keys", () => {
+    const out = toConfigExportPayload(
+      fixture({
+        shippedRevision: "aa".repeat(32),
+        storedRevision: "bb".repeat(32),
+        seedDrift: true,
+      }) as never,
+    ) as Record<string, unknown>;
+
+    expect(out).not.toHaveProperty("shippedRevision");
+    expect(out).not.toHaveProperty("storedRevision");
+    expect(out).not.toHaveProperty("seedDrift");
+  });
 });
 
 describe("configExportFilename", () => {

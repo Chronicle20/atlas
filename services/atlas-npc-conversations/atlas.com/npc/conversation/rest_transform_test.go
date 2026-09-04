@@ -396,6 +396,87 @@ func TestTransformRoundTrip(t *testing.T) {
 		}
 	})
 
+	t.Run("AskText", func(t *testing.T) {
+		match1, err := NewAskTextMatchBuilder().
+			SetValue("Open Sesame").
+			SetNextState("open").
+			Build()
+		if err != nil {
+			t.Fatalf("build match1: %v", err)
+		}
+		match2, err := NewAskTextMatchBuilder().
+			SetValueFromContext("{context.magatiaPassword}").
+			SetNextState("open-magatia").
+			Build()
+		if err != nil {
+			t.Fatalf("build match2: %v", err)
+		}
+
+		at, err := NewAskTextBuilder().
+			SetText("The door reacts to the entry pass inserted. #bPassword#k!").
+			SetDefaultText("").
+			SetMinLength(1).
+			SetMaxLength(32).
+			SetContextKey("answer").
+			SetNextState("wrong-password").
+			AddMatch(*match1).
+			AddMatch(*match2).
+			Build()
+		if err != nil {
+			t.Fatalf("build askText: %v", err)
+		}
+
+		rest := TransformAskText(*at)
+		got, err := ExtractAskText(rest)
+		if err != nil {
+			t.Fatalf("ExtractAskText: %v", err)
+		}
+		if got == nil {
+			t.Fatalf("ExtractAskText returned nil")
+		}
+		if !reflect.DeepEqual(*got, *at) {
+			t.Errorf("round trip mismatch:\n got  = %#v\n want = %#v", *got, *at)
+		}
+		if len(got.Matches()) != 2 {
+			t.Fatalf("expected 2 matches, got %d", len(got.Matches()))
+		}
+		if got.Matches()[0].Value() != "Open Sesame" || got.Matches()[0].NextState() != "open" {
+			t.Errorf("match[0] mismatch: %#v", got.Matches()[0])
+		}
+		if got.Matches()[1].ValueFromContext() != "{context.magatiaPassword}" || got.Matches()[1].NextState() != "open-magatia" {
+			t.Errorf("match[1] mismatch: %#v", got.Matches()[1])
+		}
+	})
+
+	t.Run("AskTextNoMatches", func(t *testing.T) {
+		at, err := NewAskTextBuilder().
+			SetText("The door reacts to the entry pass inserted. #bPassword#k!").
+			SetDefaultText("").
+			SetMinLength(1).
+			SetMaxLength(32).
+			SetContextKey("answer").
+			SetNextState("wrong-password").
+			Build()
+		if err != nil {
+			t.Fatalf("build askText: %v", err)
+		}
+
+		rest := TransformAskText(*at)
+		got, err := ExtractAskText(rest)
+		if err != nil {
+			t.Fatalf("ExtractAskText: %v", err)
+		}
+		if got == nil {
+			t.Fatalf("ExtractAskText returned nil")
+		}
+		if !reflect.DeepEqual(*got, *at) {
+			t.Errorf("round trip mismatch:\n got  = %#v\n want = %#v", *got, *at)
+		}
+		if (got.Matches() == nil) != (at.Matches() == nil) {
+			t.Errorf("nil-ness of Matches changed across round trip: got nil=%v, want nil=%v", got.Matches() == nil, at.Matches() == nil)
+		}
+	})
+
 	t.Run("AskStyle", func(t *testing.T) {
 		as, err := NewAskStyleBuilder().
 			SetText("Pick style").

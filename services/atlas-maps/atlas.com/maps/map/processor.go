@@ -5,7 +5,9 @@ import (
 	"atlas-maps/kafka/message"
 	mapKafka "atlas-maps/kafka/message/map"
 	"atlas-maps/kafka/message/mapactions"
+	monsterKafka "atlas-maps/kafka/message/monster"
 	"atlas-maps/map/character"
+	"atlas-maps/map/environment"
 	monster2 "atlas-maps/map/monster"
 	"atlas-maps/reactor"
 	"atlas-maps/visit"
@@ -13,6 +15,7 @@ import (
 	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -105,6 +108,36 @@ func (p *ProcessorImpl) EnterAndEmit(transactionId uuid.UUID, f field.Model, cha
 func (p *ProcessorImpl) Exit(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 	return func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 		p.cp.Exit(transactionId, f, characterId)
+		// When the field empties, drop its tracked environment state. This is a
+		// registry clear only -- no ENVIRONMENT_RESET is emitted, because
+		// nobody is left in the field to receive it and the next entrant
+		// replays an empty state anyway.
+		//
+		// The same emptying also re-arms one-time spawn points. cp.Exit mutates
+		// the in-memory character registry synchronously, so this read already
+		// observes the departure -- no ordering hazard.
+		//
+		// Exit is the single funnel for logout, TransitionMap and
+		// TransitionChannel, so all three paths run this block. Both transition
+		// paths call Exit(oldField) then Enter(newField) on distinct field keys,
+		// so re-arming the old field cannot race the new field's spawn pass.
+		if remaining, err := p.cp.GetCharactersInMap(transactionId, f); err == nil && len(remaining) == 0 {
+			environment.NewProcessor(p.l, p.ctx).Reset(f)
+
+			mapKey := character.MapKey{Tenant: tenant.MustFromContext(p.ctx), Field: f}
+			rearmed, rerr := monster2.GetRegistry().RearmOneTime(p.ctx, mapKey)
+			if rerr != nil {
+				p.l.WithError(rerr).Errorf("Failed to re-arm one-time spawn points for field [%s].", f.Id())
+			} else if rearmed {
+				p.l.Debugf("Re-armed one-time spawn points for field [%s].", f.Id())
+				// Scoped deliberately: only a field that actually fired a batch
+				// has its residual monsters destroyed. A recurring-only field
+				// never fires, so it never emits, and its emptying behavior is
+				// bit-identical to main (design D7).
+				_ = mb.Put(monsterKafka.EnvCommandTopic, destroyFieldCommandProvider(f))
+			}
+		}
+
 		return mb.Put(mapKafka.EnvEventTopicMapStatus, exitMapProvider(transactionId, f, characterId))
 	}
 }

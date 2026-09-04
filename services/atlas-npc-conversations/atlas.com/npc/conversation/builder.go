@@ -22,6 +22,7 @@ type StateBuilder struct {
 	partyQuestBonusAction *PartyQuestBonusActionModel
 	listSelection         *ListSelectionModel
 	askNumber             *AskNumberModel
+	askText               *AskTextModel
 	askStyle              *AskStyleModel
 	askSlideMenu          *AskSlideMenuModel
 }
@@ -50,6 +51,7 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -68,6 +70,7 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -86,6 +89,7 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -104,6 +108,7 @@ func (b *StateBuilder) SetTransportAction(transportAction *TransportActionModel)
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -122,6 +127,7 @@ func (b *StateBuilder) SetGachaponAction(gachaponAction *GachaponActionModel) *S
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -140,6 +146,7 @@ func (b *StateBuilder) SetRPSAction(rpsAction *RPSActionModel) *StateBuilder {
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -158,6 +165,7 @@ func (b *StateBuilder) SetPartyQuestAction(partyQuestAction *PartyQuestActionMod
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -176,6 +184,7 @@ func (b *StateBuilder) SetPartyQuestBonusAction(partyQuestBonusAction *PartyQues
 	b.partyQuestBonusAction = partyQuestBonusAction
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -193,6 +202,7 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.partyQuestAction = nil
 	b.listSelection = listSelection
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -211,6 +221,26 @@ func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = askNumber
+	b.askText = nil
+	b.askStyle = nil
+	b.askSlideMenu = nil
+	return b
+}
+
+// SetAskText sets the ask text model
+func (b *StateBuilder) SetAskText(askText *AskTextModel) *StateBuilder {
+	b.stateType = AskTextType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.transportAction = nil
+	b.gachaponAction = nil
+	b.rpsAction = nil
+	b.partyQuestAction = nil
+	b.partyQuestBonusAction = nil
+	b.listSelection = nil
+	b.askNumber = nil
+	b.askText = askText
 	b.askStyle = nil
 	b.askSlideMenu = nil
 	return b
@@ -229,6 +259,7 @@ func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = askStyle
 	b.askSlideMenu = nil
 	return b
@@ -247,6 +278,7 @@ func (b *StateBuilder) SetAskSlideMenu(askSlideMenu *AskSlideMenuModel) *StateBu
 	b.partyQuestBonusAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
+	b.askText = nil
 	b.askStyle = nil
 	b.askSlideMenu = askSlideMenu
 	return b
@@ -299,6 +331,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.askNumber == nil {
 			return StateModel{}, errors.New("askNumber is required for askNumber state")
 		}
+	case AskTextType:
+		if b.askText == nil {
+			return StateModel{}, errors.New("askText is required for askText state")
+		}
 	case AskStyleType:
 		if b.askStyle == nil {
 			return StateModel{}, errors.New("askStyle is required for askStyle state")
@@ -324,6 +360,7 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		partyQuestBonusAction: b.partyQuestBonusAction,
 		listSelection:         b.listSelection,
 		askNumber:             b.askNumber,
+		askText:               b.askText,
 		askStyle:              b.askStyle,
 		askSlideMenu:          b.askSlideMenu,
 	}, nil
@@ -1181,6 +1218,145 @@ func (b *AskNumberBuilder) Build() (*AskNumberModel, error) {
 		maxValue:     b.maxValue,
 		contextKey:   b.contextKey,
 		nextState:    b.nextState,
+	}, nil
+}
+
+// AskTextBuilder is a builder for AskTextModel
+type AskTextBuilder struct {
+	text        string
+	defaultText string
+	minLength   uint16
+	maxLength   uint16
+	contextKey  string
+	matches     []AskTextMatchModel
+	nextState   string
+}
+
+// NewAskTextBuilder creates a new AskTextBuilder
+func NewAskTextBuilder() *AskTextBuilder {
+	return &AskTextBuilder{
+		contextKey: "answer", // Default context key
+		matches:    make([]AskTextMatchModel, 0),
+	}
+}
+
+// SetText sets the ask text prompt
+func (b *AskTextBuilder) SetText(text string) *AskTextBuilder {
+	b.text = text
+	return b
+}
+
+// SetDefaultText sets the default text
+func (b *AskTextBuilder) SetDefaultText(defaultText string) *AskTextBuilder {
+	b.defaultText = defaultText
+	return b
+}
+
+// SetMinLength sets the minimum accepted text length
+func (b *AskTextBuilder) SetMinLength(minLength uint16) *AskTextBuilder {
+	b.minLength = minLength
+	return b
+}
+
+// SetMaxLength sets the maximum accepted text length
+func (b *AskTextBuilder) SetMaxLength(maxLength uint16) *AskTextBuilder {
+	b.maxLength = maxLength
+	return b
+}
+
+// SetContextKey sets the context key
+func (b *AskTextBuilder) SetContextKey(contextKey string) *AskTextBuilder {
+	b.contextKey = contextKey
+	return b
+}
+
+// AddMatch adds a match to the ordered, first-match-wins branch table
+func (b *AskTextBuilder) AddMatch(match AskTextMatchModel) *AskTextBuilder {
+	b.matches = append(b.matches, match)
+	return b
+}
+
+// SetNextState sets the next state ID
+func (b *AskTextBuilder) SetNextState(nextState string) *AskTextBuilder {
+	b.nextState = nextState
+	return b
+}
+
+// Build builds the AskTextModel
+func (b *AskTextBuilder) Build() (*AskTextModel, error) {
+	if b.text == "" {
+		return nil, errors.New("text is required")
+	}
+	if b.maxLength == 0 {
+		return nil, errors.New("maxLength must be greater than 0")
+	}
+	if b.minLength > b.maxLength {
+		return nil, errors.New("minLength must be less than or equal to maxLength")
+	}
+	if b.contextKey == "" {
+		return nil, errors.New("contextKey is required")
+	}
+	if b.nextState == "" {
+		return nil, errors.New("nextState is required")
+	}
+
+	return &AskTextModel{
+		text:        b.text,
+		defaultText: b.defaultText,
+		minLength:   b.minLength,
+		maxLength:   b.maxLength,
+		contextKey:  b.contextKey,
+		matches:     b.matches,
+		nextState:   b.nextState,
+	}, nil
+}
+
+// AskTextMatchBuilder is a builder for AskTextMatchModel
+type AskTextMatchBuilder struct {
+	value            string
+	valueFromContext string
+	nextState        string
+}
+
+// NewAskTextMatchBuilder creates a new AskTextMatchBuilder
+func NewAskTextMatchBuilder() *AskTextMatchBuilder {
+	return &AskTextMatchBuilder{}
+}
+
+// SetValue sets the literal value to match against
+func (b *AskTextMatchBuilder) SetValue(value string) *AskTextMatchBuilder {
+	b.value = value
+	return b
+}
+
+// SetValueFromContext sets the context key whose value is matched against
+func (b *AskTextMatchBuilder) SetValueFromContext(valueFromContext string) *AskTextMatchBuilder {
+	b.valueFromContext = valueFromContext
+	return b
+}
+
+// SetNextState sets the next state ID
+func (b *AskTextMatchBuilder) SetNextState(nextState string) *AskTextMatchBuilder {
+	b.nextState = nextState
+	return b
+}
+
+// Build builds the AskTextMatchModel
+func (b *AskTextMatchBuilder) Build() (*AskTextMatchModel, error) {
+	if b.nextState == "" {
+		return nil, errors.New("nextState is required")
+	}
+	if b.value == "" && b.valueFromContext == "" {
+		return nil, errors.New("exactly one of value or valueFromContext is required")
+	}
+	if b.value != "" && b.valueFromContext != "" {
+		return nil, errors.New("exactly one of value or valueFromContext is required")
+	}
+
+	return &AskTextMatchModel{
+		value:            b.value,
+		valueFromContext: b.valueFromContext,
+		nextState:        b.nextState,
 	}, nil
 }
 

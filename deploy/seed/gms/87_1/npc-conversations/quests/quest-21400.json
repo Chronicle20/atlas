@@ -11,11 +11,11 @@
               "choices": [
                 {
                   "nextState": "start_1_actions",
-                  "text": "Yes"
+                  "text": "Accept"
                 },
                 {
                   "nextState": "decline",
-                  "text": "No"
+                  "text": "Decline"
                 },
                 {
                   "nextState": null,

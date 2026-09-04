@@ -27,8 +27,11 @@ cleanup() {
 trap cleanup EXIT
 
 # -- acquire succeeds and reports a slot -------------------------------------
+# K is pinned: the default is derived from the host's physical cores (tested
+# separately below), and this case is about acquire/release mechanics.
 (
     export ATLAS_SLOT_DIR="$tmp/case1"
+    export ATLAS_BUILD_SLOTS=4
     . "$HERE/build-slot.sh"
     acquire_build_slot t
     echo "rc=$? slot=$BUILD_SLOT"
@@ -48,6 +51,42 @@ esac
 # -- the slot dir and files are created --------------------------------------
 count="$(find "$tmp/case1" -maxdepth 1 -name 'slot.*' -type f 2>/dev/null | wc -l | tr -d ' ')"
 assert_eq "slot dir has 4 slot.N files" "4" "$count"
+
+# -- the default K is derived from physical cores, floored at 1 --------------
+(
+    export ATLAS_SLOT_DIR="$tmp/case1b"
+    unset ATLAS_BUILD_SLOTS
+    . "$HERE/build-slot.sh"
+    cores="$(_build_slot_physical_cores)"
+    k="$(_build_slot_count)"
+    echo "cores=$cores k=$k"
+) >"$tmp/case1b.out" 2>&1
+cores="$(grep -o 'cores=[0-9]*' "$tmp/case1b.out" | cut -d= -f2)"
+k="$(grep -o 'k=[0-9]*' "$tmp/case1b.out" | cut -d= -f2)"
+want_k=$(( ${cores:-0} / 6 )); [ "$want_k" -lt 1 ] && want_k=1
+assert_eq "default K is physical_cores/6 floored at 1 (cores=$cores)" "$want_k" "${k:-unset}"
+assert_true_k=$([ "${k:-0}" -ge 1 ] && echo yes || echo no)
+assert_eq "default K is at least 1" "yes" "$assert_true_k"
+
+# -- K follows the slot thread budget: doubling it halves K, floored at 1 ----
+(
+    export ATLAS_SLOT_DIR="$tmp/case1c"
+    unset ATLAS_BUILD_SLOTS
+    export ATLAS_SLOT_THREADS=$(( ${cores:-6} * 2 ))
+    . "$HERE/build-slot.sh"
+    echo "k=$(_build_slot_count) threads=$(_build_slot_threads)"
+) >"$tmp/case1c.out" 2>&1
+assert_eq "slot budget above the core count floors K at 1" "1" \
+  "$(grep -o 'k=[0-9]*' "$tmp/case1c.out" | cut -d= -f2)"
+(
+    export ATLAS_SLOT_DIR="$tmp/case1d"
+    unset ATLAS_BUILD_SLOTS
+    export ATLAS_SLOT_THREADS=1
+    . "$HERE/build-slot.sh"
+    echo "k=$(_build_slot_count)"
+) >"$tmp/case1d.out" 2>&1
+assert_eq "a 1-thread slot budget yields K = physical cores" "${cores:-unset}" \
+  "$(grep -o 'k=[0-9]*' "$tmp/case1d.out" | cut -d= -f2)"
 
 # -- release frees the slot ---------------------------------------------------
 (

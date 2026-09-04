@@ -8,11 +8,11 @@
           "operations": [
             {
               "params": {
-                "item": "1",
-                "maxMeso": "8",
                 "meso": "true",
-                "mesoRange": "15",
-                "minMeso": "2"
+                "mesoChance": "2",
+                "mesoMax": "15",
+                "mesoMin": "8",
+                "minItems": "1"
               },
               "type": "drop_items"
             }

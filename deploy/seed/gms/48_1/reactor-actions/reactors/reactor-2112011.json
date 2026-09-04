@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Zakum Party Quest Rock - drops a key",
+      "hitRules": [],
+      "reactorId": "2112011"
+    },
+    "id": "2112011",
+    "type": "reactor-action"
+  }
+}

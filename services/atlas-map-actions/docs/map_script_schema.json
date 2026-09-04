@@ -170,7 +170,9 @@
             "clear_drops",
             "reset_reactors",
             "shuffle_reactors",
-            "reset_field"
+            "reset_field",
+            "move_environment",
+            "reset_environment"
           ]
         },
         "params": {
@@ -787,6 +789,47 @@
                     "description": "Spawn difficulty bucket for the post-reset first spawn (default 1)"
                   }
                 }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "move_environment" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["name", "value"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Environment object name"
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "New environment state value"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["ENVIRONMENT", "OBSTACLE"],
+                    "description": "Which clientbound opcode carries the change; defaults to ENVIRONMENT"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "reset_environment" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "properties": {}
               }
             }
           }

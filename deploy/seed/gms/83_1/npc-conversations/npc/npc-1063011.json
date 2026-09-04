@@ -1,0 +1,291 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1063011,
+      "startState": "puppeteerPreCheck",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "105070300"
+                  },
+                  {
+                    "operator": "=",
+                    "referenceId": "21728",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "puppeteerBlocked"
+              },
+              {
+                "conditions": [],
+                "nextState": "askPassword"
+              }
+            ]
+          },
+          "id": "puppeteerPreCheck",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "puppeteerBlockedSetProgress",
+                "text": "Ok"
+              },
+              {
+                "nextState": "puppeteerBlockedSetProgress",
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You search for any hints of the Puppeteer, but it seems a powerful force blocks the path... Better return to #b#p1061019##k."
+          },
+          "id": "puppeteerBlocked",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "questId": "21728",
+                  "infoNumber": "21761",
+                  "progress": "0"
+                },
+                "type": "set_quest_progress"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "puppeteerBlockedSetProgress",
+          "type": "genericAction"
+        },
+        {
+          "askText": {
+            "contextKey": "answer",
+            "defaultText": "",
+            "matches": [
+              {
+                "nextState": "thiefGate",
+                "value": "Open Sesame"
+              },
+              {
+                "nextState": "puppeteerGate1",
+                "value": "Francis is a genius Puppeteer!"
+              }
+            ],
+            "maxLength": 40,
+            "minLength": 1,
+            "nextState": "wrongPassword",
+            "text": "A suspicious voice pierces through the silence. #bPassword#k!"
+          },
+          "id": "askPassword",
+          "type": "askText"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "3925",
+                    "type": "questStatus",
+                    "value": "3"
+                  }
+                ],
+                "nextState": "thiefWarp"
+              },
+              {
+                "conditions": [],
+                "nextState": "thiefBlockedMessage"
+              }
+            ]
+          },
+          "id": "thiefGate",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "260010402",
+                  "portalId": "1"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "thiefWarp",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "message": "Although you said the right answer, the door will not budge.",
+                  "messageType": "PINK_TEXT"
+                },
+                "type": "send_message"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "thiefBlockedMessage",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "20730",
+                    "type": "questStatus",
+                    "value": "2"
+                  },
+                  {
+                    "operator": "=",
+                    "referenceId": "20730",
+                    "step": "9300285",
+                    "type": "questProgress",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "puppeteerWarp"
+              },
+              {
+                "conditions": [],
+                "nextState": "puppeteerGate2"
+              }
+            ]
+          },
+          "id": "puppeteerGate1",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "910510001",
+                  "portalId": "1"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "puppeteerWarp",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "message": "Although you said the right answer, some mysterious forces are blocking the way in.",
+                  "messageType": "PINK_TEXT"
+                },
+                "type": "send_message"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "puppeteerBlockedMessage",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "21731",
+                    "type": "questStatus",
+                    "value": "2"
+                  },
+                  {
+                    "operator": "=",
+                    "referenceId": "21731",
+                    "step": "9300346",
+                    "type": "questProgress",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "puppeteerWarp"
+              },
+              {
+                "conditions": [],
+                "nextState": "puppeteerBlockedMessage"
+              }
+            ]
+          },
+          "id": "puppeteerGate2",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "#rWrong!"
+          },
+          "id": "wrongPassword",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1063011",
+    "type": "npc-conversation"
+  }
+}

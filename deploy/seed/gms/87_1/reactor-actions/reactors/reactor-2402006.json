@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "HTPQ Box",
+      "hitRules": [],
+      "reactorId": "2402006"
+    },
+    "id": "2402006",
+    "type": "reactor-action"
+  }
+}

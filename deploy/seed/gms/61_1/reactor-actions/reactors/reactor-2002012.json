@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "OPQ Reactor - Drops 4th piece",
+      "hitRules": [],
+      "reactorId": "2002012"
+    },
+    "id": "2002012",
+    "type": "reactor-action"
+  }
+}

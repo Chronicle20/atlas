@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Aqua Road Reactor - Cauldron for Resurrection Quest (4th job Bishop)",
+      "hitRules": [],
+      "reactorId": "2302003"
+    },
+    "id": "2302003",
+    "type": "reactor-action"
+  }
+}

@@ -285,6 +285,13 @@ const (
 	// Jukebox actions
 	PlayJukebox = sharedsaga.PlayJukebox
 
+	// Environment object actions
+	MoveEnvironment  = sharedsaga.MoveEnvironment
+	ResetEnvironment = sharedsaga.ResetEnvironment
+	// Back effect actions
+	SetBackEffect   = sharedsaga.SetBackEffect
+	ClearBackEffect = sharedsaga.ClearBackEffect
+
 	// Note actions
 	CreateNote = sharedsaga.CreateNote
 
@@ -435,6 +442,10 @@ type (
 	StageClearAttemptPqPayload          = sharedsaga.StageClearAttemptPqPayload
 	FieldEffectWeatherPayload           = sharedsaga.FieldEffectWeatherPayload
 	PlayJukeboxPayload                  = sharedsaga.PlayJukeboxPayload
+	MoveEnvironmentPayload              = sharedsaga.MoveEnvironmentPayload
+	ResetEnvironmentPayload             = sharedsaga.ResetEnvironmentPayload
+	SetBackEffectPayload                = sharedsaga.SetBackEffectPayload
+	ClearBackEffectPayload              = sharedsaga.ClearBackEffectPayload
 	ExperienceDistributions             = sharedsaga.ExperienceDistributions
 	SetAssetOwnerPayload                = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload               = sharedsaga.ApplyAssetLockPayload
@@ -1833,6 +1844,30 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case PlayJukebox:
 		var payload PlayJukeboxPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case MoveEnvironment:
+		var payload MoveEnvironmentPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ResetEnvironment:
+		var payload ResetEnvironmentPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SetBackEffect:
+		var payload SetBackEffectPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ClearBackEffect:
+		var payload ClearBackEffectPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

@@ -1,0 +1,11 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Maple Island Box",
+      "hitRules": [],
+      "reactorId": "2001"
+    },
+    "id": "2001",
+    "type": "reactor-action"
+  }
+}

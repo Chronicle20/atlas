@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { SurfaceKindBadge } from "@/components/features/maps/SurfaceKindBadge";
 
 interface MapHeaderProps {
   mapId: string;
@@ -38,6 +39,7 @@ export function MapHeader({
         </Tooltip>
       </TooltipProvider>
       <div className="flex items-center gap-2 flex-wrap">
+        <SurfaceKindBadge kind="definition" />
         {streetName && <Badge variant="secondary">{streetName}</Badge>}
         {spawnCount === undefined ? (
           <Skeleton className="h-5 w-20 rounded-full" />

@@ -3,17 +3,22 @@ package tenants
 import (
 	"atlas-configurations/data"
 	"atlas-configurations/data/mock"
+	"atlas-configurations/templates"
+	templatesmock "atlas-configurations/templates/mock"
 	"atlas-configurations/tenants/characters"
 	"atlas-configurations/tenants/characters/preset"
 	"context"
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -851,5 +856,97 @@ func TestEnqueueTenantStatus_SkippedWhenTopicUnset(t *testing.T) {
 	}
 	if count != 0 {
 		t.Errorf("expected no outbox rows enqueued with the topic unset, got %d", count)
+	}
+}
+
+// counterValue reads a labeled counter from the default gatherer (0 when
+// the series does not exist yet). Mirrors
+// services/atlas-login/atlas.com/login/character/processor_test.go.
+func counterValue(t *testing.T, name, labelName, labelValue string) float64 {
+	t.Helper()
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		t.Fatalf("gather: %v", err)
+	}
+	for _, mf := range mfs {
+		if mf.GetName() != name {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			for _, lp := range m.GetLabel() {
+				if lp.GetName() == labelName && lp.GetValue() == labelValue {
+					return m.GetCounter().GetValue()
+				}
+			}
+		}
+	}
+	return 0
+}
+
+// TestBaselineFor_DegradesLoudlyOnNonNotFoundError asserts DOM-28: a
+// non-ErrRecordNotFound failure resolving a tenant's baseline template
+// both logs (pre-existing behaviour) and increments
+// atlas_enrichment_degraded_total{component="configurations.tenants.templates"}
+// (the finding this test closes).
+func TestBaselineFor_DegradesLoudlyOnNonNotFoundError(t *testing.T) {
+	logger, hook := test.NewNullLogger()
+	before := counterValue(t, "atlas_enrichment_degraded_total", "component", "configurations.tenants.templates")
+
+	p := NewProcessor(logger, context.Background(), setupTestDB(t)).
+		WithTemplates(&templatesmock.ProcessorMock{
+			GetByRegionAndVersionFunc: func(region string, majorVersion uint16, minorVersion uint16) (templates.RestModel, error) {
+				return templates.RestModel{}, errors.New("connection refused")
+			},
+		}).(*ProcessorImpl)
+
+	rm, ok := p.baselineFor("GMS", 83, 1)
+	if ok {
+		t.Fatalf("expected ok=false on a degraded lookup, got rm=%+v", rm)
+	}
+
+	found := false
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && strings.Contains(e.Message, "Unable to resolve baseline template") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("expected the existing domain Warn log naming the failed baseline resolution")
+	}
+
+	after := counterValue(t, "atlas_enrichment_degraded_total", "component", "configurations.tenants.templates")
+	if after-before != 1 {
+		t.Fatalf("expected degradation counter delta 1, got %v", after-before)
+	}
+}
+
+// TestBaselineFor_NoBaselineIsNotADegradation asserts the FR-1.4 arm stays
+// silent: gorm.ErrRecordNotFound is the expected "no baseline" state, not a
+// degradation, so it must not increment the metric.
+func TestBaselineFor_NoBaselineIsNotADegradation(t *testing.T) {
+	logger, hook := test.NewNullLogger()
+	before := counterValue(t, "atlas_enrichment_degraded_total", "component", "configurations.tenants.templates")
+
+	p := NewProcessor(logger, context.Background(), setupTestDB(t)).
+		WithTemplates(&templatesmock.ProcessorMock{
+			GetByRegionAndVersionFunc: func(region string, majorVersion uint16, minorVersion uint16) (templates.RestModel, error) {
+				return templates.RestModel{}, gorm.ErrRecordNotFound
+			},
+		}).(*ProcessorImpl)
+
+	rm, ok := p.baselineFor("GMS", 83, 1)
+	if ok {
+		t.Fatalf("expected ok=false when no template resolves, got rm=%+v", rm)
+	}
+
+	for _, e := range hook.AllEntries() {
+		if strings.Contains(e.Message, "Unable to resolve baseline template") {
+			t.Fatalf("ErrRecordNotFound must not log; it is the expected no-baseline state (FR-1.4)")
+		}
+	}
+
+	after := counterValue(t, "atlas_enrichment_degraded_total", "component", "configurations.tenants.templates")
+	if after != before {
+		t.Fatalf("expected no degradation counter increment on ErrRecordNotFound, delta = %v", after-before)
 	}
 }

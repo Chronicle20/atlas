@@ -875,6 +875,8 @@ func produceWriters() []string {
 		fieldcb.SummonItemUnavailableWriter,
 		fieldcb.FieldObstacleOnOffWriter,
 		fieldcb.FieldObstacleAllResetWriter,
+		fieldcb.SetBackEffectWriter,
+		fieldcb.ClearBackEffectWriter,
 		fieldcb.SetQuestClearWriter,
 		fieldcb.SetQuestTimeWriter,
 		fieldcb.GmEventInstructionsWriter,
@@ -1053,6 +1055,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc
 	handlerMap[invsb.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
 	handlerMap[invsb.CharacterItemUseLotteryHandle] = handler.CharacterItemUseLotteryHandleFunc
+	handlerMap[invsb.CharacterItemUseSolomonHandle] = handler.CharacterItemUseSolomonHandleFunc
+	handlerMap[charsb.CharacterUseStoredExperienceHandle] = handler.CharacterUseStoredExperienceHandleFunc
 	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc

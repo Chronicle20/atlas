@@ -99,16 +99,56 @@ func (r *Registry) GetMapsWithCharacters() []MapKey {
 	return result
 }
 
+// FieldOccupancy pairs a live field with the number of characters it held at
+// the moment the registry snapshot was taken.
+type FieldOccupancy struct {
+	Field          field.Model
+	CharacterCount uint32
+}
+
+// GetFieldsWithCharacters returns every field belonging to t that currently
+// holds at least one character, with its occupancy sampled under the same read
+// lock. Key existence is not liveness: RemoveCharacter empties a key's slice
+// without deleting the key, so a drained field lingers as a zero-length entry
+// and must be excluded here. Sampling the count under the same lock is what
+// keeps a field from being listed as live and then reported with a count of
+// zero within one response.
+func (r *Registry) GetFieldsWithCharacters(t tenant.Model) []FieldOccupancy {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	result := make([]FieldOccupancy, 0)
+	for mk, mc := range r.characterRegister {
+		if mk.Tenant != t {
+			continue
+		}
+		if len(mc) == 0 {
+			continue
+		}
+		result = append(result, FieldOccupancy{Field: mk.Field, CharacterCount: uint32(len(mc))})
+	}
+	return result
+}
+
 // RemoveCharacterFromAllMaps removes characterId from every map key that
-// belongs to tenant t. This is used during character deletion to clean up
-// phantom registry entries regardless of which map the character was in.
-func (r *Registry) RemoveCharacterFromAllMaps(t tenant.Model, characterId uint32) {
+// belongs to tenant t, and returns the keys the character was actually
+// removed from so the caller can run per-field teardown. This is used
+// during character deletion to clean up phantom registry entries
+// regardless of which map the character was in.
+func (r *Registry) RemoveCharacterFromAllMaps(t tenant.Model, characterId uint32) []MapKey {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
+	affected := make([]MapKey, 0)
 	for mk := range r.characterRegister {
-		if mk.Tenant == t {
-			r.characterRegister[mk] = removeIfExists(r.characterRegister[mk], characterId)
+		if mk.Tenant != t {
+			continue
+		}
+		before := len(r.characterRegister[mk])
+		r.characterRegister[mk] = removeIfExists(r.characterRegister[mk], characterId)
+		if len(r.characterRegister[mk]) != before {
+			affected = append(affected, mk)
 		}
 	}
+	return affected
 }

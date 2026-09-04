@@ -281,6 +281,17 @@ func SetExperience(experience uint32) EntityUpdateFunction {
 	}
 }
 
+// SetGachaponExperience writes the stored-EXP counter. The column name is the
+// community misnomer for the client's GW_CharacterStat::nTempEXP; it is kept
+// so no migration is needed across atlas-login/-cashshop/-npc-shops.
+func SetGachaponExperience(amount uint32) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"GachaponExperience"}, func(e *entity) {
+			e.GachaponExperience = amount
+		}
+	}
+}
+
 func UpdateSpawnPoint(spawnPoint uint32) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
 		return []string{"SpawnPoint"}, func(e *entity) {

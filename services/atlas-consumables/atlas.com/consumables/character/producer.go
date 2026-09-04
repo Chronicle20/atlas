@@ -38,6 +38,21 @@ func changeMPCommandProvider(f field.Model, characterId uint32, amount int16) mo
 	return producer.SingleMessageProvider(key, value)
 }
 
+func creditStoredExperienceCommandProvider(f field.Model, characterId uint32, amount uint32, reason string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.CreditStoredExperienceCommandBody]{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		Type:        character2.CommandCreditStoredExperience,
+		Body: character2.CreditStoredExperienceCommandBody{
+			ChannelId: f.ChannelId(),
+			Amount:    amount,
+			Reason:    reason,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func changeMapProvider(f field.Model, characterId uint32, portalId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.Command[character2.ChangeMapBody]{

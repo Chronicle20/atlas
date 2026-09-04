@@ -98,5 +98,7 @@ use (
 	./tools/cideps
 	./tools/gen-map-action-schema
 	./tools/packet-audit
+	./tools/reactor-seed-gen
+	./tools/reactor-seed-lint
 	./tools/seed-splitters
 )

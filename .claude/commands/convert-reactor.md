@@ -26,30 +26,43 @@ Both functions use `rm` (reactor manager) to access reactor state and execute op
 ### Condition Types
 | Type | When to Use | Required Fields |
 |------|-------------|-----------------|
-| `reactor_state` | `rm.getReactor().getState()` checks | `operator`, `value` |
+| `reactor_state` | `rm.getReactor().getState()` checks | `type`, `operator`, `value` |
+| `pq_custom_data` | `eim.getIntProperty(k)` / `eim.getProperty(k)` comparisons | `type`, `operator`, `value`, `step` (the custom-data key name) |
+
+Operators for both types: `=`, `!=`, `>`, `<`, `>=`, `<=`.
 
 ### Operation Types
 | Type | When to Use | Params |
 |------|-------------|--------|
-| `drop_items` | `rm.dropItems()` or `rm.dropItems(meso, min, max, range, item)` | `meso`, `minMeso`, `maxMeso`, `mesoRange`, `item` (all optional) |
-| `spawn_monster` | `rm.spawnMonster(id)` | `monsterId`, `count` (optional, default "1") |
-| `spray_items` | `rm.sprayItems()` | (none) |
+| `drop_items` | `rm.dropItems()` / `rm.dropItems(meso, mesoChance, minMeso, maxMeso, minItems)` | `meso`, `mesoChance`, `mesoMin`, `mesoMax`, `minItems` (all optional; omit `params` entirely when the call has no arguments) |
+| `spray_items` | `rm.sprayItems()` / `rm.sprayItems(meso, mesoChance, minMeso, maxMeso, minItems)` | same five as `drop_items`, read identically — `executeSprayItems` injects `dropType=spray` and delegates |
+| `spawn_monster` | `rm.spawnMonster(id)` / `(id, qty)` / `(id, qty, x, y)` | `monsterId` (required), `count` (default `"1"`), `x`, `y` (default: the reactor's own position) |
 | `weaken_area_boss` | `rm.weakenAreaBoss(id, msg)` | `monsterId`, `message` |
 | `move_environment` | `rm.getMap().moveEnvironment(name, val)` | `name`, `value` |
 | `kill_all_monsters` | `rm.getMap().killAllMonsters()` | (none) |
 | `drop_message` | `rm.dropMessage(type, msg)` | `type`, `message` |
+| `update_pq_state` | `eim.setProperty(k, v)` / `eim.setIntProperty(k, v)` | `updates` (comma-separated `k=v`), `increments` (comma-separated key names incremented by 1) |
+| `hit_reactor` | `rm.getMap().getReactorByName(n).hitReactor()` | `reactorName` |
+| `broadcast_pq_message` | `eim.dropMessage(type, msg)` | `message`, `type` (optional) |
+| `stage_clear_attempt` | `eim.showClearEffect()` + `giveEventPlayersStageReward` | (none) |
 
-### NOT YET SUPPORTED (Skip These Scripts)
-The following patterns require event instance support:
-- `rm.getEventInstance()` / `eim` operations
-- `eim.getProperty()`, `eim.setProperty()`, `eim.getIntProperty()`, `eim.setIntProperty()`
-- `eim.dropMessage()`, `eim.showClearEffect()`, `eim.giveEventPlayersStageReward()`
-- `rm.getMap().getReactorByName().hitReactor()` - Programmatic reactor hits
-- `rm.getMap().getSummonState()` - Map summon state checks
-- `rm.getClient()` - Client-specific operations beyond standard params
-- `rm.getEventInstance().getEm().getIv().invokeFunction()` - Event scripting
+**`dropType` is NOT a seed parameter.** It is injected at runtime and must never be written into a file.
 
-If a script uses these features, **skip the conversion** and report it as "requires unsupported features."
+### Event-instance (`eim.*`) Mapping
+
+Event-instance scripts ARE supported. Do not skip them. Map as follows:
+
+| Source | Emit |
+|---|---|
+| `var eim = rm.getEventInstance()` / `rm.getPlayer().getEventInstance()` | nothing — the binding is erased |
+| `if (eim != null) { ... }` / `if (rm.getEventInstance() != null) { ... }` | nothing — the null guard is erased; convert the body |
+| `eim.getIntProperty("k")` / `eim.getProperty("k")` in a comparison | a `pq_custom_data` condition with `step: "k"` |
+| `eim.setProperty("k", "v")` / `eim.setIntProperty("k", <literal>)` | `update_pq_state` with `updates: "k=v"` |
+| `var now = eim.getIntProperty("k"); var next = now + 1; eim.setIntProperty("k", next)` | ONE `update_pq_state` with `increments: "k"` — match the three statements as a single idiom |
+| `eim.dropMessage(type, msg)` | `broadcast_pq_message` |
+| `eim.showClearEffect()` with `giveEventPlayersStageReward` | `stage_clear_attempt` |
+
+Still genuinely unsupported (report rather than guess): `rm.getMap().getSummonState()`, `getEm().getIv().invokeFunction()`, and any `Math.random()` branch.
 
 ## Conversion Requirements
 
@@ -87,17 +100,17 @@ function act() {
     rm.dropItems(true, 2, 8, 15, 1);
 }
 ```
-→ Single actRule with `drop_items` operation:
+→ Single actRule with `drop_items` operation. Arguments are positional: `(meso, mesoChance, minMeso, maxMeso, minItems)`.
 ```json
 {
-  "type": "drop_items",
   "params": {
     "meso": "true",
-    "minMeso": "2",
-    "maxMeso": "8",
-    "mesoRange": "15",
-    "item": "1"
-  }
+    "mesoChance": "2",
+    "mesoMax": "15",
+    "mesoMin": "8",
+    "minItems": "1"
+  },
+  "type": "drop_items"
 }
 ```
 
@@ -110,7 +123,7 @@ function hit() {
     rm.weakenAreaBoss(6090000, "Message here");
 }
 ```
-→ hitRule with `reactor_state` condition (operator: `!=`, value: `0`), then operation
+→ hitRule with a `reactor_state` condition **inverted to the positive form** (`operator: "="`, `value: "0"`), then the operation. The source's `!== 0 → return` means "act only when the state IS 0".
 
 **Pattern D: Monster Spawn**
 ```javascript
@@ -149,18 +162,11 @@ The script to convert: **$ARGUMENTS**
 **Steps:**
 1. Read the reactor script schema first (if it exists; if not, validate structure manually)
 2. If a file path is provided, read the script file
-3. **Check for unsupported features** - If the script uses any of:
-   - `getEventInstance()`, `eim.*` methods
-   - `getReactorByName().hitReactor()`
-   - `getSummonState()`
-   - `getEm().getIv().invokeFunction()`
-
-   Then **STOP** and report: "Script uses unsupported features: [list features]. Skipping conversion."
-
+3. Identify any genuinely unsupported constructs (`getSummonState()`, `getEm().getIv().invokeFunction()`, `Math.random()` branches) and flag them for report rather than guessing at a conversion.
 4. Analyze the script:
    - Identify `hit()` function contents
    - Identify `act()` function contents
-   - Note all conditions and operations
+   - Note all conditions and operations, including `eim.*` idioms per the mapping table above
 5. Extract reactor ID from filename (e.g., `2000.js` → `"2000"`)
 6. Extract description from comments (if present)
 7. Convert to JSON following the schema
@@ -169,8 +175,13 @@ The script to convert: **$ARGUMENTS**
    - [ ] Rule structure correct
    - [ ] All conditions properly typed
    - [ ] All operations have required params
-9. Determine output filename: `reactor_{reactorId}.json`
-10. Write to `services/atlas-reactor-actions/scripts/reactors/` directory
+9. Determine the output filename: `reactor-<reactorId>.json` (hyphen, not underscore).
+10. Write the file, byte-identical, into all eleven tenant seed directories:
+    `deploy/seed/gms/{12_1,48_1,61_1,72_1,79_1,83_1,84_1,87_1,92_1,95_1}/reactor-actions/reactors/`
+    and `deploy/seed/jms/185_1/reactor-actions/reactors/`.
+    The file is a JSON:API envelope:
+    `{"data":{"attributes":{...},"id":"<reactorId>","type":"reactor-action"}}`
+    2-space indented, alphabetically keyed, LF, one trailing newline.
 11. Report completion with summary
 
 ## Example Conversion
@@ -187,30 +198,36 @@ function act() {
 }
 ```
 
-**Output: reactor_2000.json**
+**Output: reactor-2000.json**
 ```json
 {
-  "reactorId": "2000",
-  "description": "Maple Island Box - drops various items, notably quest items",
-  "hitRules": [],
-  "actRules": [
-    {
-      "id": "drop_items",
-      "conditions": [],
-      "operations": [
+  "data": {
+    "attributes": {
+      "actRules": [
         {
-          "type": "drop_items",
-          "params": {
-            "meso": "true",
-            "minMeso": "2",
-            "maxMeso": "8",
-            "mesoRange": "15",
-            "item": "1"
-          }
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "2",
+                "mesoMax": "15",
+                "mesoMin": "8",
+                "minItems": "1"
+              },
+              "type": "drop_items"
+            }
+          ]
         }
-      ]
-    }
-  ]
+      ],
+      "description": "Maple Island Box - drops various items, notably quest items",
+      "hitRules": [],
+      "reactorId": "2000"
+    },
+    "id": "2000",
+    "type": "reactor-action"
+  }
 }
 ```
 
@@ -223,25 +240,33 @@ function act() {
 }
 ```
 
-**Output: reactor_200.json**
+**Output: reactor-200.json**
 ```json
 {
-  "reactorId": "200",
-  "description": "Basic reactor - drops items",
-  "hitRules": [],
-  "actRules": [
-    {
-      "id": "drop_items",
-      "conditions": [],
-      "operations": [
+  "data": {
+    "attributes": {
+      "actRules": [
         {
-          "type": "drop_items"
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
         }
-      ]
-    }
-  ]
+      ],
+      "description": "Basic reactor - drops items",
+      "hitRules": [],
+      "reactorId": "200"
+    },
+    "id": "200",
+    "type": "reactor-action"
+  }
 }
 ```
+
+The bare `rm.dropItems()` call has no arguments, so the operation object carries only `"type"` — no `params` key at all.
 
 ## Example: Hit and Act
 
@@ -262,57 +287,97 @@ function act() {
 }
 ```
 
-**Output: reactor_2119000.json**
+**Output: reactor-2119000.json**
 ```json
 {
-  "reactorId": "2119000",
-  "description": "Tombstone in Forest of Dead Trees I - weakens Lich boss",
-  "hitRules": [
-    {
-      "id": "weaken_lich_state_zero",
-      "conditions": [
+  "data": {
+    "attributes": {
+      "actRules": [],
+      "description": "Tombstone in Forest of Dead Trees I - weakens Lich when hit in state 0",
+      "hitRules": [
         {
-          "type": "reactor_state",
-          "operator": "=",
-          "value": "0"
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "reactor_state",
+              "value": "0"
+            }
+          ],
+          "id": "weaken_area_boss",
+          "operations": [
+            {
+              "params": {
+                "message": "As the tombstone lit up and vanished, Lich lost all his magic abilities.",
+                "monsterId": "6090000"
+              },
+              "type": "weaken_area_boss"
+            }
+          ]
         }
       ],
-      "operations": [
-        {
-          "type": "weaken_area_boss",
-          "params": {
-            "monsterId": "6090000",
-            "message": "As the tombstone lit up and vanished, Lich lost all his magic abilities."
-          }
-        }
-      ]
-    }
-  ],
-  "actRules": []
+      "reactorId": "2119000"
+    },
+    "id": "2119000",
+    "type": "reactor-action"
+  }
 }
 ```
 
-**Note:** The original script uses `!== 0` to return early (do nothing). We invert this to `= 0` meaning "if state IS 0, execute the operation". Empty `act()` results in empty `actRules`.
+**Note:** The original script uses `!== 0` to return early (do nothing). We invert this to `= 0` — the positive form of the guard — meaning "act only when the state IS 0". Empty `act()` results in empty `actRules`.
 
-## Example: Unsupported Script (Skip)
+## Example: Event-Instance (`eim.*`) Script
 
-**Input: 6109000.js**
+**Input: 2512001.js**
 ```javascript
 function act() {
-    var eim = rm.getEventInstance();
+    var eim = rm.getPlayer().getEventInstance();
     if (eim != null) {
-        var mapId = rm.getMap().getId();
-        eim.dropMessage(6, "The Warrior Sigil has been activated!");
-        eim.setIntProperty("glpq2", eim.getIntProperty("glpq2") + 1);
-        // ...
+        var opened = eim.getIntProperty("openedChests");
+        eim.setIntProperty("openedChests", opened + 1);
+        rm.sprayItems(true, 1, 50, 100, 15);
     }
 }
 ```
 
-**Output:**
+**Output: reactor-2512001.json**
+```json
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "update_pq_state_spray_items",
+          "operations": [
+            {
+              "params": {
+                "increments": "openedChests"
+              },
+              "type": "update_pq_state"
+            },
+            {
+              "params": {
+                "meso": "true",
+                "mesoChance": "1",
+                "mesoMax": "100",
+                "mesoMin": "50",
+                "minItems": "15"
+              },
+              "type": "spray_items"
+            }
+          ]
+        }
+      ],
+      "description": "Pirate PQ treasure chest - increments openedChests and sprays items",
+      "hitRules": [],
+      "reactorId": "2512001"
+    },
+    "id": "2512001",
+    "type": "reactor-action"
+  }
+}
 ```
-Script uses unsupported features: getEventInstance(), eim.dropMessage(), eim.setIntProperty(), eim.getIntProperty()
-Skipping conversion. This script requires event instance support which is not yet implemented.
-```
+
+**Note:** The `eim` binding and its null guard are erased entirely — neither becomes a condition. The `getIntProperty`/`setIntProperty` increment idiom collapses into a single `update_pq_state` operation with `increments: "openedChests"`. `rm.sprayItems(meso, mesoChance, minMeso, maxMeso, minItems)` reads its params identically to `drop_items`.
 
 Begin conversion now.

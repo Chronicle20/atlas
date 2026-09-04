@@ -63,6 +63,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleTextConversationCommand(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -99,6 +104,23 @@ func handleNumberConversationCommand(sc server.Model, wp writer.Producer) messag
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(c.CharacterId, announceNumberConversation(l)(ctx)(wp)(c.NpcId, "NUM", c.Message, c.Body.DefaultValue, c.Body.MinValue, c.Body.MaxValue, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write number conversation for character [%d].", c.CharacterId)
+		}
+	}
+}
+
+func handleTextConversationCommand(sc server.Model, wp writer.Producer) message.Handler[conversation2.CommandEvent[conversation2.CommandTextBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c conversation2.CommandEvent[conversation2.CommandTextBody]) {
+		if c.Type != conversation2.CommandTypeText {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), c.WorldId, c.ChannelId) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(c.CharacterId, announceTextConversation(l)(ctx)(wp)(c.NpcId, c.Message, c.Body.DefaultValue, c.Body.MinLength, c.Body.MaxLength, c.Speaker, c.EndChat, c.SecondaryNpcId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write text conversation for character [%d].", c.CharacterId)
 		}
 	}
 }
@@ -196,6 +218,29 @@ func announceSlideMenuConversation(l logrus.FieldLogger) func(ctx context.Contex
 	}
 }
 
+func announceTextConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, message string, def string, min uint16, max uint16, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, message string, def string, min uint16, max uint16, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, message string, def string, min uint16, max uint16, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+			return func(npcId uint32, message string, def string, min uint16, max uint16, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
+				ncm := newTextConversation(npcId, message, def, min, max, speaker, endChat, secondaryNpcId)
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
+			}
+		}
+	}
+}
+
+// newTextConversation builds the ASK_TEXT conversation model and detail. Kept
+// separate from announceTextConversation so it can be asserted directly in
+// tests without needing a live session — announceTextConversation's returned
+// model.Operator only ever reveals its packet model to a real socket write,
+// which encodes msgType to an opaque runtime opcode (atlas_packet.ResolveCode)
+// and so cannot round-trip back to NpcConversationMessageTypeAskText.
+func newTextConversation(npcId uint32, message string, def string, min uint16, max uint16, speaker string, endChat bool, secondaryNpcId uint32) model2.NpcConversation {
+	scm := &npcpkt.AskTextConversationDetail{Message: message, Def: def, Min: min, Max: max}
+	speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
+	return model2.NewNpcConversation(npcId, npcpkt.NpcConversationMessageTypeAskText, speakerByte, secondaryNpcId, scm)
+}
+
 // computeSpeakerByte calculates the speaker byte for the client protocol.
 // Bit 0: end chat visibility (0 = show, 1 = hide)
 // Bit 1: speaker type (0 = NPC, 1 = CHARACTER)
@@ -234,6 +279,8 @@ func getNPCTalkType(t string) npcpkt.NpcConversationMessageType {
 		return npcpkt.NpcConversationMessageTypeAskAvatar
 	case "ACCEPT_DECLINE":
 		return npcpkt.NpcConversationMessageTypeAskYesNoQuest
+	case "TEXT":
+		return npcpkt.NpcConversationMessageTypeAskText
 	}
 	panic(fmt.Sprintf("unsupported talk type %s", t))
 }

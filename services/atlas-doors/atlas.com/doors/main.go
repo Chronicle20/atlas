@@ -3,7 +3,6 @@ package main
 import (
 	"atlas-doors/character"
 	"atlas-doors/door"
-	"atlas-doors/tasks"
 	"atlas-doors/world"
 	"context"
 	"os"
@@ -94,7 +93,7 @@ func main() {
 		// package importing atlas-env itself. Without it, ExpiryTask's
 		// per-tenant REMOVED Kafka events would carry an empty environment
 		// header and fail decide() open per FR-1.8.
-		tasks.Register(l, ctx)(door.NewExpiryTask(l, ctx, time.Second, func(ctx context.Context) context.Context {
+		routine.Register(l, ctx, rt.WaitGroup())(door.NewExpiryTask(l, time.Second, func(ctx context.Context) context.Context {
 			return env.WithContext(ctx, env.Self())
 		}))
 	}
@@ -110,7 +109,18 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
+		// Held open for the lifetime of the leader-election goroutine below.
+		// registerSweepTasks (and therefore its routine.Register call) only
+		// runs once le.Run elects this pod as leader, which happens
+		// asynchronously inside the routine.Go goroutine. Registering there
+		// calls wg.Add(1) on a detached goroutine, which would race
+		// Manager.Wait() if the counter were allowed to hit zero in between.
+		// Adding 1 here — synchronously, before routine.Go starts — keeps the
+		// counter above zero for the goroutine's whole life, so that later
+		// Add can never race a Wait-induced zero crossing.
+		rt.WaitGroup().Add(1)
 		routine.Go(l, rt.Context(), func(_ context.Context) {
+			defer rt.WaitGroup().Done()
 			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
 				registerSweepTasks(l, leaderCtx)
 				<-leaderCtx.Done()

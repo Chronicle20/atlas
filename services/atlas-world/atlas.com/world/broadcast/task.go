@@ -19,7 +19,6 @@ const SweepTask = "broadcast_sweep"
 // WORLD_BROADCAST_LEADER_* wiring.
 type Sweep struct {
 	l          logrus.FieldLogger
-	ctx        context.Context
 	interval   time.Duration
 	envContext func(context.Context) context.Context
 }
@@ -31,22 +30,21 @@ type Sweep struct {
 // ENVIRONMENT from, and broadcast/ is outside env-domain-guard's permitted
 // atlas-env import list, so the environment is threaded in via DI rather
 // than imported directly (task-232).
-func NewSweep(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *Sweep {
+func NewSweep(l logrus.FieldLogger, interval time.Duration, envContext func(context.Context) context.Context) *Sweep {
 	l.Infof("Initializing %s task to run every %dms.", SweepTask, interval.Milliseconds())
 	return &Sweep{
 		l:          l,
-		ctx:        ctx,
 		interval:   interval,
 		envContext: envContext,
 	}
 }
 
-func (t *Sweep) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-world").Start(t.ctx, SweepTask)
+func (t *Sweep) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-world").Start(ctx, SweepTask)
 	defer span.End()
 
 	t.l.Debugf("Executing %s task.", SweepTask)
-	err := model.ForEachSlice(model.FixedProvider(GetRegistry().Tenants()), func(te tenant.Model) error {
+	err := model.ForEachSlice(model.FixedProvider(GetRegistry().Tenants(sctx)), func(te tenant.Model) error {
 		tctx := t.envContext(tenant.WithContext(sctx, te))
 		return NewProcessor(t.l, tctx).SweepTenant()
 	})

@@ -94,11 +94,9 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewExpirationTask(l, db, 1000, func(ctx context.Context) context.Context {
-			return env.WithContext(ctx, env.Self())
-		}))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(tasks.NewExpirationTask(l, db, 1000, func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}))
 
 	server.New(l).
 		WithContext(rt.Context()).

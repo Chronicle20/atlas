@@ -16,25 +16,23 @@ const HeartbeatTask = "heartbeat"
 
 type Timeout struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	interval time.Duration
 }
 
-func NewHeartbeat(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *Timeout {
+func NewHeartbeat(l logrus.FieldLogger, interval time.Duration) *Timeout {
 	l.Infof("Initializing %s task to run every %dms.", HeartbeatTask, interval.Milliseconds())
 	return &Timeout{
 		l:        l,
-		ctx:      ctx,
 		interval: interval,
 	}
 }
 
-func (t *Timeout) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(t.ctx, HeartbeatTask)
+func (t *Timeout) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, HeartbeatTask)
 	defer span.End()
 
 	t.l.Debugf("Executing %s task.", HeartbeatTask)
-	_ = model.ForEachSlice(model.FixedProvider(server.NewProcessor(t.l, t.ctx).GetAll()), func(m server.Model) error {
+	_ = model.ForEachSlice(model.FixedProvider(server.NewProcessor(t.l, ctx).GetAll()), func(m server.Model) error {
 		tctx := tenant.WithContext(sctx, m.Tenant())
 		return NewProcessor(t.l, tctx).Register(m.Channel(), m.IpAddress(), m.Port())
 	})

@@ -18,8 +18,8 @@ func NewBerserkTick(l logrus.FieldLogger, interval int) *BerserkTick {
 	return &BerserkTick{l, interval}
 }
 
-func (r *BerserkTick) Run() {
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-buffs").Start(context.Background(), "berserk_tick_task")
+func (r *BerserkTick) Run(ctx context.Context) {
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-buffs").Start(ctx, "berserk_tick_task")
 	defer span.End()
 
 	_ = berserk.ProcessBerserkTicks(r.l, ctx)

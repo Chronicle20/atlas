@@ -71,7 +71,7 @@ func main() {
 	// would resolve through RootUrlFor's legacy-baseline fallback and
 	// silently hit main's environment instead of this pod's.
 	registerRecompute := func(l logrus.FieldLogger, ctx context.Context) {
-		tasks.Register(l, ctx)(tasks.NewRecomputeTask(l, ctx, db, baseTick, func(ctx context.Context) context.Context {
+		routine.Register(l, ctx, rt.WaitGroup())(tasks.NewRecomputeTask(l, ctx, db, baseTick, func(ctx context.Context) context.Context {
 			return env.WithContext(ctx, env.Self())
 		}))
 	}
@@ -87,7 +87,18 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
+		// Held open for the lifetime of the leader-election goroutine below.
+		// registerRecompute (and therefore its routine.Register call) only
+		// runs once le.Run elects this pod as leader, which happens
+		// asynchronously inside the routine.Go goroutine. Registering there
+		// calls wg.Add(1) on a detached goroutine, which would race
+		// Manager.Wait() if the counter were allowed to hit zero in between.
+		// Adding 1 here — synchronously, before routine.Go starts — keeps the
+		// counter above zero for the goroutine's whole life, so that later
+		// Add can never race a Wait-induced zero crossing.
+		rt.WaitGroup().Add(1)
 		routine.Go(l, rt.Context(), func(_ context.Context) {
+			defer rt.WaitGroup().Done()
 			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
 				registerRecompute(l, leaderCtx)
 				<-leaderCtx.Done()

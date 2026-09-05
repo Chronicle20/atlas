@@ -27,8 +27,8 @@ func NewWeather(l logrus.FieldLogger, interval time.Duration, envContext func(co
 	return &Weather{l: l, interval: interval, envContext: envContext}
 }
 
-func (w *Weather) Run() {
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(context.Background(), WeatherTask)
+func (w *Weather) Run(ctx context.Context) {
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(ctx, WeatherTask)
 	defer span.End()
 
 	processExpiredWeather(w.l, ctx, weather.GetExpired(), emitWeatherEnd(w.l), w.envContext)

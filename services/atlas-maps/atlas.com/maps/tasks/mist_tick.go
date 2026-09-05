@@ -291,7 +291,7 @@ func changeMpCommandProvider(m mist.Mist, characterId uint32, amount int16) mode
 
 // MistTick is the periodic tick task that expires mists past their lifetime
 // and re-applies the disease to characters currently inside the mist's
-// bounding box. It is registered via tasks.Register in main.
+// bounding box. It is registered via routine.Register in main.
 type MistTick struct {
 	l                logrus.FieldLogger
 	interval         int
@@ -299,7 +299,7 @@ type MistTick struct {
 	registry         *mist.Registry
 	producerProvider func(ctx context.Context) producer.Provider
 	processorFactory func(l logrus.FieldLogger, ctx context.Context, p producer.Provider, r *mist.Registry) mist.Processor
-	charsInField     func(t tenant.Model, f field.Model) []uint32
+	charsInField     func(ctx context.Context, t tenant.Model, f field.Model) []uint32
 	monstersInRect   func(ctx context.Context, m mist.Mist) ([]monster.RestModel, error)
 	envContext       func(context.Context) context.Context
 }
@@ -321,8 +321,8 @@ func NewMistTick(l logrus.FieldLogger, interval int, charLookup CharacterLookup,
 			return producer.ProviderImpl(l)(ctx)
 		},
 		processorFactory: mist.NewProcessorWithRegistry,
-		charsInField: func(t tenant.Model, f field.Model) []uint32 {
-			tctx := tenant.WithContext(context.Background(), t)
+		charsInField: func(ctx context.Context, t tenant.Model, f field.Model) []uint32 {
+			tctx := tenant.WithContext(ctx, t)
 			ids, err := mapchar.NewProcessor(l, tctx).GetCharactersInMap(uuid.Nil, f)
 			if err != nil {
 				return nil
@@ -342,10 +342,10 @@ func NewMistTick(l logrus.FieldLogger, interval int, charLookup CharacterLookup,
 	}
 }
 
-// Run is invoked once per tick by tasks.Register's loop. It fans out per
+// Run is invoked once per tick by routine.Register's loop. It fans out per
 // tenant goroutines as described in FR-4.6.3.
-func (r *MistTick) Run() {
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(context.Background(), MistTickTask)
+func (r *MistTick) Run(ctx context.Context) {
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(ctx, MistTickTask)
 	defer span.End()
 	r.runOnce(ctx)
 }
@@ -451,7 +451,7 @@ func (r *MistTick) tickOneMist(ctx context.Context, prov producer.Provider, t te
 // (pre-task-200) mist tick body, extracted verbatim -- the monster AREA_POISON
 // path must behave identically before and after (NFR-5).
 func (r *MistTick) tickCharacters(ctx context.Context, prov producer.Provider, t tenant.Model, m mist.Mist) {
-	members := r.charsInField(t, m.Field())
+	members := r.charsInField(ctx, t, m.Field())
 	if len(members) == 0 {
 		return
 	}
@@ -507,7 +507,7 @@ func (r *MistTick) tickRecovery(ctx context.Context, prov producer.Provider, t t
 		return
 	}
 	amount := int16(m.RecoveryMp())
-	members := r.charsInField(t, m.Field())
+	members := r.charsInField(ctx, t, m.Field())
 	if len(members) == 0 {
 		return
 	}

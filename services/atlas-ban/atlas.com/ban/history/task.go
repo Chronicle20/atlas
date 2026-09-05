@@ -14,22 +14,21 @@ const RetentionDays = 90
 
 type HistoryPurge struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	db       *gorm.DB
 	interval time.Duration
 }
 
-func NewHistoryPurge(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration) *HistoryPurge {
+func NewHistoryPurge(l logrus.FieldLogger, db *gorm.DB, interval time.Duration) *HistoryPurge {
 	l.Infof("Initializing login history purge task to run every %dms. Retention: %d days.", interval.Milliseconds(), RetentionDays)
-	return &HistoryPurge{l: l, ctx: ctx, db: db, interval: interval}
+	return &HistoryPurge{l: l, db: db, interval: interval}
 }
 
 // Run deletes all login history records older than RetentionDays across all tenants.
 // This intentionally bypasses the processor layer and operates without tenant context,
 // performing a single global sweep rather than iterating per-tenant.
-func (t *HistoryPurge) Run() {
+func (t *HistoryPurge) Run(ctx context.Context) {
 	t.l.Debugf("Executing login history purge task.")
-	noTenantCtx := database.WithoutTenantFilter(t.ctx)
+	noTenantCtx := database.WithoutTenantFilter(ctx)
 	cutoff := time.Now().AddDate(0, 0, -RetentionDays)
 	err := t.db.WithContext(noTenantCtx).Where("created_at < ?", cutoff).Delete(&Entity{}).Error
 	if err != nil {

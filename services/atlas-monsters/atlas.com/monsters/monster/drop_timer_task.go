@@ -15,24 +15,23 @@ import (
 
 type DropTimerTask struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	interval time.Duration
 }
 
-func NewDropTimerTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *DropTimerTask {
+func NewDropTimerTask(l logrus.FieldLogger, interval time.Duration) *DropTimerTask {
 	l.Infof("Initializing drop timer task to run every %dms.", interval.Milliseconds())
-	return &DropTimerTask{l: l, ctx: ctx, interval: interval}
+	return &DropTimerTask{l: l, interval: interval}
 }
 
-func (t *DropTimerTask) Run() {
+func (t *DropTimerTask) Run(ctx context.Context) {
 	now := time.Now()
-	entries := GetDropTimerRegistry().GetAll(t.ctx)
+	entries := GetDropTimerRegistry().GetAll(ctx)
 	for key, entry := range entries {
-		t.processEntry(now, key.Tenant, key.MonsterId, entry)
+		t.processEntry(ctx, now, key.Tenant, key.MonsterId, entry)
 	}
 }
 
-func (t *DropTimerTask) processEntry(now time.Time, ten tenant.Model, uniqueId uint32, e DropTimerEntry) {
+func (t *DropTimerTask) processEntry(ctx context.Context, now time.Time, ten tenant.Model, uniqueId uint32, e DropTimerEntry) {
 	// Determine next eligible drop time
 	var nextEligible time.Time
 	if !e.LastHitAt().IsZero() && e.LastHitAt().After(e.LastDropAt()) {
@@ -50,13 +49,13 @@ func (t *DropTimerTask) processEntry(now time.Time, ten tenant.Model, uniqueId u
 	// Verify monster is still alive
 	m, err := GetMonsterRegistry().GetMonster(ten, uniqueId)
 	if err != nil || !m.Alive() {
-		GetDropTimerRegistry().Unregister(t.ctx, ten, uniqueId)
+		GetDropTimerRegistry().Unregister(ctx, ten, uniqueId)
 		return
 	}
 
-	tctx := tenant.WithContext(t.ctx, ten)
+	tctx := tenant.WithContext(ctx, ten)
 	t.produceDrop(tctx, m, e)
-	GetDropTimerRegistry().UpdateLastDrop(t.ctx, ten, uniqueId, now)
+	GetDropTimerRegistry().UpdateLastDrop(ctx, ten, uniqueId, now)
 }
 
 func (t *DropTimerTask) produceDrop(ctx context.Context, m Model, e DropTimerEntry) {

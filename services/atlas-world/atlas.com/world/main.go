@@ -8,10 +8,10 @@ import (
 	broadcast2 "atlas-world/kafka/consumer/broadcast"
 	channel2 "atlas-world/kafka/consumer/channel"
 	"atlas-world/rate"
-	"atlas-world/tasks"
 	"atlas-world/world"
 	"context"
 	"os"
+	"sync"
 	"time"
 
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -138,16 +138,14 @@ func main() {
 	}
 	span.End()
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(channel.NewExpiration(l, rt.Context(), time.Second*10))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(channel.NewExpiration(l, time.Second*10))
 
 	// registerBroadcastSweep runs only on the leader-elected pod. atlas-world
 	// runs replicas:2 with no leader election otherwise; without this gate
 	// both pods would sweep every second and STARTED/ENDED status events
 	// would double-fire continuously.
-	registerBroadcastSweep := func(l logrus.FieldLogger, ctx context.Context) {
-		tasks.Register(l, ctx)(broadcast.NewSweep(l, ctx, time.Second, withSelfEnvironment))
+	registerBroadcastSweep := func(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
+		routine.Register(l, ctx, wg)(broadcast.NewSweep(l, time.Second, withSelfEnvironment))
 	}
 
 	if leaderEnabled(l) {
@@ -161,9 +159,20 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
+		// Held open for the lifetime of the leader-election goroutine below.
+		// registerBroadcastSweep (and therefore its routine.Register call)
+		// only runs once le.Run elects this pod as leader, which happens
+		// asynchronously inside the routine.Go goroutine. Registering there
+		// calls wg.Add(1) on a detached goroutine, which would race
+		// Manager.Wait() if the counter were allowed to hit zero in between.
+		// Adding 1 here — synchronously, before routine.Go starts — keeps the
+		// counter above zero for the goroutine's whole life, so that later
+		// Add can never race a Wait-induced zero crossing.
+		rt.WaitGroup().Add(1)
 		routine.Go(l, rt.Context(), func(_ context.Context) {
+			defer rt.WaitGroup().Done()
 			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
-				registerBroadcastSweep(l, leaderCtx)
+				registerBroadcastSweep(l, leaderCtx, rt.WaitGroup())
 				<-leaderCtx.Done()
 			})
 			if err != nil {
@@ -172,7 +181,7 @@ func main() {
 		})
 	} else {
 		l.Warnf("WORLD_BROADCAST_LEADER_ELECTION_ENABLED=false — broadcast sweep runs unconditionally on this pod.")
-		registerBroadcastSweep(l, rt.Context())
+		registerBroadcastSweep(l, rt.Context(), rt.WaitGroup())
 	}
 
 	rt.Wait()

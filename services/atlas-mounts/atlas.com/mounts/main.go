@@ -5,7 +5,6 @@ import (
 	"atlas-mounts/kafka/consumer/character"
 	"atlas-mounts/kafka/consumer/food"
 	"atlas-mounts/mount"
-	"atlas-mounts/tasks"
 	"context"
 	"os"
 	"time"
@@ -109,9 +108,7 @@ func main() {
 		return env.WithContext(ctx, env.Self())
 	}
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(mount.NewTirednessTask(l, db, time.Minute, envContext))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(mount.NewTirednessTask(l, db, time.Minute, envContext))
 
 	rt.Wait()
 }

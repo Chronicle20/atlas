@@ -38,17 +38,17 @@ func NewInviteTimeout(l logrus.FieldLogger, interval time.Duration, envContext f
 	return &Timeout{l, interval, timeout, envContext}
 }
 
-func (t *Timeout) Run() {
-	_, span := otel.GetTracerProvider().Tracer("atlas-invites").Start(context.Background(), TimeoutTask)
+func (t *Timeout) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-invites").Start(ctx, TimeoutTask)
 	defer span.End()
 
 	tenants := GetRegistry().GetActiveTenants()
 	for _, ten := range tenants {
-		ctx := tenant.WithContext(context.Background(), ten)
-		is := GetRegistry().GetExpired(ctx, t.timeout)
+		tctx := tenant.WithContext(sctx, ten)
+		is := GetRegistry().GetExpired(tctx, t.timeout)
 
 		t.l.Debugf("Executing timeout task for tenant [%s].", ten.Id().String())
-		processExpiredInvites(t.l, ctx, is, deleteInvite, rejectInvite, t.envContext)
+		processExpiredInvites(t.l, tctx, is, deleteInvite, rejectInvite, t.envContext)
 	}
 }
 

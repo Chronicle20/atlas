@@ -16,21 +16,19 @@ const ExpirationTask = "expire"
 
 type Timeout struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	interval time.Duration
 }
 
-func NewExpiration(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *Timeout {
+func NewExpiration(l logrus.FieldLogger, interval time.Duration) *Timeout {
 	l.Infof("Initializing %s task to run every %dms.", ExpirationTask, interval.Milliseconds())
 	return &Timeout{
 		l:        l,
-		ctx:      ctx,
 		interval: interval,
 	}
 }
 
-func (t *Timeout) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-world").Start(t.ctx, ExpirationTask)
+func (t *Timeout) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-world").Start(ctx, ExpirationTask)
 	defer span.End()
 
 	t.l.Debugf("Executing %s task.", ExpirationTask)
@@ -40,7 +38,7 @@ func (t *Timeout) Run() {
 	// registry read+delete keyed by tenant alone -- no producer/message.Emit,
 	// no outbound REST via RootUrlFor. Per the audit criterion, in-memory
 	// registry reads need no environment attached.
-	err := model.ForEachSlice(model.FixedProvider(GetChannelRegistry().Tenants()), func(te tenant.Model) error {
+	err := model.ForEachSlice(model.FixedProvider(GetChannelRegistry().Tenants(sctx)), func(te tenant.Model) error {
 		tctx := tenant.WithContext(sctx, te)
 		return model.ForEachSlice(model.FixedProvider(GetChannelRegistry().ChannelServers(tctx)), func(c Model) error {
 			if c.CreatedAt().Add(time.Second * 15).Before(time.Now()) {

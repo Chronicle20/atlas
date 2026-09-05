@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"atlas-buffs/character"
+	"context"
 	"testing"
 	"time"
 
@@ -32,5 +33,5 @@ func TestPeriodicTick_Run_DoesNotPanicWithNoTenants(t *testing.T) {
 	character.InitRegistry(client)
 
 	pt := NewPeriodicTick(logrus.New(), 1000)
-	require.NotPanics(t, func() { pt.Run() })
+	require.NotPanics(t, func() { pt.Run(context.Background()) })
 }

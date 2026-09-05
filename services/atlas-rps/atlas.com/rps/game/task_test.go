@@ -122,7 +122,7 @@ func TestSweepTask_Run_NoExpiredSessions(t *testing.T) {
 	game.GetRegistry().Put(ctx, m)
 
 	task := game.NewSweepTask(testLogger(), 50*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
-	task.Run()
+	task.Run(ctx)
 
 	_, found := game.GetRegistry().Get(ctx, characterId)
 	assert.True(t, found, "session within TTL should not be swept")
@@ -164,7 +164,7 @@ func TestSweepTask_Run_DisposesExpiredSessionWithNoPayout(t *testing.T) {
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
 	task := game.NewSweepTask(testLogger(), 50*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
-	task.Run()
+	task.Run(ctx)
 
 	_, found := game.GetRegistry().Get(ctx, characterId)
 	assert.False(t, found, "expired session should be popped from the registry")
@@ -208,7 +208,7 @@ func TestSweepTask_Run_MultiTenantSweepsAcrossAllTracked(t *testing.T) {
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
 	task := game.NewSweepTask(testLogger(), 50*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
-	task.Run()
+	task.Run(context.Background())
 
 	_, found1 := game.GetRegistry().Get(ctx1, 3001)
 	assert.False(t, found1)

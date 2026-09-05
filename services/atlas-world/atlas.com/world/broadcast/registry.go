@@ -118,8 +118,7 @@ func parseQueueKey(s string) (QueueKey, bool) {
 	return QueueKey{WorldId: world.Id(n), Family: s[idx+1:]}, true
 }
 
-func (r *Registry) Tenants() []tenant.Model {
-	ctx := context.Background()
+func (r *Registry) Tenants(ctx context.Context) []tenant.Model {
 	members, err := r.tenants.Members(ctx)
 	if err != nil {
 		return nil

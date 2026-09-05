@@ -90,7 +90,7 @@ func (tk *MonsterRecoveryTask) SleepTime() time.Duration { return tk.interval }
 // Run iterates every live monster across every tenant and applies recovery
 // per the rules in PRD §FR-5. Errors per-monster are logged at Debug and skip
 // only that monster — never crash the tick.
-func (tk *MonsterRecoveryTask) Run() {
+func (tk *MonsterRecoveryTask) Run(ctx context.Context) {
 	monsters := GetMonsterRegistry().GetMonsters()
 	nowMs := tk.nowFn()
 	infoCache := make(map[uuid.UUID]map[uint32]information.Model)

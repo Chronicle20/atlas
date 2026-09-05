@@ -245,7 +245,7 @@ func TestTenants(t *testing.T) {
 	registry.Register(ctx1, ch1)
 	registry.Register(ctx2, ch2)
 
-	tenants := registry.Tenants()
+	tenants := registry.Tenants(ctx1)
 
 	// Should contain both tenants
 	found1, found2 := false, false
@@ -388,7 +388,7 @@ func TestRegistry_TenantSetIsPrefixed(t *testing.T) {
 	reg := channel.GetChannelRegistry()
 	ch := createTestChannel(t, world.Id(0), channelConstant.Id(1), "192.168.1.1", 8080)
 	reg.Register(ctx, ch)
-	tenants := reg.Tenants()
+	tenants := reg.Tenants(ctx)
 	if len(tenants) != 1 {
 		t.Fatalf("Tenants() = %d want 1", len(tenants))
 	}

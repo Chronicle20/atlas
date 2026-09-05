@@ -21,7 +21,6 @@ import (
 // (design.md §2.5, §5.3); the server's job is to agree with it.
 type DecayTick struct {
 	l          logrus.FieldLogger
-	ctx        context.Context
 	interval   time.Duration
 	envContext func(context.Context) context.Context
 }
@@ -36,16 +35,16 @@ type DecayTick struct {
 // itself. Without it, decide() sees an empty or wrong ENVIRONMENT header and
 // either fails open per FR-1.8 or is dropped by every consumer's ownership
 // gate per FR-7.7.
-func NewDecayTick(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *DecayTick {
-	return &DecayTick{l: l, ctx: ctx, interval: interval, envContext: envContext}
+func NewDecayTick(l logrus.FieldLogger, interval time.Duration, envContext func(context.Context) context.Context) *DecayTick {
+	return &DecayTick{l: l, interval: interval, envContext: envContext}
 }
 
 func (r *DecayTick) SleepTime() time.Duration {
 	return r.interval
 }
 
-func (r *DecayTick) Run() {
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(r.ctx, "aran_combo_decay_tick")
+func (r *DecayTick) Run(ctx context.Context) {
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, "aran_combo_decay_tick")
 	defer span.End()
 
 	expired := GetMirror().ExpireIdle(time.Now())

@@ -132,7 +132,7 @@ Redis-backed TTL session registry (package `game`), keyed by (tenant, characterI
 
 ### SweepTask
 
-Periodic task (registered by `main.go` at a 50ms interval) that pops every expired session across all tracked tenants and emits a `GameEnded` event with reason `disconnected` directly via the producer for each, with no payout saga. Implements the `tasks.Task` interface (`Run`, `SleepTime`) structurally, without importing `atlas-rps/tasks`.
+Periodic task (registered by `main.go` at a 50ms interval) that pops every expired session across all tracked tenants and emits a `GameEnded` event with reason `disconnected` directly via the producer for each, with no payout saga. Implements the `routine.Task` interface (`Run`, `SleepTime`) structurally, without importing `atlas-routine`'s registration helper.
 
 ### configuration.Processor
 

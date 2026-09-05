@@ -148,8 +148,8 @@ func TestSelfDestructTimerTaskFiresOnElapsedEntry(t *testing.T) {
 	entry := NewSelfDestructTimerEntry(timerMobMonsterId, testField(), 4, now.Add(-time.Second))
 	GetSelfDestructTimerRegistry().Register(ctx, ten, uid, entry)
 
-	task := &SelfDestructTimerTask{l: logrus.New(), ctx: context.Background()}
-	task.processEntry(now, ten, uid, entry)
+	task := &SelfDestructTimerTask{l: logrus.New()}
+	task.processEntry(ctx, now, ten, uid, entry)
 
 	bodies := killedEvents(t, capture)
 	require.Len(t, bodies, 1)
@@ -185,8 +185,8 @@ func TestSelfDestructTimerTaskSkipsUnelapsedEntry(t *testing.T) {
 	GetSelfDestructTimerRegistry().Register(ctx, ten, uid, entry)
 	t.Cleanup(func() { GetSelfDestructTimerRegistry().Unregister(ctx, ten, uid) })
 
-	task := &SelfDestructTimerTask{l: logrus.New(), ctx: context.Background()}
-	task.processEntry(now, ten, uid, entry)
+	task := &SelfDestructTimerTask{l: logrus.New()}
+	task.processEntry(ctx, now, ten, uid, entry)
 
 	require.Empty(t, killedEvents(t, capture))
 
@@ -221,8 +221,8 @@ func TestSelfDestructTimerTaskUnregistersDeadMob(t *testing.T) {
 	_, err := r.SelfDestruct(ten, uid)
 	require.NoError(t, err)
 
-	task := &SelfDestructTimerTask{l: logrus.New(), ctx: context.Background()}
-	task.processEntry(now, ten, uid, entry)
+	task := &SelfDestructTimerTask{l: logrus.New()}
+	task.processEntry(ctx, now, ten, uid, entry)
 
 	require.Empty(t, killedEvents(t, capture), "the dead mob must not produce a second KILLED")
 
@@ -244,8 +244,8 @@ func TestSelfDestructTimerTaskUnregistersMissingMob(t *testing.T) {
 	entry := NewSelfDestructTimerEntry(timerMobMonsterId, testField(), 4, now.Add(-time.Second))
 	GetSelfDestructTimerRegistry().Register(ctx, ten, uid, entry)
 
-	task := &SelfDestructTimerTask{l: logrus.New(), ctx: context.Background()}
-	task.processEntry(now, ten, uid, entry)
+	task := &SelfDestructTimerTask{l: logrus.New()}
+	task.processEntry(ctx, now, ten, uid, entry)
 
 	require.Empty(t, killedEvents(t, capture))
 

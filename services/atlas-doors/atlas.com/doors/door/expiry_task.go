@@ -22,11 +22,10 @@ type expiryProcessor interface {
 	RemoveByOwner(ownerCharacterId character.Id, reason string) error
 }
 
-// ExpiryTask is a periodic tasks.Task that sweeps expired doors across all
+// ExpiryTask is a periodic routine.Task that sweeps expired doors across all
 // tenants, honoring the deploy grace window (FR-6.3).
 type ExpiryTask struct {
 	l            logrus.FieldLogger
-	ctx          context.Context
 	interval     time.Duration
 	newProcessor func(l logrus.FieldLogger, ctx context.Context) expiryProcessor
 	envContext   func(context.Context) context.Context
@@ -41,11 +40,10 @@ type ExpiryTask struct {
 // Without it, the REMOVED event would carry an empty ENVIRONMENT header and
 // fail decide() open per FR-1.8: every live deployment, not just this pod's,
 // would act on the removal.
-func NewExpiryTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *ExpiryTask {
+func NewExpiryTask(l logrus.FieldLogger, interval time.Duration, envContext func(context.Context) context.Context) *ExpiryTask {
 	l.Infof("Initializing door expiry task to run every %dms.", interval.Milliseconds())
 	t := &ExpiryTask{
 		l:          l,
-		ctx:        ctx,
 		interval:   interval,
 		envContext: envContext,
 	}
@@ -59,25 +57,25 @@ func NewExpiryTask(l logrus.FieldLogger, ctx context.Context, interval time.Dura
 // the tenant, then envContext to originate this pod's own environment
 // identity on top. Extracted so the origination itself is directly
 // testable without standing up the full expiry sweep.
-func (t *ExpiryTask) tenantContext(ten tenant.Model) context.Context {
-	return t.envContext(tenant.WithContext(t.ctx, ten))
+func (t *ExpiryTask) tenantContext(sctx context.Context, ten tenant.Model) context.Context {
+	return t.envContext(tenant.WithContext(sctx, ten))
 }
 
-// SleepTime returns the task's run interval, satisfying tasks.Task.
+// SleepTime returns the task's run interval, satisfying routine.Task.
 func (t *ExpiryTask) SleepTime() time.Duration { return t.interval }
 
 // Run iterates all doors across all tenants and removes those whose ExpiresAt
 // has passed AND whose deployTime is outside the deploy grace window (FR-6.3).
 // Errors per-door are logged at Warn and skip only that door — never panic.
-func (t *ExpiryTask) Run() {
-	all, err := GetRegistry().GetAll(t.ctx)
+func (t *ExpiryTask) Run(ctx context.Context) {
+	all, err := GetRegistry().GetAll(ctx)
 	if err != nil {
 		t.l.WithError(err).Errorf("door expiry sweep failed")
 		return
 	}
 	now := time.Now()
 	for ten, doors := range all {
-		tctx := t.tenantContext(ten)
+		tctx := t.tenantContext(ctx, ten)
 		p := t.newProcessor(t.l, tctx)
 		for _, m := range doors {
 			// Skip doors with no expiry configured.

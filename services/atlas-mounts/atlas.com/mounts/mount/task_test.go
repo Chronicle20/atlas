@@ -62,7 +62,7 @@ func TestTirednessTask_TicksEachActiveMountOnce(t *testing.T) {
 
 	identityEnvContext := func(ctx context.Context) context.Context { return ctx }
 	task := NewTirednessTask(taskTestLogger(), nil, time.Minute, identityEnvContext)
-	task.Run()
+	task.Run(context.Background())
 
 	assert.Len(t, calls, 2, "Run must tick once per active entry")
 

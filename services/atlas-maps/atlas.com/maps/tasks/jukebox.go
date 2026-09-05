@@ -27,8 +27,8 @@ func NewJukebox(l logrus.FieldLogger, interval time.Duration, envContext func(co
 	return &Jukebox{l: l, interval: interval, envContext: envContext}
 }
 
-func (w *Jukebox) Run() {
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(context.Background(), JukeboxTask)
+func (w *Jukebox) Run(ctx context.Context) {
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(ctx, JukeboxTask)
 	defer span.End()
 
 	processExpiredJukebox(w.l, ctx, jukebox.GetExpired(), emitJukeboxEnd(w.l), w.envContext)

@@ -29,10 +29,10 @@ func NewRespawn(l logrus.FieldLogger, interval int, envContext func(context.Cont
 	return &Respawn{l, interval, envContext}
 }
 
-func (r *Respawn) Run() {
+func (r *Respawn) Run(ctx context.Context) {
 	r.l.Debugf("Executing spawn task.")
 
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(context.Background(), RespawnTask)
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(ctx, RespawnTask)
 	defer span.End()
 
 	cp := character.NewProcessor(r.l, ctx)

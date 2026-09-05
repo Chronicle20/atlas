@@ -112,10 +112,10 @@ func TestBeholderSweepFiresHealAndBuffWhenDue(t *testing.T) {
 	}
 
 	cap := &beholderCaptureEmitter{}
-	task := NewBeholderTask(logrus.New(), context.Background(), time.Second, identityEnvContext)
+	task := NewBeholderTask(logrus.New(), time.Second, identityEnvContext)
 	task.emit = cap.emit
 	task.pick = func(int) int { return 0 } // deterministic: pick the first pool stat
-	task.Run()
+	task.Run(ctx)
 
 	// CHANGE_HP assertion.
 	hpMsgs := cap.byTopic(charmsg.EnvCommandTopic)
@@ -207,10 +207,10 @@ func TestBeholderSweepSkipsWhenNotDue(t *testing.T) {
 	}
 
 	cap := &beholderCaptureEmitter{}
-	task := NewBeholderTask(logrus.New(), context.Background(), time.Second, identityEnvContext)
+	task := NewBeholderTask(logrus.New(), time.Second, identityEnvContext)
 	task.emit = cap.emit
 	task.pick = func(int) int { return 0 } // deterministic: pick the first pool stat
-	task.Run()
+	task.Run(ctx)
 
 	if got := len(cap.byTopic(charmsg.EnvCommandTopic)); got != 0 {
 		t.Fatalf("expected no CHANGE_HP messages, got %d", got)
@@ -247,7 +247,7 @@ func TestBeholderSweepBuffAccumulatesAcrossPulses(t *testing.T) {
 	}
 
 	cap := &beholderCaptureEmitter{}
-	task := NewBeholderTask(logrus.New(), context.Background(), time.Second, identityEnvContext)
+	task := NewBeholderTask(logrus.New(), time.Second, identityEnvContext)
 	task.emit = cap.emit
 	seq := []int{0, 1, 2, 0} // WDEF, MDEF, WATK, WDEF (re-roll)
 	i := 0

@@ -101,7 +101,7 @@ func TestProcessExpiriesAppliesEnvContextToCancel(t *testing.T) {
 }
 
 func TestDecayTickSleepTime(t *testing.T) {
-	tick := NewDecayTick(logrus.New(), context.Background(), time.Second, identityEnvContext)
+	tick := NewDecayTick(logrus.New(), time.Second, identityEnvContext)
 	if got := tick.SleepTime(); got != time.Second {
 		t.Errorf("want 1s, got %v", got)
 	}

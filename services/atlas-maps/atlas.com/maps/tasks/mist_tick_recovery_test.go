@@ -82,7 +82,7 @@ func TestTickRecovery_HealsPartyMembersInsideOnly(t *testing.T) {
 		}
 		return 100, 100, 500, nil
 	})
-	mt.charsInField = func(tenant.Model, field.Model) []uint32 { return []uint32{1001, 1002, 1003, 1004} }
+	mt.charsInField = func(context.Context, tenant.Model, field.Model) []uint32 { return []uint32{1001, 1002, 1003, 1004} }
 
 	mt.runOnce(context.Background())
 
@@ -108,7 +108,7 @@ func TestTickRecovery_SkipsDeadCharacter(t *testing.T) {
 		}
 		return 100, 100, 500, nil
 	})
-	mt.charsInField = func(tenant.Model, field.Model) []uint32 { return []uint32{1001, 1002} }
+	mt.charsInField = func(context.Context, tenant.Model, field.Model) []uint32 { return []uint32{1001, 1002} }
 
 	mt.runOnce(context.Background())
 
@@ -144,7 +144,7 @@ func TestTickRecovery_RejectsOutOfRangeMagnitude(t *testing.T) {
 	mt := newTestMistTick(t, reg, rec, func(context.Context, uint32) (int16, int16, uint16, error) {
 		return 100, 100, 500, nil
 	})
-	mt.charsInField = func(tenant.Model, field.Model) []uint32 { return []uint32{1001} }
+	mt.charsInField = func(context.Context, tenant.Model, field.Model) []uint32 { return []uint32{1001} }
 	hook := attachLogHook(t, mt)
 
 	mt.runOnce(context.Background())
@@ -175,7 +175,7 @@ func TestTickOneMist_UnknownEffectKind_WarnsAndEmitsNothing(t *testing.T) {
 	mt := newTestMistTick(t, reg, rec, func(context.Context, uint32) (int16, int16, uint16, error) {
 		return 100, 100, 500, nil
 	})
-	mt.charsInField = func(tenant.Model, field.Model) []uint32 { return []uint32{1001} }
+	mt.charsInField = func(context.Context, tenant.Model, field.Model) []uint32 { return []uint32{1001} }
 	hook := attachLogHook(t, mt)
 
 	mt.runOnce(context.Background())
@@ -206,7 +206,7 @@ func TestTickOneMist_ProtectionMistDoesNotTick(t *testing.T) {
 	mt := newTestMistTick(t, reg, rec, func(context.Context, uint32) (int16, int16, uint16, error) {
 		return 100, 100, 500, nil
 	})
-	mt.charsInField = func(tenant.Model, field.Model) []uint32 { return []uint32{1001} }
+	mt.charsInField = func(context.Context, tenant.Model, field.Model) []uint32 { return []uint32{1001} }
 
 	mt.runOnce(context.Background())
 

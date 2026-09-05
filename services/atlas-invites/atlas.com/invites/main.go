@@ -3,7 +3,6 @@ package main
 import (
 	"atlas-invites/character"
 	"atlas-invites/invite"
-	"atlas-invites/tasks"
 	"context"
 	"os"
 	"time"
@@ -77,11 +76,9 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(invite.NewInviteTimeout(l, time.Second*time.Duration(5), func(ctx context.Context) context.Context {
-			return env.WithContext(ctx, env.Self())
-		}))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(invite.NewInviteTimeout(l, time.Second*time.Duration(5), func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}))
 
 	rt.Wait()
 }

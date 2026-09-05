@@ -39,8 +39,8 @@ func TestRecomputeTaskTenantContextAppliesEnvContext(t *testing.T) {
 		return context.WithValue(ctx, envMarkerKey("marker"), "stamped")
 	}
 
-	task := &RecomputeTask{ctx: context.Background(), envContext: envContext}
-	tctx := task.tenantContext(tn)
+	task := &RecomputeTask{envContext: envContext}
+	tctx := task.tenantContext(context.Background(), tn)
 
 	if got := tctx.Value(envMarkerKey("marker")); got != "stamped" {
 		t.Fatalf("envContext was not applied: got %v, want \"stamped\"", got)
@@ -106,7 +106,6 @@ func TestRunSkipsFailingTenantAndContinues(t *testing.T) {
 
 	task := &RecomputeTask{
 		l:          logrus.New(),
-		ctx:        context.Background(),
 		interval:   time.Minute,
 		envContext: func(ctx context.Context) context.Context { return ctx },
 		tenants:    func() ([]tenant.Model, error) { return ts, nil },
@@ -126,7 +125,7 @@ func TestRunSkipsFailingTenantAndContinues(t *testing.T) {
 		},
 	}
 
-	task.Run()
+	task.Run(context.Background())
 
 	if countA != 1 || countC != 1 {
 		t.Fatalf("tenant B failure must not stop others: A=%d C=%d", countA, countC)
@@ -138,7 +137,6 @@ func TestRunSkipsNotDueTenants(t *testing.T) {
 	count := 0
 	task := &RecomputeTask{
 		l:          logrus.New(),
-		ctx:        context.Background(),
 		interval:   time.Minute,
 		envContext: func(ctx context.Context) context.Context { return ctx },
 		tenants:    func() ([]tenant.Model, error) { return ts, nil },
@@ -149,7 +147,7 @@ func TestRunSkipsNotDueTenants(t *testing.T) {
 			return fakeProcessor{due: false, recomputed: &count}
 		},
 	}
-	task.Run()
+	task.Run(context.Background())
 	if count != 0 {
 		t.Fatalf("not-due tenant must not recompute, got %d", count)
 	}
@@ -164,7 +162,6 @@ func TestRunSkipsAllTenantsWhenContextAlreadyCancelled(t *testing.T) {
 
 	task := &RecomputeTask{
 		l:          logrus.New(),
-		ctx:        ctx,
 		interval:   time.Minute,
 		envContext: func(ctx context.Context) context.Context { return ctx },
 		tenants:    func() ([]tenant.Model, error) { return ts, nil },
@@ -177,7 +174,7 @@ func TestRunSkipsAllTenantsWhenContextAlreadyCancelled(t *testing.T) {
 		},
 	}
 
-	task.Run()
+	task.Run(ctx)
 
 	if count != 0 {
 		t.Fatalf("already-cancelled context must process zero tenants, got %d", count)
@@ -192,7 +189,6 @@ func TestRunStopsTenantLoopOnMidTickCancellation(t *testing.T) {
 
 	task := &RecomputeTask{
 		l:          logrus.New(),
-		ctx:        ctx,
 		interval:   time.Minute,
 		envContext: func(ctx context.Context) context.Context { return ctx },
 		tenants:    func() ([]tenant.Model, error) { return ts, nil },
@@ -212,7 +208,7 @@ func TestRunStopsTenantLoopOnMidTickCancellation(t *testing.T) {
 		},
 	}
 
-	task.Run()
+	task.Run(ctx)
 
 	if countBefore != 1 {
 		t.Fatalf("first tenant should have recomputed before cancellation, got %d", countBefore)
@@ -228,7 +224,6 @@ func TestRunSkipsTenantWhenIsDueErrorsAndContinues(t *testing.T) {
 
 	task := &RecomputeTask{
 		l:          logrus.New(),
-		ctx:        context.Background(),
 		interval:   time.Minute,
 		envContext: func(ctx context.Context) context.Context { return ctx },
 		tenants:    func() ([]tenant.Model, error) { return ts, nil },
@@ -246,7 +241,7 @@ func TestRunSkipsTenantWhenIsDueErrorsAndContinues(t *testing.T) {
 		},
 	}
 
-	task.Run()
+	task.Run(context.Background())
 
 	if countB != 1 {
 		t.Fatalf("IsDue error on one tenant must not stop the others, got %d", countB)
@@ -256,7 +251,6 @@ func TestRunSkipsTenantWhenIsDueErrorsAndContinues(t *testing.T) {
 func TestRunToleratesTenantEnumerationFailure(t *testing.T) {
 	task := &RecomputeTask{
 		l:          logrus.New(),
-		ctx:        context.Background(),
 		interval:   time.Minute,
 		envContext: func(ctx context.Context) context.Context { return ctx },
 		tenants:    func() ([]tenant.Model, error) { return nil, errors.New("tenants down") },
@@ -268,7 +262,7 @@ func TestRunToleratesTenantEnumerationFailure(t *testing.T) {
 			return nil
 		},
 	}
-	task.Run() // must not panic
+	task.Run(context.Background()) // must not panic
 	if task.SleepTime() != time.Minute {
 		t.Fatalf("SleepTime = %v, want 1m", task.SleepTime())
 	}

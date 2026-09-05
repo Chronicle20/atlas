@@ -37,8 +37,8 @@ func NewHungerTask(l logrus.FieldLogger, db *gorm.DB, interval time.Duration, en
 	return &Timeout{l: l, db: db, interval: interval, envContext: envContext}
 }
 
-func (t *Timeout) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-pets").Start(context.Background(), HungerTask)
+func (t *Timeout) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-pets").Start(ctx, HungerTask)
 	defer span.End()
 
 	t.l.Debugf("Executing %s task.", HungerTask)

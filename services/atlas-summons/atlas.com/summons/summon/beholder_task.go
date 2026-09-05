@@ -23,7 +23,6 @@ import (
 // so each due tick fires exactly once.
 type BeholderTask struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	interval time.Duration
 	// emit publishes a kafka message provider to a topic using the supplied
 	// (tenant-scoped) context. The context MUST be the per-tenant context built in
@@ -50,10 +49,9 @@ type BeholderTask struct {
 	envContext func(context.Context) context.Context
 }
 
-func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *BeholderTask {
+func NewBeholderTask(l logrus.FieldLogger, interval time.Duration, envContext func(context.Context) context.Context) *BeholderTask {
 	return &BeholderTask{
 		l:        l,
-		ctx:      ctx,
 		interval: interval,
 		emit: func(emitCtx context.Context, tok topic.Token, provider model.Provider[[]kafka.Message]) error {
 			return producer.ProviderImpl(l)(emitCtx)(tok)(provider)
@@ -71,15 +69,15 @@ func (t *BeholderTask) SleepTime() time.Duration { return t.interval }
 // tick means a despawned Beholder (removed from the registry) is never swept
 // again. Zero-valued intervals are skipped to avoid a spin (advancing by 0 would
 // keep the timer perpetually due).
-func (t *BeholderTask) Run() {
-	all, err := GetRegistry().GetAll(t.ctx)
+func (t *BeholderTask) Run(ctx context.Context) {
+	all, err := GetRegistry().GetAll(ctx)
 	if err != nil {
 		t.l.WithError(err).Errorf("Beholder sweep unable to enumerate summons.")
 		return
 	}
 	now := time.Now()
 	for ten, ms := range all {
-		tctx := t.envContext(tenant.WithContext(t.ctx, ten))
+		tctx := t.envContext(tenant.WithContext(ctx, ten))
 		for _, m := range ms {
 			if !m.IsBeholder() {
 				continue

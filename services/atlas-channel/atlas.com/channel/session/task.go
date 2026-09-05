@@ -44,8 +44,8 @@ func NewTimeout(l logrus.FieldLogger, interval time.Duration) *Timeout {
 	return &Timeout{l, interval, timeout}
 }
 
-func (t *Timeout) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), TimeoutTask)
+func (t *Timeout) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, TimeoutTask)
 	defer span.End()
 
 	cur := time.Now()

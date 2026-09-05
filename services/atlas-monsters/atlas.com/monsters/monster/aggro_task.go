@@ -62,7 +62,7 @@ func (tk *MonsterAggroDecayTask) SleepTime() time.Duration {
 	return tk.interval
 }
 
-func (tk *MonsterAggroDecayTask) Run() {
+func (tk *MonsterAggroDecayTask) Run(ctx context.Context) {
 	monsters := GetMonsterRegistry().GetMonsters()
 	bossCache := make(map[uuid.UUID]map[uint32]bool)
 	nowMs := tk.nowFn()

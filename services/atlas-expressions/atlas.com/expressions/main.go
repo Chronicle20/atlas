@@ -2,7 +2,6 @@ package main
 
 import (
 	"atlas-expressions/expression"
-	"atlas-expressions/tasks"
 	"context"
 	"os"
 	"time"
@@ -45,11 +44,9 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(expression.NewRevertTask(l, time.Millisecond*50, func(ctx context.Context) context.Context {
-			return env.WithContext(ctx, env.Self())
-		}))
-	})
+	routine.Register(l, rt.Context(), rt.WaitGroup())(expression.NewRevertTask(l, time.Millisecond*50, func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}))
 
 	server.New(l).
 		WithContext(rt.Context()).

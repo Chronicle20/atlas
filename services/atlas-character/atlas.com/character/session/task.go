@@ -44,8 +44,8 @@ func NewTimeout(l logrus.FieldLogger, db *gorm.DB, interval time.Duration, envCo
 	return &Timeout{l, db, interval, timeout, envContext}
 }
 
-func (t *Timeout) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-character").Start(context.Background(), TimeoutTask)
+func (t *Timeout) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-character").Start(ctx, TimeoutTask)
 	defer span.End()
 
 	cur := time.Now()

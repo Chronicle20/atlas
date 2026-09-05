@@ -53,7 +53,7 @@ func TestPickerSweep_RepicksOnlyEligibleMonsters(t *testing.T) {
 		},
 		hasSkillsFn: func(_ tenant.Model, monsterId uint32) bool { return true },
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if repicked[a.UniqueId()] != 1 {
 		t.Fatalf("expected monster A to be repicked once; got %d", repicked[a.UniqueId()])
@@ -94,7 +94,7 @@ func TestPickerSweep_SkipsMonstersWithNoSkills(t *testing.T) {
 		repickFn:    func(_ tenant.Model, _ uint32) error { repicked++; return nil },
 		hasSkillsFn: func(_ tenant.Model, _ uint32) bool { return false }, // no skills
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if repicked != 0 {
 		t.Fatalf("expected zero repicks for skill-less monster; got %d", repicked)
@@ -124,7 +124,7 @@ func TestPickerSweep_SkipsWhenAggroFalse(t *testing.T) {
 		repickFn:    func(_ tenant.Model, _ uint32) error { repicked++; return nil },
 		hasSkillsFn: func(_ tenant.Model, _ uint32) bool { return true },
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if repicked != 0 {
 		t.Fatalf("expected zero repicks for non-aggro monster; got %d", repicked)
@@ -159,7 +159,7 @@ func TestPickerSweep_RepicksWhenAggroTrue(t *testing.T) {
 		repickFn:    func(_ tenant.Model, _ uint32) error { repicked++; return nil },
 		hasSkillsFn: func(_ tenant.Model, _ uint32) bool { return true },
 	}
-	tk.Run()
+	tk.Run(ctx)
 
 	if repicked != 1 {
 		t.Fatalf("expected 1 repick for aggro'd monster; got %d", repicked)

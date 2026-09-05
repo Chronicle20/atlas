@@ -57,8 +57,8 @@ func NewTirednessTask(l logrus.FieldLogger, db *gorm.DB, interval time.Duration,
 	return &TirednessTask{l: l, db: db, interval: interval, envContext: envContext}
 }
 
-func (t *TirednessTask) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-mounts").Start(context.Background(), TirednessTaskName)
+func (t *TirednessTask) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-mounts").Start(ctx, TirednessTaskName)
 	defer span.End()
 
 	t.l.Debugf("Executing %s task.", TirednessTaskName)

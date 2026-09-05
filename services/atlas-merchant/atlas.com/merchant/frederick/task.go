@@ -17,18 +17,17 @@ const (
 
 type CleanupTask struct {
 	l        logrus.FieldLogger
-	ctx      context.Context
 	db       *gorm.DB
 	interval time.Duration
 }
 
-func NewCleanupTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration) *CleanupTask {
+func NewCleanupTask(l logrus.FieldLogger, db *gorm.DB, interval time.Duration) *CleanupTask {
 	l.Infof("Initializing Frederick cleanup task to run every %dms.", interval.Milliseconds())
-	return &CleanupTask{l: l, ctx: ctx, db: db, interval: interval}
+	return &CleanupTask{l: l, db: db, interval: interval}
 }
 
-func (t *CleanupTask) Run() {
-	noTenantCtx := database.WithoutTenantFilter(t.ctx)
+func (t *CleanupTask) Run(ctx context.Context) {
+	noTenantCtx := database.WithoutTenantFilter(ctx)
 	cutoff := time.Now().Add(-CleanupAge)
 
 	rows, err := cleanupExpiredItems(cutoff)(t.db.WithContext(noTenantCtx))()

@@ -14,7 +14,7 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// ExpiryTask names the otel span and the tasks.Register log line for the
+// ExpiryTask names the otel span and the routine.Register log line for the
 // pending-change expiry sweep.
 const ExpiryTask = "pending-change-expiry"
 
@@ -44,7 +44,7 @@ type Expiry struct {
 	fetchTenant tenantFetcher
 }
 
-// NewExpiry constructs the expiry sweep ticker. interval is the tasks.Task
+// NewExpiry constructs the expiry sweep ticker. interval is the routine.Task
 // tick period (SleepTime); 15 minutes is chosen against a 7-day default
 // expiry -- the sweep's latency budget is hours, and a tighter interval buys
 // nothing but load.
@@ -65,8 +65,8 @@ func newExpiryWithFetcher(l logrus.FieldLogger, db *gorm.DB, interval time.Durat
 // tenant under its own context. A tenant whose Model cannot be resolved (or
 // whose sweep errors) is logged and skipped -- one bad tenant must not stall
 // the rest of the tick.
-func (e *Expiry) Run() {
-	sctx, span := otel.GetTracerProvider().Tracer("atlas-character").Start(context.Background(), ExpiryTask)
+func (e *Expiry) Run(ctx context.Context) {
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-character").Start(ctx, ExpiryTask)
 	defer span.End()
 
 	now := time.Now()

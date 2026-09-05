@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.26
+# syntax=docker/dockerfile:1.27
 # Sync-wave-0 Kafka topic pre-creation tool. Replaces the apache/kafka:3.7.2
 # image and its JVM CLI (deploy/k8s/base/kafka-precreate.sh, deleted in
 # task-260): the entire topic pass is one CreateTopics request over one
